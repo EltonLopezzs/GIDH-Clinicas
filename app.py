@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, render_template_string
 from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth_admin
@@ -10,166 +10,168 @@ import ujson as json
 
 from google.cloud.firestore_v1.base_query import FieldFilter
 
-
 app = Flask(__name__)
+# A chave secreta será usada para segurança da sessão do Flask
 app.secret_key = os.urandom(24)
-CORS(app) # 2. INICIALIZAÇÃO DO CORS (ESSENCIAL PARA O LOGIN FUNCIONAR)
+CORS(app) # 2. INITIALIZATION OF CORS (ESSENTIAL FOR LOGIN TO WORK)
 
 db = None
 try:
+    # Tries to initialize Firebase Admin SDK using a local service account key file.
+    # This is useful for local development but for production, environment variables are recommended for security.
     cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
     if not os.path.exists(cred_path):
-        raise FileNotFoundError("Arquivo serviceAccountKey.json não encontrado na raiz do projeto.")
+        raise FileNotFoundError("serviceAccountKey.json file not found in project root. It is required for Firebase connection.")
 
     cred = credentials.Certificate(cred_path)
     if not firebase_admin._apps:
         firebase_admin.initialize_app(cred)
-        print("🔥 Firebase Admin SDK inicializado pela primeira vez!")
+        print("🔥 Firebase Admin SDK initialized for the first time!")
     else:
-        print("🔥 Firebase Admin SDK já estava inicializado.")
+        print("🔥 Firebase Admin SDK was already initialized.")
     db = firestore.client()
 except Exception as e:
-    print(f"🚨 ERRO CRÍTICO ao inicializar Firebase Admin SDK: {e}")
+    print(f"🚨 CRITICAL ERROR initializing Firebase Admin SDK: {e}")
 
+# Defines the São Paulo timezone for consistency in date and time operations.
 SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
 
-
-# Decorador personalizado para exigir que o utilizador esteja logado.
+# Custom decorator to require the user to be logged in.
 def login_required(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Verifica se as chaves necessárias estão na sessão.
+        # Checks if necessary keys are in the session.
         if 'logged_in' not in session or 'clinica_id' not in session or 'user_uid' not in session:
-            # Se não estiver logado, redireciona para a página de login.
+            # If not logged in, redirects to the login page.
             return redirect(url_for('login_page'))
-        # Verifica se a conexão com o banco de dados está ativa.
+        # Checks if the database connection is active.
         if not db:
-            flash('Erro crítico: Conexão com o banco de dados falhou. Contate o suporte.', 'danger')
+            flash('Critical error: Database connection failed. Contact support.', 'danger')
             return redirect(url_for('login_page'))
         return f(*args, **kwargs)
     return decorated_function
 
-# Decorador para exigir um papel de administrador.
+# Decorator to require an administrator role.
 def admin_required(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Primeiro, garante que o utilizador esteja logado.
+        # First, ensure the user is logged in.
         if 'logged_in' not in session or 'clinica_id' not in session or 'user_uid' not in session:
-            flash('Acesso não autorizado. Por favor, faça login.', 'danger')
+            flash('Unauthorized access. Please log in.', 'danger')
             return redirect(url_for('login_page'))
-        # Verifica se o papel do utilizador na sessão é 'admin'.
+        # Checks if the user's role in the session is 'admin'.
         if session.get('user_role') != 'admin':
-            flash('Acesso negado: Você não tem permissões de administrador para esta ação.', 'danger')
-            # Pode redirecionar para o dashboard ou uma página de erro.
+            flash('Access denied: You do not have administrator permissions for this action.', 'danger')
+            # Can redirect to the dashboard or an error page.
             return redirect(url_for('index')) 
         return f(*args, **kwargs)
     return decorated_function
 
-# --- ROTAS DE AUTENTICAÇÃO E SETUP ---
+# --- AUTHENTICATION AND SETUP ROUTES ---
 @app.route('/login', methods=['GET'])
 def login_page():
-    # Se o utilizador já estiver logado, redireciona para o dashboard.
+    # If the user is already logged in, redirects to the dashboard.
     if 'logged_in' in session:
         return redirect(url_for('index'))
     return render_template('login.html')
 
 @app.route('/session-login', methods=['POST'])
 def session_login():
-    # Verifica se o banco de dados está inicializado.
+    # Checks if the database is initialized.
     if not db:
-        return jsonify({"success": False, "message": "Erro crítico no servidor (DB não inicializado)."}), 500
+        return jsonify({"success": False, "message": "Critical server error (DB not initialized)."}), 500
 
-    # Obtém o ID Token do corpo da requisição JSON.
+    # Gets the ID Token from the JSON request body.
     id_token = request.json.get('idToken')
     if not id_token:
-        return jsonify({"success": False, "message": "ID Token não fornecido."}), 400
+        return jsonify({"success": False, "message": "ID Token not provided."}), 400
 
     try:
-        # Verifica o ID Token usando o Firebase Admin SDK.
+        # Verifies the ID Token using the Firebase Admin SDK.
         decoded_token = firebase_auth_admin.verify_id_token(id_token)
         uid_from_token = decoded_token['uid']
         email = decoded_token.get('email', '')
 
-        # Busca o mapeamento do utilizador na coleção 'User'.
+        # Searches for the user mapping in the 'User' collection.
         mapeamento_ref = db.collection('User').document(uid_from_token.strip())
         mapeamento_doc = mapeamento_ref.get()
 
         if mapeamento_doc.exists:
             mapeamento_data = mapeamento_doc.to_dict()
-            # Verifica se os dados essenciais estão presentes no mapeamento.
+            # Checks if essential data is present in the mapping.
             if not mapeamento_data or 'clinica_id' not in mapeamento_data or 'role' not in mapeamento_data:
-                return jsonify({"success": False, "message": "Configuração de utilizador incompleta. Contacte o administrador."}), 500
+                return jsonify({"success": False, "message": "Incomplete user configuration. Contact the administrator."}), 500
 
-            # Define as variáveis de sessão para o utilizador logado.
+            # Sets session variables for the logged-in user.
             session['logged_in'] = True
             session['user_uid'] = uid_from_token
             session['user_email'] = email
             session['clinica_id'] = mapeamento_data['clinica_id']
             session['clinica_nome_display'] = mapeamento_data.get('nome_clinica_display', 'Clínica On')
-            session['user_role'] = mapeamento_data['role'] # Armazena o papel do utilizador
+            session['user_role'] = mapeamento_data['role'] # Stores the user's role
 
-            print(f"Utilizador {email} logado com sucesso. Papel: {session['user_role']}")
-            return jsonify({"success": True, "message": "Login bem-sucedido!"})
+            print(f"User {email} successfully logged in. Role: {session['user_role']}")
+            return jsonify({"success": True, "message": "Login successful!"})
         else:
-            return jsonify({"success": False, "message": "Utilizador não autorizado ou não associado a uma clínica."}), 403
+            return jsonify({"success": False, "message": "Unauthorized user or not associated with a clinic."}), 403
 
     except firebase_auth_admin.RevokedIdTokenError:
-        return jsonify({"success": False, "message": "Token de ID revogado. Faça login novamente."}), 401
+        return jsonify({"success": False, "message": "ID Token revoked. Please log in again."}), 401
     except firebase_auth_admin.UserDisabledError:
-        return jsonify({"success": False, "message": "Sua conta de utilizador foi desabilitada. Contacte o administrador."}), 403
+        return jsonify({"success": False, "message": "Your user account has been disabled. Contact the administrator."}), 403
     except firebase_auth_admin.InvalidIdTokenError:
-        return jsonify({"success": False, "message": "Credenciais inválidas. Verifique seu e-mail e senha."}), 401
+        return jsonify({"success": False, "message": "Invalid credentials. Check your email and password."}), 401
     except Exception as e:
-        print(f"Erro na verificação do token/mapeamento: {type(e).__name__} - {e}")
-        return jsonify({"success": False, "message": f"Erro no servidor durante o login: {str(e)}"}), 500
+        print(f"Error in token/mapping verification: {type(e).__name__} - {e}")
+        return jsonify({"success": False, "message": f"Server error during login: {str(e)}"}), 500
 
-# Rota de configuração inicial para um super-admin associar um UID a uma clínica.
-# Esta rota deve ser usada com extrema cautela e removida/protegida após o setup inicial.
+# Initial configuration route for a super-admin to associate a UID with a clinic.
+# This route should be used with extreme caution and disabled/highly protected in production.
 @app.route('/setup-mapeamento-admin', methods=['GET', 'POST'])
 def setup_mapeamento_admin():
-    if not db: return "Firebase não inicializado", 500
+    if not db: return "Firebase not initialized", 500
     if request.method == 'POST':
         user_uid = request.form['user_uid'].strip()
         email_para_referencia = request.form['email_para_referencia'].strip().lower()
         clinica_id_associada = request.form['clinica_id_associada'].strip()
         nome_clinica_display = request.form['nome_clinica_display'].strip()
-        user_role = request.form.get('user_role', 'medico').strip() # Permite definir o papel
+        user_role = request.form.get('user_role', 'medico').strip() # Allows setting the role
 
         if not all([user_uid, email_para_referencia, clinica_id_associada, nome_clinica_display, user_role]):
-            flash("Todos os campos são obrigatórios.", "danger")
+            flash("All fields are mandatory.", "danger")
         else:
             try:
-                # Cria ou verifica a coleção da clínica.
+                # Creates or verifies the clinic collection.
                 clinica_ref = db.collection('clinicas').document(clinica_id_associada)
                 if not clinica_ref.get().exists:
                     clinica_ref.set({
                         'nome_oficial': nome_clinica_display,
                         'criada_em_dashboard_setup': firestore.SERVER_TIMESTAMP
                     })
-                # Mapeia o utilizador ao papel e à clínica.
+                # Maps the user to the role and the clinic.
                 db.collection('User').document(user_uid).set({
                     'email': email_para_referencia,
                     'clinica_id': clinica_id_associada,
                     'nome_clinica_display': nome_clinica_display,
-                    'role': user_role, # Salva o papel do utilizador
+                    'role': user_role, # Saves the user's role
                     'associado_em': firestore.SERVER_TIMESTAMP
                 })
-                flash(f'Utilizador UID {user_uid} ({user_role}) associado à clínica {nome_clinica_display} ({clinica_id_associada})! Você pode agora tentar <a href="{url_for("login_page")}">fazer login</a>.', 'success')
+                flash(f'User UID {user_uid} ({user_role}) associated with clinic {nome_clinica_display} ({clinica_id_associada})! You can now try to <a href="{url_for("login_page")}">log in</a>.', 'success')
             except Exception as e:
-                flash(f'Erro ao associar utilizador: {e}', 'danger')
-                print(f"Erro em setup_mapeamento_admin: {e}")
-        # Redireciona para a própria rota setup-mapeamento-admin para exibir a flash message
+                flash(f'Error associating user: {e}', 'danger')
+                print(f"Error in setup_mapeamento_admin: {e}")
+        # Redirects to the setup-mapeamento-admin route itself to display the flash message
         return redirect(url_for('setup_mapeamento_admin'))
     
-    # Este é o HTML que será renderizado no GET da rota /setup-mapeamento-admin
-    # Usamos render_template_string para que o Jinja2 possa processar as variáveis como url_for
+    # This is the HTML that will be rendered on the GET of the /setup-mapeamento-admin route
+    # We use render_template_string so that Jinja2 can process variables like url_for
     return render_template_string("""
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Associar Admin Firebase a Clínica</title>
+            <title>Associate Firebase Admin to Clinic</title>
             <style>
                 body { font-family: sans-serif; padding: 20px; background-color: #f8f9fa; color: #333; }
                 h2 { color: #a6683c; margin-bottom: 20px; }
@@ -219,10 +221,10 @@ def setup_mapeamento_admin():
             </style>
         </head>
         <body>
-        <h2>Associar Utilizador Firebase Auth a uma Clínica</h2>
-        <p><b>Passo 1:</b> Crie o utilizador (com e-mail/senha) na consola do Firebase > Authentication.</p>
-        <p><b>Passo 2:</b> Obtenha o UID do utilizador criado (ex: no separador "Utilizadores" do Firebase Auth).</p>
-        <p><b>Passo 3:</b> Preencha o formulário abaixo.</p>
+        <h2>Associate Firebase Auth User to a Clinic</h2>
+        <p><b>Step 1:</b> Create the user (with email/password) in the Firebase console > Authentication.</p>
+        <p><b>Step 2:</b> Get the user's UID (e.g., from the "Users" tab in Firebase Auth).</p>
+        <p><b>Step 3:</b> Fill out the form below.</p>
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             <ul style="list-style-type: none; padding: 0;">
@@ -233,28 +235,28 @@ def setup_mapeamento_admin():
           {% endif %}
         {% endwith %}
         <form method="post" action="{{ url_for('setup_mapeamento_admin') }}">
-            UID do Utilizador (Firebase Auth): <input type="text" name="user_uid" required size="40" value="{{ request.form.user_uid if 'user_uid' in request.form else '' }}"><br><br>
-            E-mail do Utilizador (para referência): <input type="email" name="email_para_referencia" required size="40" value="{{ request.form.email_para_referencia if 'email_para_referencia' in request.form else '' }}"><br><br>
-            ID da Clínica (Ex: clinicaSaoJudas): <input type="text" name="clinica_id_associada" required size="40" value="{{ request.form.clinica_id_associada if 'clinica_id_associada' in request.form else '' }}"><br><br>
-            Nome de Exibição da Clínica: <input type="text" name="nome_clinica_display" required size="40" value="{{ request.form.nome_clinica_display if 'nome_clinica_display' in request.form else '' }}"><br><br>
-            Papel do Utilizador: 
+            User UID (Firebase Auth): <input type="text" name="user_uid" required size="40" value="{{ request.form.user_uid if 'user_uid' in request.form else '' }}"><br><br>
+            User Email (for reference): <input type="email" name="email_para_referencia" required size="40" value="{{ request.form.email_para_referencia if 'email_para_referencia' in request.form else '' }}"><br><br>
+            Clinic ID (e.g., clinicaSaoJudas): <input type="text" name="clinica_id_associada" required size="40" value="{{ request.form.clinica_id_associada if 'clinica_id_associada' in request.form else '' }}"><br><br>
+            Clinic Display Name: <input type="text" name="nome_clinica_display" required size="40" value="{{ request.form.nome_clinica_display if 'nome_clinica_display' in request.form else '' }}"><br><br>
+            User Role: 
             <select name="user_role" required>
-                <option value="admin" {% if request.form.user_role == 'admin' %}selected{% endif %}>Administrador</option>
-                <option value="medico" {% if request.form.user_role == 'medico' %}selected{% endif %}>Médico</option>
+                <option value="admin" {% if request.form.user_role == 'admin' %}selected{% endif %}>Administrator</option>
+                <option value="medico" {% if request.form.user_role == 'medico' %}selected{% endif %}>Doctor</option>
             </select><br><br>
-            <button type="submit">Associar Utilizador à Clínica</button>
+            <button type="submit">Associate User to Clinic</button>
         </form>
-        <p><a href="{{ url_for('login_page') }}">Ir para Login</a></p>
+        <p><a href="{{ url_for('login_page') }}">Go to Login</a></p>
         </body></html>
     """)
 
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    session.clear() # Limpa todas as variáveis de sessão.
-    return jsonify({"success": True, "message": "Sessão do servidor limpa."})
+    session.clear() # Clears all session variables.
+    return jsonify({"success": True, "message": "Server session cleared."})
 
-# --- ROTA PRINCIPAL (DASHBOARD) ---
+# --- MAIN ROUTE (DASHBOARD) ---
 @app.route('/')
 @login_required
 def index():
@@ -263,7 +265,7 @@ def index():
     servicos_procedimentos_ref = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos')
     current_year = datetime.datetime.now(SAO_PAULO_TZ).year
 
-    # Mapa para armazenar informações de serviços/procedimentos (nome e preço)
+    # Map to store service/procedure information (name and price)
     servicos_procedimentos_map = {}
     try:
         servicos_docs_stream = servicos_procedimentos_ref.stream()
@@ -271,12 +273,12 @@ def index():
             serv_data_dict = serv_doc.to_dict()
             if serv_data_dict and 'preco_sugerido' in serv_data_dict and 'nome' in serv_data_dict:
                 servicos_procedimentos_map[serv_doc.id] = {
-                    'nome': serv_data_dict.get('nome', 'Serviço/Procedimento Desconhecido'),
+                    'nome': serv_data_dict.get('nome', 'Unknown Service/Procedure'),
                     'preco': float(serv_data_dict.get('preco_sugerido', 0))
                 }
     except Exception as e:
-        print(f"Erro CRÍTICO ao buscar serviços/procedimentos para dashboard: {e}")
-        flash("Erro crítico ao carregar dados de serviços/procedimentos. O dashboard pode não exibir totais corretos.", "danger")
+        print(f"CRITICAL ERROR fetching services/procedures for dashboard: {e}")
+        flash("Critical error loading service/procedure data. The dashboard may not display correct totals.", "danger")
 
     hoje_dt = datetime.datetime.now(SAO_PAULO_TZ)
     hoje_inicio_dt = hoje_dt.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -285,11 +287,11 @@ def index():
     count_semana, receita_semana = 0, 0.0
     count_mes, receita_mes = 0, 0.0
 
-    # Calcula o início e fim da semana atual.
+    # Calculates the start and end of the current week.
     inicio_semana_dt = hoje_inicio_dt - datetime.timedelta(days=hoje_dt.weekday())
     fim_semana_dt = inicio_semana_dt + datetime.timedelta(days=7)
     
-    # Calcula o início e fim do mês atual.
+    # Calculates the start and end of the current month.
     inicio_mes_dt = hoje_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     if inicio_mes_dt.month == 12:
         fim_mes_dt = inicio_mes_dt.replace(year=inicio_mes_dt.year + 1, month=1, day=1)
@@ -298,7 +300,7 @@ def index():
 
     agendamentos_para_analise = []
     try:
-        # Consulta agendamentos confirmados ou concluídos no mês atual para análise.
+        # Queries confirmed or completed appointments in the current month for analysis.
         query_geral_mes = agendamentos_ref.where(filter=FieldFilter('status', 'in', ['confirmado', 'concluido'])) \
                                           .where(filter=FieldFilter('data_agendamento_ts', '>=', inicio_mes_dt)) \
                                           .where(filter=FieldFilter('data_agendamento_ts', '<', fim_mes_dt)).stream()
@@ -312,17 +314,17 @@ def index():
                 agendamentos_para_analise.append(ag_data)
 
     except Exception as e:
-        print(f"Erro query geral para dashboard: {e}. Verifique os índices do Firestore.")
-        flash("Erro ao calcular estatísticas do dashboard. Verifique seus índices do Firestore.", "danger")
+        print(f"Error general query for dashboard: {e}. Check your Firestore indexes.")
+        flash("Error calculating dashboard statistics. Check your Firestore indexes.", "danger")
 
-    # Inicializa dados para os gráficos.
-    agendamentos_por_dia_semana = [0] * 7 # 0=Segunda, ..., 6=Domingo (Python's weekday)
-    labels_dias_semana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+    # Initializes data for the charts.
+    agendamentos_por_dia_semana = [0] * 7 # 0=Monday, ..., 6=Sunday (Python's weekday)
+    labels_dias_semana = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     contagem_servicos_semana = Counter()
 
     for ag_data in agendamentos_para_analise:
         ag_timestamp_sp = ag_data.get('data_agendamento_ts').astimezone(SAO_PAULO_TZ)
-        # Usa 'servico_procedimento_id' e 'servicos_procedimentos_map'
+        # Uses 'servico_procedimento_id' and 'servicos_procedimentos_map'
         preco_servico_atual = float(servicos_procedimentos_map.get(ag_data.get('servico_procedimento_id'), {}).get('preco', 0))
         
         count_mes += 1
@@ -337,7 +339,7 @@ def index():
 
             servico_procedimento_id = ag_data.get('servico_procedimento_id')
             if servico_procedimento_id:
-                nome_servico = servicos_procedimentos_map.get(servico_procedimento_id, {}).get('nome', 'Desconhecido')
+                nome_servico = servicos_procedimentos_map.get(servico_procedimento_id, {}).get('nome', 'Unknown')
                 contagem_servicos_semana[nome_servico] += 1
 
         if ag_timestamp_sp.date() == hoje_dt.date():
@@ -355,13 +357,13 @@ def index():
 
     servicos_populares_comuns = contagem_servicos_semana.most_common(5)
     dados_servicos_populares = {
-        'labels': [item[0] for item in servicos_populares_comuns] or ['Nenhum Agendamento na Semana'],
+        'labels': [item[0] for item in servicos_populares_comuns] or ['No Appointments this Week'],
         'valores': [item[1] for item in servicos_populares_comuns] or [0]
     }
 
     proximos_agendamentos_lista = []
     try:
-        # Consulta os próximos agendamentos confirmados (até 5).
+        # Queries next confirmed appointments (up to 5).
         query_proximos = agendamentos_ref.where(filter=FieldFilter('status', '==', 'confirmado')) \
                                          .where(filter=FieldFilter('data_agendamento_ts', '>=', hoje_inicio_dt)) \
                                          .order_by('data_agendamento_ts') \
@@ -370,7 +372,7 @@ def index():
             ag_data = doc.to_dict()
             if not ag_data: continue
 
-            # Obtém informações do serviço/procedimento.
+            # Gets service/procedure information.
             servico_info = servicos_procedimentos_map.get(ag_data.get('servico_procedimento_id'), {'nome': 'N/A', 'preco': 0.0})
             data_fmt = "N/A"
             if ag_data.get('data_agendamento'):
@@ -382,43 +384,43 @@ def index():
             proximos_agendamentos_lista.append({
                 'data_agendamento': data_fmt,
                 'hora_agendamento': ag_data.get('hora_agendamento', "N/A"),
-                'cliente_nome': ag_data.get('paciente_nome', "N/A"), # Alterado de 'cliente_nome' para 'paciente_nome'
-                'profissional_nome': ag_data.get('profissional_nome', "N/A"), # Alterado de 'barbeiro_nome' para 'profissional_nome'
-                'servico_procedimento_nome': servico_info.get('nome'), # Alterado para 'servico_procedimento_nome'
+                'cliente_nome': ag_data.get('paciente_nome', "N/A"), # Changed from 'cliente_name' to 'paciente_name'
+                'profissional_nome': ag_data.get('profissional_nome', "N/A"), # Changed from 'barber_name' to 'professional_name'
+                'servico_procedimento_nome': servico_info.get('nome'), # Changed to 'service_procedure_name'
                 'preco': float(servico_info.get('preco', 0)),
                 'status': ag_data.get('status', "N/A")
             })
     except Exception as e:
-        print(f"Erro CRÍTICO ao buscar próximos agendamentos: {e}. Verifique os índices.")
-        flash("Erro ao carregar próximos agendamentos.", "danger")
+        print(f"CRITICAL ERROR fetching next appointments: {e}. Check indexes.")
+        flash("Error loading next appointments.", "danger")
 
     return render_template('dashboard.html', hoje_data=hoje_data, semana_data=semana_data,
                            mes_data=mes_data, proximos_agendamentos=proximos_agendamentos_lista,
-                           nome_clinica=session.get('clinica_nome_display', 'Sua Clínica'), # Alterado para 'nome_clinica'
+                           nome_clinica=session.get('clinica_nome_display', 'Your Clinic'), # Changed to 'clinic_name'
                            current_year=current_year,
                            dados_desempenho_semana=dados_desempenho_semana,
                            dados_servicos_populares=dados_servicos_populares)
 
 
-# --- ROTAS DE UTILIZADORES (ADMINISTRADORES E MÉDICOS) ---
+# --- USER ROUTES (ADMINISTRATORS AND DOCTORS) ---
 @app.route('/usuarios')
 @login_required
-@admin_required # Apenas admins podem gerenciar utilizadores
+@admin_required # Only admins can manage users
 def listar_usuarios():
     clinica_id = session['clinica_id']
     usuarios_ref = db.collection('User')
     usuarios_lista = []
     try:
-        # Filtra utilizadores pela clinica_id e ordena por email
+        # Filters users by clinica_id and orders by email
         docs = usuarios_ref.where(filter=FieldFilter('clinica_id', '==', clinica_id)).order_by('email').stream()
         for doc in docs:
             user_data = doc.to_dict()
             if user_data:
-                user_data['uid'] = doc.id # UID é o ID do documento
+                user_data['uid'] = doc.id # UID is the document ID
                 usuarios_lista.append(user_data)
     except Exception as e:
-        flash(f'Erro ao listar utilizadores: {e}.', 'danger')
-        print(f"Erro listar_usuarios: {e}")
+        flash(f'Error listing users: {e}.', 'danger')
+        print(f"Error list_users: {e}")
     return render_template('usuarios.html', usuarios=usuarios_lista)
 
 @app.route('/usuarios/novo', methods=['GET', 'POST'])
@@ -434,15 +436,15 @@ def adicionar_usuario():
         crm_ou_registro = request.form.get('crm_ou_registro', '').strip()
 
         if not all([email, password, role]):
-            flash('E-mail, senha e papel são obrigatórios.', 'danger')
-            return render_template('usuario_form.html', action_url=url_for('adicionar_usuario'), page_title="Adicionar Novo Utilizador", roles=['admin', 'medico'])
+            flash('Email, password, and role are mandatory.', 'danger')
+            return render_template('usuario_form.html', action_url=url_for('adicionar_usuario'), page_title="Add New User", roles=['admin', 'medico'])
 
         try:
-            # Cria o utilizador no Firebase Authentication
+            # Creates the user in Firebase Authentication
             user = firebase_auth_admin.create_user(email=email, password=password)
             user_uid = user.uid
 
-            # Salva o mapeamento na coleção 'User' no Firestore
+            # Saves the mapping in the 'User' collection in Firestore
             db.collection('User').document(user_uid).set({
                 'email': email,
                 'clinica_id': clinica_id,
@@ -453,26 +455,26 @@ def adicionar_usuario():
                 'associado_em': firestore.SERVER_TIMESTAMP
             })
 
-            # Se o utilizador for um médico, pode ser interessante criar um registo em 'profissionais'
+            # If the user is a doctor, it might be interesting to create a record in 'professionals'
             if role == 'medico':
                 db.collection('clinicas').document(clinica_id).collection('profissionais').add({
                     'nome': nome_completo,
                     'email': email,
                     'crm_ou_registro': crm_ou_registro,
-                    'user_uid': user_uid, # Referência ao UID do utilizador criado
-                    'ativo': True, # Por padrão, médicos criados estão ativos
+                    'user_uid': user_uid, # Reference to the created user's UID
+                    'ativo': True, # By default, created doctors are active
                     'criado_em': firestore.SERVER_TIMESTAMP
                 })
 
-            flash(f'Utilizador {email} ({role}) adicionado com sucesso!', 'success')
+            flash(f'User {email} ({role}) added successfully!', 'success')
             return redirect(url_for('listar_usuarios'))
         except firebase_admin.auth.EmailAlreadyExistsError:
-            flash('O e-mail fornecido já está em uso por outro utilizador.', 'danger')
+            flash('The provided email is already in use by another user.', 'danger')
         except Exception as e:
-            flash(f'Erro ao adicionar utilizador: {e}', 'danger')
-            print(f"Erro adicionar_usuario: {e}")
+            flash(f'Error adding user: {e}', 'danger')
+            print(f"Error add_user: {e}")
     
-    return render_template('usuario_form.html', action_url=url_for('adicionar_usuario'), page_title="Adicionar Novo Utilizador", roles=['admin', 'medico'])
+    return render_template('usuario_form.html', action_url=url_for('adicionar_usuario'), page_title="Add New User", roles=['admin', 'medico'])
 
 @app.route('/usuarios/editar/<string:user_uid>', methods=['GET', 'POST'])
 @login_required
@@ -488,7 +490,7 @@ def editar_usuario(user_uid):
         crm_ou_registro = request.form.get('crm_ou_registro', '').strip()
         
         try:
-            # Atualiza o registo do utilizador no Firestore
+            # Updates the user record in Firestore
             user_map_ref.update({
                 'email': email,
                 'role': role,
@@ -497,12 +499,12 @@ def editar_usuario(user_uid):
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             })
 
-            # Atualiza o email no Firebase Auth (se diferente)
+            # Updates the email in Firebase Auth (if different)
             firebase_auth_user = firebase_auth_admin.get_user(user_uid)
             if firebase_auth_user.email != email:
                 firebase_auth_admin.update_user(user_uid, email=email)
             
-            # Se for um médico, atualiza o registo correspondente em 'profissionais'
+            # If it's a doctor, updates the corresponding record in 'professionals'
             if role == 'medico':
                 profissionais_ref = db.collection('clinicas').document(clinica_id).collection('profissionais')
                 prof_query = profissionais_ref.where(filter=FieldFilter('user_uid', '==', user_uid)).limit(1).stream()
@@ -514,7 +516,7 @@ def editar_usuario(user_uid):
                         'crm_ou_registro': crm_ou_registro,
                         'atualizado_em': firestore.SERVER_TIMESTAMP
                     })
-                else: # Se não encontrou, cria (caso tenha mudado de role ou sido criado sem associar)
+                else: # If not found, creates it (in case it changed role or was created without association)
                      profissionais_ref.add({
                         'nome': nome_completo,
                         'email': email,
@@ -524,26 +526,26 @@ def editar_usuario(user_uid):
                         'criado_em': firestore.SERVER_TIMESTAMP
                     })
 
-            flash('Utilizador atualizado com sucesso!', 'success')
+            flash('User updated successfully!', 'success')
             return redirect(url_for('listar_usuarios'))
         except firebase_admin.auth.EmailAlreadyExistsError:
-            flash('O e-mail fornecido já está em uso por outro utilizador.', 'danger')
+            flash('The provided email is already in use by another user.', 'danger')
         except Exception as e:
-            flash(f'Erro ao atualizar utilizador: {e}', 'danger')
-            print(f"Erro editar_usuario (POST): {e}")
+            flash(f'Error updating user: {e}', 'danger')
+            print(f"Error edit_user (POST): {e}")
 
     try:
         user_map_doc = user_map_ref.get()
         if user_map_doc.exists:
             user_data = user_map_doc.to_dict()
             user_data['uid'] = user_map_doc.id
-            return render_template('usuario_form.html', user=user_data, action_url=url_for('editar_usuario', user_uid=user_uid), page_title=f"Editar Utilizador: {user_data.get('nome_completo') or user_data.get('email')}", roles=['admin', 'medico'])
+            return render_template('usuario_form.html', user=user_data, action_url=url_for('editar_usuario', user_uid=user_uid), page_title=f"Edit User: {user_data.get('nome_completo') or user_data.get('email')}", roles=['admin', 'medico'])
         else:
-            flash('Utilizador não encontrado.', 'danger')
+            flash('User not found.', 'danger')
             return redirect(url_for('listar_usuarios'))
     except Exception as e:
-        flash(f'Erro ao carregar utilizador para edição: {e}', 'danger')
-        print(f"Erro editar_usuario (GET): {e}")
+        flash(f'Error loading user for editing: {e}', 'danger')
+        print(f"Error edit_user (GET): {e}")
         return redirect(url_for('listar_usuarios'))
 
 
@@ -557,32 +559,32 @@ def ativar_desativar_usuario(user_uid):
         if user_map_doc.exists:
             user_data = user_map_doc.to_dict()
             current_status_firebase = firebase_auth_admin.get_user(user_uid).disabled
-            new_status_firebase = not current_status_firebase # Se está disabled, ativa; se não está, desativa.
+            new_status_firebase = not current_status_firebase # If it's disabled, enable; if not, disable.
 
             firebase_auth_admin.update_user(user_uid, disabled=new_status_firebase)
             
-            # Se for um médico, também atualiza o status em 'profissionais'
+            # If it's a doctor, also updates the status in 'professionals'
             if user_data.get('role') == 'medico':
                 profissionais_ref = db.collection('clinicas').document(clinica_id).collection('profissionais')
                 prof_query = profissionais_ref.where(filter=FieldFilter('user_uid', '==', user_uid)).limit(1).stream()
                 prof_doc = next(prof_query, None)
                 if prof_doc:
                     profissionais_ref.document(prof_doc.id).update({
-                        'ativo': not new_status_firebase, # Inverte, pois 'disabled' é o oposto de 'ativo'
+                        'ativo': not new_status_firebase, # Inverts, as 'disabled' is the opposite of 'active'
                         'atualizado_em': firestore.SERVER_TIMESTAMP
                     })
 
-            flash(f'Utilizador {user_data.get("email")} {"ativado" if not new_status_firebase else "desativado"} com sucesso!', 'success')
+            flash(f'User {user_data.get("email")} {"enabled" if not new_status_firebase else "disabled"} successfully!', 'success')
         else:
-            flash('Utilizador não encontrado no mapeamento.', 'danger')
+            flash('User not found in mapping.', 'danger')
     except firebase_admin.auth.UserNotFoundError:
-        flash('Utilizador não encontrado no Firebase Authentication.', 'danger')
+        flash('User not found in Firebase Authentication.', 'danger')
     except Exception as e:
-        flash(f'Erro ao alterar status do utilizador: {e}', 'danger')
-        print(f"Erro ativar_desativar_usuario: {e}")
+        flash(f'Error changing user status: {e}', 'danger')
+        print(f"Error activate_deactivate_user: {e}")
     return redirect(url_for('listar_usuarios'))
 
-# --- ROTAS DE PROFISSIONAIS (ANTIGOS BARBEIROS) ---
+# --- PROFESSIONALS ROUTES (FORMER BARBERS) ---
 @app.route('/profissionais')
 @login_required
 def listar_profissionais():
@@ -597,40 +599,40 @@ def listar_profissionais():
                 profissional['id'] = doc.id
                 profissionais_lista.append(profissional)
     except Exception as e:
-        flash(f'Erro ao listar profissionais: {e}.', 'danger')
-        print(f"Erro listar_profissionais: {e}")
-    return render_template('profissionais.html', profissionais=profissionais_lista) # Renomeado para profissionais.html
+        flash(f'Error listing professionals: {e}.', 'danger')
+        print(f"Error list_professionals: {e}")
+    return render_template('profissionais.html', profissionais=profissionais_lista) # Renamed to professionals.html
 
 @app.route('/profissionais/novo', methods=['GET', 'POST'])
 @login_required
-@admin_required # Apenas admins podem adicionar profissionais diretamente
+@admin_required # Only admins can add professionals directly
 def adicionar_profissional():
     clinica_id = session['clinica_id']
     if request.method == 'POST':
         nome = request.form['nome']
         telefone = request.form.get('telefone')
-        email_profissional = request.form.get('email_profissional') # Novo campo de email para o profissional
-        crm_ou_registro = request.form.get('crm_ou_registro') # Novo campo
+        email_profissional = request.form.get('email_profissional') # New email field for the professional
+        crm_ou_registro = request.form.get('crm_ou_registro') # New field
         ativo = 'ativo' in request.form
         try:
             if telefone and not telefone.isdigit():
-                flash('Telefone deve conter apenas números.', 'warning')
+                flash('Phone must contain only numbers.', 'warning')
                 return render_template('profissional_form.html', profissional=request.form, action_url=url_for('adicionar_profissional'))
 
             db.collection('clinicas').document(clinica_id).collection('profissionais').add({
                 'nome': nome,
                 'telefone': telefone if telefone else None,
-                'email': email_profissional if email_profissional else None, # Salva o email
-                'crm_ou_registro': crm_ou_registro if crm_ou_registro else None, # Salva CRM/registro
+                'email': email_profissional if email_profissional else None, # Saves the email
+                'crm_ou_registro': crm_ou_registro if crm_ou_registro else None, # Saves CRM/registration
                 'ativo': ativo,
                 'criado_em': firestore.SERVER_TIMESTAMP
             })
-            flash('Profissional adicionado com sucesso!', 'success')
+            flash('Professional added successfully!', 'success')
             return redirect(url_for('listar_profissionais'))
         except Exception as e:
-            flash(f'Erro ao adicionar profissional: {e}', 'danger')
-            print(f"Erro adicionar_profissional: {e}")
-    return render_template('profissional_form.html', profissional=None, action_url=url_for('adicionar_profissional')) # Renomeado para profissional_form.html
+            flash(f'Error adding professional: {e}', 'danger')
+            print(f"Error add_professional: {e}")
+    return render_template('profissional_form.html', profissional=None, action_url=url_for('adicionar_profissional')) # Renamed to profissional_form.html
 
 
 @app.route('/profissionais/editar/<string:profissional_doc_id>', methods=['GET', 'POST'])
@@ -647,7 +649,7 @@ def editar_profissional(profissional_doc_id):
         ativo = 'ativo' in request.form
         try:
             if telefone and not telefone.isdigit():
-                flash('Telefone deve conter apenas números.', 'warning')
+                flash('Phone must contain only numbers.', 'warning')
             else:
                 profissional_ref.update({
                     'nome': nome,
@@ -657,11 +659,11 @@ def editar_profissional(profissional_doc_id):
                     'ativo': ativo,
                     'atualizado_em': firestore.SERVER_TIMESTAMP
                 })
-                flash('Profissional atualizado com sucesso!', 'success')
+                flash('Professional updated successfully!', 'success')
                 return redirect(url_for('listar_profissionais'))
         except Exception as e:
-            flash(f'Erro ao atualizar profissional: {e}', 'danger')
-            print(f"Erro editar_profissional (POST): {e}")
+            flash(f'Error updating professional: {e}', 'danger')
+            print(f"Error edit_professional (POST): {e}")
 
     try:
         profissional_doc = profissional_ref.get()
@@ -670,16 +672,16 @@ def editar_profissional(profissional_doc_id):
             profissional['id'] = profissional_doc.id
             return render_template('profissional_form.html', profissional=profissional, action_url=url_for('editar_profissional', profissional_doc_id=profissional_doc_id))
         else:
-            flash('Profissional não encontrado.', 'danger')
+            flash('Professional not found.', 'danger')
             return redirect(url_for('listar_profissionais'))
     except Exception as e:
-        flash(f'Erro ao carregar profissional para edição: {e}', 'danger')
-        print(f"Erro editar_profissional (GET): {e}")
+        flash(f'Error loading professional for editing: {e}', 'danger')
+        print(f"Error edit_professional (GET): {e}")
         return redirect(url_for('listar_profissionais'))
 
 @app.route('/profissionais/ativar_desativar/<string:profissional_doc_id>', methods=['POST'])
 @login_required
-@admin_required # Apenas admins podem ativar/desativar profissionais
+@admin_required # Only admins can activate/deactivate professionals
 def ativar_desativar_profissional(profissional_doc_id):
     clinica_id = session['clinica_id']
     profissional_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id)
@@ -691,15 +693,15 @@ def ativar_desativar_profissional(profissional_doc_id):
                 current_status = data.get('ativo', False)
                 new_status = not current_status
                 profissional_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
-                flash(f'Profissional {"ativado" if new_status else "desativado"} com sucesso!', 'success')
+                flash(f'Professional {"enabled" if new_status else "disabled"} successfully!', 'success')
         else:
-            flash('Profissional não encontrado.', 'danger')
+            flash('Professional not found.', 'danger')
     except Exception as e:
-        flash(f'Erro ao alterar status do profissional: {e}', 'danger')
-        print(f"Erro ativar_desativar_profissional: {e}")
+        flash(f'Error changing professional status: {e}', 'danger')
+        print(f"Error activate_deactivate_professional: {e}")
     return redirect(url_for('listar_profissionais'))
 
-# --- ROTAS DE PACIENTES (NOVO) ---
+# --- PATIENTS ROUTES (NEW) ---
 @app.route('/pacientes')
 @login_required
 def listar_pacientes():
@@ -707,21 +709,21 @@ def listar_pacientes():
     pacientes_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
     pacientes_lista = []
     try:
-        # Permite buscar por nome ou telefone
+        # Allows searching by name or phone
         search_query = request.args.get('search', '').strip()
         query = pacientes_ref.order_by('nome')
 
         if search_query:
-            # Firestore não suporta 'LIKE' diretamente, então fazemos um range search.
-            # Para buscar por nome
+            # Firestore does not directly support 'LIKE', so we do a range search.
+            # To search by name
             query_nome = query.where(filter=FieldFilter('nome', '>=', search_query))\
                                 .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
-            # Para buscar por telefone (se for um campo de texto)
+            # To search by phone (if it's a text field)
             query_telefone = pacientes_ref.order_by('contato_telefone')\
                                          .where(filter=FieldFilter('contato_telefone', '>=', search_query))\
                                          .where(filter=FieldFilter('contato_telefone', '<=', search_query + '\uf8ff'))
             
-            # Executa ambas as queries e combina os resultados (removendo duplicados)
+            # Executes both queries and combines the results (removing duplicates)
             pacientes_set = set()
             for doc in query_nome.stream():
                 paciente_data = doc.to_dict()
@@ -736,9 +738,9 @@ def listar_pacientes():
                     pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
             
             pacientes_lista = [json.loads(p) for p in pacientes_set]
-            pacientes_lista.sort(key=lambda x: x.get('nome', '')) # Garante ordem após combinar
+            pacientes_lista.sort(key=lambda x: x.get('nome', '')) # Ensures order after combining
         else:
-            # Se não houver busca, lista todos
+            # If no search, lists all
             docs = query.stream()
             for doc in docs:
                 paciente = doc.to_dict()
@@ -747,8 +749,8 @@ def listar_pacientes():
                     pacientes_lista.append(paciente)
 
     except Exception as e:
-        flash(f'Erro ao listar pacientes: {e}. Verifique seus índices do Firestore.', 'danger')
-        print(f"Erro listar_pacientes: {e}")
+        flash(f'Error listing patients: {e}. Check your Firestore indexes.', 'danger')
+        print(f"Error list_patients: {e}")
     return render_template('pacientes.html', pacientes=pacientes_lista, search_query=search_query)
 
 @app.route('/pacientes/novo', methods=['GET', 'POST'])
@@ -756,7 +758,7 @@ def listar_pacientes():
 def adicionar_paciente():
     clinica_id = session['clinica_id']
     
-    # Carregar convênios para o formulário
+    # Loads covenants for the form
     convenios_lista = []
     try:
         convenios_docs = db.collection('clinicas').document(clinica_id).collection('convenios').order_by('nome').stream()
@@ -765,8 +767,8 @@ def adicionar_paciente():
             if conv_data:
                 convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome', doc.id)})
     except Exception as e:
-        flash('Erro ao carregar convênios.', 'danger')
-        print(f"Erro carregar convênios (adicionar_paciente GET): {e}")
+        flash('Error loading covenants.', 'danger')
+        print(f"Error loading covenants (add_patient GET): {e}")
 
     if request.method == 'POST':
         nome = request.form['nome'].strip()
@@ -781,7 +783,7 @@ def adicionar_paciente():
         convenio_id = request.form.get('convenio_id', '').strip()
         observacoes = request.form.get('observacoes', '').strip()
 
-        # Endereço
+        # Address
         cep = request.form.get('cep', '').strip()
         logradouro = request.form.get('logradouro', '').strip()
         numero = request.form.get('numero', '').strip()
@@ -791,17 +793,17 @@ def adicionar_paciente():
         estado = request.form.get('estado', '').strip()
 
         if not nome:
-            flash('O nome do paciente é obrigatório.', 'danger')
+            flash('Patient name is mandatory.', 'danger')
             return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
 
         try:
-            # Converte data de nascimento para objeto datetime se fornecida
+            # Converts date of birth to a datetime object if provided
             data_nascimento_dt = None
             if data_nascimento:
                 try:
                     data_nascimento_dt = datetime.datetime.strptime(data_nascimento, '%Y-%m-%d').date()
                 except ValueError:
-                    flash('Formato de data de nascimento inválido. Use AAAA-MM-DD.', 'danger')
+                    flash('Invalid date of birth format. Use YYYY-MM-DD.', 'danger')
                     return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
 
             paciente_data = {
@@ -829,11 +831,11 @@ def adicionar_paciente():
             }
             
             db.collection('clinicas').document(clinica_id).collection('pacientes').add(paciente_data)
-            flash('Paciente adicionado com sucesso!', 'success')
+            flash('Patient added successfully!', 'success')
             return redirect(url_for('listar_pacientes'))
         except Exception as e:
-            flash(f'Erro ao adicionar paciente: {e}', 'danger')
-            print(f"Erro adicionar_paciente: {e}")
+            flash(f'Error adding patient: {e}', 'danger')
+            print(f"Error add_patient: {e}")
     
     return render_template('paciente_form.html', paciente=None, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
 
@@ -843,7 +845,7 @@ def editar_paciente(paciente_doc_id):
     clinica_id = session['clinica_id']
     paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
     
-    # Carregar convênios para o formulário
+    # Loads covenants for the form
     convenios_lista = []
     try:
         convenios_docs = db.collection('clinicas').document(clinica_id).collection('convenios').order_by('nome').stream()
@@ -852,8 +854,8 @@ def editar_paciente(paciente_doc_id):
             if conv_data:
                 convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome', doc.id)})
     except Exception as e:
-        flash('Erro ao carregar convênios.', 'danger')
-        print(f"Erro carregar convênios (editar_paciente GET): {e}")
+        flash('Error loading covenants.', 'danger')
+        print(f"Error loading covenants (edit_patient GET): {e}")
 
     if request.method == 'POST':
         nome = request.form['nome'].strip()
@@ -868,7 +870,7 @@ def editar_paciente(paciente_doc_id):
         convenio_id = request.form.get('convenio_id', '').strip()
         observacoes = request.form.get('observacoes', '').strip()
 
-        # Endereço
+        # Address
         cep = request.form.get('cep', '').strip()
         logradouro = request.form.get('logradouro', '').strip()
         numero = request.form.get('numero', '').strip()
@@ -878,7 +880,7 @@ def editar_paciente(paciente_doc_id):
         estado = request.form.get('estado', '').strip()
 
         if not nome:
-            flash('O nome do paciente é obrigatório.', 'danger')
+            flash('Patient name is mandatory.', 'danger')
             return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
 
         try:
@@ -887,7 +889,7 @@ def editar_paciente(paciente_doc_id):
                 try:
                     data_nascimento_dt = datetime.datetime.strptime(data_nascimento, '%Y-%m-%d').date()
                 except ValueError:
-                    flash('Formato de data de nascimento inválido. Use AAAA-MM-DD.', 'danger')
+                    flash('Invalid date of birth format. Use YYYY-MM-DD.', 'danger')
                     return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
 
             paciente_data_update = {
@@ -915,34 +917,34 @@ def editar_paciente(paciente_doc_id):
             }
             
             paciente_ref.update(paciente_data_update)
-            flash('Paciente atualizado com sucesso!', 'success')
+            flash('Patient updated successfully!', 'success')
             return redirect(url_for('listar_pacientes'))
         except Exception as e:
-            flash(f'Erro ao atualizar paciente: {e}', 'danger')
-            print(f"Erro editar_paciente (POST): {e}")
+            flash(f'Error updating patient: {e}', 'danger')
+            print(f"Error edit_patient (POST): {e}")
 
     try:
         paciente_doc = paciente_ref.get()
         if paciente_doc.exists:
             paciente = paciente_doc.to_dict()
             paciente['id'] = paciente_doc.id
-            # Formata a data de nascimento para o campo input type="date"
+            # Formats the date of birth for the input type="date" field
             if paciente.get('data_nascimento') and isinstance(paciente['data_nascimento'], datetime.date):
                 paciente['data_nascimento'] = paciente['data_nascimento'].strftime('%Y-%m-%d')
-            else: # Se for um timestamp do Firestore, converte para datetime.date
+            else: # If it's a Firestore timestamp, converts to datetime.date
                 if isinstance(paciente.get('data_nascimento'), datetime.datetime):
                     paciente['data_nascimento'] = paciente['data_nascimento'].date().strftime('%Y-%m-%d')
 
             return render_template('paciente_form.html', paciente=paciente, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
         else:
-            flash('Paciente não encontrado.', 'danger')
+            flash('Patient not found.', 'danger')
             return redirect(url_for('listar_pacientes'))
     except Exception as e:
-        flash(f'Erro ao carregar paciente para edição: {e}', 'danger')
-        print(f"Erro editar_paciente (GET): {e}")
+        flash(f'Error loading patient for editing: {e}', 'danger')
+        print(f"Error edit_patient (GET): {e}")
         return redirect(url_for('listar_pacientes'))
 
-# --- ROTAS DE SERVIÇOS/PROCEDIMENTOS (ANTIGOS SERVIÇOS) ---
+# --- SERVICES/PROCEDURES ROUTES (FORMER SERVICES) ---
 @app.route('/servicos_procedimentos')
 @login_required
 def listar_servicos_procedimentos():
@@ -958,18 +960,18 @@ def listar_servicos_procedimentos():
                 servico['preco_fmt'] = "R$ {:.2f}".format(float(servico.get('preco_sugerido', 0))).replace('.', ',')
                 servicos_procedimentos_lista.append(servico)
     except Exception as e:
-        flash(f'Erro ao listar serviços/procedimentos: {e}.', 'danger')
-        print(f"Erro listar_servicos_procedimentos: {e}")
-    return render_template('servicos_procedimentos.html', servicos=servicos_procedimentos_lista) # Renomeado
+        flash(f'Error listing services/procedures: {e}.', 'danger')
+        print(f"Error list_services_procedures: {e}")
+    return render_template('servicos_procedimentos.html', servicos=servicos_procedimentos_lista) # Renamed
 
 @app.route('/servicos_procedimentos/novo', methods=['GET', 'POST'])
 @login_required
-@admin_required # Admins e talvez médicos possam criar/editar serviços? Definir.
+@admin_required # Admins and possibly doctors can create/edit services? Define.
 def adicionar_servico_procedimento():
     clinica_id = session['clinica_id']
     if request.method == 'POST':
         nome = request.form['nome']
-        tipo = request.form['tipo'] # 'Serviço' ou 'Procedimento'
+        tipo = request.form['tipo'] # 'Service' or 'Procedure'
         try:
             duracao_minutos = int(request.form['duracao_minutos'])
             preco_sugerido = float(request.form['preco'].replace(',', '.'))
@@ -977,17 +979,17 @@ def adicionar_servico_procedimento():
                 'nome': nome,
                 'tipo': tipo,
                 'duracao_minutos': duracao_minutos,
-                'preco_sugerido': preco_sugerido, # Alterado para preco_sugerido
+                'preco_sugerido': preco_sugerido, # Changed to preco_sugerido
                 'criado_em': firestore.SERVER_TIMESTAMP
             })
-            flash('Serviço/Procedimento adicionado com sucesso!', 'success')
+            flash('Service/Procedure added successfully!', 'success')
             return redirect(url_for('listar_servicos_procedimentos'))
         except ValueError:
-            flash('Duração e Preço devem ser números válidos.', 'danger')
+            flash('Duration and Price must be valid numbers.', 'danger')
         except Exception as e:
-            flash(f'Erro ao adicionar serviço/procedimento: {e}', 'danger')
-            print(f"Erro adicionar_servico_procedimento: {e}")
-    return render_template('servico_procedimento_form.html', servico=None, action_url=url_for('adicionar_servico_procedimento')) # Renomeado
+            flash(f'Error adding service/procedure: {e}', 'danger')
+            print(f"Error add_service_procedure: {e}")
+    return render_template('servico_procedimento_form.html', servico=None, action_url=url_for('adicionar_servico_procedimento')) # Renamed
 
 
 @app.route('/servicos_procedimentos/editar/<string:servico_doc_id>', methods=['GET', 'POST'])
@@ -1008,13 +1010,13 @@ def editar_servico_procedimento(servico_doc_id):
                 'preco_sugerido': preco_sugerido,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             })
-            flash('Serviço/Procedimento atualizado com sucesso!', 'success')
+            flash('Service/Procedure updated successfully!', 'success')
             return redirect(url_for('listar_servicos_procedimentos'))
         except ValueError:
-            flash('Duração e Preço devem ser números válidos.', 'danger')
+            flash('Duration and Price must be valid numbers.', 'danger')
         except Exception as e:
-            flash(f'Erro ao atualizar serviço/procedimento: {e}', 'danger')
-            print(f"Erro editar_servico_procedimento (POST): {e}")
+            flash(f'Error updating service/procedure: {e}', 'danger')
+            print(f"Error edit_service_procedure (POST): {e}")
     try:
         servico_doc = servico_ref.get()
         if servico_doc.exists:
@@ -1023,11 +1025,11 @@ def editar_servico_procedimento(servico_doc_id):
                 servico['id'] = servico_doc.id
                 servico['preco_form'] = str(servico.get('preco_sugerido', '0.00')).replace('.', ',')
                 return render_template('servico_procedimento_form.html', servico=servico, action_url=url_for('editar_servico_procedimento', servico_doc_id=servico_doc_id))
-        flash('Serviço/Procedimento não encontrado.', 'danger')
+        flash('Service/Procedure not found.', 'danger')
         return redirect(url_for('listar_servicos_procedimentos'))
     except Exception as e:
-        flash(f'Erro ao carregar serviço/procedimento para edição: {e}', 'danger')
-        print(f"Erro editar_servico_procedimento (GET): {e}")
+        flash(f'Error loading service/procedure for editing: {e}', 'danger')
+        print(f"Error edit_service_procedure (GET): {e}")
         return redirect(url_for('listar_servicos_procedimentos'))
 
 @app.route('/servicos_procedimentos/excluir/<string:servico_doc_id>', methods=['POST'])
@@ -1037,20 +1039,20 @@ def excluir_servico_procedimento(servico_doc_id):
     clinica_id = session['clinica_id']
     try:
         agendamentos_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos')
-        # Verifica se há agendamentos associados a este serviço/procedimento
+        # Checks if there are appointments associated with this service/procedure
         agendamentos_com_servico = agendamentos_ref.where(filter=FieldFilter('servico_procedimento_id', '==', servico_doc_id)).limit(1).get()
         if len(agendamentos_com_servico) > 0:
-            flash('Este serviço/procedimento não pode ser excluído pois está associado a um ou mais agendamentos.', 'danger')
+            flash('This service/procedure cannot be deleted as it is associated with one or more appointments.', 'danger')
             return redirect(url_for('listar_servicos_procedimentos'))
 
         db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_doc_id).delete()
-        flash('Serviço/Procedimento excluído com sucesso!', 'success')
+        flash('Service/Procedure deleted successfully!', 'success')
     except Exception as e:
-        flash(f'Erro ao excluir serviço/procedimento: {e}.', 'danger')
-        print(f"Erro excluir_servico_procedimento: {e}")
+        flash(f'Error deleting service/procedure: {e}.', 'danger')
+        print(f"Error delete_service_procedure: {e}")
     return redirect(url_for('listar_servicos_procedimentos'))
 
-# --- ROTAS DE CONVÊNIOS (NOVO) ---
+# --- COVENANTS ROUTES (NEW) ---
 @app.route('/convenios')
 @login_required
 def listar_convenios():
@@ -1065,8 +1067,8 @@ def listar_convenios():
                 convenio['id'] = doc.id
                 convenios_lista.append(convenio)
     except Exception as e:
-        flash(f'Erro ao listar convênios: {e}.', 'danger')
-        print(f"Erro listar_convenios: {e}")
+        flash(f'Error listing covenants: {e}.', 'danger')
+        print(f"Error list_covenants: {e}")
     return render_template('convenios.html', convenios=convenios_lista)
 
 @app.route('/convenios/novo', methods=['GET', 'POST'])
@@ -1080,7 +1082,7 @@ def adicionar_convenio():
         tipo_plano = request.form.get('tipo_plano', '').strip()
 
         if not nome:
-            flash('O nome do convênio é obrigatório.', 'danger')
+            flash('Covenant name is mandatory.', 'danger')
             return render_template('convenio_form.html', convenio=request.form, action_url=url_for('adicionar_convenio'))
         try:
             db.collection('clinicas').document(clinica_id).collection('convenios').add({
@@ -1089,11 +1091,11 @@ def adicionar_convenio():
                 'tipo_plano': tipo_plano if tipo_plano else None,
                 'criado_em': firestore.SERVER_TIMESTAMP
             })
-            flash('Convênio adicionado com sucesso!', 'success')
+            flash('Covenant added successfully!', 'success')
             return redirect(url_for('listar_convenios'))
         except Exception as e:
-            flash(f'Erro ao adicionar convênio: {e}', 'danger')
-            print(f"Erro adicionar_convenio: {e}")
+            flash(f'Error adding covenant: {e}', 'danger')
+            print(f"Error add_covenant: {e}")
     return render_template('convenio_form.html', convenio=None, action_url=url_for('adicionar_convenio'))
 
 @app.route('/convenios/editar/<string:convenio_doc_id>', methods=['GET', 'POST'])
@@ -1109,7 +1111,7 @@ def editar_convenio(convenio_doc_id):
         tipo_plano = request.form.get('tipo_plano', '').strip()
 
         if not nome:
-            flash('O nome do convênio é obrigatório.', 'danger')
+            flash('Covenant name is mandatory.', 'danger')
             return render_template('convenio_form.html', convenio=request.form, action_url=url_for('editar_convenio', convenio_doc_id=convenio_doc_id))
         try:
             convenio_ref.update({
@@ -1118,11 +1120,11 @@ def editar_convenio(convenio_doc_id):
                 'tipo_plano': tipo_plano if tipo_plano else None,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             })
-            flash('Convênio atualizado com sucesso!', 'success')
+            flash('Covenant updated successfully!', 'success')
             return redirect(url_for('listar_convenios'))
         except Exception as e:
-            flash(f'Erro ao atualizar convênio: {e}', 'danger')
-            print(f"Erro editar_convenio (POST): {e}")
+            flash(f'Error updating covenant: {e}', 'danger')
+            print(f"Error edit_covenant (POST): {e}")
 
     try:
         convenio_doc = convenio_ref.get()
@@ -1131,11 +1133,11 @@ def editar_convenio(convenio_doc_id):
             convenio['id'] = convenio_doc.id
             return render_template('convenio_form.html', convenio=convenio, action_url=url_for('editar_convenio', convenio_doc_id=convenio_doc_id))
         else:
-            flash('Convênio não encontrado.', 'danger')
+            flash('Covenant not found.', 'danger')
             return redirect(url_for('listar_convenios'))
     except Exception as e:
-        flash(f'Erro ao carregar convênio para edição: {e}', 'danger')
-        print(f"Erro editar_convenio (GET): {e}")
+        flash(f'Error loading covenant for editing: {e}', 'danger')
+        print(f"Error edit_covenant (GET): {e}")
         return redirect(url_for('listar_convenios'))
 
 @app.route('/convenios/excluir/<string:convenio_doc_id>', methods=['POST'])
@@ -1145,20 +1147,20 @@ def excluir_convenio(convenio_doc_id):
     clinica_id = session['clinica_id']
     try:
         pacientes_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
-        # Verifica se há pacientes associados a este convênio
+        # Checks if there are patients associated with this covenant
         pacientes_com_convenio = pacientes_ref.where(filter=FieldFilter('convenio_id', '==', convenio_doc_id)).limit(1).get()
         if len(pacientes_com_convenio) > 0:
-            flash('Este convênio não pode ser excluído pois está associado a um ou mais pacientes.', 'danger')
+            flash('This covenant cannot be deleted as it is associated with one or more patients.', 'danger')
             return redirect(url_for('listar_convenios'))
             
         db.collection('clinicas').document(clinica_id).collection('convenios').document(convenio_doc_id).delete()
-        flash('Convênio excluído com sucesso!', 'success')
+        flash('Covenant deleted successfully!', 'success')
     except Exception as e:
-        flash(f'Erro ao excluir convênio: {e}.', 'danger')
-        print(f"Erro excluir_convenio: {e}")
+        flash(f'Error deleting covenant: {e}.', 'danger')
+        print(f"Error delete_covenant: {e}")
     return redirect(url_for('listar_convenios'))
 
-# --- ROTAS DE HORÁRIOS ---
+# --- SCHEDULES ROUTES ---
 @app.route('/horarios')
 @login_required
 def listar_horarios():
@@ -1180,24 +1182,24 @@ def listar_horarios():
                 horario = horario_doc.to_dict()
                 if horario:
                     horario['id'] = horario_doc.id 
-                    horario['profissional_id_fk'] = profissional_id_atual # Alterado
-                    horario['profissional_nome'] = profissional_nome_atual # Alterado
+                    horario['profissional_id_fk'] = profissional_id_atual # Changed
+                    horario['profissional_nome'] = profissional_nome_atual # Changed
                     
-                    dias_semana_map = {0: 'Domingo', 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado'}
+                    dias_semana_map = {0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday'}
                     horario['dia_semana_nome'] = dias_semana_map.get(horario.get('dia_semana'), 'N/A')
                     
                     todos_horarios_formatados.append(horario)
     
     except Exception as e:
-        flash(f'Erro ao listar horários: {e}.', 'danger')
-        print(f"Erro listar_horarios: {e}")
+        flash(f'Error listing schedules: {e}.', 'danger')
+        print(f"Error list_schedules: {e}")
     
     return render_template('horarios.html', horarios=todos_horarios_formatados, current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 
 @app.route('/horarios/novo', methods=['GET', 'POST'])
 @login_required
-@admin_required # Apenas admins podem adicionar horários diretamente (ou o próprio médico para si)
+@admin_required # Only admins can add schedules directly (or the doctor themselves)
 def adicionar_horario():
     clinica_id = session['clinica_id']
     profissionais_ativos_lista = []
@@ -1207,14 +1209,14 @@ def adicionar_horario():
             p_data = doc.to_dict()
             if p_data: profissionais_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)})
     except Exception as e:
-        flash('Erro ao carregar profissionais ativos.', 'danger')
-        print(f"Erro carregar profissionais (adicionar_horario GET): {e}")
+        flash('Error loading active professionals.', 'danger')
+        print(f"Error loading professionals (add_schedule GET): {e}")
 
-    dias_semana_map = {0: 'Domingo', 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado'}
+    dias_semana_map = {0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday'}
 
     if request.method == 'POST':
         try:
-            profissional_id_selecionado = request.form['profissional_id'] # Alterado
+            profissional_id_selecionado = request.form['profissional_id'] # Changed
             dia_semana = int(request.form['dia_semana'])
             hora_inicio = request.form['hora_inicio']
             hora_fim = request.form['hora_fim']
@@ -1223,9 +1225,9 @@ def adicionar_horario():
             ativo = 'ativo' in request.form 
 
             if not profissional_id_selecionado:
-                flash('Por favor, selecione um profissional.', 'warning')
+                flash('Please select a professional.', 'warning')
             elif hora_inicio >= hora_fim:
-                flash('Hora de início deve ser anterior à hora de fim.', 'warning')
+                flash('Start time must be before end time.', 'warning')
             else:
                 horario_data = {
                     'dia_semana': dia_semana,
@@ -1237,41 +1239,41 @@ def adicionar_horario():
                 if intervalo_minutos is not None:
                     horario_data['intervalo_minutos'] = intervalo_minutos
 
-                db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_selecionado).collection('horarios_disponiveis').add(horario_data) # Alterado
-                flash('Horário adicionado com sucesso!', 'success')
+                db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_selecionado).collection('horarios_disponiveis').add(horario_data) # Changed
+                flash('Schedule added successfully!', 'success')
                 return redirect(url_for('listar_horarios'))
         except ValueError:
-            flash('Valores numéricos inválidos para dia ou intervalo.', 'danger')
+            flash('Invalid numeric values for day or interval.', 'danger')
         except Exception as e:
-            flash(f'Erro ao adicionar horário: {e}', 'danger')
-            print(f"Erro adicionar_horario (POST): {e}")
+            flash(f'Error adding schedule: {e}', 'danger')
+            print(f"Error add_schedule (POST): {e}")
             
     return render_template('horario_form.html', 
-                           profissionais=profissionais_ativos_lista, # Alterado
+                           profissionais=profissionais_ativos_lista, # Changed
                            dias_semana=dias_semana_map, 
                            horario=None, 
                            action_url=url_for('adicionar_horario'),
-                           page_title='Adicionar Novo Horário',
+                           page_title='Add New Schedule',
                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 
-@app.route('/profissionais/<string:profissional_doc_id>/horarios/editar/<string:horario_doc_id>', methods=['GET', 'POST']) # Alterado
+@app.route('/profissionais/<string:profissional_doc_id>/horarios/editar/<string:horario_doc_id>', methods=['GET', 'POST']) # Changed
 @login_required
-def editar_horario(profissional_doc_id, horario_doc_id): # Alterado
+def editar_horario(profissional_doc_id, horario_doc_id): # Changed
     clinica_id = session['clinica_id']
-    horario_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id) # Alterado
+    horario_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id) # Changed
     
-    profissionais_ativos_lista = [] # Alterado
+    profissionais_ativos_lista = [] # Changed
     try:
-        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream() # Alterado
-        for doc in profissionais_docs: # Alterado
-            p_data = doc.to_dict() # Alterado
-            if p_data: profissionais_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)}) # Alterado
+        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream() # Changed
+        for doc in profissionais_docs: # Changed
+            p_data = doc.to_dict() # Changed
+            if p_data: profissionais_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)}) # Changed
     except Exception as e:
-        flash('Erro ao carregar profissionais ativos para o formulário.', 'danger') # Alterado
-        print(f"Erro carregar profissionais (editar_horario GET): {e}") # Alterado
+        flash('Error loading active professionals for the form.', 'danger') # Changed
+        print(f"Error loading professionals (edit_schedule GET): {e}") # Changed
 
-    dias_semana_map = {0: 'Domingo', 1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado'}
+    dias_semana_map = {0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday'}
 
     if request.method == 'POST':
         try:
@@ -1283,7 +1285,7 @@ def editar_horario(profissional_doc_id, horario_doc_id): # Alterado
             ativo = 'ativo' in request.form
 
             if hora_inicio >= hora_fim:
-                flash('Hora de início deve ser anterior à hora de fim.', 'warning')
+                flash('Start time must be before end time.', 'warning')
             else:
                 horario_data_update = {
                     'dia_semana': dia_semana,
@@ -1298,13 +1300,13 @@ def editar_horario(profissional_doc_id, horario_doc_id): # Alterado
                     horario_data_update['intervalo_minutos'] = firestore.DELETE_FIELD
 
                 horario_ref.update(horario_data_update)
-                flash('Horário atualizado com sucesso!', 'success')
+                flash('Schedule updated successfully!', 'success')
                 return redirect(url_for('listar_horarios'))
         except ValueError:
-            flash('Valores numéricos inválidos.', 'danger')
+            flash('Invalid numeric values.', 'danger')
         except Exception as e:
-            flash(f'Erro ao atualizar horário: {e}', 'danger')
-            print(f"Erro editar_horario (POST): {e}")
+            flash(f'Error updating schedule: {e}', 'danger')
+            print(f"Error edit_schedule (POST): {e}")
     
     try:
         horario_doc_snapshot = horario_ref.get()
@@ -1312,50 +1314,50 @@ def editar_horario(profissional_doc_id, horario_doc_id): # Alterado
             horario_data_db = horario_doc_snapshot.to_dict()
             if horario_data_db:
                 horario_data_db['id'] = horario_doc_snapshot.id 
-                horario_data_db['profissional_id_fk'] = profissional_doc_id # Alterado
+                horario_data_db['profissional_id_fk'] = profissional_doc_id # Changed
                 
-                # Obtém o nome do profissional (antigo barbeiro)
-                profissional_pai_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get() # Alterado
-                if profissional_pai_doc.exists: # Alterado
-                    profissional_pai_data = profissional_pai_doc.to_dict() # Alterado
-                    if profissional_pai_data: # Alterado
-                         horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id) # Alterado
+                # Gets the professional's name (former barber)
+                profissional_pai_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get() # Changed
+                if profissional_pai_doc.exists: # Changed
+                    profissional_pai_data = profissional_pai_doc.to_dict() # Changed
+                    if profissional_pai_data: # Changed
+                         horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id) # Changed
                 
                 return render_template('horario_form.html', 
-                                       profissionais=profissionais_ativos_lista, # Alterado
+                                       profissionais=profissionais_ativos_lista, # Changed
                                        dias_semana=dias_semana_map, 
                                        horario=horario_data_db, 
-                                       action_url=url_for('editar_horario', profissional_doc_id=profissional_doc_id, horario_doc_id=horario_doc_id), # Alterado
-                                       page_title=f"Editar Horário de {horario_data_db.get('profissional_nome_atual', 'Profissional')}", # Alterado
+                                       action_url=url_for('editar_horario', profissional_doc_id=profissional_doc_id, horario_doc_id=horario_doc_id), # Changed
+                                       page_title=f"Edit Schedule for {horario_data_db.get('profissional_nome_atual', 'Professional')}", # Changed
                                        current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
         else:
-            flash('Horário específico não encontrado.', 'danger')
+            flash('Specific schedule not found.', 'danger')
             return redirect(url_for('listar_horarios'))
     except Exception as e:
-        flash(f'Erro ao carregar horário para edição: {e}', 'danger')
-        print(f"Erro editar_horario (GET): {e}")
+        flash(f'Error loading schedule for editing: {e}', 'danger')
+        print(f"Error edit_schedule (GET): {e}")
         return redirect(url_for('listar_horarios'))
 
 
-@app.route('/profissionais/<string:profissional_doc_id>/horarios/excluir/<string:horario_doc_id>', methods=['POST']) # Alterado
+@app.route('/profissionais/<string:profissional_doc_id>/horarios/excluir/<string:horario_doc_id>', methods=['POST']) # Changed
 @login_required
-@admin_required # Apenas admins podem excluir horários (ou o próprio médico para si)
-def excluir_horario(profissional_doc_id, horario_doc_id): # Alterado
+@admin_required # Only admins can delete schedules (or the doctor themselves)
+def excluir_horario(profissional_doc_id, horario_doc_id): # Changed
     clinica_id = session['clinica_id']
     try:
-        db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id).delete() # Alterado
-        flash('Horário disponível excluído com sucesso!', 'success')
+        db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id).delete() # Changed
+        flash('Available schedule deleted successfully!', 'success')
     except Exception as e:
-        flash(f'Erro ao excluir horário: {e}', 'danger')
-        print(f"Erro excluir_horario: {e}")
+        flash(f'Error deleting schedule: {e}', 'danger')
+        print(f"Error delete_schedule: {e}")
     return redirect(url_for('listar_horarios'))
 
-@app.route('/profissionais/<string:profissional_doc_id>/horarios/ativar_desativar/<string:horario_doc_id>', methods=['POST']) # Alterado
+@app.route('/profissionais/<string:profissional_doc_id>/horarios/ativar_desativar/<string:horario_doc_id>', methods=['POST']) # Changed
 @login_required
-@admin_required # Apenas admins podem ativar/desativar horários (ou o próprio médico para si)
-def ativar_desativar_horario(profissional_doc_id, horario_doc_id): # Alterado
+@admin_required # Only admins can activate/deactivate schedules (or the doctor themselves)
+def ativar_desativar_horario(profissional_doc_id, horario_doc_id): # Changed
     clinica_id = session['clinica_id']
-    horario_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id) # Alterado
+    horario_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id) # Changed
     try:
         horario_doc = horario_ref.get()
         if horario_doc.exists:
@@ -1364,17 +1366,17 @@ def ativar_desativar_horario(profissional_doc_id, horario_doc_id): # Alterado
                 current_status = data.get('ativo', False) 
                 new_status = not current_status
                 horario_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
-                flash(f'Horário {"ativado" if new_status else "desativado"} com sucesso!', 'success')
+                flash(f'Schedule {"enabled" if new_status else "disabled"} successfully!', 'success')
             else:
-                flash('Dados do horário inválidos.', 'danger')
+                flash('Invalid schedule data.', 'danger')
         else:
-            flash('Horário não encontrado.', 'danger')
+            flash('Schedule not found.', 'danger')
     except Exception as e:
-        flash(f'Erro ao alterar status do horário: {e}', 'danger')
-        print(f"Erro em ativar_desativar_horario: {e}")
+        flash(f'Error changing schedule status: {e}', 'danger')
+        print(f"Error in activate_deactivate_schedule: {e}")
     return redirect(url_for('listar_horarios'))
 
-# --- ROTAS DE AGENDAMENTOS ---
+# --- APPOINTMENTS ROUTES ---
 @app.route('/agendamentos')
 @login_required
 def listar_agendamentos():
@@ -1382,20 +1384,20 @@ def listar_agendamentos():
     agendamentos_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos')
     agendamentos_lista = []
     
-    profissionais_para_filtro = [] # Alterado
-    servicos_procedimentos_ativos = [] # Alterado
-    pacientes_para_filtro = [] # Novo
+    profissionais_para_filtro = [] # Changed
+    servicos_procedimentos_ativos = [] # Changed
+    pacientes_para_filtro = [] # New
 
     try:
-        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream() # Alterado
-        for doc in profissionais_docs: # Alterado
-            p_data = doc.to_dict() # Alterado
-            if p_data: profissionais_para_filtro.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)}) # Alterado
+        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream() # Changed
+        for doc in profissionais_docs: # Changed
+            p_data = doc.to_dict() # Changed
+            if p_data: profissionais_para_filtro.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)}) # Changed
         
-        servicos_docs = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').order_by('nome').stream() # Alterado
-        for doc in servicos_docs: # Alterado
-            s_data = doc.to_dict() # Alterado
-            if s_data: servicos_procedimentos_ativos.append({'id': doc.id, 'nome': s_data.get('nome', doc.id), 'preco': s_data.get('preco_sugerido', 0.0)}) # Alterado
+        servicos_docs = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').order_by('nome').stream() # Changed
+        for doc in servicos_docs: # Changed
+            s_data = doc.to_dict() # Changed
+            if s_data: servicos_procedimentos_ativos.append({'id': doc.id, 'nome': s_data.get('nome', doc.id), 'preco': s_data.get('preco_sugerido', 0.0)}) # Changed
 
         pacientes_docs = db.collection('clinicas').document(clinica_id).collection('pacientes').order_by('nome').stream()
         for doc in pacientes_docs:
@@ -1404,18 +1406,18 @@ def listar_agendamentos():
 
 
     except Exception as e:
-        flash('Erro ao carregar dados para filtros/modal.', 'warning')
-        print(f"Erro ao carregar profissionais/servicos_procedimentos/pacientes para filtros: {e}") # Alterado
+        flash('Error loading data for filters/modal.', 'warning')
+        print(f"Error loading professionals/services_procedures/patients for filters: {e}") # Changed
 
     filtros_atuais = {
-        'paciente_nome': request.args.get('paciente_nome', '').strip(), # Alterado
-        'profissional_id': request.args.get('profissional_id', '').strip(), # Alterado
+        'paciente_nome': request.args.get('paciente_nome', '').strip(), # Changed
+        'profissional_id': request.args.get('profissional_id', '').strip(), # Changed
         'status': request.args.get('status', '').strip(),
         'data_inicio': request.args.get('data_inicio', '').strip(),
         'data_fim': request.args.get('data_fim', '').strip(),
     }
 
-    # LÓGICA ATUALIZADA: Define o filtro padrão para o mês atual se nenhuma data for fornecida
+    # UPDATED LOGIC: Sets default filter to current month if no dates are provided
     if not filtros_atuais['data_inicio'] and not filtros_atuais['data_fim']:
         hoje = datetime.datetime.now(SAO_PAULO_TZ)
         inicio_mes = hoje.replace(day=1)
@@ -1431,10 +1433,10 @@ def listar_agendamentos():
 
     query = agendamentos_ref
 
-    if filtros_atuais['paciente_nome']: # Alterado
-        query = query.where(filter=FieldFilter('paciente_nome', '>=', filtros_atuais['paciente_nome'])).where(filter=FieldFilter('paciente_nome', '<=', filtros_atuais['paciente_nome'] + '\uf8ff')) # Alterado
-    if filtros_atuais['profissional_id']: # Alterado
-        query = query.where(filter=FieldFilter('profissional_id', '==', filtros_atuais['profissional_id'])) # Alterado
+    if filtros_atuais['paciente_nome']: # Changed
+        query = query.where(filter=FieldFilter('paciente_nome', '>=', filtros_atuais['paciente_nome'])).where(filter=FieldFilter('paciente_nome', '<=', filtros_atuais['paciente_nome'] + '\uf8ff')) # Changed
+    if filtros_atuais['profissional_id']: # Changed
+        query = query.where(filter=FieldFilter('profissional_id', '==', filtros_atuais['profissional_id'])) # Changed
     if filtros_atuais['status']:
         query = query.where(filter=FieldFilter('status', '==', filtros_atuais['status']))
     if filtros_atuais['data_inicio']:
@@ -1442,13 +1444,13 @@ def listar_agendamentos():
             dt_inicio_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_inicio'], '%Y-%m-%d')).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_utc))
         except ValueError:
-            flash('Data de início inválida. Use o formato AAAA-MM-DD.', 'warning')
+            flash('Invalid start date. Use YYYY-MM-DD format.', 'warning')
     if filtros_atuais['data_fim']:
         try:
             dt_fim_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_fim'], '%Y-%m-%d').replace(hour=23, minute=59, second=59)).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_utc))
         except ValueError:
-            flash('Data de fim inválida. Use o formato AAAA-MM-DD.', 'warning')
+            flash('Invalid end date. Use YYYY-MM-DD format.', 'warning')
 
     try:
         docs_stream = query.order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING).stream()
@@ -1462,8 +1464,8 @@ def listar_agendamentos():
                     except: ag['data_agendamento_fmt'] = ag['data_agendamento']
                 else: ag['data_agendamento_fmt'] = "N/A"
                 
-                # Ajusta o nome do campo para o preço
-                ag['preco_servico_fmt'] = "R$ {:.2f}".format(float(ag.get('servico_procedimento_preco', 0))).replace('.', ',') # Alterado
+                # Adjusts the field name for price
+                ag['preco_servico_fmt'] = "R$ {:.2f}".format(float(ag.get('servico_procedimento_preco', 0))).replace('.', ',') # Changed
                 data_criacao_ts = ag.get('data_criacao')
                 if isinstance(data_criacao_ts, datetime.datetime):
                     ag['data_criacao_fmt'] = data_criacao_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
@@ -1471,8 +1473,8 @@ def listar_agendamentos():
                     ag['data_criacao_fmt'] = "N/A"
                 agendamentos_lista.append(ag)
     except Exception as e:
-        flash(f'Erro ao listar agendamentos: {e}. Verifique os índices no Firestore.', 'danger')
-        print(f"Erro listar_agendamentos: {e}")
+        flash(f'Error listing appointments: {e}. Check your Firestore indexes.', 'danger')
+        print(f"Error list_appointments: {e}")
     
     stats_cards = {
         'confirmado': {'count': 0, 'total_valor': 0.0},
@@ -1482,7 +1484,7 @@ def listar_agendamentos():
     }
     for agendamento in agendamentos_lista:
         status = agendamento.get('status', 'pendente').lower()
-        preco = float(agendamento.get('servico_procedimento_preco', 0)) # Alterado
+        preco = float(agendamento.get('servico_procedimento_preco', 0)) # Changed
         if status in stats_cards:
             stats_cards[status]['count'] += 1
             stats_cards[status]['total_valor'] += preco
@@ -1490,9 +1492,9 @@ def listar_agendamentos():
     return render_template('agendamentos.html', 
                            agendamentos=agendamentos_lista,
                            stats_cards=stats_cards,
-                           profissionais_para_filtro=profissionais_para_filtro, # Alterado
-                           servicos_ativos=servicos_procedimentos_ativos, # Alterado
-                           pacientes_para_filtro=pacientes_para_filtro, # Novo
+                           profissionais_para_filtro=profissionais_para_filtro, # Changed
+                           servicos_ativos=servicos_procedimentos_ativos, # Changed
+                           pacientes_para_filtro=pacientes_para_filtro, # New
                            filtros_atuais=filtros_atuais,
                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
@@ -1501,22 +1503,22 @@ def listar_agendamentos():
 def registrar_atendimento_manual():
     clinica_id = session['clinica_id']
     try:
-        paciente_nome = request.form.get('cliente_nome_manual') # Alterado
-        paciente_telefone = request.form.get('cliente_telefone_manual') # Alterado
-        profissional_id_manual = request.form.get('barbeiro_id_manual') # Alterado
-        servico_procedimento_id_manual = request.form.get('servico_id_manual') # Alterado
+        paciente_nome = request.form.get('cliente_nome_manual') # Changed
+        paciente_telefone = request.form.get('cliente_telefone_manual') # Changed
+        profissional_id_manual = request.form.get('barbeiro_id_manual') # Changed
+        servico_procedimento_id_manual = request.form.get('servico_id_manual') # Changed
         data_agendamento_str = request.form.get('data_agendamento_manual')
         hora_agendamento_str = request.form.get('hora_agendamento_manual')
         preco_str = request.form.get('preco_manual')
         status_manual = request.form.get('status_manual')
 
         if not all([paciente_nome, profissional_id_manual, servico_procedimento_id_manual, data_agendamento_str, hora_agendamento_str, preco_str, status_manual]):
-            flash('Todos os campos obrigatórios devem ser preenchidos.', 'danger')
+            flash('All mandatory fields must be filled.', 'danger')
             return redirect(url_for('listar_agendamentos'))
 
         preco_servico = float(preco_str.replace(',', '.'))
 
-        # Busca o ID do paciente pelo nome, ou cria um novo paciente se não existir
+        # Searches for the patient ID by name, or creates a new patient if it doesn't exist
         paciente_ref_query = db.collection('clinicas').document(clinica_id).collection('pacientes')\
                                .where(filter=FieldFilter('nome', '==', paciente_nome)).limit(1).get()
         
@@ -1527,36 +1529,36 @@ def registrar_atendimento_manual():
                 break
         
         if not paciente_doc_id:
-            # Cria um novo paciente se não encontrado
+            # Creates a new patient if not found
             novo_paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').add({
                 'nome': paciente_nome,
                 'contato_telefone': paciente_telefone if paciente_telefone else None,
                 'data_cadastro': firestore.SERVER_TIMESTAMP
             })
-            paciente_doc_id = novo_paciente_ref[1].id # Pega o ID do documento recém-criado
+            paciente_doc_id = novo_paciente_ref[1].id # Gets the ID of the newly created document
 
-        profissional_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get() # Alterado
-        servico_procedimento_doc = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get() # Alterado
+        profissional_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get() # Changed
+        servico_procedimento_doc = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get() # Changed
 
-        profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A' # Alterado
-        servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A' # Alterado
+        profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A' # Changed
+        servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A' # Changed
         
         dt_agendamento_naive = datetime.datetime.strptime(f"{data_agendamento_str} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
         dt_agendamento_sp = SAO_PAULO_TZ.localize(dt_agendamento_naive)
         data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
 
         novo_agendamento_dados = {
-            'paciente_id': paciente_doc_id, # Novo campo
-            'paciente_nome': paciente_nome, # Alterado
-            'paciente_numero': paciente_telefone if paciente_telefone else None, # Alterado
-            'profissional_id': profissional_id_manual, # Alterado
-            'profissional_nome': profissional_nome, # Alterado
-            'servico_procedimento_id': servico_procedimento_id_manual, # Alterado
-            'servico_procedimento_nome': servico_procedimento_nome, # Alterado
+            'paciente_id': paciente_doc_id, # New field
+            'paciente_nome': paciente_nome, # Changed
+            'paciente_numero': paciente_telefone if paciente_telefone else None, # Changed
+            'profissional_id': profissional_id_manual, # Changed
+            'profissional_nome': profissional_nome, # Changed
+            'servico_procedimento_id': servico_procedimento_id_manual, # Changed
+            'servico_procedimento_nome': servico_procedimento_nome, # Changed
             'data_agendamento': data_agendamento_str,
             'hora_agendamento': hora_agendamento_str,
             'data_agendamento_ts': data_agendamento_ts_utc,
-            'servico_procedimento_preco': preco_servico, # Alterado para refletir o preço no agendamento
+            'servico_procedimento_preco': preco_servico, # Changed to reflect price in appointment
             'status': status_manual,
             'tipo_agendamento': 'manual_dashboard',
             'data_criacao': firestore.SERVER_TIMESTAMP,
@@ -1565,11 +1567,11 @@ def registrar_atendimento_manual():
         
         db.collection('clinicas').document(clinica_id).collection('agendamentos').add(novo_agendamento_dados)
         
-        flash('Atendimento registrado manualmente com sucesso!', 'success')
+        flash('Attendance registered manually successfully!', 'success')
     except ValueError as ve:
-        flash(f'Erro de valor ao registrar atendimento: {ve}', 'danger')
+        flash(f'Value error registering attendance: {ve}', 'danger')
     except Exception as e:
-        flash(f'Erro ao registrar atendimento manual: {e}', 'danger')
+        flash(f'Error registering manual attendance: {e}', 'danger')
     return redirect(url_for('listar_agendamentos'))
 
 
@@ -1579,20 +1581,20 @@ def alterar_status_agendamento(agendamento_doc_id):
     clinica_id = session['clinica_id']
     novo_status = request.form.get('status')
     if not novo_status:
-        flash('Nenhum status foi fornecido.', 'warning')
+        flash('No status was provided.', 'warning')
         return redirect(url_for('listar_agendamentos'))
     try:
         db.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_doc_id).update({
             'status': novo_status,
             'atualizado_em': firestore.SERVER_TIMESTAMP
         })
-        flash(f'Status atualizado para "{novo_status}" com sucesso!', 'success')
+        flash(f'Status updated to "{novo_status}" successfully!', 'success')
     except Exception as e:
-        flash(f'Erro ao alterar status do agendamento: {e}', 'danger')
-        print(f"Erro alterar_status_agendamento: {e}")
+        flash(f'Error changing appointment status: {e}', 'danger')
+        print(f"Error change_appointment_status: {e}")
     return redirect(url_for('listar_agendamentos'))
 
-# --- ROTAS DE PRONTUÁRIOS (NOVO) ---
+# --- PATIENT RECORDS ROUTES (NEW) ---
 @app.route('/prontuarios')
 @login_required
 def buscar_prontuario():
@@ -1605,8 +1607,8 @@ def buscar_prontuario():
             if paciente_data:
                 pacientes_para_busca.append({'id': doc.id, 'nome': paciente_data.get('nome', doc.id)})
     except Exception as e:
-        flash('Erro ao carregar lista de pacientes para busca.', 'danger')
-        print(f"Erro buscar_prontuario: {e}")
+        flash('Error loading patient list for search.', 'danger')
+        print(f"Error search_patient_record: {e}")
 
     return render_template('prontuario_busca.html', pacientes_para_busca=pacientes_para_busca)
 
@@ -1626,13 +1628,13 @@ def ver_prontuario(paciente_doc_id):
             paciente_data = paciente_doc.to_dict()
             paciente_data['id'] = paciente_doc.id
 
-            # Adiciona informações de convênio se existir
+            # Adds covenant information if it exists
             if paciente_data.get('convenio_id'):
                 convenio_doc = db.collection('clinicas').document(clinica_id).collection('convenios').document(paciente_data['convenio_id']).get()
                 if convenio_doc.exists:
                     paciente_data['convenio_nome'] = convenio_doc.to_dict().get('nome', 'N/A')
             
-            # Busca todos os registos de prontuário para este paciente
+            # Searches all patient record entries
             docs_stream = prontuarios_ref.order_by('data_registro', direction=firestore.Query.DESCENDING).stream()
             for doc in docs_stream:
                 registro = doc.to_dict()
@@ -1643,22 +1645,22 @@ def ver_prontuario(paciente_doc_id):
                     else:
                         registro['data_registro_fmt'] = "N/A"
                     
-                    # Carrega nome do profissional que criou o registro
+                    # Loads the name of the professional who created the record
                     profissional_doc_id = registro.get('profissional_id')
                     if profissional_doc_id:
                         prof_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
                         if prof_doc.exists:
-                            registro['profissional_nome'] = prof_doc.to_dict().get('nome', 'Desconhecido')
+                            registro['profissional_nome'] = prof_doc.to_dict().get('nome', 'Unknown')
                         else:
-                            registro['profissional_nome'] = 'Desconhecido'
+                            registro['profissional_nome'] = 'Unknown'
 
                     registros_prontuario.append(registro)
         else:
-            flash('Paciente não encontrado.', 'danger')
+            flash('Patient not found.', 'danger')
             return redirect(url_for('buscar_prontuario'))
     except Exception as e:
-        flash(f'Erro ao carregar prontuário: {e}.', 'danger')
-        print(f"Erro ver_prontuario: {e}")
+        flash(f'Error loading patient record: {e}.', 'danger')
+        print(f"Error view_patient_record: {e}")
 
     return render_template('prontuario.html', paciente=paciente_data, registros=registros_prontuario)
 
@@ -1666,12 +1668,12 @@ def ver_prontuario(paciente_doc_id):
 @login_required
 def adicionar_anamnese(paciente_doc_id):
     clinica_id = session['clinica_id']
-    # O user_uid na sessão é o UID do utilizador logado no Firebase Auth
+    # The user_uid in the session is the UID of the logged-in Firebase Auth user
     profissional_logado_uid = session.get('user_uid') 
 
-    # Busca o ID do profissional associado ao user_uid logado
+    # Searches for the professional ID associated with the logged-in user_uid
     profissional_doc_id = None
-    profissional_nome = "Profissional Desconhecido"
+    profissional_nome = "Unknown Professional"
     try:
         prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais')\
                        .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
@@ -1680,21 +1682,21 @@ def adicionar_anamnese(paciente_doc_id):
             profissional_nome = doc.to_dict().get('nome', profissional_nome)
             break
         if not profissional_doc_id:
-             flash('Seu utilizador não está associado a um profissional. Contacte o administrador.', 'danger')
+             flash('Your user is not associated with a professional. Contact the administrator.', 'danger')
              return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     except Exception as e:
-        flash(f'Erro ao verificar o profissional associado: {e}', 'danger')
-        print(f"Erro adicionar_anamnese (GET - profissional check): {e}")
+        flash(f'Error verifying associated professional: {e}', 'danger')
+        print(f"Error add_anamnesis (GET - professional check): {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
     paciente_doc = paciente_ref.get()
     if not paciente_doc.exists:
-        flash('Paciente não encontrado.', 'danger')
+        flash('Patient not found.', 'danger')
         return redirect(url_for('buscar_prontuario'))
     
-    paciente_nome = paciente_doc.to_dict().get('nome', 'Paciente Desconhecido')
+    paciente_nome = paciente_doc.to_dict().get('nome', 'Unknown Patient')
 
     modelos_anamnese = []
     try:
@@ -1705,8 +1707,8 @@ def adicionar_anamnese(paciente_doc_id):
                 modelo['id'] = doc.id
                 modelos_anamnese.append(modelo)
     except Exception as e:
-        flash('Erro ao carregar modelos de anamnese.', 'warning')
-        print(f"Erro ao carregar modelos de anamnese: {e}")
+        flash('Error loading anamnesis templates.', 'warning')
+        print(f"Error loading anamnesis templates: {e}")
 
     if request.method == 'POST':
         conteudo = request.form['conteudo']
@@ -1714,24 +1716,24 @@ def adicionar_anamnese(paciente_doc_id):
         
         try:
             db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
-                'profissional_id': profissional_doc_id, # Salva o ID do profissional que criou
+                'profissional_id': profissional_doc_id, # Saves the ID of the professional who created it
                 'data_registro': firestore.SERVER_TIMESTAMP,
                 'tipo_registro': 'anamnese',
                 'conteudo': conteudo,
                 'modelo_base_id': modelo_base_id if modelo_base_id else None
             })
-            flash('Anamnese adicionada com sucesso!', 'success')
+            flash('Anamnesis added successfully!', 'success')
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
         except Exception as e:
-            flash(f'Erro ao adicionar anamnese: {e}', 'danger')
-            print(f"Erro adicionar_anamnese (POST): {e}")
+            flash(f'Error adding anamnesis: {e}', 'danger')
+            print(f"Error add_anamnesis (POST): {e}")
     
     return render_template('anamnese_form.html', 
                            paciente_id=paciente_doc_id, 
                            paciente_nome=paciente_nome, 
                            modelos_anamnese=modelos_anamnese, 
                            action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id),
-                           page_title=f"Registrar Anamnese para {paciente_nome}")
+                           page_title=f"Register Anamnesis for {paciente_nome}")
 
 @app.route('/prontuarios/<string:paciente_doc_id>/anamnese/editar/<string:anamnese_doc_id>', methods=['GET', 'POST'])
 @login_required
@@ -1742,10 +1744,10 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
     
     paciente_doc = paciente_ref.get()
     if not paciente_doc.exists:
-        flash('Paciente não encontrado.', 'danger')
+        flash('Patient not found.', 'danger')
         return redirect(url_for('buscar_prontuario'))
     
-    paciente_nome = paciente_doc.to_dict().get('nome', 'Paciente Desconhecido')
+    paciente_nome = paciente_doc.to_dict().get('nome', 'Unknown Patient')
 
     modelos_anamnese = []
     try:
@@ -1756,8 +1758,8 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
                 modelo['id'] = doc.id
                 modelos_anamnese.append(modelo)
     except Exception as e:
-        flash('Erro ao carregar modelos de anamnese.', 'warning')
-        print(f"Erro ao carregar modelos de anamnese (editar): {e}")
+        flash('Error loading anamnesis templates.', 'warning')
+        print(f"Error loading anamnesis templates (edit): {e}")
 
     if request.method == 'POST':
         conteudo = request.form['conteudo']
@@ -1769,11 +1771,11 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
                 'modelo_base_id': modelo_base_id if modelo_base_id else None,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             })
-            flash('Anamnese atualizada com sucesso!', 'success')
+            flash('Anamnesis updated successfully!', 'success')
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
         except Exception as e:
-            flash(f'Erro ao atualizar anamnese: {e}', 'danger')
-            print(f"Erro editar_anamnese (POST): {e}")
+            flash(f'Error updating anamnesis: {e}', 'danger')
+            print(f"Error edit_anamnesis (POST): {e}")
     
     try:
         anamnese_doc = anamnese_ref.get()
@@ -1786,20 +1788,20 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
                                    anamnese=anamnese_data, 
                                    modelos_anamnese=modelos_anamnese,
                                    action_url=url_for('editar_anamnese', paciente_doc_id=paciente_doc_id, anamnese_doc_id=anamnese_doc_id),
-                                   page_title=f"Editar Anamnese para {paciente_nome}")
+                                   page_title=f"Edit Anamnesis for {paciente_nome}")
         else:
-            flash('Anamnese não encontrada ou tipo de registo inválido.', 'danger')
+            flash('Anamnesis not found or invalid record type.', 'danger')
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
     except Exception as e:
-        flash(f'Erro ao carregar anamnese para edição: {e}', 'danger')
-        print(f"Erro editar_anamnese (GET): {e}")
+        flash(f'Error loading anamnesis for editing: {e}', 'danger')
+        print(f"Error edit_anamnesis (GET): {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
 
-# --- ROTAS DE MODELOS DE ANAMNESE (NOVO) ---
+# --- ANAMNESIS TEMPLATES ROUTES (NEW) ---
 @app.route('/modelos_anamnese')
 @login_required
-@admin_required # Apenas admins podem gerenciar modelos de anamnese, ou talvez médicos?
+@admin_required # Only admins can manage anamnesis templates, or perhaps doctors?
 def listar_modelos_anamnese():
     clinica_id = session['clinica_id']
     modelos_lista = []
@@ -1811,8 +1813,8 @@ def listar_modelos_anamnese():
                 modelo['id'] = doc.id
                 modelos_lista.append(modelo)
     except Exception as e:
-        flash(f'Erro ao listar modelos de anamnese: {e}.', 'danger')
-        print(f"Erro listar_modelos_anamnese: {e}")
+        flash(f'Error listing anamnesis templates: {e}.', 'danger')
+        print(f"Error list_anamnesis_templates: {e}")
     return render_template('modelos_anamnese.html', modelos=modelos_lista)
 
 @app.route('/modelos_anamnese/novo', methods=['GET', 'POST'])
@@ -1825,7 +1827,7 @@ def adicionar_modelo_anamnese():
         conteudo_modelo = request.form['conteudo_modelo']
         
         if not identificacao:
-            flash('A identificação do modelo é obrigatória.', 'danger')
+            flash('Template identification is mandatory.', 'danger')
             return render_template('modelo_anamnese_form.html', modelo=request.form, action_url=url_for('adicionar_modelo_anamnese'))
         try:
             db.collection('clinicas').document(clinica_id).collection('modelos_anamnese').add({
@@ -1833,11 +1835,11 @@ def adicionar_modelo_anamnese():
                 'conteudo_modelo': conteudo_modelo,
                 'criado_em': firestore.SERVER_TIMESTAMP
             })
-            flash('Modelo de anamnese adicionado com sucesso!', 'success')
+            flash('Anamnesis template added successfully!', 'success')
             return redirect(url_for('listar_modelos_anamnese'))
         except Exception as e:
-            flash(f'Erro ao adicionar modelo de anamnese: {e}', 'danger')
-            print(f"Erro adicionar_modelo_anamnese: {e}")
+            flash(f'Error adding anamnesis template: {e}', 'danger')
+            print(f"Error add_anamnesis_template: {e}")
     return render_template('modelo_anamnese_form.html', modelo=None, action_url=url_for('adicionar_modelo_anamnese'))
 
 @app.route('/modelos_anamnese/editar/<string:modelo_doc_id>', methods=['GET', 'POST'])
@@ -1852,7 +1854,7 @@ def editar_modelo_anamnese(modelo_doc_id):
         conteudo_modelo = request.form['conteudo_modelo']
         
         if not identificacao:
-            flash('A identificação do modelo é obrigatória.', 'danger')
+            flash('Template identification is mandatory.', 'danger')
             return render_template('modelo_anamnese_form.html', modelo=request.form, action_url=url_for('editar_modelo_anamnese', modelo_doc_id=modelo_doc_id))
         try:
             modelo_ref.update({
@@ -1860,11 +1862,11 @@ def editar_modelo_anamnese(modelo_doc_id):
                 'conteudo_modelo': conteudo_modelo,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             })
-            flash('Modelo de anamnese atualizado com sucesso!', 'success')
+            flash('Anamnesis template updated successfully!', 'success')
             return redirect(url_for('listar_modelos_anamnese'))
         except Exception as e:
-            flash(f'Erro ao atualizar modelo de anamnese: {e}', 'danger')
-            print(f"Erro editar_modelo_anamnese (POST): {e}")
+            flash(f'Error updating anamnesis template: {e}', 'danger')
+            print(f"Error edit_anamnesis_template (POST): {e}")
 
     try:
         modelo_doc = modelo_ref.get()
@@ -1873,11 +1875,11 @@ def editar_modelo_anamnese(modelo_doc_id):
             modelo['id'] = modelo_doc.id
             return render_template('modelo_anamnese_form.html', modelo=modelo, action_url=url_for('editar_modelo_anamnese', modelo_doc_id=modelo_doc_id))
         else:
-            flash('Modelo de anamnese não encontrado.', 'danger')
+            flash('Anamnesis template not found.', 'danger')
             return redirect(url_for('listar_modelos_anamnese'))
     except Exception as e:
-        flash(f'Erro ao carregar modelo de anamnese para edição: {e}', 'danger')
-        print(f"Erro editar_modelo_anamnese (GET): {e}")
+        flash(f'Error loading anamnesis template for editing: {e}', 'danger')
+        print(f"Error edit_anamnesis_template (GET): {e}")
         return redirect(url_for('listar_modelos_anamnese'))
 
 @app.route('/modelos_anamnese/excluir/<string:modelo_doc_id>', methods=['POST'])
@@ -1886,17 +1888,17 @@ def editar_modelo_anamnese(modelo_doc_id):
 def excluir_modelo_anamnese(modelo_doc_id):
     clinica_id = session['clinica_id']
     try:
-        # TODO: Se houver prontuários que referenciam este modelo, pode ser necessário verificar antes de excluir.
-        # Por simplicidade, por enquanto, a exclusão é direta.
+        # TODO: If there are records referencing this template, it might be necessary to check before deleting.
+        # For simplicity, for now, deletion is direct.
         db.collection('clinicas').document(clinica_id).collection('modelos_anamnese').document(modelo_doc_id).delete()
-        flash('Modelo de anamnese excluído com sucesso!', 'success')
+        flash('Anamnesis template deleted successfully!', 'success')
     except Exception as e:
-        flash(f'Erro ao excluir modelo de anamnese: {e}.', 'danger')
-        print(f"Erro excluir_modelo_anamnese: {e}")
+        flash(f'Error deleting anamnesis template: {e}.', 'danger')
+        print(f"Error delete_anamnesis_template: {e}")
     return redirect(url_for('listar_modelos_anamnese'))
 
-# --- EXECUÇÃO DO APP ---
+# --- APP EXECUTION ---
 if __name__ == '__main__':
-    # Para execução local, use um .env para GOOGLE_SERVICE_ACCOUNT_KEY_JSON e PORT
+    # For local execution, use a .env for GOOGLE_SERVICE_ACCOUNT_KEY_JSON and PORT
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
 
