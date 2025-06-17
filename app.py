@@ -36,6 +36,14 @@ except Exception as e:
 # Defines the São Paulo timezone for consistency in date and time operations.
 SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
 
+# Helper function to format Firestore timestamps for JSON serialization
+def format_firestore_timestamp(timestamp):
+    if isinstance(timestamp, datetime.datetime):
+        # Convert to local timezone before formatting for display
+        return timestamp.astimezone(SAO_PAULO_TZ).strftime('%Y-%m-%dT%H:%M:%S') # ISO format for JS compatibility
+    return None # Or handle other types if needed
+
+
 # Custom decorator to require the user to be logged in.
 def login_required(f):
     from functools import wraps
@@ -695,7 +703,9 @@ def ativar_desativar_profissional(profissional_doc_id):
                 profissional_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
                 flash(f'Professional {"enabled" if new_status else "disabled"} successfully!', 'success')
         else:
-            flash('Professional not found.', 'danger')
+            flash('Professional not found in mapping.', 'danger')
+    except firebase_admin.auth.UserNotFoundError:
+        flash('Professional not found in Firebase Authentication.', 'danger')
     except Exception as e:
         flash(f'Error changing professional status: {e}', 'danger')
         print(f"Error activate_deactivate_professional: {e}")
@@ -803,7 +813,7 @@ def adicionar_paciente():
                 try:
                     data_nascimento_dt = datetime.datetime.strptime(data_nascimento, '%Y-%m-%d').date()
                 except ValueError:
-                    flash('Invalid date of birth format. Use YYYY-MM-DD.', 'danger')
+                    flash('Invalid date of birth format. Use Yamazaki-MM-DD.', 'danger')
                     return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
 
             paciente_data = {
@@ -889,7 +899,7 @@ def editar_paciente(paciente_doc_id):
                 try:
                     data_nascimento_dt = datetime.datetime.strptime(data_nascimento, '%Y-%m-%d').date()
                 except ValueError:
-                    flash('Invalid date of birth format. Use YYYY-MM-DD.', 'danger')
+                    flash('Invalid date of birth format. Use Yamazaki-MM-DD.', 'danger')
                     return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
 
             paciente_data_update = {
@@ -1444,13 +1454,13 @@ def listar_agendamentos():
             dt_inicio_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_inicio'], '%Y-%m-%d')).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_utc))
         except ValueError:
-            flash('Invalid start date. Use YYYY-MM-DD format.', 'warning')
+            flash('Invalid start date. Use Yamazaki-MM-DD format.', 'warning')
     if filtros_atuais['data_fim']:
         try:
             dt_fim_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_fim'], '%Y-%m-%d').replace(hour=23, minute=59, second=59)).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_utc))
         except ValueError:
-            flash('Invalid end date. Use YYYY-MM-DD format.', 'warning')
+            flash('Invalid end date. Use Yamazaki-MM-DD format.', 'warning')
 
     try:
         docs_stream = query.order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING).stream()
@@ -1705,6 +1715,11 @@ def adicionar_anamnese(paciente_doc_id):
             modelo = doc.to_dict()
             if modelo:
                 modelo['id'] = doc.id
+                # Convert timestamps to string format for JSON serialization in the template
+                if 'criado_em' in modelo:
+                    modelo['criado_em'] = format_firestore_timestamp(modelo['criado_em'])
+                if 'atualizado_em' in modelo:
+                    modelo['atualizado_em'] = format_firestore_timestamp(modelo['atualizado_em'])
                 modelos_anamnese.append(modelo)
     except Exception as e:
         flash('Error loading anamnesis templates.', 'warning')
@@ -1756,6 +1771,11 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
             modelo = doc.to_dict()
             if modelo:
                 modelo['id'] = doc.id
+                # Convert timestamps to string format for JSON serialization in the template
+                if 'criado_em' in modelo:
+                    modelo['criado_em'] = format_firestore_timestamp(modelo['criado_em'])
+                if 'atualizado_em' in modelo:
+                    modelo['atualizado_em'] = format_firestore_timestamp(modelo['atualizado_em'])
                 modelos_anamnese.append(modelo)
     except Exception as e:
         flash('Error loading anamnesis templates.', 'warning')
@@ -1811,6 +1831,11 @@ def listar_modelos_anamnese():
             modelo = doc.to_dict()
             if modelo:
                 modelo['id'] = doc.id
+                # Convert timestamps to string format for JSON serialization in the template
+                if 'criado_em' in modelo:
+                    modelo['criado_em'] = format_firestore_timestamp(modelo['criado_em'])
+                if 'atualizado_em' in modelo:
+                    modelo['atualizado_em'] = format_firestore_timestamp(modelo['atualizado_em'])
                 modelos_lista.append(modelo)
     except Exception as e:
         flash(f'Error listing anamnesis templates: {e}.', 'danger')
@@ -1873,6 +1898,11 @@ def editar_modelo_anamnese(modelo_doc_id):
         if modelo_doc.exists:
             modelo = modelo_doc.to_dict()
             modelo['id'] = modelo_doc.id
+            # Convert timestamps to string format for JSON serialization in the template
+            if 'criado_em' in modelo:
+                modelo['criado_em'] = format_firestore_timestamp(modelo['criado_em'])
+            if 'atualizado_em' in modelo:
+                modelo['atualizado_em'] = format_firestore_timestamp(modelo['atualizado_em'])
             return render_template('modelo_anamnese_form.html', modelo=modelo, action_url=url_for('editar_modelo_anamnese', modelo_doc_id=modelo_doc_id))
         else:
             flash('Anamnesis template not found.', 'danger')
@@ -1901,4 +1931,3 @@ def excluir_modelo_anamnese(modelo_doc_id):
 if __name__ == '__main__':
     # For local execution, use a .env for GOOGLE_SERVICE_ACCOUNT_KEY_JSON and PORT
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
-
