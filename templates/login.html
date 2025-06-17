@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - OnClínica</title>
+    
+    <!-- Ícone da Aba e PWA -->
+    <link rel="icon" type="image/png" href="https://placehold.co/40x40/a6683c/ffffff?text=C">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/a6683c/ffffff?text=C">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#a6683c">
+
+    <!-- Fontes e Ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #a6683c;
+            --secondary-color: #c68642;  
+            --dark-bg: #111827;
+            --card-bg: #ffffff;
+            --text-color: #374151;
+            --muted-color: #6c757d;
+            --danger-color: #dc3545;
+            --medical-blue: #2196F3; 
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif; 
+            background-image: 
+                linear-gradient(rgba(17, 24, 39, 0.8), rgba(17, 24, 39, 0.8)),
+                url('https://wallpapers.com/images/hd/blue-vital-sign-hd-medical-m0tj1swas1gb75k9.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-wrapper { max-width: 380px; width: 100%; }
+        
+        .login-card {
+            background: var(--card-bg);
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-header { margin-bottom: 25px; }
+        .login-header .logo-container { margin-bottom: 15px; } 
+        .login-header .logo-icon { 
+            font-size: 4rem; 
+            color: var(--primary-color); 
+            display: block; 
+            margin: 0 auto 10px;
+        }
+        .login-header h2 { font-size: 1.8rem; color: var(--text-color); font-weight: 700; }
+        
+        .form-group { margin-bottom: 18px; position: relative; }
+        .form-group .input-icon {
+            position: absolute; left: 15px; top: 50%;
+            transform: translateY(-50%); color: var(--muted-color);
+        }
+        .form-group input {
+            width: 100%; padding: 14px 14px 14px 45px;
+            border: 1px solid #dee2e6; border-radius: 8px; font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus {
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent);
+        }
+        
+        .btn-login {
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white; border: none; border-radius: 8px; font-size: 1.1rem;
+            font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+        
+        .firebase-error, .flash-message {
+            margin-top: 15px; font-weight: 500;
+            padding: 10px; border-radius: 8px;
+            border: 1px solid transparent;
+        }
+        .firebase-error, .flash-message.danger { color: var(--danger-color); background-color: color-mix(in srgb, var(--danger-color) 10%, transparent); border-color: color-mix(in srgb, var(--danger-color) 20%, transparent); }
+
+        #loading-indicator { display: none; margin-top: 15px; font-style: italic; color: var(--muted-color); }
+
+        .support-link { margin-top: 25px; font-size: 0.9rem; color: #e5e7eb; text-align: center; }
+        .support-link a { color: var(--secondary-color); font-weight: 600; text-decoration: none; transition: color 0.2s; }
+        .support-link a:hover { color: #ffffff; text-decoration: underline; }
+
+        .install-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--dark-bg);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: slideUp 0.5s ease-out;
+            max-width: 90%;
+        }
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        .install-notification img { width: 40px; height: 40px; border-radius: 8px; }
+        .install-notification .install-text { font-size: 0.95rem; }
+        .install-notification .install-btn {
+            background-color: var(--primary-color); color: white; border: none;
+            padding: 8px 15px; border-radius: 8px; font-weight: 600; cursor: pointer;
+        }
+        .install-notification .close-btn {
+            background: none; border: none; color: #9ca3af;
+            font-size: 1.2rem; cursor: pointer; padding: 5px; line-height: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-container">
+                    <i class="fas fa-clinic-medical logo-icon"></i>
+                </div>
+                <h2>Painel da Clínica</h2>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" id="email" name="email" placeholder="Seu e-mail" required>
+                </div>
+                <div class="form-group">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" id="password" name="password" placeholder="Sua senha" required>
+                </div>
+                <button type="submit" class="btn-login">Entrar</button>
+            </form>
+            <div id="firebase-error-message" class="firebase-error" style="display:none;"></div>
+            <div id="loading-indicator">Autenticando...</div>
+        </div>
+
+        <div class="support-link">
+            Para falar com o suporte, <a href="https://wa.me/5567981540598?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20acesso%20ao%20painel." target="_blank">entre em contato</a>.
+        </div>
+    </div>
+     
+    <div id="install-notification-android" class="install-notification" style="display: none;">
+        <img src="https://placehold.co/40x40/a6683c/ffffff?text=C" alt="Logo da Clínica">
+        <span class="install-text">Instale o app para acesso rápido!</span>
+        <button id="install-btn" class="install-btn">Instalar</button>
+        <button class="close-btn" data-target="install-notification-android">&times;</button>
+    </div>
+ 
+    <div id="install-notification-ios" class="install-notification" style="display: none;">
+        <img src="https://placehold.co/40x40/a6683c/ffffff?text=C" alt="Logo da Clínica">
+        <span class="install-text">Para instalar: toque em <i class="fas fa-share-square"></i> e "Adicionar à Tela de Início".</span>
+        <button class="close-btn" data-target="install-notification-ios">&times;</button>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+      import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+       
+      const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app); 
+
+      const loginForm = document.getElementById('loginForm');
+      const firebaseErrorMessage = document.getElementById('firebase-error-message');
+      const loadingIndicator = document.getElementById('loading-indicator');
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = loginForm.email.value;
+        const password = loginForm.password.value;
+
+        firebaseErrorMessage.textContent = '';
+        firebaseErrorMessage.style.display = 'none';
+        loadingIndicator.style.display = 'block';
+
+        try {
+          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+          const idToken = await user.getIdToken();
+
+          const response = await fetch("{{ url_for('session_login') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: idToken }),
+          });
+
+          loadingIndicator.style.display = 'none';
+          const serverResponse = await response.json();
+
+          if (response.ok && serverResponse.success) {
+            window.location.href = "{{ url_for('index') }}";
+          } else {
+            firebaseErrorMessage.textContent = serverResponse.message || 'Utilizador não autorizado ou erro no servidor.';
+            firebaseErrorMessage.style.display = 'block';
+            firebaseSignOut(auth).catch(err => console.error("Erro ao deslogar do Firebase:", err));
+          }
+
+        } catch (error) {
+          loadingIndicator.style.display = 'none';
+          let friendlyMessage = "Erro ao fazer login. Verifique suas credenciais.";
+          if (error.code) {
+            switch (error.code) {
+              case 'auth/user-not-found':
+              case 'auth/wrong-password':
+              case 'auth/invalid-credential':
+                friendlyMessage = "E-mail ou senha inválidos.";
+                break;
+              case 'auth/invalid-email':
+                friendlyMessage = "O formato do e-mail é inválido.";
+                break;
+              case 'auth/network-request-failed':
+                friendlyMessage = "Erro de rede. Verifique sua conexão.";
+                break;
+              case 'auth/too-many-requests':
+                friendlyMessage = "Muitas tentativas de login. Tente novamente mais tarde.";
+                break;
+              default:
+                friendlyMessage = `Erro: ${error.message}`;
+            }
+          }
+          firebaseErrorMessage.textContent = friendlyMessage;
+          firebaseErrorMessage.style.display = 'block';
+        }
+      });
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+            .then(registration => {
+              console.log('Service Worker registrado com sucesso!');
+            })
+            .catch(err => {
+              console.error('Falha ao registrar o Service Worker: ', err);
+            });
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        let deferredPrompt;
+        const androidNotification = document.getElementById('install-notification-android');
+        const iosNotification = document.getElementById('install-notification-ios');
+        const installBtn = document.getElementById('install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+          if (androidNotification) {
+            androidNotification.style.display = 'flex';
+          }
+        });
+
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if(deferredPrompt) {
+                    androidNotification.style.display = 'none';
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`Resposta do utilizador: ${outcome}`);
+                    deferredPrompt = null;
+                }
+            });
+        }
+        
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        
+        if (isIOS && !isStandalone) {
+          iosNotification.style.display = 'flex';
+        }
+
+        document.querySelectorAll('.close-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const targetId = button.getAttribute('data-target');
+                document.getElementById(targetId).style.display = 'none';
+            });
+        });
+
+        window.addEventListener('appinstalled', () => {
+            if(androidNotification) androidNotification.style.display = 'none';
+            if(iosNotification) iosNotification.style.display = 'none';
+            deferredPrompt = null;
+        });
+      });
+    </script>
+</body>
+</html>
