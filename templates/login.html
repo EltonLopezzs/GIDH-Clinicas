@@ -162,7 +162,7 @@
                 {% endif %}
             {% endwith %}
 
-            <form id="loginForm">
+            <form id="loginForm" method="POST" action="">
                 <div class="form-group">
                     <i class="fas fa-envelope input-icon"></i>
                     <input type="email" id="email" name="email" placeholder="Seu e-mail" required>
@@ -199,73 +199,109 @@
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
       import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
        
-      const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+      // Sua configuração do Firebase (obtida do console do Firebase)
+      const firebaseConfig = {
+        apiKey: "AIzaSyA-E7I86omFlb1CjCxgA0MBpdnifhBny3M",
+        authDomain: "planilha-daa63.firebaseapp.com",
+        projectId: "planilha-daa63",
+        storageBucket: "planilha-daa63.firebasestorage.app",
+        messagingSenderId: "803607802636",
+        appId: "1:803607802636:web:c79a2ea583c3da8c74cf29",
+        measurementId: "G-39KX4QG28W" 
+      };
 
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app); 
+      let app;
+      let auth;
+      try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app); 
+        console.log('[DEBUG - Firebase App]: Firebase App and Auth initialized successfully.');
+      } catch (e) { 
+        console.error('[DEBUG - Firebase Init Error]:', e);
+        if (Object.keys(firebaseConfig).length === 0) {
+            document.getElementById('firebase-error-message').textContent = 'Erro de configuração do Firebase. Por favor, contacte o suporte.';
+            document.getElementById('firebase-error-message').style.display = 'block';
+        }
+      }
 
       const loginForm = document.getElementById('loginForm');
       const firebaseErrorMessage = document.getElementById('firebase-error-message');
       const loadingIndicator = document.getElementById('loading-indicator');
 
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = loginForm.email.value;
-        const password = loginForm.password.value;
+      if (loginForm) { 
+        loginForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          console.log('[DEBUG - Form Submit]: Intercepted form submission.');
+          const email = loginForm.email.value;
+          const password = loginForm.password.value;
 
-        firebaseErrorMessage.textContent = '';
-        firebaseErrorMessage.style.display = 'none';
-        loadingIndicator.style.display = 'block';
+          firebaseErrorMessage.textContent = '';
+          firebaseErrorMessage.style.display = 'none';
+          loadingIndicator.style.display = 'block';
 
-        try {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          const user = userCredential.user;
-          const idToken = await user.getIdToken();
-
-          const response = await fetch("{{ url_for('session_login') }}", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken: idToken }),
-          });
-
-          loadingIndicator.style.display = 'none';
-          const serverResponse = await response.json();
-
-          if (response.ok && serverResponse.success) {
-            window.location.href = "{{ url_for('index') }}";
-          } else {
-            firebaseErrorMessage.textContent = serverResponse.message || 'Utilizador não autorizado ou erro no servidor.';
-            firebaseErrorMessage.style.display = 'block';
-            firebaseSignOut(auth).catch(err => console.error("Erro ao deslogar do Firebase:", err));
-          }
-
-        } catch (error) {
-          loadingIndicator.style.display = 'none';
-          let friendlyMessage = "Erro ao fazer login. Verifique suas credenciais.";
-          if (error.code) {
-            switch (error.code) {
-              case 'auth/user-not-found':
-              case 'auth/wrong-password':
-              case 'auth/invalid-credential':
-                friendlyMessage = "E-mail ou senha inválidos.";
-                break;
-              case 'auth/invalid-email':
-                friendlyMessage = "O formato do e-mail é inválido.";
-                break;
-              case 'auth/network-request-failed':
-                friendlyMessage = "Erro de rede. Verifique sua conexão.";
-                break;
-              case 'auth/too-many-requests':
-                friendlyMessage = "Muitas tentativas de login. Tente novamente mais tarde.";
-                break;
-              default:
-                friendlyMessage = `Erro: ${error.message}`;
+          try {
+            if (!auth) { 
+                throw new Error('Firebase Auth failed to initialize. Please contact support.');
             }
+
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            const idToken = await user.getIdToken();
+            console.log('[DEBUG - Firebase Auth]: User signed in with Firebase. Sending ID Token to server.');
+
+            const response = await fetch("{{ url_for('session_login') }}", {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ idToken: idToken }),
+            });
+
+            loadingIndicator.style.display = 'none';
+            const serverResponse = await response.json();
+            console.log('[DEBUG - Server Response]:', serverResponse);
+
+            if (response.ok && serverResponse.success) {
+              window.location.href = "{{ url_for('index') }}";
+            } else {
+              firebaseErrorMessage.textContent = serverResponse.message || 'Utilizador não autorizado ou erro no servidor.';
+              firebaseErrorMessage.style.display = 'block';
+              firebaseSignOut(auth).catch(err => console.error("Erro ao deslogar do Firebase:", err));
+            }
+
+          } catch (error) {
+            loadingIndicator.style.display = 'none';
+            console.error('[DEBUG - Login Process Error]:', error); 
+            let friendlyMessage = "Erro ao fazer login. Verifique suas credenciais.";
+            if (error.code) {
+              switch (error.code) {
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                case 'auth/invalid-credential':
+                  friendlyMessage = "E-mail ou senha inválidos.";
+                  break;
+                case 'auth/invalid-email':
+                  friendlyMessage = "O formato do e-mail é inválido.";
+                  break;
+                case 'auth/network-request-failed':
+                  friendlyMessage = "Erro de rede. Verifique sua conexão.";
+                  break;
+                case 'auth/too-many-requests':
+                  friendlyMessage = "Muitas tentativas de login. Tente novamente mais tarde.";
+                  break;
+                default:
+                  friendlyMessage = `Erro: ${error.message}`;
+              }
+            } else if (error.message.includes('Firebase Auth failed to initialize')) {
+                friendlyMessage = 'Problema de inicialização do Firebase Auth. Por favor, contacte o suporte (código: F002).';
+            }
+            firebaseErrorMessage.textContent = friendlyMessage;
+            firebaseErrorMessage.style.display = 'block';
           }
-          firebaseErrorMessage.textContent = friendlyMessage;
-          firebaseErrorMessage.style.display = 'block';
-        }
-      });
+        });
+      } else {
+          console.error('[DEBUG - Element Not Found]: loginForm element not found. Event listener not attached.');
+          document.getElementById('firebase-error-message').textContent = 'Erro interno: Formulário de login não encontrado. Por favor, contacte o suporte.';
+          document.getElementById('firebase-error-message').style.display = 'block';
+      }
     </script>
     <script>
       if ('serviceWorker' in navigator) {
