@@ -4,32 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title|default('Registrar Anamnese') }} - Clínica On</title>
-    <!-- Inclui o Tailwind CSS para estilização -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configuração do Tailwind para usar a fonte Inter e cores personalizadas -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        primary: '#a6683c', /* Cor principal da sua clínica */
-                        secondary: '#c68642', /* Cor secundária */
-                        darkbg: '#111827', /* Fundo escuro */
-                        cardbg: '#ffffff', /* Fundo do card/formulário */
-                        textcolor: '#374151', /* Cor do texto principal */
-                        mutedcolor: '#6c757d', /* Cor para texto secundário */
-                        dangercolor: '#dc3545', /* Cor para erros/perigo */
-                        medicalblue: '#2196F3', /* Um azul médico, se relevante */
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Font Awesome para ícones -->
+    <!-- Ícone da Aba e PWA -->
+    <link rel="icon" type="image/png" href="https://placehold.co/40x40/a6683c/ffffff?text=C">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/a6683c/ffffff?text=C">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#29788d">
+
+    <!-- Fontes e Ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Estilos personalizados para layout e responsividade -->
     <style>
         :root {
@@ -42,7 +26,7 @@
             --danger: #dc3545;
             --success: #198754;
             --warning: #ffc107;
-            --primary: #a6683c; 
+            --primary: #29788d; 
             --secondary: #c68642;
             --dark-bg: #1a1a1a;
             --dark-text: #f8f9fa;
@@ -207,15 +191,13 @@
             color: var(--text); font-size: 0.9rem;
         }
         .form-group input[type="text"],
-        .form-group select,
-        .form-group textarea { /* Incluído textarea aqui */
+        .form-group select { /* Excluído textarea daqui, estilizado separadamente */
             width: 100%; padding: 0.75rem; border: 1px solid var(--bs-border-color);
             border-radius: 6px; font-size: 1rem; background-color: var(--card);
             color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus { /* Incluído textarea aqui */
+        .form-group select:focus { /* Excluído textarea daqui */
             border-color: var(--primary);
             box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent);
             outline: none;
@@ -267,10 +249,10 @@
         .editor-toolbar button:hover {
             background-color: rgba(0,0,0,0.05);
         }
-        /* Removido .editor-content e substituído por textarea#conteudo */
+        /* O TEXTAREA agora tem as classes e estilos para se parecer com o editor */
         textarea#conteudo {
-            min-height: 300px;
-            max-height: 500px;
+            min-height: 400px; /* Aumentado para melhor visualização */
+            width: 100%;
             overflow-y: auto;
             padding: 0.75rem;
             border: 1px solid var(--bs-border-color);
@@ -280,11 +262,17 @@
             color: var(--text);
             outline: none;
             line-height: 1.6;
-            resize: vertical; /* Permite redimensionar verticalmente */
+            resize: both; /* Alterado para permitir redimensionar em ambos os lados */
+            box-shadow: none; /* Remove a sombra padrão do input/textarea */
         }
         textarea#conteudo:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent);
+        }
+        /* Estilo para placeholder */
+        textarea#conteudo::placeholder {
+            color: var(--muted);
+            opacity: 0.7; /* Para compatibilidade com navegadores */
         }
 
 
@@ -337,17 +325,17 @@
                 </div>
                 <nav>
                     <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
-                        <li class="active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
+                        <li class="nav-item"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                        <li class="nav-item"><a href="{{ url_for('listar_pacientes') }}"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
+                        <li class="nav-item active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li class="nav-item"><a href="{{ url_for('listar_profissionais') }}"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
+                        <li class="nav-item"><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li class="nav-item"><a href="{{ url_for('listar_convenios') }}"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li class="nav-item"><a href="{{ url_for('listar_horarios') }}"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
+                        <li class="nav-item"><a href="{{ url_for('listar_agendamentos') }}"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
+                        <li class="nav-item"><a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
+                        <li class="nav-item"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -366,7 +354,13 @@
                 <div class="topbar-left">
                     <button class="menu-btn-mobile"><i class="fas fa-bars"></i></button>
                     <button class="toggle-btn-desktop"><i class="fas fa-outdent"></i></button>
-                    <span class="page-title">{{ page_title|default('Registrar Anamnese') }}</span>
+                    <span class="page-title">
+                        {% if anamnese %}
+                            Editar Anamnese para {{ paciente_nome }}
+                        {% else %}
+                            Registrar Anamnese para {{ paciente_nome }}
+                        {% endif %}
+                    </span>
                 </div>
             </div>
 
@@ -383,7 +377,13 @@
                     {% endwith %}
 
                     <div class="form-card">
-                        <h2 class="form-title">{{ page_title|default('Registrar Anamnese') }} para {{ paciente_nome }}</h2>
+                        <h2 class="form-title">
+                            {% if anamnese %}
+                                Editar Anamnese para {{ paciente_nome }}
+                            {% else %}
+                                Registrar Anamnese para {{ paciente_nome }}
+                            {% endif %}
+                        </h2>
                         
                         <form id="anamneseForm" method="POST" action="{{ action_url|default('') }}">
                             <input type="hidden" name="paciente_id" value="{{ paciente_id }}">
@@ -412,7 +412,6 @@
                                     <button type="button" data-command="undo"><i class="fas fa-undo"></i></button>
                                     <button type="button" data-command="redo"><i class="fas fa-redo"></i></button>
                                 </div>
-                                <!-- O campo agora é um TEXTAREA normal, que enviará seu valor. -->
                                 <textarea id="conteudo" name="conteudo" class="editor-content" 
                                           placeholder="Digite o conteúdo da anamnese aqui...">{{ anamnese.conteudo | safe if anamnese else '' }}</textarea>
                             </div>
@@ -440,6 +439,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
         import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 
+        // A configuração do Firebase será injetada pelo ambiente do Canvas
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
 
         let app;
@@ -448,6 +448,7 @@
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
         } catch (e) { 
+            // Tenta inicializar novamente se falhou silenciosamente, caso firebaseConfig não estivesse pronta
             if (!app) app = initializeApp(firebaseConfig); 
             if (!auth) auth = getAuth(app); 
             console.error("Erro ao inicializar Firebase no cliente:", e);
@@ -461,6 +462,7 @@
             const themeToggle = document.querySelector('#theme-toggle');
             const logoutButton = document.getElementById('logoutButton');
 
+            // Rich text editor logic
             const editorContent = document.getElementById('conteudo'); // Agora é o TEXTAREA
             const modeloBaseSelect = document.getElementById('modelo_base_id');
             const anamneseForm = document.getElementById('anamneseForm');
