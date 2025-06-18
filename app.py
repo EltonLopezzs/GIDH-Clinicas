@@ -43,6 +43,48 @@ def format_firestore_timestamp(timestamp):
         return timestamp.astimezone(SAO_PAULO_TZ).strftime('%Y-%m-%dT%H:%M:%S') # ISO format for JS compatibility
     return None # Or handle other types if needed
 
+# Helper function to recursively convert Firestore document data to a serializable dictionary
+def convert_doc_to_dict(doc_snapshot):
+    data = doc_snapshot.to_dict()
+    if not data:
+        return {}
+    
+    # Add the document ID
+    data['id'] = doc_snapshot.id
+
+    def _convert_value(value):
+        if isinstance(value, datetime.datetime):
+            return format_firestore_timestamp(value) # Use the existing formatter
+        elif isinstance(value, dict):
+            return {k: _convert_value(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [_convert_value(item) for item in value]
+        # Ensure any Jinja2 Undefined objects are converted to None
+        if isinstance(value, type(app.jinja_env.undefined)): # Check if it's a Jinja2 Undefined object
+            return None
+        return value
+
+    return {k: _convert_value(v) for k, v in data.items()}
+
+# Helper function to parse date input with multiple formats
+def parse_date_input(date_string):
+    if not date_string:
+        return None
+    
+    # Try YYYY-MM-DD first (expected from flatpickr's dateFormat)
+    try:
+        return datetime.datetime.strptime(date_string, '%Y-%m-%d').date()
+    except ValueError:
+        pass # Fallback to next format
+
+    # Try DD/MM/YYYY (common manual input or altFormat from flatpickr)
+    try:
+        return datetime.datetime.strptime(date_string, '%d/%m/%Y').date()
+    except ValueError:
+        pass # No match
+    
+    return None # Return None if no valid format is found
+
 
 # Custom decorator to require the user to be logged in.
 def login_required(f):
@@ -534,7 +576,7 @@ def editar_usuario(user_uid):
                         'criado_em': firestore.SERVER_TIMESTAMP
                     })
 
-            flash('User updated successfully!', 'success')
+            flash(f'User {email} ({role}) added successfully!', 'success')
             return redirect(url_for('listar_usuarios'))
         except firebase_admin.auth.EmailAlreadyExistsError:
             flash('The provided email is already in use by another user.', 'danger')
@@ -559,7 +601,7 @@ def editar_usuario(user_uid):
 
 @app.route('/usuarios/ativar_desativar/<string:user_uid>', methods=['POST'])
 @login_required
-@admin_required
+@admin_required # Only admins can activate/deactivate professionals
 def ativar_desativar_usuario(user_uid):
     clinica_id = session['clinica_id']
     try:
@@ -698,7 +740,7 @@ def ativar_desativar_profissional(profissional_doc_id):
         if profissional_doc.exists:
             data = profissional_doc.to_dict()
             if data:
-                current_status = data.get('ativo', False)
+                current_status = data.get('ativo', False) 
                 new_status = not current_status
                 profissional_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
                 flash(f'Professional {"enabled" if new_status else "disabled"} successfully!', 'success')
@@ -808,17 +850,15 @@ def adicionar_paciente():
 
         try:
             # Converts date of birth to a datetime object if provided
-            data_nascimento_dt = None
-            if data_nascimento:
-                try:
-                    data_nascimento_dt = datetime.datetime.strptime(data_nascimento, '%Y-%m-%d').date()
-                except ValueError:
-                    flash('Invalid date of birth format. Use Yamazaki-MM-DD.', 'danger')
-                    return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
+            data_nascimento_dt = parse_date_input(data_nascimento) # Use the new parser
+            
+            if data_nascimento and data_nascimento_dt is None: # Check if input was provided but parsing failed
+                flash('Invalid date of birth format. Please use YYYY-MM-DD or DD/MM/YYYY.', 'danger') # Corrected message
+                return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
 
             paciente_data = {
                 'nome': nome,
-                'data_nascimento': data_nascimento_dt,
+                'data_nascimento': data_nascimento_dt, # Use the parsed datetime.date object
                 'cpf': cpf if cpf else None,
                 'rg': rg if rg else None,
                 'genero': genero if genero else None,
@@ -894,17 +934,15 @@ def editar_paciente(paciente_doc_id):
             return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
 
         try:
-            data_nascimento_dt = None
-            if data_nascimento:
-                try:
-                    data_nascimento_dt = datetime.datetime.strptime(data_nascimento, '%Y-%m-%d').date()
-                except ValueError:
-                    flash('Invalid date of birth format. Use Yamazaki-MM-DD.', 'danger')
-                    return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
+            data_nascimento_dt = parse_date_input(data_nascimento) # Use the new parser
+            
+            if data_nascimento and data_nascimento_dt is None: # Check if input was provided but parsing failed
+                flash('Invalid date of birth format. Please use YYYY-MM-DD or DD/MM/YYYY.', 'danger') # Corrected message
+                return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
 
             paciente_data_update = {
                 'nome': nome,
-                'data_nascimento': data_nascimento_dt,
+                'data_nascimento': data_nascimento_dt, # Use the parsed datetime.date object
                 'cpf': cpf if cpf else None,
                 'rg': rg if rg else None,
                 'genero': genero if genero else None,
@@ -941,9 +979,12 @@ def editar_paciente(paciente_doc_id):
             # Formats the date of birth for the input type="date" field
             if paciente.get('data_nascimento') and isinstance(paciente['data_nascimento'], datetime.date):
                 paciente['data_nascimento'] = paciente['data_nascimento'].strftime('%Y-%m-%d')
-            else: # If it's a Firestore timestamp, converts to datetime.date
-                if isinstance(paciente.get('data_nascimento'), datetime.datetime):
-                    paciente['data_nascimento'] = paciente['data_nascimento'].date().strftime('%Y-%m-%d')
+            # If it's a Firestore timestamp, converts to datetime.date
+            elif isinstance(paciente.get('data_nascimento'), datetime.datetime):
+                paciente['data_nascimento'] = paciente['data_nascimento'].date().strftime('%Y-%m-%d')
+            # Handle cases where data_nascimento might be None or an empty string, to avoid errors in the form
+            else:
+                paciente['data_nascimento'] = '' # Ensure it's an empty string if invalid/None
 
             return render_template('paciente_form.html', paciente=paciente, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
         else:
@@ -1454,13 +1495,13 @@ def listar_agendamentos():
             dt_inicio_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_inicio'], '%Y-%m-%d')).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_utc))
         except ValueError:
-            flash('Invalid start date. Use Yamazaki-MM-DD format.', 'warning')
+            flash('Invalid start date. Use YYYY-MM-DD format.', 'warning')
     if filtros_atuais['data_fim']:
         try:
             dt_fim_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_fim'], '%Y-%m-%d').replace(hour=23, minute=59, second=59)).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_utc))
         except ValueError:
-            flash('Invalid end date. Use Yamazaki-MM-DD format.', 'warning')
+            flash('Invalid end date. Use YYYY-MM-DD format.', 'warning')
 
     try:
         docs_stream = query.order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING).stream()
@@ -1712,15 +1753,8 @@ def adicionar_anamnese(paciente_doc_id):
     try:
         modelos_docs = db.collection('clinicas').document(clinica_id).collection('modelos_anamnese').order_by('identificacao').stream()
         for doc in modelos_docs:
-            modelo = doc.to_dict()
-            if modelo:
-                modelo['id'] = doc.id
-                # Convert timestamps to string format for JSON serialization in the template
-                if 'criado_em' in modelo:
-                    modelo['criado_em'] = format_firestore_timestamp(modelo['criado_em'])
-                if 'atualizado_em' in modelo:
-                    modelo['atualizado_em'] = format_firestore_timestamp(modelo['atualizado_em'])
-                modelos_anamnese.append(modelo)
+            modelo = convert_doc_to_dict(doc) # Use the new converter
+            modelos_anamnese.append(modelo)
     except Exception as e:
         flash('Error loading anamnesis templates.', 'warning')
         print(f"Error loading anamnesis templates: {e}")
@@ -1768,15 +1802,8 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
     try:
         modelos_docs = db.collection('clinicas').document(clinica_id).collection('modelos_anamnese').order_by('identificacao').stream()
         for doc in modelos_docs:
-            modelo = doc.to_dict()
-            if modelo:
-                modelo['id'] = doc.id
-                # Convert timestamps to string format for JSON serialization in the template
-                if 'criado_em' in modelo:
-                    modelo['criado_em'] = format_firestore_timestamp(modelo['criado_em'])
-                if 'atualizado_em' in modelo:
-                    modelo['atualizado_em'] = format_firestore_timestamp(modelo['atualizado_em'])
-                modelos_anamnese.append(modelo)
+            modelo = convert_doc_to_dict(doc) # Use the new converter
+            modelos_anamnese.append(modelo)
     except Exception as e:
         flash('Error loading anamnesis templates.', 'warning')
         print(f"Error loading anamnesis templates (edit): {e}")
@@ -1828,15 +1855,8 @@ def listar_modelos_anamnese():
     try:
         docs = db.collection('clinicas').document(clinica_id).collection('modelos_anamnese').order_by('identificacao').stream()
         for doc in docs:
-            modelo = doc.to_dict()
-            if modelo:
-                modelo['id'] = doc.id
-                # Convert timestamps to string format for JSON serialization in the template
-                if 'criado_em' in modelo:
-                    modelo['criado_em'] = format_firestore_timestamp(modelo['criado_em'])
-                if 'atualizado_em' in modelo:
-                    modelo['atualizado_em'] = format_firestore_timestamp(modelo['atualizado_em'])
-                modelos_lista.append(modelo)
+            modelo = convert_doc_to_dict(doc) # Use the new converter
+            modelos_lista.append(modelo)
     except Exception as e:
         flash(f'Error listing anamnesis templates: {e}.', 'danger')
         print(f"Error list_anamnesis_templates: {e}")
@@ -1896,13 +1916,7 @@ def editar_modelo_anamnese(modelo_doc_id):
     try:
         modelo_doc = modelo_ref.get()
         if modelo_doc.exists:
-            modelo = modelo_doc.to_dict()
-            modelo['id'] = modelo_doc.id
-            # Convert timestamps to string format for JSON serialization in the template
-            if 'criado_em' in modelo:
-                modelo['criado_em'] = format_firestore_timestamp(modelo['criado_em'])
-            if 'atualizado_em' in modelo:
-                modelo['atualizado_em'] = format_firestore_timestamp(modelo['atualizado_em'])
+            modelo = convert_doc_to_dict(modelo_doc) # Use the new converter
             return render_template('modelo_anamnese_form.html', modelo=modelo, action_url=url_for('editar_modelo_anamnese', modelo_doc_id=modelo_doc_id))
         else:
             flash('Anamnesis template not found.', 'danger')
