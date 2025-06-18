@@ -1077,7 +1077,7 @@ def editar_servico_procedimento(servico_doc_id):
     try:
         servico_doc = servico_ref.get()
         if servico_doc.exists:
-            servico = servico.to_dict()
+            servico = servico_doc.to_dict() # Corrected: use servico_doc.to_dict()
             if servico:
                 servico['id'] = servico_doc.id
                 servico['preco_form'] = str(servico.get('preco_sugerido', '0.00')).replace('.', ',')
@@ -1766,17 +1766,20 @@ def adicionar_anamnese(paciente_doc_id):
         print(f"Error loading anamnesis templates: {e}")
 
     if request.method == 'POST':
-        conteudo = request.form['conteudo']
+        # Prioriza o conteúdo vindo do campo de formulário HTML
+        conteudo = request.form.get('conteudo', '').strip() 
         modelo_base_id = request.form.get('modelo_base_id')
-        print(f"DEBUG (add_anamnese): Conteúdo recebido: {conteudo[:100]}...") # Log first 100 chars
-        print(f"DEBUG (add_anamnese): Todos os dados do formulário: {request.form}") # NOVO LOG
+        
+        # Logs para depuração
+        print(f"DEBUG (adicionar_anamnese - POST): Conteúdo recebido (primeiros 100 caracteres): {conteudo[:100]}...") 
+        print(f"DEBUG (adicionar_anamnese - POST): Todos os dados do formulário: {request.form}") 
         
         try:
             db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
                 'profissional_id': profissional_doc_id, # Saves the ID of the professional who created it
                 'data_registro': firestore.SERVER_TIMESTAMP,
                 'tipo_registro': 'anamnese',
-                'conteudo': conteudo,
+                'conteudo': conteudo, # Salva o conteúdo obtido do formulário
                 'modelo_base_id': modelo_base_id if modelo_base_id else None
             })
             flash('Anamnesis added successfully!', 'success')
@@ -1817,14 +1820,17 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         print(f"Error loading anamnesis templates (edit): {e}")
 
     if request.method == 'POST':
-        conteudo = request.form['conteudo']
+        # Prioriza o conteúdo vindo do campo de formulário HTML
+        conteudo = request.form.get('conteudo', '').strip()
         modelo_base_id = request.form.get('modelo_base_id')
-        print(f"DEBUG (edit_anamnese): Conteúdo recebido: {conteudo[:100]}...") # Log first 100 chars
-        print(f"DEBUG (edit_anamnese): Todos os dados do formulário: {request.form}") # NOVO LOG
+        
+        # Logs para depuração
+        print(f"DEBUG (editar_anamnese - POST): Conteúdo recebido (primeiros 100 caracteres): {conteudo[:100]}...") 
+        print(f"DEBUG (editar_anamnese - POST): Todos os dados do formulário: {request.form}")
         
         try:
             anamnese_ref.update({
-                'conteudo': conteudo,
+                'conteudo': conteudo, # Atualiza o conteúdo obtido do formulário
                 'modelo_base_id': modelo_base_id if modelo_base_id else None,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             })
