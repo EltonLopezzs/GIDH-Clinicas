@@ -755,7 +755,7 @@ def ativar_desativar_profissional(profissional_doc_id):
     except firebase_admin.auth.UserNotFoundError:
         flash('Professional not found in Firebase Authentication.', 'danger')
     except Exception as e:
-        flash(f'Error changing user status: {e}', 'danger')
+        flash(f'Error changing professional status: {e}', 'danger')
         print(f"Error activate_deactivate_user: {e}")
     return redirect(url_for('listar_usuarios'))
 
@@ -1077,7 +1077,7 @@ def editar_servico_procedimento(servico_doc_id):
     try:
         servico_doc = servico_ref.get()
         if servico_doc.exists:
-            servico = servico_doc.to_dict()
+            servico = servico.to_dict()
             if servico:
                 servico['id'] = servico_doc.id
                 servico['preco_form'] = str(servico.get('preco_sugerido', '0.00')).replace('.', ',')
@@ -1768,6 +1768,8 @@ def adicionar_anamnese(paciente_doc_id):
     if request.method == 'POST':
         conteudo = request.form['conteudo']
         modelo_base_id = request.form.get('modelo_base_id')
+        print(f"DEBUG (add_anamnese): Conteúdo recebido: {conteudo[:100]}...") # Log first 100 chars
+        print(f"DEBUG (add_anamnese): Todos os dados do formulário: {request.form}") # NOVO LOG
         
         try:
             db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
@@ -1817,6 +1819,8 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
     if request.method == 'POST':
         conteudo = request.form['conteudo']
         modelo_base_id = request.form.get('modelo_base_id')
+        print(f"DEBUG (edit_anamnese): Conteúdo recebido: {conteudo[:100]}...") # Log first 100 chars
+        print(f"DEBUG (edit_anamnese): Todos os dados do formulário: {request.form}") # NOVO LOG
         
         try:
             anamnese_ref.update({

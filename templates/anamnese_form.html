@@ -1,615 +1,673 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-      <meta name="theme-color" content="#a6683c">
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/a6683c/ffffff?text=C">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ page_title|default('Registrar Anamnese') }} - Clínica On</title>
-  <link rel="icon" type="image/png" href="https://placehold.co/40x40/a6683c/ffffff?text=C">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      --bg: #f8f9fa;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6c757d;
-      --accent: #111827;
-      --accent-light: #4b5563;
-      --danger: #dc3545;
-      --success: #198754;
-      --warning: #ffc107;
-      --primary: #a6683c; 
-      --secondary: #c68642;
-      --dark-bg: #1a1a1a;
-      --dark-text: #f8f9fa;
-      --dark-card: #2c2c2c;
-      --info: #0dcaf0; 
-      --bs-border-color: #dee2e6; 
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title|default('Registrar Anamnese') }} - Clínica On</title>
+    <!-- Inclui o Tailwind CSS para estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuração do Tailwind para usar a fonte Inter e cores personalizadas -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#a6683c', /* Cor principal da sua clínica */
+                        secondary: '#c68642', /* Cor secundária */
+                        darkbg: '#111827', /* Fundo escuro */
+                        cardbg: '#ffffff', /* Fundo do card/formulário */
+                        textcolor: '#374151', /* Cor do texto principal */
+                        mutedcolor: '#6c757d', /* Cor para texto secundário */
+                        dangercolor: '#dc3545', /* Cor para erros/perigo */
+                        medicalblue: '#2196F3', /* Um azul médico, se relevante */
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Estilos personalizados para layout e responsividade -->
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #6c757d;
+            --accent: #111827;
+            --accent-light: #4b5563;
+            --danger: #dc3545;
+            --success: #198754;
+            --warning: #ffc107;
+            --primary: #a6683c; 
+            --secondary: #c68642;
+            --dark-bg: #1a1a1a;
+            --dark-text: #f8f9fa;
+            --dark-card: #2c2c2c;
+            --info: #0dcaf0; 
+            --bs-border-color: #dee2e6; 
+        }
 
-    [data-theme="dark"] {
-      --bg: var(--dark-bg);
-      --text: var(--dark-text);
-      --card: var(--dark-card);
-      --muted: #a0a0a0;
-      --bs-border-color: #495057; 
-    }
+        [data-theme="dark"] {
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: #a0a0a0;
+            --bs-border-color: #495057; 
+        }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow-x: hidden; } 
-    body {
-      font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text);
-      min-height: 100vh; line-height: 1.6; transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    .layout { display: flex; min-height: 100vh; width: 100%; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; overflow-x: hidden; } 
+        body {
+            font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text);
+            min-height: 100vh; line-height: 1.6; transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .layout { display: flex; min-height: 100vh; width: 100%; }
 
-    .sidebar {
-      width: 260px; background: linear-gradient(180deg, var(--primary), var(--accent)); color: white;
-      position: fixed; top:0; left:0; height: 100vh; padding: 0; 
-      transition: width 0.3s ease, transform 0.3s ease; z-index: 1000;
-      display: flex; flex-direction: column;
-    }
-    .sidebar-inner-content { 
-        padding: 0; 
-        height: 100%;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-    }
-    .sidebar-header {
-        padding: 20px 10px 15px; 
-        margin-bottom: 15px; 
-        border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center;
-        flex-shrink: 0; 
-        height: 70px; 
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .sidebar-header .logo { 
-        font-size: 1.5rem; font-weight: 700; color: white; text-decoration: none; 
-        display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-    }
-    .sidebar.collapsed { width: 70px; } 
-    .sidebar.collapsed .sidebar-inner-content { padding-top: 0; }
-    .sidebar.collapsed .sidebar-header { padding: 20px 5px 15px; } 
-    .sidebar.collapsed .sidebar-header .logo span { display: none; }
-    .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
-    
-    .sidebar nav { flex-grow: 1; margin-top:10px; padding: 0 10px;} 
-    .sidebar.collapsed nav { padding: 0 5px; }
-    .sidebar nav ul { list-style: none; padding: 0; } 
+        .sidebar {
+            width: 260px; background: linear-gradient(180deg, var(--primary), var(--accent)); color: white;
+            position: fixed; top:0; left:0; height: 100vh; padding: 0; 
+            transition: width 0.3s ease, transform 0.3s ease; z-index: 1000;
+            display: flex; flex-direction: column;
+        }
+        .sidebar-inner-content { 
+            padding: 0; 
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 20px 10px 15px; 
+            margin-bottom: 15px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center;
+            flex-shrink: 0; 
+            height: 70px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sidebar-header .logo { 
+            font-size: 1.5rem; font-weight: 700; color: white; text-decoration: none; 
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        }
+        .sidebar.collapsed { width: 70px; } 
+        .sidebar.collapsed .sidebar-inner-content { padding-top: 0; }
+        .sidebar.collapsed .sidebar-header { padding: 20px 5px 15px; } 
+        .sidebar.collapsed .sidebar-header .logo span { display: none; }
+        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+        
+        .sidebar nav { flex-grow: 1; margin-top:10px; padding: 0 10px;} 
+        .sidebar.collapsed nav { padding: 0 5px; }
+        .sidebar nav ul { list-style: none; padding: 0; } 
 
-    .sidebar nav ul li.nav-item { margin: 8px 0; }
-    .sidebar nav ul li.nav-item a {
-      color: white; text-decoration: none; display: flex; align-items: center;
-      padding: 10px 15px; 
-      gap: 15px; border-radius: 8px; font-size: 0.95rem; 
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      transition: background 0.2s ease;
-    }
-    .sidebar nav ul li.nav-item a i { width: 20px; text-align: center; font-size: 1.05rem; flex-shrink: 0; }
-    .sidebar.collapsed nav ul li.nav-item a span { display: none; }
-    .sidebar.collapsed nav ul li.nav-item a { justify-content: center; padding: 10px; }
-    .sidebar nav ul li.nav-item a:hover { background: rgba(255, 255, 255, 0.1); }
-    .sidebar nav ul li.nav-item.active a { background: rgba(255, 255, 255, 0.2); font-weight: 600; }
-    
-    .sidebar-footer { padding: 15px 10px 20px 10px; margin-top: auto;  flex-shrink: 0;} 
-    .sidebar.collapsed .sidebar-footer { padding: 15px 5px 20px 5px; }
+        .sidebar nav ul li.nav-item { margin: 8px 0; }
+        .sidebar nav ul li.nav-item a {
+            color: white; text-decoration: none; display: flex; align-items: center;
+            padding: 10px 15px; 
+            gap: 15px; border-radius: 8px; font-size: 0.95rem; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            transition: background 0.2s ease;
+        }
+        .sidebar nav ul li.nav-item a i { width: 20px; text-align: center; font-size: 1.05rem; flex-shrink: 0; }
+        .sidebar.collapsed nav ul li.nav-item a span { display: none; }
+        .sidebar.collapsed nav ul li.nav-item a { justify-content: center; padding: 10px; }
+        .sidebar nav ul li.nav-item a:hover { background: rgba(255, 255, 255, 0.1); }
+        .sidebar nav ul li.nav-item.active a { background: rgba(255, 255, 255, 0.2); font-weight: 600; }
+        
+        .sidebar-footer { padding: 15px 10px 20px 10px; margin-top: auto;  flex-shrink: 0;} 
+        .sidebar.collapsed .sidebar-footer { padding: 15px 5px 20px 5px; }
 
-    #theme-toggle {
-      background: none; border: none; cursor: pointer;
-      color: white; padding: 10px 15px; border-radius: 8px; width: 100%;
-      display: flex; align-items: center; gap: 15px; transition: background 0.2s ease;
-      font-family: 'Inter', sans-serif; font-size: 0.95rem;
-    }
-    #theme-toggle:hover { background: rgba(255,255,255,0.1); }
-    .sidebar.collapsed #theme-toggle span{ display: none; }
-    .sidebar.collapsed #theme-toggle { justify-content: center; padding: 10px; }
-    
-    .sidebar-footer ul { list-style: none; margin-top: 8px; padding: 0;}
-    .sidebar-footer ul li a {
-        color: white; text-decoration: none; display: flex; align-items: center;
-        padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-        transition: background 0.2s ease;
-    }
-    .sidebar-footer ul li a:hover { background: rgba(255,255,255,0.1); }
-    .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
-    .sidebar.collapsed .sidebar-footer ul li a { justify-content: center; padding: 10px;}
+        #theme-toggle {
+            background: none; border: none; cursor: pointer;
+            color: white; padding: 10px 15px; border-radius: 8px; width: 100%;
+            display: flex; align-items: center; gap: 15px; transition: background 0.2s ease;
+            font-family: 'Inter', sans-serif; font-size: 0.95rem;
+        }
+        #theme-toggle:hover { background: rgba(255,255,255,0.1); }
+        .sidebar.collapsed #theme-toggle span{ display: none; }
+        .sidebar.collapsed #theme-toggle { justify-content: center; padding: 10px; }
+        
+        .sidebar-footer ul { list-style: none; margin-top: 8px; padding: 0;}
+        .sidebar-footer ul li a {
+            color: white; text-decoration: none; display: flex; align-items: center;
+            padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+            transition: background 0.2s ease;
+        }
+        .sidebar-footer ul li a:hover { background: rgba(255,255,255,0.1); }
+        .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
+        .sidebar.collapsed .sidebar-footer ul li a { justify-content: center; padding: 10px;}
 
-    .main-content {
-      flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-      display: flex; flex-direction: column; width: calc(100% - 260px);
-    }
-    .main-content.collapsed { margin-left: 70px; width: calc(100% - 70px); }
+        .main-content {
+            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 260px);
+        }
+        .main-content.collapsed { margin-left: 70px; width: calc(100% - 70px); }
 
-    .topbar {
-      background-color: var(--card); color: var(--text); padding: 0 1rem; 
-      display: flex; align-items: center; justify-content: space-between; 
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid var(--bs-border-color);
-      height: 70px; flex-shrink: 0;
-    }
-    .topbar-left { display: flex; align-items: center; gap: 0.5rem; }
-    .topbar .page-title { font-weight: 600; font-size: 1.1rem; color: var(--primary); }
-    
-    .toggle-btn-desktop, 
-    .menu-btn-mobile { 
-      background: none; border: none; font-size: 1.5rem; cursor: pointer;
-      color: var(--text); padding: 6px; border-radius: 8px;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-    .toggle-btn-desktop:hover, .menu-btn-mobile:hover { background-color: rgba(0,0,0,0.05); }
-    .toggle-btn-desktop { display: none; } 
-    .menu-btn-mobile { display: block; } 
+        .topbar {
+            background-color: var(--card); color: var(--text); padding: 0 1rem; 
+            display: flex; align-items: center; justify-content: space-between; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid var(--bs-border-color);
+            height: 70px; flex-shrink: 0;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 0.5rem; }
+        .topbar .page-title { font-weight: 600; font-size: 1.1rem; color: var(--primary); }
+        
+        .toggle-btn-desktop, 
+        .menu-btn-mobile { 
+            background: none; border: none; font-size: 1.5rem; cursor: pointer;
+            color: var(--text); padding: 6px; border-radius: 8px;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .toggle-btn-desktop:hover, .menu-btn-mobile:hover { background-color: rgba(0,0,0,0.05); }
+        .toggle-btn-desktop { display: none; } 
+        .menu-btn-mobile { display: block; } 
 
-    main { flex-grow: 1; padding: 25px; overflow-y: auto; }
-    .container-fluid { width: 100%; padding-right: 15px; padding-left: 15px; margin-right: auto; margin-left: auto; }
-    
-    .flash-messages { margin-bottom: 1.5rem; }
-    .flash-message {
-        padding: 0.8rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent;
-        border-radius: 0.3rem; font-size: 0.9rem;
-    }
-    .flash-message.success {
-        color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent);
-        border-color: color-mix(in srgb, var(--success) 30%, transparent);
-    }
-    .flash-message.danger, .flash-message.error {
-        color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent);
-        border-color: color-mix(in srgb, var(--danger) 30%, transparent);
-    }
-    .flash-message.info {
-        color: var(--info); background-color: color-mix(in srgb, var(--info) 15%, transparent);
-        border-color: color-mix(in srgb, var(--info) 30%, transparent);
-    }
-    .flash-message.warning {
-        color: var(--text); background-color: color-mix(in srgb, var(--warning) 25%, transparent);
-        border-color: color-mix(in srgb, var(--warning) 40%, transparent);
-    }
-    
-    .form-card {
-      background: var(--card); padding: 2rem; border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); margin-top: 1.5rem;
-      max-width: 800px; 
-      margin-left: auto; margin-right: auto;
-    }
-    .form-card h2.form-title {
-      text-align: center; font-size: 1.6rem; color: var(--primary); margin-bottom: 1.8rem;
-    }
-    .form-group { margin-bottom: 1.2rem; }
-    .form-group label {
-      display: block; font-weight: 600; margin-bottom: 0.5rem;
-      color: var(--text); font-size: 0.9rem;
-    }
-    .form-group input[type="text"],
-    .form-group select,
-    .form-group textarea {
-      width: 100%; padding: 0.75rem; border: 1px solid var(--bs-border-color);
-      border-radius: 6px; font-size: 1rem; background-color: var(--card);
-      color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent);
-      outline: none;
-    }
-    
-    .form-actions {
-      margin-top: 1.8rem; display: flex;
-      justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap;
-    }
+        main { flex-grow: 1; padding: 25px; overflow-y: auto; }
+        .container-fluid { width: 100%; padding-right: 15px; padding-left: 15px; margin-right: auto; margin-left: auto; }
+        
+        .flash-messages { margin-bottom: 1.5rem; }
+        .flash-message {
+            padding: 0.8rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent;
+            border-radius: 0.3rem; font-size: 0.9rem;
+        }
+        .flash-message.success {
+            color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent);
+            border-color: color-mix(in srgb, var(--success) 30%, transparent);
+        }
+        .flash-message.danger, .flash-message.error {
+            color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent);
+            border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+        }
+        .flash-message.info {
+            color: var(--info); background-color: color-mix(in srgb, var(--info) 15%, transparent);
+            border-color: color-mix(in srgb, var(--info) 30%, transparent);
+        }
+        .flash-message.warning {
+            color: var(--text); background-color: color-mix(in srgb, var(--warning) 25%, transparent);
+            border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+        }
+        
+        .form-card {
+            background: var(--card); padding: 2rem; border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); margin-top: 1.5rem;
+            max-width: 800px; 
+            margin-left: auto; margin-right: auto;
+        }
+        .form-card h2.form-title {
+            text-align: center; font-size: 1.6rem; color: var(--primary); margin-bottom: 1.8rem;
+        }
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label {
+            display: block; font-weight: 600; margin-bottom: 0.5rem;
+            color: var(--text); font-size: 0.9rem;
+        }
+        .form-group input[type="text"],
+        .form-group select,
+        .form-group textarea {
+            width: 100%; padding: 0.75rem; border: 1px solid var(--bs-border-color);
+            border-radius: 6px; font-size: 1rem; background-color: var(--card);
+            color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent);
+            outline: none;
+        }
+        
+        .form-actions {
+            margin-top: 1.8rem; display: flex;
+            justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap;
+        }
 
-    .btn {
-      padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 6px;
-      text-decoration: none; font-weight: 600; display: inline-flex;
-      align-items: center; gap: 0.5rem; border: 1px solid transparent;
-      cursor: pointer; transition: all 0.2s ease-in-out;
-    }
-    .btn-primary { background-color: var(--primary); color: white; border-color: var(--primary); }
-    .btn-primary:hover { background-color: color-mix(in srgb, var(--primary) 85%, black); border-color: color-mix(in srgb, var(--primary) 85%, black); }
-    .btn-secondary { background-color: var(--muted); color: white; border-color: var(--muted); }
-    .btn-secondary:hover { background-color: color-mix(in srgb, var(--muted) 85%, black); border-color: color-mix(in srgb, var(--muted) 85%, black); }
-    
-    footer {
-      margin-top: auto; text-align: center; padding: 1.5rem; font-size: 0.9rem;
-      background-color: var(--card); color: var(--muted);
-      border-top: 1px solid var(--bs-border-color);
-    }
+        .btn {
+            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 6px;
+            text-decoration: none; font-weight: 600; display: inline-flex;
+            align-items: center; gap: 0.5rem; border: 1px solid transparent;
+            cursor: pointer; transition: all 0.2s ease-in-out;
+        }
+        .btn-primary { background-color: var(--primary); color: white; border-color: var(--primary); }
+        .btn-primary:hover { background-color: color-mix(in srgb, var(--primary) 85%, black); border-color: color-mix(in srgb, var(--primary) 85%, black); }
+        .btn-secondary { background-color: var(--muted); color: white; border-color: var(--muted); }
+        .btn-secondary:hover { background-color: color-mix(in srgb, var(--muted) 85%, black); border-color: color-mix(in srgb, var(--muted) 85%, black); }
+        
+        footer {
+            margin-top: auto; text-align: center; padding: 1.5rem; font-size: 0.9rem;
+            background-color: var(--card); color: var(--muted);
+            border-top: 1px solid var(--bs-border-color);
+        }
 
-    /* Estilos específicos para o editor de texto */
-    .editor-toolbar {
-        background-color: var(--bg);
-        border: 1px solid var(--bs-border-color);
-        border-bottom: none;
-        border-radius: 6px 6px 0 0;
-        padding: 0.5rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-    }
-    .editor-toolbar button {
-        background: none;
-        border: none;
-        padding: 8px;
-        cursor: pointer;
-        font-size: 1rem;
-        color: var(--text);
-        border-radius: 4px;
-        transition: background-color 0.2s ease;
-    }
-    .editor-toolbar button:hover {
-        background-color: rgba(0,0,0,0.05);
-    }
-    .editor-content {
-        min-height: 300px;
-        max-height: 500px;
-        overflow-y: auto;
-        padding: 0.75rem;
-        border: 1px solid var(--bs-border-color);
-        border-radius: 0 0 6px 6px;
-        font-size: 1rem;
-        background-color: var(--card);
-        color: var(--text);
-        outline: none;
-        line-height: 1.6;
-    }
-    .editor-content:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent);
-    }
+        /* Estilos específicos para o editor de texto */
+        .editor-toolbar {
+            background-color: var(--bg);
+            border: 1px solid var(--bs-border-color);
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            padding: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .editor-toolbar button {
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--text);
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        .editor-toolbar button:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        .editor-content {
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 0.75rem;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0 0 6px 6px;
+            font-size: 1rem;
+            background-color: var(--card);
+            color: var(--text);
+            outline: none;
+            line-height: 1.6;
+            /* Ocultar apenas o textarea, não o editor contenteditable */
+            /* Se o editor contenteditable for o principal, o textarea pode ser display: none; */
+        }
+        .editor-content:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent);
+        }
 
 
-    @media(max-width: 768px) {
-      .sidebar { transform: translateX(-100%); width: 260px; padding-top: 0; }
-      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-      .sidebar.collapsed { transform: translateX(-100%); width: 260px; } 
-      .sidebar.collapsed nav ul li a, 
-      .sidebar.collapsed #theme-toggle, 
-      .sidebar.collapsed .sidebar-footer ul li a { justify-content: flex-start; }
-      .sidebar.collapsed nav ul li a span, 
-      .sidebar.collapsed #theme-toggle span, 
-      .sidebar.collapsed .sidebar-footer ul li a span { display: inline; }
-      .sidebar.collapsed .sidebar-header .logo span { display: inline; }
+        @media(max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: 260px; padding-top: 0; }
+            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+            .sidebar.collapsed { transform: translateX(-100%); width: 260px; } 
+            .sidebar.collapsed nav ul li a, 
+            .sidebar.collapsed #theme-toggle, 
+            .sidebar.collapsed .sidebar-footer ul li a { justify-content: flex-start; }
+            .sidebar.collapsed nav ul li a span, 
+            .sidebar.collapsed #theme-toggle span, 
+            .sidebar.collapsed .sidebar-footer ul li a span { display: inline; }
+            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
 
-      .main-content { margin-left: 0; width: 100%;}
-      .main-content.collapsed { margin-left: 0; width: 100%;} 
-      
-      .topbar .page-title { margin-left: 0; } 
-      .form-card { padding: 1.5rem; }
-      .form-card h2.form-title { font-size: 1.3rem; }
-      .form-actions { justify-content: center; }
-      .editor-toolbar { justify-content: center; }
-    }
-  </style>
+            .main-content { margin-left: 0; width: 100%;}
+            .main-content.collapsed { margin-left: 0; width: 100%;} 
+            
+            .topbar .page-title { margin-left: 0; } 
+            .form-card { padding: 1.5rem; }
+            .form-card h2.form-title { font-size: 1.3rem; }
+            .form-actions { justify-content: center; }
+            .editor-toolbar { justify-content: center; }
+        }
+    </style>
 </head>
 <body>
-  <div class="layout">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="sidebar-inner-content">
-        <div class="sidebar-header">
-          <a href="{{ url_for('index') }}" class="logo"><i class="fas fa-clinic-medical"></i> <span>ClínicaOn</span></a>
-        </div>
-        <nav>
-          <ul>
-            <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-            <li><a href="{{ url_for('listar_pacientes') }}"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
-            <li class="active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
-            <li><a href="{{ url_for('listar_profissionais') }}"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
-            <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-            <li><a href="{{ url_for('listar_convenios') }}"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
-            <li><a href="{{ url_for('listar_horarios') }}"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
-            <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
-            {% if session.user_role == 'admin' %}
-            <li><a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
-            <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
-            {% endif %}
-          </ul>
-        </nav>
-        <div class="sidebar-footer">
-          <button id="theme-toggle" aria-label="Alternar tema"><i class="fas fa-sun"></i> <span>Alternar Tema</span></button>
-          <ul>
-              <li><a href="#" id="logoutButton"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <!-- Conteúdo principal -->
-    <div class="main-content">
-      <div class="topbar">
-        <div class="topbar-left">
-          <button class="menu-btn-mobile"><i class="fas fa-bars"></i></button>
-          <button class="toggle-btn-desktop"><i class="fas fa-outdent"></i></button>
-          <span class="page-title">{{ page_title|default('Registrar Anamnese') }}</span>
-        </div>
-      </div>
-
-      <main>
-        <div class="container-fluid">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              <div class="flash-messages">
-                {% for category, message in messages %}
-                  <div class="flash-message {{ category }}">{{ message }}</div>
-                {% endfor %}
-              </div>
-            {% endif %}
-          {% endwith %}
-
-          <div class="form-card">
-            <h2 class="form-title">{{ page_title|default('Registrar Anamnese') }} para {{ paciente_nome }}</h2>
-            
-            <form method="POST" action="{{ action_url|default('') }}">
-              <div class="form-group">
-                <label for="modelo_base_id">Aplicar Modelo de Anamnese:</label>
-                <select id="modelo_base_id" name="modelo_base_id">
-                  <option value="">Nenhum Modelo (Anamnese em branco)</option>
-                  {% for modelo in modelos_anamnese %}
-                    <option value="{{ modelo.id }}" 
-                            {% if anamnese and anamnese.modelo_base_id == modelo.id %}selected{% endif %}>
-                      {{ modelo.identificacao }}
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="conteudo">Conteúdo da Anamnese:</label>
-                <div class="editor-toolbar">
-                    <button type="button" data-command="bold"><i class="fas fa-bold"></i></button>
-                    <button type="button" data-command="italic"><i class="fas fa-italic"></i></button>
-                    <button type="button" data-command="underline"><i class="fas fa-underline"></i></button>
-                    <button type="button" data-command="insertUnorderedList"><i class="fas fa-list-ul"></i></button>
-                    <button type="button" data-command="insertOrderedList"><i class="fas fa-list-ol"></i></button>
-                    <button type="button" data-command="undo"><i class="fas fa-undo"></i></button>
-                    <button type="button" data-command="redo"><i class="fas fa-redo"></i></button>
+    <div class="layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-inner-content">
+                <div class="sidebar-header">
+                    <a href="{{ url_for('index') }}" class="logo"><i class="fas fa-clinic-medical"></i> <span>ClínicaOn</span></a>
                 </div>
-                <div id="editor-content" contenteditable="true" class="editor-content" 
-                     data-placeholder="Digite o conteúdo da anamnese aqui...">{{ anamnese.conteudo | safe if anamnese else '' }}</div>
-                <textarea id="conteudo" name="conteudo" style="display:none;"></textarea>
-              </div>
-              
-              <div class="form-actions">
-                <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente_id) }}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
-                <button type="submit" class="btn btn-primary" id="submitAnamnese"><i class="fas fa-save"></i> Salvar Anamnese</button>
-              </div>
-            </form>
-          </div>
+                <nav>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
+                        <li class="active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
+                        {% if session.user_role == 'admin' %}
+                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="theme-toggle" aria-label="Alternar tema"><i class="fas fa-sun"></i> <span>Alternar Tema</span></button>
+                    <ul>
+                        <li><a href="#" id="logoutButton"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
-      </main>
 
-      <footer>
-        <div class="container">
-          <p>&copy; {{ current_year if current_year else '2025' }} Clínica On. Todos os direitos reservados.</p>
+        <!-- Conteúdo principal -->
+        <div class="main-content">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <button class="menu-btn-mobile"><i class="fas fa-bars"></i></button>
+                    <button class="toggle-btn-desktop"><i class="fas fa-outdent"></i></button>
+                    <span class="page-title">{{ page_title|default('Registrar Anamnese') }}</span>
+                </div>
+            </div>
+
+            <main>
+                <div class="container-fluid">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            <div class="flash-messages">
+                                {% for category, message in messages %}
+                                    <div class="flash-message {{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="form-card">
+                        <h2 class="form-title">{{ page_title|default('Registrar Anamnese') }} para {{ paciente_nome }}</h2>
+                        
+                        <form id="anamneseForm" method="POST" action="{{ action_url|default('') }}">
+                            <input type="hidden" name="paciente_id" value="{{ paciente_id }}">
+
+                            <div class="form-group">
+                                <label for="modelo_base_id">Aplicar Modelo de Anamnese:</label>
+                                <select id="modelo_base_id" name="modelo_base_id" class="form-select">
+                                    <option value="">Nenhum Modelo (Anamnese em branco)</option>
+                                    {% for modelo in modelos_anamnese %}
+                                        <option value="{{ modelo.id }}" 
+                                                {% if anamnese and anamnese.modelo_base_id == modelo.id %}selected{% endif %}>
+                                            {{ modelo.identificacao }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="conteudo">Conteúdo da Anamnese:</label>
+                                <div class="editor-toolbar">
+                                    <button type="button" data-command="bold"><i class="fas fa-bold"></i></button>
+                                    <button type="button" data-command="italic"><i class="fas fa-italic"></i></button>
+                                    <button type="button" data-command="underline"><i class="fas fa-underline"></i></button>
+                                    <button type="button" data-command="insertUnorderedList"><i class="fas fa-list-ul"></i></button>
+                                    <button type="button" data-command="insertOrderedList"><i class="fas fa-list-ol"></i></button>
+                                    <button type="button" data-command="undo"><i class="fas fa-undo"></i></button>
+                                    <button type="button" data-command="redo"><i class="fas fa-redo"></i></button>
+                                </div>
+                                <div id="editor-content" contenteditable="true" class="editor-content" 
+                                     data-placeholder="Digite o conteúdo da anamnese aqui...">{{ anamnese.conteudo | safe if anamnese else '' }}</div>
+                                <!-- Este textarea AGORA ESTÁ VISÍVEL mas com altura 0 e opacidade 0 para não interferir na UI, 
+                                     mas garantir que o navegador o inclua no POST. -->
+                                <textarea id="conteudo" name="conteudo" class="form-control" 
+                                          style="height: 0; opacity: 0; border: none; padding: 0;"
+                                          aria-hidden="true" 
+                                          tabindex="-1"
+                                          placeholder="Conteúdo oculto para submissão do formulário."></textarea>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente_id) }}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
+                                <button type="submit" class="btn btn-primary" id="submitAnamnese"><i class="fas fa-save"></i> Salvar Anamnese</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+
+            <footer>
+                <div class="container">
+                    <p>&copy; {{ current_year if current_year else '2025' }} Clínica On. Todos os direitos reservados.</p>
+                </div>
+            </footer>
         </div>
-      </footer>
     </div>
-  </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
-    import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
+        import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 
-    // A configuração do Firebase será injetada pelo ambiente do Canvas
-    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        // A configuração do Firebase será injetada pelo ambiente do Canvas
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
 
-    let app;
-    let auth;
-    try {
-      app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-    } catch (e) { 
-      if (!app) app = initializeApp(firebaseConfig); 
-      if (!auth) auth = getAuth(app); 
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const sidebar = document.querySelector('.sidebar');
-      const mainContent = document.querySelector('.main-content');
-      const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-      const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-      const themeToggle = document.querySelector('#theme-toggle');
-      const logoutButton = document.getElementById('logoutButton');
-
-      // Rich text editor logic
-      const editorContent = document.getElementById('editor-content');
-      const hiddenContentInput = document.getElementById('conteudo');
-      const modeloBaseSelect = document.getElementById('modelo_base_id');
-
-      // Set initial content for the hidden textarea
-      hiddenContentInput.value = editorContent.innerHTML;
-
-      // Sync editor content to hidden input on input
-      if (editorContent) {
-          editorContent.addEventListener('input', () => {
-              hiddenContentInput.value = editorContent.innerHTML;
-          });
-      }
-
-      // Handle toolbar commands
-      document.querySelectorAll('.editor-toolbar button').forEach(button => {
-          button.addEventListener('click', () => {
-              const command = button.dataset.command;
-              document.execCommand(command, false, null);
-              editorContent.focus(); // Keep focus on editor after command
-              hiddenContentInput.value = editorContent.innerHTML; // Sync after command
-          });
-      });
-
-      // Apply selected template content
-      if (modeloBaseSelect) {
-          modeloBaseSelect.addEventListener('change', async (event) => {
-              const selectedModeloId = event.target.value;
-              if (selectedModeloId) {
-                  // Fetch the template content (you'll need an API endpoint for this)
-                  // For now, let's assume `modelos_anamnese` is available in JS if passed by Flask
-                  const modelosAnamneseData = JSON.parse('{{ modelos_anamnese | tojson | safe }}');
-                  const selectedModelo = modelosAnamneseData.find(m => m.id === selectedModeloId);
-
-                  if (selectedModelo && confirm('Deseja carregar o modelo? O conteúdo atual da anamnese será substituído.')) {
-                      editorContent.innerHTML = selectedModelo.conteudo_modelo;
-                      hiddenContentInput.value = editorContent.innerHTML;
-                  }
-              } else {
-                  // If "Nenhum Modelo" is selected, clear the editor
-                  if (confirm('Deseja limpar o conteúdo da anamnese?')) {
-                      editorContent.innerHTML = '';
-                      hiddenContentInput.value = '';
-                  }
-              }
-              editorContent.focus();
-          });
-      }
-
-      function updateDesktopToggleIcon() {
-          if (!toggleBtnDesktop) return; 
-          toggleBtnDesktop.innerHTML = sidebar.classList.contains('collapsed') ? '<i class="fas fa-indent"></i>' : '<i class="fas fa-outdent"></i>';
-      }
-
-      function applyInitialSidebarState() {
-          const isDesktop = window.innerWidth > 768;
-          if(menuBtnMobile) menuBtnMobile.style.display = isDesktop ? 'none' : 'block';
-          if(toggleBtnDesktop) toggleBtnDesktop.style.display = isDesktop ? 'block' : 'none';
-
-          if (isDesktop) {
-            if (localStorage.getItem('sidebarCollapsed') === 'true') {
-              sidebar.classList.add('collapsed');
-              mainContent.classList.add('collapsed');
-            } else {
-              sidebar.classList.remove('collapsed'); 
-              mainContent.classList.remove('collapsed');
-            }
-          } else { 
-            sidebar.classList.remove('open'); 
-            sidebar.classList.remove('collapsed'); 
-            mainContent.classList.remove('collapsed'); 
-          }
-          updateDesktopToggleIcon();
-      }
-      
-      applyInitialSidebarState(); 
-      window.addEventListener('resize', applyInitialSidebarState); 
-
-      const storedTheme = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-theme', storedTheme);
-      if (themeToggle) {
-          themeToggle.querySelector('i').className = storedTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-          const themeToggleText = themeToggle.querySelector('span');
-          if(themeToggleText) { 
-              themeToggleText.textContent = storedTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
-          }
-      }
-
-      if(toggleBtnDesktop) {
-        toggleBtnDesktop.addEventListener('click', () => {
-          sidebar.classList.toggle('collapsed');
-          mainContent.classList.toggle('collapsed');
-          localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-          updateDesktopToggleIcon();
-        });
-      }
-
-      if(menuBtnMobile) {
-        menuBtnMobile.addEventListener('click', (event) => {
-          event.stopPropagation(); 
-          sidebar.classList.toggle('open'); 
-          menuBtnMobile.innerHTML = sidebar.classList.contains('open') ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
-        });
-      }
-      
-      document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && sidebar.classList.contains('open') &&
-            !sidebar.contains(e.target) && menuBtnMobile && !menuBtnMobile.contains(e.target)) { 
-          sidebar.classList.remove('open');
-          if(menuBtnMobile) menuBtnMobile.innerHTML = '<i class="fas fa-bars"></i>';
+        let app;
+        let auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+        } catch (e) { 
+            // Tenta inicializar novamente se falhou silenciosamente, caso firebaseConfig não estivesse pronta
+            if (!app) app = initializeApp(firebaseConfig); 
+            if (!auth) auth = getAuth(app); 
+            console.error("Erro ao inicializar Firebase no cliente:", e);
         }
-      });
 
-      if(themeToggle) {
-        themeToggle.addEventListener('click', () => {
-          const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'; 
-          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-          document.documentElement.setAttribute('data-theme', newTheme);
-          localStorage.setItem('theme', newTheme);
-          const icon = themeToggle.querySelector('i');
-          const text = themeToggle.querySelector('span');
-          if (icon) { 
-            icon.className = newTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-          }
-          if (text) { 
-            text.textContent = newTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
-          }
-        });
-      }
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+            const themeToggle = document.querySelector('#theme-toggle');
+            const logoutButton = document.getElementById('logoutButton');
 
-      const currentPath = window.location.pathname;
-      const navLinks = sidebar.querySelectorAll('nav ul li.nav-item a'); 
-      
-      navLinks.forEach(link => {
-          const linkParent = link.closest('.nav-item');
-          if (linkParent) linkParent.classList.remove('active');
-          
-          const linkHref = link.getAttribute('href');
-          if (linkHref) {
-              if (linkHref === currentPath || (currentPath.startsWith(link.getAttribute('href')) && link.getAttribute('href') !== '/')) {
-                  if(linkParent) linkParent.classList.add('active');
-              }
-          }
-      });
-      // Ativar link 'Prontuários' quando estiver em '/prontuarios' ou '/prontuarios/<id>' ou '/prontuarios/<id>/anamnese/novo' etc.
-      const prontuariosBaseUrl = "{{ url_for('buscar_prontuario') }}";
-      const regexVerProntuario = /^\/prontuarios\/[a-zA-Z0-9-]+$/;
-      const regexAnamnese = /^\/prontuarios\/[a-zA-Z0-9-]+\/anamnese\/(novo|editar\/[a-zA-Z0-9-]+)$/;
+            // Rich text editor logic
+            const editorContent = document.getElementById('editor-content');
+            const hiddenContentInput = document.getElementById('conteudo'); // O textarea oculto que enviará o conteúdo
+            const modeloBaseSelect = document.getElementById('modelo_base_id');
+            const anamneseForm = document.getElementById('anamneseForm'); // Adicionado id ao formulário
 
-      if (currentPath === prontuariosBaseUrl || regexVerProntuario.test(currentPath) || regexAnamnese.test(currentPath)) {
-          document.querySelector(`nav ul li.nav-item a[href="${prontuariosBaseUrl}"]`)?.closest('.nav-item')?.classList.add('active');
-      }
-
-      if (logoutButton && auth) {
-        logoutButton.addEventListener('click', async function(event) {
-          event.preventDefault();
-          try {
-            if (auth.currentUser) {
-              await firebaseSignOut(auth); 
+            // Sincroniza o conteúdo inicial do editor para o input oculto
+            // Isso é crucial para o modo de edição, para que o conteúdo existente seja salvo
+            if (editorContent && hiddenContentInput) {
+                hiddenContentInput.value = editorContent.innerHTML;
+                console.log('[DEBUG - Initial Load]: Conteúdo inicial copiado para hidden input:', hiddenContentInput.value.substring(0, 100) + '...');
             }
-          } catch (error) {
-            console.error('Erro ao deslogar do Firebase:', error);
-          } finally {
-            fetch("{{ url_for('logout') }}", { 
-                method: 'POST',
-            })
-              .then(response => response.json())
-              .then(data => {
-                window.location.href = "{{ url_for('login_page') }}";
-              })
-              .catch(err => {
-                console.error("Erro ao limpar sessão do servidor:", err);
-                window.location.href = "{{ url_for('login_page') }}";
-              });
-          }
+
+            // Sincroniza o conteúdo do editor para o input oculto a cada alteração
+            if (editorContent) {
+                editorContent.addEventListener('input', () => {
+                    hiddenContentInput.value = editorContent.innerHTML;
+                    console.log('[DEBUG - Editor Input]: Conteúdo copiado para hidden input:', hiddenContentInput.value.substring(0, 100) + '...');
+                });
+            }
+
+            // Garante que o conteúdo do editor seja salvo no textarea oculto antes do submit
+            if (anamneseForm && editorContent && hiddenContentInput) {
+                anamneseForm.addEventListener('submit', function(event) {
+                    hiddenContentInput.value = editorContent.innerHTML;
+                    console.log('[DEBUG - Form Submit]: Conteúdo final no hidden input ANTES do submit:', hiddenContentInput.value.substring(0, 100) + '...');
+                });
+            }
+
+            // Lida com os comandos da barra de ferramentas do editor
+            document.querySelectorAll('.editor-toolbar button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const command = button.dataset.command;
+                    document.execCommand(command, false, null);
+                    editorContent.focus(); // Mantém o foco no editor após o comando
+                    // Sincroniza após o comando também, para refletir formatação
+                    hiddenContentInput.value = editorContent.innerHTML; 
+                    console.log('[DEBUG - Toolbar Command]: Conteúdo copiado para hidden input após comando:', hiddenContentInput.value.substring(0, 100) + '...');
+                });
+            });
+
+            // Aplica o conteúdo do modelo selecionado
+            if (modeloBaseSelect) {
+                modeloBaseSelect.addEventListener('change', async (event) => {
+                    const selectedModeloId = event.target.value;
+                    if (selectedModeloId) {
+                        const modelosAnamneseData = JSON.parse('{{ modelos_anamnese | tojson | safe }}');
+                        const selectedModelo = modelosAnamneseData.find(m => m.id === selectedModeloId);
+
+                        if (selectedModelo && selectedModelo.conteudo_modelo !== undefined) {
+                            if (!editorContent.innerHTML.trim() || confirm('Você já digitou conteúdo. Deseja substituí-lo pelo modelo?')) {
+                                editorContent.innerHTML = selectedModelo.conteudo_modelo;
+                                hiddenContentInput.value = editorContent.innerHTML; // Sincroniza imediatamente
+                                console.log('[DEBUG - Modelo Aplicado]: Conteúdo copiado para hidden input:', hiddenContentInput.value.substring(0, 100) + '...');
+                            }
+                        }
+                    } else {
+                        // Se "Nenhum Modelo" for selecionado e não estiver editando um anamnese existente
+                        // ou se o usuário confirmar para limpar
+                        // A condição '! "{{ anamnese.conteudo | safe if anamnese else '' }}"' verifica se o campo anamnese.conteudo está vazio
+                        if (!"{{ anamnese.conteudo | safe if anamnese else '' }}".trim() || confirm('Deseja limpar o conteúdo da anamnese?')) {
+                             editorContent.innerHTML = '';
+                             hiddenContentInput.value = '';
+                             console.log('[DEBUG - Modelo Limpo]: Hidden input limpo.');
+                        }
+                    }
+                    editorContent.focus();
+                });
+            }
+
+            // Lógica para controle da barra lateral
+            function updateDesktopToggleIcon() {
+                if (!toggleBtnDesktop) return; 
+                toggleBtnDesktop.innerHTML = sidebar.classList.contains('collapsed') ? '<i class="fas fa-indent"></i>' : '<i class="fas fa-outdent"></i>';
+            }
+
+            function applyInitialSidebarState() {
+                const isDesktop = window.innerWidth > 768;
+                if(menuBtnMobile) menuBtnMobile.style.display = isDesktop ? 'none' : 'block';
+                if(toggleBtnDesktop) toggleBtnDesktop.style.display = isDesktop ? 'block' : 'none';
+
+                if (isDesktop) {
+                    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                        sidebar.classList.add('collapsed');
+                        mainContent.classList.add('collapsed');
+                    } else {
+                        sidebar.classList.remove('collapsed'); 
+                        mainContent.classList.remove('collapsed');
+                    }
+                } else { 
+                    sidebar.classList.remove('open'); 
+                    sidebar.classList.remove('collapsed'); 
+                    mainContent.classList.remove('collapsed'); 
+                }
+                updateDesktopToggleIcon();
+            }
+            
+            applyInitialSidebarState(); 
+            window.addEventListener('resize', applyInitialSidebarState); 
+
+            // Lógica de alternância de tema
+            const storedTheme = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', storedTheme);
+            if (themeToggle) {
+                themeToggle.querySelector('i').className = storedTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+                const themeToggleText = themeToggle.querySelector('span');
+                if(themeToggleText) { 
+                    themeToggleText.textContent = storedTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
+                }
+            }
+
+            if(toggleBtnDesktop) {
+                toggleBtnDesktop.addEventListener('click', () => {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                    updateDesktopToggleIcon();
+                });
+            }
+
+            if(menuBtnMobile) {
+                menuBtnMobile.addEventListener('click', (event) => {
+                    event.stopPropagation(); 
+                    sidebar.classList.toggle('open'); 
+                    menuBtnMobile.innerHTML = sidebar.classList.contains('open') ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+                });
+            }
+            
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768 && sidebar.classList.contains('open') &&
+                    !sidebar.contains(e.target) && menuBtnMobile && !menuBtnMobile.contains(e.target)) { 
+                    sidebar.classList.remove('open');
+                    if(menuBtnMobile) menuBtnMobile.innerHTML = '<i class="fas fa-bars"></i>';
+                }
+            });
+
+            if(themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'; 
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    const icon = themeToggle.querySelector('i');
+                    const text = themeToggle.querySelector('span');
+                    if (icon) { 
+                        icon.className = newTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+                    }
+                    if (text) { 
+                        text.textContent = newTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
+                    }
+                });
+            }
+
+            // Lógica para ativar link da barra lateral com base na URL
+            const currentPath = window.location.pathname;
+            const navLinks = sidebar.querySelectorAll('nav ul li.nav-item a'); 
+            
+            navLinks.forEach(link => {
+                const linkParent = link.closest('.nav-item');
+                if (linkParent) linkParent.classList.remove('active');
+                
+                const linkHref = link.getAttribute('href');
+                if (linkHref) {
+                    if (linkHref === currentPath || (currentPath.startsWith(link.getAttribute('href')) && link.getAttribute('href') !== '/')) {
+                        if(linkParent) linkParent.classList.add('active');
+                    }
+                }
+            });
+            // Ativar link 'Prontuários' quando estiver em '/prontuarios' ou '/prontuarios/<id>' ou '/prontuarios/<id>/anamnese/novo' etc.
+            const prontuariosBaseUrl = "{{ url_for('buscar_prontuario') }}";
+            const regexVerProntuario = /^\/prontuarios\/[a-zA-Z0-9-]+$/;
+            const regexAnamnese = /^\/prontuarios\/[a-zA-Z0-9-]+\/anamnese\/(novo|editar\/[a-zA-Z0-9-]+)$/;
+
+            if (currentPath === prontuariosBaseUrl || regexVerProntuario.test(currentPath) || regexAnamnese.test(currentPath)) {
+                document.querySelector(`nav ul li.nav-item a[href="${prontuariosBaseUrl}"]`)?.closest('.nav-item')?.classList.add('active');
+            }
+
+            // Lógica de logout do Firebase e do servidor
+            if (logoutButton && auth) {
+                logoutButton.addEventListener('click', async function(event) {
+                    event.preventDefault();
+                    try {
+                        if (auth.currentUser) {
+                            await firebaseSignOut(auth); 
+                        }
+                    } catch (error) {
+                        console.error('Erro ao deslogar do Firebase:', error);
+                    } finally {
+                        fetch("{{ url_for('logout') }}", { 
+                                method: 'POST',
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                window.location.href = "{{ url_for('login_page') }}";
+                            })
+                            .catch(err => {
+                                console.error("Erro ao limpar sessão do servidor:", err);
+                                window.location.href = "{{ url_for('login_page') }}";
+                            });
+                    }
+                });
+            }
         });
-      }
-    });
-  </script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
-        .then(registration => {
-          console.log('Service Worker registrado com sucesso!');
-        })
-        .catch(err => {
-          console.error('Falha ao registrar o Service Worker: ', err);
-        });
-    });
-  }
-</script>
+    </script>
+    <script>
+        // Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                .then(registration => {
+                    console.log('Service Worker registrado com sucesso!');
+                })
+                .catch(err => {
+                    console.error('Falha ao registrar o Service Worker: ', err);
+                });
+            });
+        }
+    </script>
 </body>
 </html>
