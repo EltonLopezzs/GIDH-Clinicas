@@ -66,22 +66,28 @@ def convert_doc_to_dict(doc_snapshot):
 
     return {k: _convert_value(v) for k, v in data.items()}
 
-# Helper function to parse date input with multiple formats
+# Helper function to parse date input with multiple formats and convert to datetime.datetime
 def parse_date_input(date_string):
     if not date_string:
         return None
     
+    parsed_date = None
     # Try YYYY-MM-DD first (expected from flatpickr's dateFormat)
     try:
-        return datetime.datetime.strptime(date_string, '%Y-%m-%d').date()
+        parsed_date = datetime.datetime.strptime(date_string, '%Y-%m-%d').date()
     except ValueError:
         pass # Fallback to next format
 
     # Try DD/MM/YYYY (common manual input or altFormat from flatpickr)
-    try:
-        return datetime.datetime.strptime(date_string, '%d/%m/%Y').date()
-    except ValueError:
-        pass # No match
+    if parsed_date is None:
+        try:
+            parsed_date = datetime.datetime.strptime(date_string, '%d/%m/%Y').date()
+        except ValueError:
+            pass # No match
+    
+    if parsed_date:
+        # Convert datetime.date to datetime.datetime at start of day in SAO_PAULO_TZ
+        return SAO_PAULO_TZ.localize(datetime.datetime(parsed_date.year, parsed_date.month, parsed_date.day, 0, 0, 0))
     
     return None # Return None if no valid format is found
 
@@ -749,9 +755,9 @@ def ativar_desativar_profissional(profissional_doc_id):
     except firebase_admin.auth.UserNotFoundError:
         flash('Professional not found in Firebase Authentication.', 'danger')
     except Exception as e:
-        flash(f'Error changing professional status: {e}', 'danger')
-        print(f"Error activate_deactivate_professional: {e}")
-    return redirect(url_for('listar_profissionais'))
+        flash(f'Error changing user status: {e}', 'danger')
+        print(f"Error activate_deactivate_user: {e}")
+    return redirect(url_for('listar_usuarios'))
 
 # --- PATIENTS ROUTES (NEW) ---
 @app.route('/pacientes')
@@ -858,7 +864,7 @@ def adicionar_paciente():
 
             paciente_data = {
                 'nome': nome,
-                'data_nascimento': data_nascimento_dt, # Use the parsed datetime.date object
+                'data_nascimento': data_nascimento_dt, # Use the parsed datetime.datetime object
                 'cpf': cpf if cpf else None,
                 'rg': rg if rg else None,
                 'genero': genero if genero else None,
@@ -942,7 +948,7 @@ def editar_paciente(paciente_doc_id):
 
             paciente_data_update = {
                 'nome': nome,
-                'data_nascimento': data_nascimento_dt, # Use the parsed datetime.date object
+                'data_nascimento': data_nascimento_dt, # Use the parsed datetime.datetime object
                 'cpf': cpf if cpf else None,
                 'rg': rg if rg else None,
                 'genero': genero if genero else None,
@@ -1848,7 +1854,7 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
 # --- ANAMNESIS TEMPLATES ROUTES (NEW) ---
 @app.route('/modelos_anamnese')
 @login_required
-@admin_required # Only admins can manage anamnesis templates, or perhaps doctors?
+@admin_required
 def listar_modelos_anamnese():
     clinica_id = session['clinica_id']
     modelos_lista = []
