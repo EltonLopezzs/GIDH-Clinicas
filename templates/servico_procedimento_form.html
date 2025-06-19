@@ -24,7 +24,7 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow-x: hidden; }
-    body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; transition: background-color 0.3s ease, color 0.3s ease; }
     
     /* Layout Principal */
     .layout { display: flex; min-height: 100vh; }
@@ -35,7 +35,7 @@
     .sidebar-header { padding: 20px 10px 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center; }
     .sidebar-header .logo { font-size: 1.5rem; font-weight: 700; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
     .sidebar.collapsed { width: 70px; }
-    .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
+    .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li.nav-item a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
     .sidebar.collapsed nav ul li a, .sidebar.collapsed #theme-toggle, .sidebar.collapsed .sidebar-footer ul li a { justify-content: center; padding: 10px; }
     .sidebar nav { flex-grow: 1; margin-top: 10px; padding: 0 10px; }
     .sidebar nav ul { list-style: none; padding: 0; }
@@ -96,7 +96,6 @@
 </head>
 <body>
   <div class="layout">
-    <!-- Sidebar (Conteúdo omitido para brevidade, mas deve estar aqui) -->
     <div class="sidebar">
       <div class="sidebar-inner-content">
         <div class="sidebar-header">
@@ -150,9 +149,6 @@
           <div class="form-card">
             <h2 class="form-title">{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }}</h2>
             
-            <!-- ****** INÍCIO DA CORREÇÃO ****** -->
-            
-            <!-- Formulário principal para Adicionar e Editar -->
             <form id="servicoForm" method="POST" action="{{ action_url|default('') }}">
               <div class="form-group">
                 <label for="nome">Nome do Serviço/Procedimento:</label>
@@ -176,13 +172,11 @@
                        placeholder="Ex: 150,00"
                        pattern="^\d+([,.]\d{1,2})?$" title="Use vírgula ou ponto para centavos (ex: 150,00 ou 150.00)" required>
               </div>
-            </form> <!-- O formulário principal termina aqui -->
+            </form>
             
-            <!-- As ações agora estão fora do form principal -->
             <div class="form-actions">
                 {% if servico and servico.id %} 
                 <div class="btn-delete-container">
-                    <!-- Formulário de exclusão separado e independente -->
                     <form id="deleteForm" action="{{ url_for('excluir_servico_procedimento', servico_doc_id=servico.id) }}" method="post" style="display: inline;">
                         <button type="button" id="deleteButton" class="btn btn-danger">
                             <i class="fas fa-trash"></i> Excluir
@@ -193,12 +187,10 @@
                 
                 <a href="{{ url_for('listar_servicos_procedimentos') }}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
                 
-                <!-- Botão 'Salvar' agora submete o formulário principal através do atributo 'form' -->
                 <button type="submit" class="btn btn-primary" form="servicoForm">
                     <i class="fas fa-save"></i> Salvar
                 </button>
             </div>
-            <!-- ****** FIM DA CORREÇÃO ****** -->
 
           </div>
         </div>
@@ -212,40 +204,181 @@
     </div>
   </div>
 
-  <script type="module">
-    // Script do Firebase (assumindo que está correto e será injetado pelo Canvas)
-    // import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
-    // ...
-    
+  <!-- SCRIPT DE INTERFACE DO USUÁRIO (UI) -->
+  <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Seletores dos elementos da UI
       const sidebar = document.querySelector('.sidebar');
       const mainContent = document.querySelector('.main-content');
       const menuBtnMobile = document.querySelector('.menu-btn-mobile');
       const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
       const themeToggle = document.querySelector('#theme-toggle');
-      const logoutButton = document.getElementById('logoutButton');
 
-      // Seu JavaScript existente para sidebar, tema, logout, etc. permanece aqui...
+      // --- Funções para a Sidebar ---
+      function updateDesktopToggleIcon() {
+          if (!toggleBtnDesktop || !sidebar) return; 
+          toggleBtnDesktop.innerHTML = sidebar.classList.contains('collapsed') ? '<i class="fas fa-indent"></i>' : '<i class="fas fa-outdent"></i>';
+      }
 
-      // ****** NOVO SCRIPT PARA LIDAR COM A EXCLUSÃO ******
+      function applyInitialSidebarState() {
+          const isDesktop = window.innerWidth > 768;
+          if(menuBtnMobile) menuBtnMobile.style.display = isDesktop ? 'none' : 'block';
+          if(toggleBtnDesktop) toggleBtnDesktop.style.display = isDesktop ? 'block' : 'none';
+
+          if (isDesktop) {
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+              sidebar.classList.add('collapsed');
+              mainContent.classList.add('collapsed');
+            } else {
+              sidebar.classList.remove('collapsed'); 
+              mainContent.classList.remove('collapsed');
+            }
+          } else { 
+            sidebar.classList.remove('open'); 
+            sidebar.classList.remove('collapsed'); 
+            mainContent.classList.remove('collapsed'); 
+          }
+          updateDesktopToggleIcon();
+      }
+      
+      // --- Lógica do Tema ---
+      function applyInitialTheme() {
+          const storedTheme = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', storedTheme);
+          if (themeToggle) {
+              themeToggle.querySelector('i').className = storedTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+              const themeToggleText = themeToggle.querySelector('span');
+              if(themeToggleText) { 
+                  themeToggleText.textContent = storedTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
+              }
+          }
+      }
+
+      // --- Adicionando Event Listeners ---
+      
+      // Sidebar
+      if(toggleBtnDesktop) {
+        toggleBtnDesktop.addEventListener('click', () => {
+          sidebar.classList.toggle('collapsed');
+          mainContent.classList.toggle('collapsed');
+          localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+          updateDesktopToggleIcon();
+        });
+      }
+
+      if(menuBtnMobile) {
+        menuBtnMobile.addEventListener('click', (event) => {
+          event.stopPropagation(); 
+          sidebar.classList.toggle('open'); 
+          menuBtnMobile.innerHTML = sidebar.classList.contains('open') ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+        });
+      }
+      
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('open') &&
+            !sidebar.contains(e.target) && menuBtnMobile && !menuBtnMobile.contains(e.target)) { 
+          sidebar.classList.remove('open');
+          if(menuBtnMobile) menuBtnMobile.innerHTML = '<i class="fas fa-bars"></i>';
+        }
+      });
+      
+      window.addEventListener('resize', applyInitialSidebarState);
+
+      // Tema
+      if(themeToggle) {
+        themeToggle.addEventListener('click', () => {
+          const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'; 
+          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+          const icon = themeToggle.querySelector('i');
+          const text = themeToggle.querySelector('span');
+          if (icon) icon.className = newTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+          if (text) text.textContent = newTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
+        });
+      }
+
+      // Lógica de navegação ativa
+      const currentPath = window.location.pathname;
+      const navLinks = sidebar ? sidebar.querySelectorAll('nav ul li.nav-item a') : [];
+      const servicosProcedimentosBaseUrl = "{{ url_for('listar_servicos_procedimentos') }}";
+      
+      navLinks.forEach(link => {
+          const linkParent = link.closest('.nav-item');
+          if (linkParent) linkParent.classList.remove('active');
+          
+          const linkHref = link.getAttribute('href');
+          if (linkHref === servicosProcedimentosBaseUrl && currentPath.startsWith(servicosProcedimentosBaseUrl)) {
+              if(linkParent) linkParent.classList.add('active');
+          } else if (linkHref && linkHref !== '/' && currentPath.startsWith(linkHref)) {
+              if(linkParent) linkParent.classList.add('active');
+          } else if (linkHref === '/' && currentPath === '/') {
+              if(linkParent) linkParent.classList.add('active');
+          }
+      });
+      
+      // Lógica do botão de exclusão
       const deleteButton = document.getElementById('deleteButton');
       const deleteForm = document.getElementById('deleteForm');
 
       if (deleteButton && deleteForm) {
         deleteButton.addEventListener('click', function(event) {
-          event.preventDefault(); // Impede a submissão padrão
-          
-          // Usa a confirmação nativa do navegador
+          event.preventDefault();
           const userConfirmed = confirm('Tem certeza que deseja excluir este serviço/procedimento permanentemente? Esta ação não pode ser desfeita e pode falhar se houver agendamentos associados.');
-          
           if (userConfirmed) {
-            // Se o usuário clicar em "OK", submete o formulário de exclusão
             deleteForm.submit();
           }
-          // Se o usuário clicar em "Cancelar", nada acontece.
         });
       }
+
+      // --- Execução inicial ---
+      applyInitialSidebarState();
+      applyInitialTheme();
     });
+  </script>
+
+  <!-- SCRIPT DO FIREBASE (separado para robustez) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
+    import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+    let app;
+    let auth;
+    if (firebaseConfig && Object.keys(firebaseConfig).length > 0) {
+      try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+      } catch (e) { 
+        console.error("Firebase initialization error:", e.message);
+      }
+    } else {
+        console.warn("Firebase config not found. Logout may not work correctly via Firebase.");
+    }
+
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+      logoutButton.addEventListener('click', async function(event) {
+        event.preventDefault();
+        try {
+          if (auth && auth.currentUser) {
+            await firebaseSignOut(auth); 
+          }
+        } catch (error) {
+          console.error('Erro ao deslogar do Firebase:', error);
+        } finally {
+          // Sempre tenta deslogar do backend
+          fetch("{{ url_for('logout') }}", { method: 'POST' })
+            .then(response => response.json())
+            .then(data => { window.location.href = "{{ url_for('login_page') }}"; })
+            .catch(err => {
+              console.error("Erro ao limpar sessão do servidor:", err);
+              window.location.href = "{{ url_for('login_page') }}";
+            });
+        }
+      });
+    }
   </script>
 </body>
 </html>
