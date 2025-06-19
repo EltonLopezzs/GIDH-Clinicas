@@ -488,38 +488,52 @@ def listar_usuarios():
         print(f"Erro list_users: {e}")
         
     return render_template('usuarios.html', usuarios=usuarios_lista)
-
 @app.route('/usuarios/novo', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def adicionar_usuario():
-    clinica_id = session['clinica_id']
-    
+    clinica_id = session.get('clinica_id')
+    if not clinica_id:
+        flash('ID da clínica não encontrado na sessão.', 'danger')
+        return redirect(url_for('sua_pagina_de_erro_ou_home'))
+
     # Busca profissionais para associar ao usuário
     profissionais_disponiveis = []
     try:
-        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').order_by('nome').stream()
+        # Removido o order_by para evitar a necessidade de índices compostos complexos.
+        # A ordenação pode ser feita no Python se necessário.
+        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').stream()
         for doc in profissionais_docs:
             prof_data = doc.to_dict()
             profissionais_disponiveis.append({'id': doc.id, 'nome': prof_data.get('nome')})
+        # Ordenando a lista de profissionais em Python
+        profissionais_disponiveis.sort(key=lambda x: x.get('nome', '').lower())
     except Exception as e:
-        flash('Erro ao carregar a lista de profissionais.', 'danger')
+        flash(f'Erro ao carregar a lista de profissionais: {e}', 'danger')
 
     if request.method == 'POST':
         email = request.form['email'].strip()
         password = request.form['password']
         role = request.form['role']
         nome_completo = request.form.get('nome_completo', '').strip()
-        # ID do profissional selecionado no formulário
-        profissional_associado_id = request.form.get('profissional_associado_id')
+        profissional_associado_id = request.form.get('profissional_associado_id') # Pode ser uma string vazia
 
         if not all([email, password, role]):
             flash('E-mail, senha e função são obrigatórios.', 'danger')
             return render_template('usuario_form.html', page_title="Adicionar Novo Utilizador", roles=['admin', 'medico'], profissionais=profissionais_disponiveis, user=request.form)
 
         try:
-            user = firebase_auth_admin.create_user(email=email, password=password, display_name=nome_completo)
+            # 1. Cria o usuário no Firebase Authentication
+            user = firebase_auth_admin.create_user(
+                email=email,
+                password=password,
+                display_name=nome_completo
+            )
             
+            # --- Inicia um lote para garantir que ambas as escritas funcionem ---
+            batch = db.batch()
+
+            # 2. Prepara os dados do usuário para o Firestore
             user_data_firestore = {
                 'email': email,
                 'clinica_id': clinica_id,
@@ -529,18 +543,25 @@ def adicionar_usuario():
                 'associado_em': firestore.SERVER_TIMESTAMP
             }
 
-            # Se for médico e um profissional foi selecionado, associa
+            # 3. Se for médico e um profissional foi selecionado, faz a associação
             if role == 'medico' and profissional_associado_id:
+                # Adiciona o ID do profissional no documento do usuário
                 user_data_firestore['profissional_id'] = profissional_associado_id
-                # Opcional: Atualiza o documento do profissional com o UID do usuário
-                db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_associado_id).update({
-                    'user_uid': user.uid
-                })
+                
+                # Atualiza o documento do profissional com o UID do usuário
+                prof_ref = db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_associado_id)
+                batch.update(prof_ref, {'user_uid': user.uid})
 
-            db.collection('User').document(user.uid).set(user_data_firestore)
+            # 4. Adiciona a criação do documento do usuário ao lote
+            user_ref = db.collection('User').document(user.uid)
+            batch.set(user_ref, user_data_firestore)
+            
+            # 5. Executa todas as operações no lote atomicamente
+            batch.commit()
             
             flash(f'Utilizador {email} ({role}) criado com sucesso!', 'success')
             return redirect(url_for('listar_usuarios'))
+            
         except firebase_auth_admin.EmailAlreadyExistsError:
             flash('O e-mail fornecido já está em uso.', 'danger')
         except Exception as e:
@@ -553,56 +574,95 @@ def adicionar_usuario():
 @login_required
 @admin_required
 def editar_usuario(user_uid):
-    clinica_id = session['clinica_id']
-    user_map_ref = db.collection('User').document(user_uid)
+    clinica_id = session.get('clinica_id')
+    if not clinica_id:
+        flash('ID da clínica não encontrado na sessão.', 'danger')
+        return redirect(url_for('sua_pagina_de_erro_ou_home'))
+        
+    user_ref = db.collection('User').document(user_uid)
     
+    # Busca profissionais para o dropdown
     profissionais_disponiveis = []
     try:
-        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').order_by('nome').stream()
+        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').stream()
         for doc in profissionais_docs:
             prof_data = doc.to_dict()
             profissionais_disponiveis.append({'id': doc.id, 'nome': prof_data.get('nome')})
+        profissionais_disponiveis.sort(key=lambda x: x.get('nome', '').lower())
     except Exception as e:
-        flash('Erro ao carregar a lista de profissionais.', 'danger')
+        flash(f'Erro ao carregar a lista de profissionais: {e}', 'danger')
+
+    # Busca os dados atuais do usuário para obter a associação antiga
+    try:
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+            flash('Utilizador não encontrado.', 'danger')
+            return redirect(url_for('listar_usuarios'))
+        user_data_original = user_doc.to_dict()
+        old_profissional_id = user_data_original.get('profissional_id')
+    except Exception as e:
+        flash(f'Erro ao carregar dados do utilizador: {e}', 'danger')
+        return redirect(url_for('listar_usuarios'))
 
     if request.method == 'POST':
         email = request.form['email'].strip()
         role = request.form['role']
         nome_completo = request.form.get('nome_completo', '').strip()
-        profissional_associado_id = request.form.get('profissional_associado_id')
+        new_profissional_id = request.form.get('profissional_associado_id') # Pode ser '' se 'Nenhum' for selecionado
 
         try:
+            # --- Inicia um lote para garantir atomicidade ---
+            batch = db.batch()
+
+            # 1. Atualiza o usuário no Firebase Auth
             firebase_auth_admin.update_user(user_uid, email=email, display_name=nome_completo)
             
+            # 2. Prepara a atualização para o documento na coleção 'User'
             user_data_update = {
                 'email': email, 'role': role, 'nome_completo': nome_completo,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             }
             
-            if role == 'medico' and profissional_associado_id:
-                user_data_update['profissional_id'] = profissional_associado_id
-            else:
-                user_data_update['profissional_id'] = firestore.DELETE_FIELD
+            # 3. Lógica para atualizar a associação do profissional
+            if old_profissional_id != new_profissional_id:
+                # A. Remove o user_uid do profissional ANTIGO, se existir
+                if old_profissional_id:
+                    old_prof_ref = db.collection(f'clinicas/{clinica_id}/profissionais').document(old_profissional_id)
+                    batch.update(old_prof_ref, {'user_uid': firestore.DELETE_FIELD})
+                
+                # B. Adiciona o user_uid ao profissional NOVO, se aplicável
+                if role == 'medico' and new_profissional_id:
+                    new_prof_ref = db.collection(f'clinicas/{clinica_id}/profissionais').document(new_profissional_id)
+                    batch.update(new_prof_ref, {'user_uid': user_uid})
+                    user_data_update['profissional_id'] = new_profissional_id
+                else:
+                    # Se o novo papel não for 'medico' ou nenhum profissional for selecionado,
+                    # garante que o campo profissional_id seja removido do usuário.
+                    user_data_update['profissional_id'] = firestore.DELETE_FIELD
             
-            user_map_ref.update(user_data_update)
+            # 4. Adiciona a atualização do documento do usuário ao lote
+            batch.update(user_ref, user_data_update)
+
+            # 5. Executa todas as operações no lote
+            batch.commit()
+            
             flash(f'Utilizador {email} atualizado com sucesso!', 'success')
             return redirect(url_for('listar_usuarios'))
+            
         except Exception as e:
             flash(f'Erro ao atualizar utilizador: {e}', 'danger')
-            
-    try:
-        user_doc = user_map_ref.get()
-        if user_doc.exists:
-            user_data = user_doc.to_dict()
-            user_data['uid'] = user_doc.id
-            return render_template('usuario_form.html', user=user_data, page_title=f"Editar Utilizador", action_url=url_for('editar_usuario', user_uid=user_uid), roles=['admin', 'medico'], profissionais=profissionais_disponiveis)
-        else:
-            flash('Utilizador não encontrado.', 'danger')
-            return redirect(url_for('listar_usuarios'))
-    except Exception as e:
-        flash(f'Erro ao carregar utilizador: {e}', 'danger')
-        return redirect(url_for('listar_usuarios'))
-
+            # Em caso de erro, os dados do formulário serão repreenchidos abaixo
+    
+    # Para requisição GET ou se o POST falhar, renderiza o formulário com os dados
+    user_data_original['uid'] = user_uid
+    return render_template(
+        'usuario_form.html', 
+        user=user_data_original, 
+        page_title="Editar Utilizador", 
+        action_url=url_for('editar_usuario', user_uid=user_uid), 
+        roles=['admin', 'medico'], 
+        profissionais=profissionais_disponiveis
+    )
 
 
 @app.route('/usuarios/ativar_desativar/<string:user_uid>', methods=['POST'])
