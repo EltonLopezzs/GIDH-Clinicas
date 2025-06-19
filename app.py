@@ -457,8 +457,6 @@ def index():
                            dados_desempenho_semana=dados_desempenho_semana,
                            dados_servicos_populares=dados_servicos_populares)
 
-
-# --- ROTAS DE USUÁRIO (ADMINISTRADORES E MÉDICOS) ---
 @app.route('/usuarios')
 @login_required
 @admin_required # Somente administradores podem gerenciar usuários
@@ -473,10 +471,22 @@ def listar_usuarios():
             user_data = doc.to_dict()
             if user_data:
                 user_data['uid'] = doc.id # UID é o ID do documento
+                
+                # --- INÍCIO DA CORREÇÃO ---
+                # Busca o status do usuário (ativo/desativado) no Firebase Auth
+                try:
+                    firebase_user = firebase_auth_admin.get_user(doc.id)
+                    user_data['disabled'] = firebase_user.disabled
+                except firebase_auth_admin.UserNotFoundError:
+                    # Se o usuário não for encontrado no Auth, trata como desativado
+                    user_data['disabled'] = True
+                # --- FIM DA CORREÇÃO ---
+
                 usuarios_lista.append(user_data)
     except Exception as e:
         flash(f'Erro ao listar usuários: {e}.', 'danger')
         print(f"Erro list_users: {e}")
+        
     return render_template('usuarios.html', usuarios=usuarios_lista)
 
 @app.route('/usuarios/novo', methods=['GET', 'POST'])
