@@ -757,7 +757,7 @@ def ativar_desativar_profissional(profissional_doc_id):
     except Exception as e:
         flash(f'Erro ao alterar o status do profissional: {e}', 'danger')
         print(f"Erro activate_deactivate_user: {e}")
-    return redirect(url_for('listar_usuarios'))
+    return redirect(url_for('listar_profissionais'))
 
 # --- ROTAS DE PACIENTES (NOVO) ---
 @app.route('/pacientes')
