@@ -834,7 +834,7 @@ def listar_pacientes():
         if search_query:
             # O Firestore não suporta 'LIKE' diretamente, então fazemos uma pesquisa de intervalo.
             # Para pesquisar por nome
-            query_nome = query.where(filter=FieldFilter('nome', '>=', search_query))\
+            query_nome = pacientes_ref.where(filter=FieldFilter('nome', '>=', search_query))\
                                 .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
             # Para pesquisar por telefone (se for um campo de texto)
             query_telefone = pacientes_ref.order_by('contato_telefone')\
@@ -1519,7 +1519,7 @@ def listar_agendamentos():
         pacientes_docs = db.collection('clinicas').document(clinica_id).collection('pacientes').order_by('nome').stream()
         for doc in pacientes_docs:
             pac_data = doc.to_dict()
-            if pac_data: pacientes_para_filtro.append({'id': doc.id, 'nome': pac_data.get('nome', doc.id)})
+            if pac_data: pacientes_para_filtro.append({'id': doc.id, 'nome': pac_data.get('nome', doc.id), 'contato_telefone': pac_data.get('contato_telefone', '')})
 
 
     except Exception as e:
@@ -1708,7 +1708,6 @@ def alterar_status_agendamento(agendamento_doc_id):
         flash(f'Status atualizado para "{novo_status}" com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao alterar o status do agendamento: {e}', 'danger')
-        print(f"Erro change_appointment_status: {e}")
     return redirect(url_for('listar_agendamentos'))
 
 # --- INÍCIO DAS NOVAS ROTAS ---
@@ -2037,6 +2036,104 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         print(f"Erro edit_anamnesis (GET): {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
+# Rota para registrar um novo registro genérico (Laudo, Orientação, Procedimento)
+@app.route('/prontuarios/<string:paciente_doc_id>/registrar_registro_generico', methods=['POST'])
+@login_required
+def registrar_registro_generico(paciente_doc_id):
+    clinica_id = session['clinica_id']
+    profissional_logado_uid = session.get('user_uid')
+
+    # Busca o ID e nome do profissional associado ao user_uid logado
+    profissional_doc_id = None
+    profissional_nome = "Profissional Desconhecido"
+    try:
+        prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais') \
+                           .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
+        for doc in prof_query:
+            profissional_doc_id = doc.id
+            profissional_nome = doc.to_dict().get('nome', profissional_nome)
+            break
+        if not profissional_doc_id:
+            flash('Seu usuário não está associado a um profissional. Não foi possível registrar.', 'danger')
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+    except Exception as e:
+        flash(f'Erro ao verificar profissional para registro: {e}', 'danger')
+        print(f"Erro registrar_registro_generico (professional check): {e}")
+        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    try:
+        tipo_registro = request.form.get('tipo_registro')
+        titulo = request.form.get('titulo', '').strip()
+        conteudo = request.form.get('conteudo', '').strip()
+        agendamento_id_referencia = request.form.get('agendamento_id_referencia', '').strip()
+
+        if not all([tipo_registro, titulo, conteudo]):
+            flash(f'Por favor, preencha o título e o conteúdo para o registro de {tipo_registro}.', 'danger')
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+        db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
+            'profissional_id': profissional_doc_id,
+            'profissional_nome': profissional_nome,
+            'data_registro': firestore.SERVER_TIMESTAMP,
+            'tipo_registro': tipo_registro,
+            'titulo': titulo,
+            'conteudo': conteudo,
+            'agendamento_id_referencia': agendamento_id_referencia if agendamento_id_referencia else None,
+            'atualizado_em': firestore.SERVER_TIMESTAMP
+        })
+        flash(f'Registro de {tipo_registro} adicionado com sucesso!', 'success')
+    except Exception as e:
+        flash(f'Erro ao adicionar registro de {tipo_registro}: {e}', 'danger')
+        print(f"Erro registrar_registro_generico: {e}")
+    return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+# Rota para editar um registro genérico (Laudo, Orientação, Procedimento)
+@app.route('/prontuarios/<string:paciente_doc_id>/editar_registro_generico/<string:registro_doc_id>', methods=['POST'])
+@login_required
+def editar_registro_generico(paciente_doc_id, registro_doc_id):
+    clinica_id = session['clinica_id']
+    registro_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(registro_doc_id)
+
+    try:
+        titulo = request.form.get('titulo', '').strip()
+        conteudo = request.form.get('conteudo', '').strip()
+        agendamento_id_referencia = request.form.get('agendamento_id_referencia', '').strip()
+        tipo_registro = request.form.get('tipo_registro') # Pega o tipo para a mensagem flash
+
+        if not all([titulo, conteudo]):
+            flash(f'Por favor, preencha o título e o conteúdo para o registro de {tipo_registro}.', 'danger')
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+        registro_ref.update({
+            'titulo': titulo,
+            'conteudo': conteudo,
+            'agendamento_id_referencia': agendamento_id_referencia if agendamento_id_referencia else None,
+            'atualizado_em': firestore.SERVER_TIMESTAMP
+        })
+        flash(f'Registro de {tipo_registro} atualizado com sucesso!', 'success')
+    except Exception as e:
+        flash(f'Erro ao atualizar registro: {e}', 'danger')
+        print(f"Erro editar_registro_generico: {e}")
+    return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+# Rota para apagar um registro genérico (Laudo, Orientação, Procedimento, Anamnese)
+@app.route('/prontuarios/<string:paciente_doc_id>/apagar_registro_generico', methods=['POST'])
+@login_required
+def apagar_registro_generico(paciente_doc_id):
+    clinica_id = session['clinica_id']
+    registro_id = request.form.get('registro_id')
+
+    if not registro_id:
+        flash('ID do registro não fornecido para exclusão.', 'danger')
+        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    try:
+        db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(registro_id).delete()
+        flash('Registro apagado com sucesso!', 'success')
+    except Exception as e:
+        flash(f'Erro ao apagar registro: {e}', 'danger')
+        print(f"Erro apagar_registro_generico: {e}")
+    return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
 # --- ROTAS DE MODELOS DE ANAMNESE (NOVO) ---
 @app.route('/modelos_anamnese')

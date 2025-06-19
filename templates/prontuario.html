@@ -103,7 +103,7 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar.collapsed .sidebar-footer span { display: none; }
         .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
-        
+
         /* --- Main Content & Topbar --- */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
@@ -142,6 +142,19 @@
         .btn-warning { background-color: var(--warning); color: #854d0e; border-color: var(--warning); }
         [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
         .btn-warning:hover { background-color: #fca5a5; }
+        .topbar-actions {
+            display: flex;
+            gap: 0.75rem; /* Espaçamento entre os botões */
+            flex-wrap: wrap; /* Para quebrar a linha em telas menores */
+            justify-content: flex-end; /* Alinha à direita */
+        }
+        @media (max-width: 768px) {
+            .topbar-actions {
+                justify-content: center; /* Centraliza em telas menores */
+                margin-top: 0.5rem; /* Adiciona um pouco de margem superior */
+            }
+        }
+
 
         /* --- Paciente Info Card --- */
         .paciente-info-card {
@@ -196,6 +209,47 @@
             margin-top: 1.5rem; border-top: 1px solid var(--border-color);
             padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;
         }
+        .empty-state {
+            text-align: center; padding: 2rem; color: var(--muted);
+            background: var(--card); border-radius: 12px;
+        }
+
+        /* --- Tabs --- */
+        .tabs-container {
+            margin-bottom: 1.5rem;
+        }
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .tab-nav-item {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--muted);
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            transform: translateY(2px);
+            transition: color 0.2s ease, border-color 0.2s ease;
+            font-size: 0.95rem;
+        }
+        .tab-nav-item:hover {
+            color: var(--text);
+        }
+        .tab-nav-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
 
         /* --- Modal --- */
         .modal-overlay {
@@ -206,9 +260,13 @@
         .modal-overlay.active { opacity: 1; display: flex; }
         .modal-content {
             background-color: var(--card); color: var(--text); border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 800px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+            width: 95%; /* Aumentado */
+            max-width: 900px; /* Aumentado */
+            height: 90%; /* Aumentado */
+            max-height: calc(100vh - 40px); /* Ajustado para deixar margem vertical */
             transform: translateY(-20px); transition: transform 0.25s ease;
-            max-height: calc(100vh - 60px); display: flex; flex-direction: column;
+            display: flex; flex-direction: column;
         }
         .modal-overlay.active .modal-content { transform: translateY(0); }
         .modal-header {
@@ -218,8 +276,93 @@
         .modal-header h3 { font-size: 1.2rem; color: var(--text); margin: 0; font-weight: 600; }
         .modal-close-btn { background: none; border: none; font-size: 1.5rem; color: var(--muted); cursor: pointer; line-height: 1; transition: color 0.2s ease; }
         .modal-close-btn:hover { color: var(--danger); }
-        .modal-body { overflow-y: auto; padding: 1.5rem; line-height: 1.7; }
+        .modal-body { overflow-y: auto; padding: 1.5rem; line-height: 1.7; flex-grow: 1; } /* flex-grow para o conteúdo preencher o espaço */
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group:last-child { margin-bottom: 0; }
+        .form-group label { display: block; font-size: 0.9rem; color: var(--muted); font-weight: 500; margin-bottom: 0.5rem; }
+        .form-group input[type="text"], .form-group textarea {
+            font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color);
+            border-radius: 8px; background-color: var(--bg); color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-group input[type="text"]:focus, .form-group textarea:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
+        }
+        .modal-footer {
+            padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);
+            display: flex; justify-content: flex-end; gap: 0.75rem; flex-shrink: 0;
+            background-color: var(--bg);
+        }
+
+        /* Rich Text Editor for generic modal */
+        .editor-container {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+        .editor-container .editor-toolbar {
+            background-color: var(--bg);
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 8px 8px 0 0;
+            padding: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .editor-container .editor-toolbar button {
+            background: none; border: 1px solid transparent; padding: 8px;
+            cursor: pointer; font-size: 1rem; color: var(--text);
+            border-radius: 4px; transition: background-color 0.2s ease;
+        }
+        .editor-container .editor-toolbar button:hover { background-color: color-mix(in srgb, var(--primary) 10%, transparent); }
+        .editor-container .editor-toolbar button.is-active { background-color: color-mix(in srgb, var(--primary) 20%, transparent); }
         
+        .editor-content-generic {
+            min-height: 200px; /* Ajuste a altura conforme necessário */
+            max-height: 400px; /* Limite a altura */
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: var(--card);
+            color: var(--text);
+            outline: none;
+            line-height: 1.6;
+            resize: vertical;
+            flex-grow: 1; /* Permite que o conteúdo se expanda */
+        }
+        .editor-content-generic[data-placeholder]:empty:before {
+            content: attr(data-placeholder); color: var(--muted);
+            pointer-events: none; display: block;
+        }
+        .editor-content-generic:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
+        }
+        
+        /* Gemini Generator & Consent */
+        .gemini-generator {
+            margin-bottom: 1.5rem; background-color: color-mix(in srgb, var(--primary) 5%, transparent);
+            padding: 1rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
+        }
+        .gemini-generator .form-group { margin-bottom: 0.75rem; }
+        .gemini-generator-actions { display: flex; gap: 10px; align-items: center; }
+        .gemini-generator-actions input { flex-grow: 1; }
+        
+        .consent-text {
+            font-size: 0.85rem; color: var(--muted); font-weight: 500;
+            line-height: 1.4; padding: 0.75rem; border-radius: 6px;
+            background-color: var(--bg); border: 1px solid transparent;
+            cursor: pointer; transition: all 0.2s ease; user-select: none;
+        }
+        .consent-text:hover { border-color: color-mix(in srgb, var(--primary) 30%, transparent); }
+        .consent-text.active {
+            background-color: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success);
+            font-weight: 600; border-color: color-mix(in srgb, var(--success) 30%, transparent);
+        }
+        .consent-text.active::before {
+            content: '\f00c'; /* Font Awesome check icon */
+            font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            margin-right: 0.75rem;
+        }
         /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
@@ -289,18 +432,28 @@
                     <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Anamnese</span>
                     </a>
+                    <!-- NOVOS BOTÕES PARA LAUDO, ORIENTAÇÃO E PROCEDIMENTO -->
+                    <button type="button" class="btn btn-secondary" id="addLaudoBtn" data-record-type="laudo" data-record-title="Adicionar Laudo Médico">
+                        <i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Adicionar Laudo</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="addOrientacaoBtn" data-record-type="orientacao" data-record-title="Adicionar Orientação">
+                        <i class="fas fa-notes-medical"></i> <span class="btn-text-desktop">Adicionar Orientação</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="addProcedimentoBtn" data-record-type="procedimento" data-record-title="Adicionar Procedimento">
+                        <i class="fas fa-syringe"></i> <span class="btn-text-desktop">Adicionar Procedimento</span>
+                    </button>
                 </div>
             </header>
 
             <main>
                 {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
-                    <div class="flash-messages">
-                      {% for category, message in messages %}
-                        <div class="flash-message {{ category }}">{{ message }}</div>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="flash-message {{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 {% endwith %}
 
                 {% if paciente %}
@@ -316,49 +469,123 @@
                 </div>
                 {% endif %}
 
+                <!-- MACRO Definition for the record card -->
+                {% macro render_registro_card(registro) %}
+                <div class="registro-card" id="registro-{{ registro.id }}">
+                    <div class="registro-header">
+                        <h4>{{ registro.tipo_registro | capitalize }} - {{ registro.titulo | default('') }}</h4>
+                        <div class="registro-meta">
+                            <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro_fmt }}</span>
+                            <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
+                        </div>
+                    </div>
+                    <div class="registro-content">
+                        {{ registro.conteudo | safe }}
+                    </div>
+                    <div class="registro-actions">
+                        {% if registro.tipo_registro == 'anamnese' %}
+                        <button class="btn btn-sm btn-secondary btn-expand-anamnese"><i class="fas fa-expand-alt"></i></button>
+                        <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                        {% else %}
+                        <button class="btn btn-sm btn-secondary btn-expand-anamnese"><i class="fas fa-expand-alt"></i></button>
+                        <a href="{{ url_for('editar_registro_generico', paciente_doc_id=paciente.id, registro_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                        {% endif %}
+                        <button class="btn btn-sm btn-secondary btn-print-pdf"><i class="fas fa-print"></i></button>
+                        <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                {% endmacro %}
+
+
                 <section class="prontuario-section">
                     <div class="prontuario-header">
                         <h2>Registros do Prontuário</h2>
                     </div>
 
-                    {% if registros %}
-                        {% for registro in registros %}
-                        <div class="registro-card" id="registro-{{ registro.id }}">
-                            <div class="registro-header">
-                                <h4>{{ registro.tipo_registro | capitalize }}</h4>
-                                <div class="registro-meta">
-                                    <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro_fmt }}</span>
-                                    <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
-                                </div>
+                    <!-- Estrutura das Abas -->
+                    <div class="tabs-container">
+                        <div class="tab-nav">
+                            <button class="tab-nav-item active" data-tab="todos">Todos</button>
+                            <button class="tab-nav-item" data-tab="anamnese">Anamneses</button>
+                            <button class="tab-nav-item" data-tab="laudo">Laudos</button>
+                            <button class="tab-nav-item" data-tab="orientacao">Orientações</button>
+                            <button class="tab-nav-item" data-tab="procedimento">Procedimentos</button>
+                        </div>
+                        
+                        <div class="tab-content">
+                            <!-- Painel "Todos" -->
+                            <div id="tab-panel-todos" class="tab-panel active">
+                                {% if registros %}
+                                    {% for registro in registros %}
+                                        {{ render_registro_card(registro) }}
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="empty-state">
+                                        <p>Nenhum registro encontrado para este paciente.</p>
+                                    </div>
+                                {% endif %}
                             </div>
-                            <div class="registro-content">
-                                {{ registro.conteudo | safe }}
+
+                            <!-- Painel "Anamneses" -->
+                            <div id="tab-panel-anamnese" class="tab-panel">
+                                {% set anamneses = registros | selectattr('tipo_registro', 'equalto', 'anamnese') | list %}
+                                {% if anamneses %}
+                                    {% for registro in anamneses %}
+                                        {{ render_registro_card(registro) }}
+                                    {% endfor %}
+                                {% else %}
+                                     <div class="empty-state"><p>Nenhuma anamnese encontrada.</p></div>
+                                {% endif %}
                             </div>
-                            <div class="registro-actions">
-                                {% if registro.tipo_registro == 'anamnese' %}
-                                <button class="btn btn-sm btn-secondary btn-expand-anamnese"><i class="fas fa-expand-alt"></i></button>
-                                <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
-                                <button class="btn btn-sm btn-secondary btn-print-pdf"><i class="fas fa-print"></i></button>
+
+                             <!-- Painel "Laudos" -->
+                            <div id="tab-panel-laudo" class="tab-panel">
+                                {% set laudos = registros | selectattr('tipo_registro', 'equalto', 'laudo') | list %}
+                                {% if laudos %}
+                                    {% for registro in laudos %}
+                                        {{ render_registro_card(registro) }}
+                                    {% endfor %}
+                                {% else %}
+                                     <div class="empty-state"><p>Nenhum laudo encontrado.</p></div>
+                                {% endif %}
+                            </div>
+
+                             <!-- Painel "Orientações" -->
+                            <div id="tab-panel-orientacao" class="tab-panel">
+                                {% set orientacoes = registros | selectattr('tipo_registro', 'equalto', 'orientacao') | list %}
+                                {% if orientacoes %}
+                                    {% for registro in orientacoes %}
+                                        {{ render_registro_card(registro) }}
+                                    {% endfor %}
+                                {% else %}
+                                     <div class="empty-state"><p>Nenhuma orientação encontrada.</p></div>
+                                {% endif %}
+                            </div>
+
+                             <!-- Painel "Procedimentos" -->
+                            <div id="tab-panel-procedimento" class="tab-panel">
+                                {% set procedimentos = registros | selectattr('tipo_registro', 'equalto', 'procedimento') | list %}
+                                {% if procedimentos %}
+                                    {% for registro in procedimentos %}
+                                        {{ render_registro_card(registro) }}
+                                    {% endfor %}
+                                {% else %}
+                                     <div class="empty-state"><p>Nenhum procedimento encontrado.</p></div>
                                 {% endif %}
                             </div>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="registro-card" style="text-align: center; padding: 2rem; color: var(--muted);">
-                            <p>Nenhum registro encontrado para este paciente.</p>
-                        </div>
-                    {% endif %}
+                    </div>
                 </section>
             </main>
         </div>
     </div>
 
-    <!-- Modal para Anamnese Completa -->
+    <!-- Modal para Anamnese Completa (mantida) -->
     <div id="anamnese-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Anamnese Completa</h3>
-                <button class="modal-close-btn">&times;</button>
+                <button class="modal-close-btn" data-close-modal="anamnese-modal">&times;</button>
             </div>
             <div class="modal-body" id="modal-anamnese-content">
                 <!-- Conteúdo da anamnese será inserido aqui -->
@@ -366,162 +593,419 @@
         </div>
     </div>
 
+    <!-- NOVA Modal para Registro Genérico (Laudo, Orientação, Procedimento) -->
+    <div id="modalRegistroGenerico" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalRegistroGenericoTitle">Adicionar Novo Registro</h3>
+                <button type="button" class="modal-close-btn" data-close-modal="modalRegistroGenerico">&times;</button>
+            </div>
+            <form method="POST" action="" id="formRegistroGenerico">
+                <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+                <input type="hidden" name="tipo_registro" id="tipo_registro_generico">
+                <input type="hidden" name="registro_id" id="registro_id_generico"> {# Para edição #}
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="titulo_registro_generico">Título</label>
+                        <input type="text" id="titulo_registro_generico" name="titulo" required>
+                    </div>
+
+                    <!-- Gemini Generator para Conteúdo Genérico -->
+                    <div class="gemini-generator">
+                        <div class="form-group">
+                            <label for="gemini-prompt-generico">Gerar conteúdo com Inteligência Artificial</label>
+                            <div class="gemini-generator-actions" style="display: none;">
+                                <input type="text" id="gemini-prompt-generico" placeholder="Ex: Laudo para paciente com fratura no fêmur">
+                                <button type="button" id="generate-generic-btn" class="btn btn-primary" disabled>
+                                    <i class="fas fa-robot"></i>&nbsp;<span>Gerar</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div id="lgpd-consent-text-generico" class="consent-text">
+                                Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="conteudo_registro_generico">Conteúdo</label>
+                        <div class="editor-container">
+                            <div class="editor-toolbar">
+                                <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><i class="fas fa-bold"></i></button>
+                                <button type="button" data-command="italic" title="Itálico (Ctrl+I)"><i class="fas fa-italic"></i></button>
+                                <button type="button" data-command="underline" title="Sublinhado (Ctrl+U)"><i class="fas fa-underline"></i></button>
+                                <button type="button" data-command="insertUnorderedList" title="Lista não ordenada"><i class="fas fa-list-ul"></i></button>
+                                <button type="button" data-command="insertOrderedList" title="Lista ordenada"><i class="fas fa-list-ol"></i></button>
+                                <button type="button" data-command="undo" title="Desfazer (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                                <button type="button" data-command="redo" title="Refazer (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                            </div>
+                            <div id="editor-content-generico" contenteditable="true" class="editor-content-generic" data-placeholder="Digite o conteúdo do registro aqui..."></div>
+                            <textarea id="conteudo_generico_hidden" name="conteudo" style="display:none;"></textarea>
+                        </div>
+                    </div>
+
+                    {# Campo opcional para referenciar um agendamento #}
+                    <div class="form-group">
+                        <label for="agendamento_id_referencia">Agendamento de Referência (Opcional)</label>
+                        <input type="text" id="agendamento_id_referencia" name="agendamento_id_referencia" placeholder="ID do Agendamento">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close-modal="modalRegistroGenerico">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Formulário para Apagar Registro (escondido) -->
+    <form id="formApagarRegistro" method="POST" action="" style="display: none;">
+        <input type="hidden" name="registro_id" id="registro_id_apagar">
+        <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+    </form>
+    
     <script type="module">
-        // Placeholder for Firebase - adjust with your actual config
-        const FAKE_FIREBASE = {
-            initializeApp: () => ({}),
-            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
+        import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+        // IMPORTANTE: Cole aqui a configuração do seu projeto Firebase
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY", // Certifique-se de usar a chave real
+            authDomain: "SEU_AUTH_DOMAIN",
+            projectId: "SEU_PROJECT_ID",
+            storageBucket: "SEU_STORAGE_BUCKET",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+            appId: "SEU_APP_ID"
         };
-        const { initializeApp } = FAKE_FIREBASE;
-        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        let auth = getAuth(initializeApp(firebaseConfig));
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
-            const logoutButton = document.getElementById('logoutButton');
+            
+            // --- Lógica Geral da Interface (Sidebar, Tema, Logout) ---
+            function setupCommonUI() {
+                const sidebar = document.querySelector('.sidebar');
+                const mainContent = document.querySelector('.main-content');
+                const toggleButtons = document.querySelectorAll('.toggle-btn');
+                const themeToggle = document.getElementById('theme-toggle');
+                const logoutButton = document.getElementById('logoutButton');
 
-            // --- Sidebar Logic ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
+                // 1. Lógica do Tema (Dark/Light Mode)
+                if (themeToggle) {
+                    const themeIcon = themeToggle.querySelector('i');
+                    const currentTheme = localStorage.getItem('theme') || 'light';
+                    
+                    htmlEl.dataset.theme = currentTheme;
+                    themeIcon.className = currentTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+
+                    themeToggle.addEventListener('click', () => {
+                        const newTheme = htmlEl.dataset.theme === 'dark' ? 'light' : 'dark';
+                        htmlEl.dataset.theme = newTheme;
+                        localStorage.setItem('theme', newTheme);
+                        themeIcon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
                     });
                 }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
+
+                // 2. Lógica da Sidebar (Expandir/Recolher)
+                if (sidebar && mainContent && toggleButtons.length > 0) {
+                    // Aplica o estado salvo no desktop
+                    if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
+                        sidebar.classList.add('collapsed');
+                        mainContent.classList.add('collapsed');
                     }
-                });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
-            }
-
-            // --- Theme Logic ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
-
-            // --- Logout Logic ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
-
-            // --- Prontuário Page Logic ---
-            function setupProntuarioPage() {
-                // Modal Logic
-                const modal = document.getElementById('anamnese-modal');
-                if (modal) {
-                    const modalContentEl = document.getElementById('modal-anamnese-content');
-                    const closeModalBtn = modal.querySelector('.modal-close-btn');
-
-                    document.querySelectorAll('.btn-expand-anamnese').forEach(button => {
-                        button.addEventListener('click', function() {
-                            const card = this.closest('.registro-card');
-                            const contentDiv = card.querySelector('.registro-content');
-                            modalContentEl.innerHTML = contentDiv.innerHTML;
-                            modal.classList.add('active');
+                    
+                    toggleButtons.forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            if (window.innerWidth > 768) { // Desktop
+                                sidebar.classList.toggle('collapsed');
+                                mainContent.classList.toggle('collapsed');
+                                localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+                            } else { // Mobile
+                                sidebar.classList.toggle('open');
+                            }
                         });
                     });
+                }
+                
+                // 3. Lógica de Logout
+                if (logoutButton) {
+                    logoutButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        firebaseSignOut(auth).then(() => {
+                            // Redireciona para a página de login após o logout
+                            window.location.href = '/login'; 
+                        }).catch((error) => {
+                            console.error('Erro ao fazer logout:', error);
+                            alert('Não foi possível sair. Tente novamente.');
+                        });
+                    });
+                }
+            }
+            
+            // --- Lógica Específica da Página de Prontuário ---
+            function setupProntuarioPage() {
+                
+                // *** NOVA LÓGICA DAS ABAS ***
+                function setupTabs() {
+                    const tabContainer = document.querySelector('.tabs-container');
+                    if (!tabContainer) return;
 
-                    if(closeModalBtn) closeModalBtn.addEventListener('click', () => modal.classList.remove('active'));
-                    modal.addEventListener('click', (e) => {
-                        if (e.target === modal) {
-                            modal.classList.remove('active');
-                        }
+                    const tabNavItems = tabContainer.querySelectorAll('.tab-nav-item');
+                    const tabPanels = tabContainer.querySelectorAll('.tab-panel');
+
+                    tabNavItems.forEach(tab => {
+                        tab.addEventListener('click', () => {
+                            // Remove a classe 'active' de todas as abas e painéis
+                            tabNavItems.forEach(item => item.classList.remove('active'));
+                            tabPanels.forEach(panel => panel.classList.remove('active'));
+
+                            // Adiciona 'active' à aba clicada
+                            tab.classList.add('active');
+                            
+                            // Adiciona 'active' ao painel correspondente
+                            const targetPanelId = 'tab-panel-' + tab.dataset.tab;
+                            const targetPanel = document.getElementById(targetPanelId);
+                            if(targetPanel) {
+                                targetPanel.classList.add('active');
+                            }
+                        });
                     });
                 }
 
-                // Print Logic
-                document.querySelectorAll('.btn-print-pdf').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const card = this.closest('.registro-card');
-                        const headerHTML = card.querySelector('.registro-header').innerHTML;
-                        const contentHTML = card.querySelector('.registro-content').innerHTML;
 
-                        const printWindow = window.open('', '_blank');
-                        printWindow.document.write(`
-                            <html><head><title>Imprimir Prontuário</title>
-                            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-                            <style>
-                                body { font-family: Inter, sans-serif; margin: 20px; }
-                                .registro-card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; }
-                                .registro-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
-                                h4 { margin:0; font-size: 1.2rem; }
-                                .registro-meta { font-size: 0.9em; color: #555; text-align: right; }
-                                .registro-meta span { display: block; }
-                                .registro-content { white-space: pre-wrap; overflow-wrap: break-word; font-size: 1rem; line-height: 1.6; }
-                            </style>
-                            </head><body>
-                            <div class="registro-card">
-                                <div class="registro-header">${headerHTML}</div>
-                                <div class="registro-content">${contentHTML}</div>
-                            </div>
-                            </body></html>`);
-                        printWindow.document.close();
-                        printWindow.focus();
-                        setTimeout(() => {
-                            printWindow.print();
-                            printWindow.close();
-                        }, 250);
+                // Modal de Anamnese Completa Logic (existente)
+                const anamneseModal = document.getElementById('anamnese-modal');
+                if (anamneseModal) {
+                    const modalContentEl = document.getElementById('modal-anamnese-content');
+                    
+                    // Delegação de eventos para funcionar com os conteúdos das abas
+                    document.body.addEventListener('click', function(e) {
+                         if (e.target.matches('.btn-expand-anamnese, .btn-expand-anamnese *')) {
+                             const button = e.target.closest('.btn-expand-anamnese');
+                             const card = button.closest('.registro-card');
+                             const contentDiv = card.querySelector('.registro-content');
+                             modalContentEl.innerHTML = contentDiv.innerHTML;
+                             anamneseModal.classList.add('active');
+                         }
+                    });
+                }
+
+                // Nova Modal de Registro Genérico Logic
+                const modalRegistroGenerico = document.getElementById('modalRegistroGenerico');
+                const formRegistroGenerico = document.getElementById('formRegistroGenerico');
+                const modalRegistroGenericoTitle = document.getElementById('modalRegistroGenericoTitle');
+                const tipoRegistroGenericoInput = document.getElementById('tipo_registro_generico');
+                const registroIdGenericoInput = document.getElementById('registro_id_generico');
+                const tituloRegistroGenericoInput = document.getElementById('titulo_registro_generico');
+                const conteudoRegistroGenericoEditor = document.getElementById('editor-content-generico'); // O editor de texto rico
+                const conteudoGenericoHiddenTextarea = document.getElementById('conteudo_generico_hidden'); // Textarea oculta
+                const agendamentoIdReferenciaInput = document.getElementById('agendamento_id_referencia');
+
+                // Lógica para o editor de texto rico genérico
+                if (conteudoRegistroGenericoEditor && conteudoGenericoHiddenTextarea) {
+                    conteudoRegistroGenericoEditor.addEventListener('input', () => {
+                        conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
+                    });
+                }
+
+                // Toolbar do editor genérico
+                document.querySelectorAll('#modalRegistroGenerico .editor-toolbar button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const command = e.currentTarget.dataset.command;
+                        document.execCommand(command, false, null);
+                        conteudoRegistroGenericoEditor.focus();
+                        if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
                     });
                 });
+
+
+                // --- Lógica do Gerador Gemini para Registro Genérico ---
+                const generateGenericBtn = document.getElementById('generate-generic-btn');
+                const genericPromptInput = document.getElementById('gemini-prompt-generico');
+                const lgpdConsentTextGeneric = document.getElementById('lgpd-consent-text-generico');
+                const generatorActions = document.querySelector('#modalRegistroGenerico .gemini-generator-actions');
+
+
+                // Função para abrir a modal de registro genérico (Adicionar/Editar)
+                function openRegistroGenericoModal(type, title, registroData = null) {
+                    formRegistroGenerico.reset(); // Limpa o formulário
+
+                    // Reset Gemini Generator state on open
+                    if (generatorActions && lgpdConsentTextGeneric && generateGenericBtn) {
+                        generatorActions.style.display = 'none';
+                        lgpdConsentTextGeneric.classList.remove('active');
+                        generateGenericBtn.disabled = true;
+                    }
+                    
+                    tipoRegistroGenericoInput.value = type;
+                    modalRegistroGenericoTitle.innerHTML = title;
+                    
+                    // Define a action padrão do formulário (para adicionar)
+                    formRegistroGenerico.action = `{{ url_for('registrar_registro_generico', paciente_doc_id=paciente.id) }}`;
+                    
+                    // Se for edição, preenche os campos e ajusta a action
+                    if (registroData) {
+                        modalRegistroGenericoTitle.innerHTML = `Editar ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+                        registroIdGenericoInput.value = registroData.id;
+                        tituloRegistroGenericoInput.value = registroData.titulo || '';
+                        conteudoRegistroGenericoEditor.innerHTML = registroData.conteudo || ''; // Conteúdo do editor
+                        conteudoGenericoHiddenTextarea.value = registroData.conteudo || ''; // Conteúdo do hidden
+                        agendamentoIdReferenciaInput.value = registroData.agendamento_id_referencia || '';
+                        // Altera a action para a rota de edição
+                        formRegistroGenerico.action = `{{ url_for('editar_registro_generico', paciente_doc_id=paciente.id, registro_doc_id='DUMMY_ID') }}`.replace('DUMMY_ID', registroData.id);
+                    } else {
+                        // Limpa os campos para um novo registro
+                        registroIdGenericoInput.value = '';
+                        tituloRegistroGenericoInput.value = '';
+                        conteudoRegistroGenericoEditor.innerHTML = ''; // Limpa o editor
+                        conteudoGenericoHiddenTextarea.value = ''; // Limpa o hidden
+                        agendamentoIdReferenciaInput.value = '';
+                    }
+
+                    modalRegistroGenerico.classList.add('active');
+                }
+
+                // Event Listeners para os novos botões na topbar (Adicionar Laudo, Orientação, Procedimento)
+                document.getElementById('addLaudoBtn')?.addEventListener('click', () => {
+                    openRegistroGenericoModal('laudo', 'Adicionar Laudo Médico');
+                });
+                document.getElementById('addOrientacaoBtn')?.addEventListener('click', () => {
+                    openRegistroGenericoModal('orientacao', 'Adicionar Orientação');
+                });
+                document.getElementById('addProcedimentoBtn')?.addEventListener('click', () => {
+                    openRegistroGenericoModal('procedimento', 'Adicionar Procedimento');
+                });
+                
+                // Event Listener para os botões de EDITAR outros tipos de registro (usando delegação de evento)
+                 document.body.addEventListener('click', async function(e) {
+                     const editButton = e.target.closest('.registro-actions .btn-warning');
+                     if(editButton) {
+                        const url = editButton.getAttribute('href');
+                        if (url && url.includes('editar_registro_generico')) {
+                            e.preventDefault(); 
+                            const registroCard = e.target.closest('.registro-card');
+                            const registroId = registroCard.id.replace('registro-', '');
+                            
+                            const currentRegistro = {{ registros | tojson }}.find(r => r.id === registroId);
+                            if (currentRegistro) {
+                                openRegistroGenericoModal(currentRegistro.tipo_registro, '', currentRegistro);
+                            } else {
+                                console.error('Dados do registro não encontrados para edição.');
+                            }
+                        }
+                     }
+                 });
+
+                // Lógica para fechar modais
+                document.querySelectorAll('.modal-overlay .modal-close-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const modalId = this.dataset.closeModal || this.closest('.modal-overlay').id;
+                        document.getElementById(modalId).classList.remove('active');
+                    });
+                });
+
+                document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                    overlay.addEventListener('click', function(e) {
+                        if (e.target === this) {
+                            this.classList.remove('active');
+                        }
+                    });
+                });
+
+                // Lógica para apagar registro (genérico para todos os tipos, usando delegação de evento)
+                const formApagarRegistro = document.getElementById('formApagarRegistro');
+                const registroIdApagarInput = document.getElementById('registro_id_apagar');
+
+                document.body.addEventListener('click', function(e) {
+                     if (e.target.matches('.btn-apagar-registro, .btn-apagar-registro *')) {
+                         const button = e.target.closest('.btn-apagar-registro');
+                         const registroId = button.dataset.registroId;
+                         if (confirm('Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.')) {
+                             registroIdApagarInput.value = registroId;
+                             formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}`;
+                             formApagarRegistro.submit();
+                         }
+                     }
+                });
+
+                if (lgpdConsentTextGeneric && generateGenericBtn && generatorActions) {
+                    lgpdConsentTextGeneric.addEventListener('click', () => {
+                        lgpdConsentTextGeneric.classList.toggle('active');
+                        const isActive = lgpdConsentTextGeneric.classList.contains('active');
+                        
+                        generatorActions.style.display = isActive ? 'flex' : 'none';
+                        generateGenericBtn.disabled = !isActive;
+                    });
+                }
+                
+                if (generateGenericBtn && genericPromptInput && conteudoRegistroGenericoEditor) {
+                    generateGenericBtn.addEventListener('click', async () => {
+                        const userPrompt = genericPromptInput.value.trim();
+                        const tipoRegistro = tipoRegistroGenericoInput.value; // laudo, orientacao, procedimento
+                        if (!userPrompt) {
+                            alert(`Por favor, descreva o tipo de ${tipoRegistro} que você deseja gerar.`);
+                            return;
+                        }
+                        
+                        let fullPrompt = "";
+                        if (tipoRegistro === "laudo") {
+                            fullPrompt = `Você é um médico especialista. Crie um modelo de laudo médico completo e detalhado em HTML, sem placeholders como "[...]", para a seguinte condição ou motivo: "${userPrompt}". Inclua seções como Identificação do Paciente, Histórico Clínico Relevante, Exame Físico (se aplicável), Resultados de Exames, Discussão do Caso, e Conclusão/Diagnóstico, com um plano terapêutico. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>).`;
+                        } else if (tipoRegistro === "orientacao") {
+                            fullPrompt = `Você é um profissional de saúde. Crie um modelo de orientação ao paciente em HTML, sem placeholders como "[...]", sobre a seguinte situação ou tratamento: "${userPrompt}". A orientação deve ser clara, concisa, fácil de entender e cobrir tópicos como o que é a condição/tratamento, como gerenciar sintomas, quando procurar ajuda, e dicas para autocuidado. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>).`;
+                        } else if (tipoRegistro === "procedimento") {
+                            fullPrompt = `Você é um profissional de saúde. Crie uma descrição detalhada de um procedimento médico/clínico em HTML, sem placeholders como "[...]", para: "${userPrompt}". O documento deve cobrir a indicação, descrição passo a passo do procedimento, cuidados pré-procedimento, cuidados pós-procedimento, riscos e benefícios. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>).`;
+                        } else {
+                            alert("Tipo de registro desconhecido para geração de IA.");
+                            return;
+                        }
+
+                        generateGenericBtn.disabled = true;
+                        generateGenericBtn.classList.add('loading');
+                        generateGenericBtn.querySelector('span').textContent = 'Gerando...';
+
+                        try {
+                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // <<<<<<< IMPORTANTE: COLOQUE SUA CHAVE DE API REAL AQUI
+                            const genAI = new GoogleGenerativeAI(apiKey);
+                            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+
+                            const result = await model.generateContent(fullPrompt);
+                            const response = await result.response;
+                            const text = response.text();
+                            
+                            if (conteudoRegistroGenericoEditor.innerHTML.trim() && !confirm('Deseja substituir o conteúdo atual pelo texto gerado pela IA?')) {
+                                generateGenericBtn.disabled = !lgpdConsentTextGeneric.classList.contains('active');
+                                generateGenericBtn.classList.remove('loading');
+                                generateGenericBtn.querySelector('span').textContent = 'Gerar';
+                                return;
+                            }
+                            
+                            conteudoRegistroGenericoEditor.innerHTML = text;
+                            if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = text;
+
+                        } catch (error) {
+                            console.error('Gemini API Error:', error);
+                            alert('Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.');
+                        } finally {
+                            generateGenericBtn.disabled = !lgpdConsentTextGeneric.classList.contains('active');
+                            generateGenericBtn.classList.remove('loading');
+                            generateGenericBtn.querySelector('span').textContent = 'Gerar';
+                        }
+                    });
+                }
+                
+                // Inicializa a funcionalidade das abas
+                setupTabs();
             }
 
-            // --- Initialization ---
-            setupSidebar();
-            setupTheme();
-            setupLogout();
+            // --- Inicialização ---
+            setupCommonUI();
             setupProntuarioPage();
         });
     </script>
