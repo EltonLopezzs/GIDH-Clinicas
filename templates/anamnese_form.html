@@ -14,716 +14,445 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Estilos personalizados para layout e responsividade -->
     <style>
         :root {
-            --bg: #f8f9fa;
-            --card: #ffffff;
-            --text: #1f2937;
-            --muted: #6c757d;
-            --accent: #111827;
-            --accent-light: #4b5563;
-            --danger: #dc3545;
-            --success: #198754;
-            --warning: #ffc107;
-            --primary: #29788d; 
-            --secondary: #c68642;
-            --dark-bg: #1a1a1a;
-            --dark-text: #f8f9fa;
-            --dark-card: #2c2c2c;
-            --info: #0dcaf0; 
-            --bs-border-color: #dee2e6; 
+            --bg: #f8f9fa; --card: #ffffff; --text: #1f2937; --muted: #6c757d;
+            --accent: #111827; --danger: #dc3545; --success: #198754; --warning: #ffc107;
+            --primary: #29788d; --secondary: #c68642; --dark-bg: #1a1a1a; --dark-text: #f8f9fa;
+            --dark-card: #2c2c2c; --info: #0dcaf0; --bs-border-color: #dee2e6;
         }
-
         [data-theme="dark"] {
-            --bg: var(--dark-bg);
-            --text: var(--dark-text);
-            --card: var(--dark-card);
-            --muted: #a0a0a0;
-            --bs-border-color: #495057; 
+            --bg: var(--dark-bg); --text: var(--dark-text); --card: var(--dark-card);
+            --muted: #a0a0a0; --bs-border-color: #495057;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; overflow-x: hidden; } 
-        body {
-            font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text);
-            min-height: 100vh; line-height: 1.6; transition: background-color 0.3s ease, color 0.3s ease;
-        }
+        html, body { height: 100%; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; transition: background-color 0.3s ease, color 0.3s ease; }
         .layout { display: flex; min-height: 100vh; width: 100%; }
-
-        .sidebar {
-            width: 260px; background: linear-gradient(180deg, var(--primary), var(--accent)); color: white;
-            position: fixed; top:0; left:0; height: 100vh; padding: 0; 
-            transition: width 0.3s ease, transform 0.3s ease; z-index: 1000;
-            display: flex; flex-direction: column;
-        }
-        .sidebar-inner-content { 
-            padding: 0; 
-            height: 100%;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-        .sidebar-header {
-            padding: 20px 10px 15px; 
-            margin-bottom: 15px; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center;
-            flex-shrink: 0; 
-            height: 70px; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .sidebar-header .logo { 
-            font-size: 1.5rem; font-weight: 700; color: white; text-decoration: none; 
-            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-        }
-        .sidebar.collapsed { width: 70px; } 
-        .sidebar.collapsed .sidebar-inner-content { padding-top: 0; }
-        .sidebar.collapsed .sidebar-header { padding: 20px 5px 15px; } 
-        .sidebar.collapsed .sidebar-header .logo span { display: none; }
-        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
-        
-        .sidebar nav { flex-grow: 1; margin-top:10px; padding: 0 10px;} 
-        .sidebar.collapsed nav { padding: 0 5px; }
-        .sidebar nav ul { list-style: none; padding: 0; } 
-
+        .sidebar { width: 260px; background: linear-gradient(180deg, var(--primary), var(--accent)); color: white; position: fixed; top: 0; left: 0; height: 100vh; padding: 0; transition: width 0.3s ease, transform 0.3s ease; z-index: 1000; display: flex; flex-direction: column; }
+        .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px 10px 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center; }
+        .sidebar-header .logo { font-size: 1.5rem; font-weight: 700; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .sidebar.collapsed { width: 70px; }
+        .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li.nav-item a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
+        .sidebar.collapsed nav ul li a, .sidebar.collapsed #theme-toggle, .sidebar.collapsed .sidebar-footer ul li a { justify-content: center; padding: 10px; }
+        .sidebar nav { flex-grow: 1; margin-top: 10px; padding: 0 10px; }
+        .sidebar nav ul { list-style: none; padding: 0; }
         .sidebar nav ul li.nav-item { margin: 8px 0; }
-        .sidebar nav ul li.nav-item a {
-            color: white; text-decoration: none; display: flex; align-items: center;
-            padding: 10px 15px; 
-            gap: 15px; border-radius: 8px; font-size: 0.95rem; 
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            transition: background 0.2s ease;
-        }
-        .sidebar nav ul li.nav-item a i { width: 20px; text-align: center; font-size: 1.05rem; flex-shrink: 0; }
-        .sidebar.collapsed nav ul li.nav-item a span { display: none; }
-        .sidebar.collapsed nav ul li.nav-item a { justify-content: center; padding: 10px; }
-        .sidebar nav ul li.nav-item a:hover { background: rgba(255, 255, 255, 0.1); }
-        .sidebar nav ul li.nav-item.active a { background: rgba(255, 255, 255, 0.2); font-weight: 600; }
-        
-        .sidebar-footer { padding: 15px 10px 20px 10px; margin-top: auto;  flex-shrink: 0;} 
-        .sidebar.collapsed .sidebar-footer { padding: 15px 5px 20px 5px; }
-
-        #theme-toggle {
-            background: none; border: none; cursor: pointer;
-            color: white; padding: 10px 15px; border-radius: 8px; width: 100%;
-            display: flex; align-items: center; gap: 15px; transition: background 0.2s ease;
-            font-family: 'Inter', sans-serif; font-size: 0.95rem;
-        }
+        .sidebar nav ul li a { color: white; text-decoration: none; display: flex; align-items: center; padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s ease; }
+        .sidebar nav ul li a i { width: 20px; text-align: center; font-size: 1.05rem; flex-shrink: 0; }
+        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); }
+        .sidebar nav ul li.active a { background: rgba(255, 255, 255, 0.2); font-weight: 600; }
+        .sidebar-footer { padding: 15px 10px 20px 10px; margin-top: auto; flex-shrink: 0; }
+        #theme-toggle { background: none; border: none; cursor: pointer; color: white; padding: 10px 15px; border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 15px; transition: background 0.2s ease; font-family: 'Inter', sans-serif; font-size: 0.95rem; }
         #theme-toggle:hover { background: rgba(255,255,255,0.1); }
-        .sidebar.collapsed #theme-toggle span{ display: none; }
-        .sidebar.collapsed #theme-toggle { justify-content: center; padding: 10px; }
-        
-        .sidebar-footer ul { list-style: none; margin-top: 8px; padding: 0;}
-        .sidebar-footer ul li a {
-            color: white; text-decoration: none; display: flex; align-items: center;
-            padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-            transition: background 0.2s ease;
-        }
+        .sidebar-footer ul { list-style: none; margin-top: 8px; padding: 0; }
+        .sidebar-footer ul li a { color: white; text-decoration: none; display: flex; align-items: center; padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s ease; }
         .sidebar-footer ul li a:hover { background: rgba(255,255,255,0.1); }
-        .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
-        .sidebar.collapsed .sidebar-footer ul li a { justify-content: center; padding: 10px;}
-
-        .main-content {
-            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 260px);
-        }
+        .main-content { flex: 1; margin-left: 260px; transition: margin-left 0.3s ease; display: flex; flex-direction: column; width: calc(100% - 260px); }
         .main-content.collapsed { margin-left: 70px; width: calc(100% - 70px); }
-
-        .topbar {
-            background-color: var(--card); color: var(--text); padding: 0 1rem; 
-            display: flex; align-items: center; justify-content: space-between; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid var(--bs-border-color);
-            height: 70px; flex-shrink: 0;
-        }
-        .topbar-left { display: flex; align-items: center; gap: 0.5rem; }
-        .topbar .page-title { font-weight: 600; font-size: 1.1rem; color: var(--primary); }
-        
-        .toggle-btn-desktop, 
-        .menu-btn-mobile { 
-            background: none; border: none; font-size: 1.5rem; cursor: pointer;
-            color: var(--text); padding: 6px; border-radius: 8px;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
+        .topbar { background-color: var(--card); color: var(--text); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid var(--bs-border-color); height: 70px; flex-shrink: 0; }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .topbar .page-title { font-weight: 600; font-size: 1.3rem; color: var(--primary); margin-left: 10px; }
+        .toggle-btn-desktop, .menu-btn-mobile { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text); padding: 6px; border-radius: 8px; transition: background 0.2s ease, color 0.2s ease; }
         .toggle-btn-desktop:hover, .menu-btn-mobile:hover { background-color: rgba(0,0,0,0.05); }
-        .toggle-btn-desktop { display: none; } 
-        .menu-btn-mobile { display: block; } 
-
+        .toggle-btn-desktop { display: none; }
+        .menu-btn-mobile { display: block; }
+        @media(min-width: 769px) { .toggle-btn-desktop { display: block; } .menu-btn-mobile { display: none; } }
         main { flex-grow: 1; padding: 25px; overflow-y: auto; }
         .container-fluid { width: 100%; padding-right: 15px; padding-left: 15px; margin-right: auto; margin-left: auto; }
-        
         .flash-messages { margin-bottom: 1.5rem; }
-        .flash-message {
-            padding: 0.8rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent;
-            border-radius: 0.3rem; font-size: 0.9rem;
-        }
-        .flash-message.success {
-            color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent);
-            border-color: color-mix(in srgb, var(--success) 30%, transparent);
-        }
-        .flash-message.danger, .flash-message.error {
-            color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent);
-            border-color: color-mix(in srgb, var(--danger) 30%, transparent);
-        }
-        .flash-message.info {
-            color: var(--info); background-color: color-mix(in srgb, var(--info) 15%, transparent);
-            border-color: color-mix(in srgb, var(--info) 30%, transparent);
-        }
-        .flash-message.warning {
-            color: var(--text); background-color: color-mix(in srgb, var(--warning) 25%, transparent);
-            border-color: color-mix(in srgb, var(--warning) 40%, transparent);
-        }
-        
-        .form-card {
-            background: var(--card); padding: 2rem; border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); margin-top: 1.5rem;
-            max-width: 800px; 
-            margin-left: auto; margin-right: auto;
-        }
-        .form-card h2.form-title {
-            text-align: center; font-size: 1.6rem; color: var(--primary); margin-bottom: 1.8rem;
-        }
-        .form-group { margin-bottom: 1.2rem; }
-        .form-group label {
-            display: block; font-weight: 600; margin-bottom: 0.5rem;
-            color: var(--text); font-size: 0.9rem;
-        }
-        .form-group input[type="text"],
-        .form-group select { /* Excluído textarea daqui, estilizado separadamente */
-            width: 100%; padding: 0.75rem; border: 1px solid var(--bs-border-color);
-            border-radius: 6px; font-size: 1rem; background-color: var(--card);
-            color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-group input:focus,
-        .form-group select:focus { /* Excluído textarea daqui */
-            border-color: var(--primary);
-            box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent);
-            outline: none;
-        }
-        
-        .form-actions {
-            margin-top: 1.8rem; display: flex;
-            justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 6px;
-            text-decoration: none; font-weight: 600; display: inline-flex;
-            align-items: center; gap: 0.5rem; border: 1px solid transparent;
-            cursor: pointer; transition: all 0.2s ease-in-out;
-        }
+        .flash-message { padding: 0.8rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent; border-radius: 0.3rem; font-size: 0.9rem; }
+        .flash-message.success { color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
+        .flash-message.danger, .flash-message.error { color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+        .form-card { background: var(--card); padding: 2rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); margin-top: 1.5rem; max-width: 960px; margin-left: auto; margin-right: auto; }
+        .form-card h2.form-title { text-align: center; font-size: 1.6rem; color: var(--primary); margin-bottom: 1.8rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text); font-size: 0.9rem; }
+        .form-group input[type="text"], .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--bs-border-color); border-radius: 6px; font-size: 1rem; background-color: var(--card); color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .form-group input:focus, .form-group select:focus, .form-group .editor-content:focus { border-color: var(--primary); box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent); outline: none; }
+        .form-actions { margin-top: 1.8rem; display: flex; justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap; }
+        .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
+        .btn i { transition: transform 0.2s ease; }
+        .btn.loading i { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-primary { background-color: var(--primary); color: white; border-color: var(--primary); }
-        .btn-primary:hover { background-color: color-mix(in srgb, var(--primary) 85%, black); border-color: color-mix(in srgb, var(--primary) 85%, black); }
+        .btn-primary:hover { background-color: color-mix(in srgb, var(--primary) 85%, black); }
         .btn-secondary { background-color: var(--muted); color: white; border-color: var(--muted); }
-        .btn-secondary:hover { background-color: color-mix(in srgb, var(--muted) 85%, black); border-color: color-mix(in srgb, var(--muted) 85%, black); }
-        
-        footer {
-            margin-top: auto; text-align: center; padding: 1.5rem; font-size: 0.9rem;
-            background-color: var(--card); color: var(--muted);
-            border-top: 1px solid var(--bs-border-color);
-        }
-
-        /* Estilos específicos para o editor de texto */
-        .editor-toolbar {
-            background-color: var(--bg);
-            border: 1px solid var(--bs-border-color);
-            border-bottom: none;
-            border-radius: 6px 6px 0 0;
-            padding: 0.5rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
-        .editor-toolbar button {
-            background: none;
-            border: none;
-            padding: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            color: var(--text);
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
-        }
-        .editor-toolbar button:hover {
-            background-color: rgba(0,0,0,0.05);
-        }
-        /* O TEXTAREA agora tem as classes e estilos para se parecer com o editor */
-        textarea#conteudo {
-            min-height: 400px; /* Aumentado para melhor visualização */
-            width: 100%;
-            overflow-y: auto;
-            padding: 0.75rem;
-            border: 1px solid var(--bs-border-color);
-            border-radius: 0 0 6px 6px;
-            font-size: 1rem;
-            background-color: var(--card);
-            color: var(--text);
-            outline: none;
-            line-height: 1.6;
-            resize: both; /* Alterado para permitir redimensionar em ambos os lados */
-            box-shadow: none; /* Remove a sombra padrão do input/textarea */
-        }
-        textarea#conteudo:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent);
-        }
-        /* Estilo para placeholder */
-        textarea#conteudo::placeholder {
-            color: var(--muted);
-            opacity: 0.7; /* Para compatibilidade com navegadores */
-        }
-
-
-        @media(max-width: 768px) {
-            .sidebar { 
-                transform: translateX(-100%); 
-                width: 260px; 
-                padding-top: 0;
-                visibility: hidden; /* Oculta completamente quando não está aberto */
-                transition: transform 0.3s ease, visibility 0.3s ease; /* Transição para ambos */
-            }
-            .sidebar.open { 
-                transform: translateX(0); 
-                box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-                visibility: visible; /* Mostra quando aberto */
-                transition-delay: 0s; /* Começa a mostrar imediatamente */
-            }
-            .sidebar.collapsed { /* Mantém para compatibilidade, embora 'open' deva ter prioridade */
-                transform: translateX(-100%); 
-                width: 260px; 
-                padding-top: 0;
-                visibility: hidden;
-            }
-            .sidebar.collapsed nav ul li a, 
-            .sidebar.collapsed #theme-toggle, 
-            .sidebar.collapsed .sidebar-footer ul li a { justify-content: flex-start; }
-            .sidebar.collapsed nav ul li a span, 
-            .sidebar.collapsed #theme-toggle span, 
-            .sidebar.collapsed .sidebar-footer ul li a span { display: inline; }
-            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
-
-            .main-content { margin-left: 0; width: 100%;}
-            .main-content.collapsed { margin-left: 0; width: 100%;} 
-            
-            .topbar .page-title { margin-left: 0; } 
-            .form-card { padding: 1.5rem; }
-            .form-card h2.form-title { font-size: 1.3rem; }
-            .form-actions { justify-content: center; }
-            .editor-toolbar { justify-content: center; }
-        }
-    </style>
+        .btn-secondary:hover { background-color: color-mix(in srgb, var(--muted) 85%, black); }
+        footer { margin-top: auto; text-align: center; padding: 1.5rem; font-size: 0.9rem; background-color: var(--card); color: var(--muted); border-top: 1px solid var(--bs-border-color); }
+        .editor-toolbar { background-color: var(--bg); border: 1px solid var(--bs-border-color); border-bottom: none; border-radius: 6px 6px 0 0; padding: 0.5rem; display: flex; flex-wrap: wrap; gap: 5px; }
+        .editor-toolbar button { background: none; border: 1px solid transparent; padding: 8px; cursor: pointer; font-size: 1rem; color: var(--text); border-radius: 4px; transition: background-color 0.2s ease, border-color 0.2s ease; }
+        .editor-toolbar button:hover { background-color: color-mix(in srgb, var(--primary) 10%, transparent); }
+        .editor-toolbar button.is-active { background-color: color-mix(in srgb, var(--primary) 20%, transparent); border-color: var(--primary); }
+        .editor-content { min-height: 400px; max-height: 600px; overflow-y: auto; padding: 1rem; border: 1px solid var(--bs-border-color); border-radius: 0 0 6px 6px; font-size: 1rem; background-color: var(--card); color: var(--text); outline: none; line-height: 1.6; resize: vertical; }
+        .editor-content:focus { border-color: var(--primary); box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent); }
+        .editor-content[data-placeholder]:empty:before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; display: block; }
+        .gemini-generator { margin-bottom: 1rem; background-color: color-mix(in srgb, var(--primary) 5%, transparent); padding: 1rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent); }
+        .gemini-generator .form-group { margin-bottom: 0.75rem; }
+        .gemini-generator-actions { display: flex; gap: 10px; align-items: center; }
+        .gemini-generator-actions input { flex-grow: 1; }
+        .lgpd-check { display: flex; align-items: flex-start; gap: 0.5rem; margin-top: 1rem; }
+        .lgpd-check input { margin-top: 0.25em; }
+        .lgpd-check label { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-bottom: 0; }
+        @media(max-width: 768px) { .sidebar { transform: translateX(-100%); width: 260px; } .sidebar.open { transform: translateX(0); } .sidebar.collapsed { transform: translateX(-100%); width: 260px; } .sidebar.collapsed nav ul li a, .sidebar.collapsed #theme-toggle, .sidebar.collapsed .sidebar-footer ul li a { justify-content: flex-start; } .sidebar.collapsed nav ul li a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: inline; } .sidebar.collapsed .sidebar-header .logo span { display: inline; } .main-content, .main-content.collapsed { margin-left: 0; width: 100%; } .topbar .page-title { margin-left: 0; } .form-card { padding: 1.5rem; } .form-card h2.form-title { font-size: 1.3rem; } .form-actions { justify-content: center; } .editor-toolbar { justify-content: center; } }
+  </style>
 </head>
 <body>
-    <div class="layout">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo"><i class="fas fa-clinic-medical"></i> <span>ClínicaOn</span></a>
-                </div>
-                <nav>
-                    <ul>
-                        <li class="nav-item"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-                        <li class="nav-item"><a href="{{ url_for('listar_pacientes') }}"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
-                        <li class="nav-item active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li class="nav-item"><a href="{{ url_for('listar_profissionais') }}"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
-                        <li class="nav-item"><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li class="nav-item"><a href="{{ url_for('listar_convenios') }}"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li class="nav-item"><a href="{{ url_for('listar_horarios') }}"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
-                        <li class="nav-item"><a href="{{ url_for('listar_agendamentos') }}"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                        <li class="nav-item"><a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
-                        <li class="nav-item"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema"><i class="fas fa-sun"></i> <span>Alternar Tema</span></button>
-                    <ul>
-                        <li><a href="#" id="logoutButton"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a></li>
-                    </ul>
-                </div>
-            </div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-inner-content">
+        <div class="sidebar-header">
+          <a href="{{ url_for('index') }}" class="logo"><i class="fas fa-clinic-medical"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span></a>
         </div>
-
-        <!-- Conteúdo principal -->
-        <div class="main-content">
-            <div class="topbar">
-                <div class="topbar-left">
-                    <button class="menu-btn-mobile"><i class="fas fa-bars"></i></button>
-                    <button class="toggle-btn-desktop"><i class="fas fa-outdent"></i></button>
-                    <span class="page-title">
-                        {% if anamnese %}
-                            Editar Anamnese para {{ paciente_nome }}
-                        {% else %}
-                            Registrar Anamnese para {{ paciente_nome }}
-                        {% endif %}
-                    </span>
-                </div>
-            </div>
-
-            <main>
-                <div class="container-fluid">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            <div class="flash-messages">
-                                {% for category, message in messages %}
-                                    <div class="flash-message {{ category }}">{{ message }}</div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    {% endwith %}
-
-                    <div class="form-card">
-                        <h2 class="form-title">
-                            {% if anamnese %}
-                                Editar Anamnese para {{ paciente_nome }}
-                            {% else %}
-                                Registrar Anamnese para {{ paciente_nome }}
-                            {% endif %}
-                        </h2>
-                        
-                        <form id="anamneseForm" method="POST" action="{{ action_url|default('') }}">
-                            <input type="hidden" name="paciente_id" value="{{ paciente_id }}">
-
-                            <div class="form-group">
-                                <label for="modelo_base_id">Aplicar Modelo de Anamnese:</label>
-                                <select id="modelo_base_id" name="modelo_base_id" class="form-select">
-                                    <option value="">Nenhum Modelo (Anamnese em branco)</option>
-                                    {% for modelo in modelos_anamnese %}
-                                        <option value="{{ modelo.id }}" 
-                                                {% if anamnese and anamnese.modelo_base_id == modelo.id %}selected{% endif %}>
-                                            {{ modelo.identificacao }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="conteudo">Conteúdo da Anamnese:</label>
-                                <div class="editor-toolbar">
-                                    <button type="button" data-command="bold"><i class="fas fa-bold"></i></button>
-                                    <button type="button" data-command="italic"><i class="fas fa-italic"></i></button>
-                                    <button type="button" data-command="underline"><i class="fas fa-underline"></i></button>
-                                    <button type="button" data-command="insertUnorderedList"><i class="fas fa-list-ul"></i></button>
-                                    <button type="button" data-command="insertOrderedList"><i class="fas fa-list-ol"></i></button>
-                                    <button type="button" data-command="undo"><i class="fas fa-undo"></i></button>
-                                    <button type="button" data-command="redo"><i class="fas fa-redo"></i></button>
-                                </div>
-                                <textarea id="conteudo" name="conteudo" class="editor-content" 
-                                          placeholder="Digite o conteúdo da anamnese aqui...">{{ anamnese.conteudo | safe if anamnese else '' }}</textarea>
-                            </div>
-                            
-                            <div class="form-actions">
-                                <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente_id) }}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
-                                <button type="submit" class="btn btn-primary" id="submitAnamnese">
-                                    <i class="fas fa-save"></i> Salvar Anamnese
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </main>
-
-            <footer>
-                <div class="container">
-                    <p>&copy; {{ current_year if current_year else '2025' }} Clínica On. Todos os direitos reservados.</p>
-                </div>
-            </footer>
+        <nav>
+          <ul>
+            <li class="nav-item"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_pacientes') }}"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
+            <li class="nav-item active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_profissionais') }}"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_convenios') }}"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_horarios') }}"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_agendamentos') }}"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
+            {% if session.user_role == 'admin' %}
+            <li class="nav-item"><a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
+            {% endif %}
+          </ul>
+        </nav>
+        <div class="sidebar-footer">
+          <button id="theme-toggle" aria-label="Alternar tema"><i class="fas fa-sun"></i> <span>Alternar Tema</span></button>
+          <ul>
+              <li><a href="#" id="logoutButton"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a></li>
+          </ul>
         </div>
+      </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
-        import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    <div class="main-content">
+      <div class="topbar">
+        <div class="topbar-left">
+          <button class="menu-btn-mobile"><i class="fas fa-bars"></i></button>
+          <button class="toggle-btn-desktop"><i class="fas fa-outdent"></i></button>
+          <span class="page-title">{{ page_title|default('Registrar Anamnese') }} para {{ paciente_nome }}</span>
+        </div>
+      </div>
 
-        // A configuração do Firebase será injetada pelo ambiente do Canvas
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+      <main>
+        <div class="container-fluid">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              <div class="flash-messages">
+                {% for category, message in messages %}
+                  <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
 
-        let app;
-        let auth;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-        } catch (e) { 
-            // Tenta inicializar novamente se falhou silenciosamente, caso firebaseConfig não estivesse pronta
-            if (!app) app = initializeApp(firebaseConfig); 
-            if (!auth) auth = getAuth(app); 
-            console.error("Erro ao inicializar Firebase no cliente:", e);
+          <div class="form-card">
+            <h2 class="form-title">{{ page_title|default('Registrar Anamnese') }}</h2>
+            
+            <form id="anamneseForm" method="POST" action="{{ action_url|default('') }}">
+              <div class="form-group">
+                <label for="modelo_base_id">Aplicar Modelo de Anamnese:</label>
+                <select id="modelo_base_id" name="modelo_base_id" class="form-select">
+                    <option value="">Nenhum Modelo (Anamnese em branco)</option>
+                    {% for modelo in modelos_anamnese %}
+                        <option value="{{ modelo.id }}" 
+                                data-conteudo="{{ modelo.conteudo_modelo | e }}"
+                                {% if anamnese and anamnese.modelo_base_id == modelo.id %}selected{% endif %}>
+                            {{ modelo.identificacao }}
+                        </option>
+                    {% endfor %}
+                </select>
+              </div>
+
+              <div class="gemini-generator">
+                 <div class="form-group">
+                    <label for="gemini-prompt">Gerar conteúdo com Inteligência Artificial:</label>
+                    <div class="gemini-generator-actions">
+                      <input type="text" id="gemini-prompt" placeholder="Ex: Anamnese para paciente com histórico de enxaqueca">
+                      <button type="button" id="generate-anamnesis-btn" class="btn btn-primary" disabled>
+                        <i class="fas fa-robot"></i> <span>Gerar</span>
+                      </button>
+                    </div>
+                 </div>
+                 <div class="form-group lgpd-check">
+                    <input type="checkbox" id="lgpd-consent">
+                    <label for="lgpd-consent">Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.</label>
+                 </div>
+              </div>
+
+              <div class="form-group">
+                <label for="conteudo">Conteúdo da Anamnese:</label>
+                <div class="editor-toolbar">
+                    <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><i class="fas fa-bold"></i></button>
+                    <button type="button" data-command="italic" title="Itálico (Ctrl+I)"><i class="fas fa-italic"></i></button>
+                    <button type="button" data-command="underline" title="Sublinhado (Ctrl+U)"><i class="fas fa-underline"></i></button>
+                    <button type="button" data-command="insertUnorderedList" title="Lista não ordenada"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" data-command="insertOrderedList" title="Lista ordenada"><i class="fas fa-list-ol"></i></button>
+                    <button type="button" data-command="undo" title="Desfazer (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                    <button type="button" data-command="redo" title="Refazer (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                </div>
+                <div id="editor-content" contenteditable="true" class="editor-content" data-placeholder="Digite o conteúdo da anamnese aqui...">{{ anamnese.conteudo | safe if anamnese else '' }}</div>
+                <textarea id="conteudo" name="conteudo" style="display:none;"></textarea>
+              </div>
+              
+              <div class="form-actions">
+                <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente_id) }}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Anamnese</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+
+      <footer>
+        <div class="container">
+          <p>&copy; {{ current_year if current_year else '2025' }} Clínica On. Todos os direitos reservados.</p>
+        </div>
+      </footer>
+    </div>
+  </div>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
+    import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
+      const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+      const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+      const themeToggle = document.querySelector('#theme-toggle');
+      const logoutButton = document.getElementById('logoutButton');
+
+      function updateDesktopToggleIcon() {
+          if (!toggleBtnDesktop || !sidebar) return; 
+          toggleBtnDesktop.innerHTML = sidebar.classList.contains('collapsed') ? '<i class="fas fa-indent"></i>' : '<i class="fas fa-outdent"></i>';
+      }
+
+      function applyInitialSidebarState() {
+          const isDesktop = window.innerWidth > 768;
+          if(menuBtnMobile) menuBtnMobile.style.display = isDesktop ? 'none' : 'block';
+          if(toggleBtnDesktop) toggleBtnDesktop.style.display = isDesktop ? 'block' : 'none';
+
+          if (isDesktop) {
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+              sidebar.classList.add('collapsed');
+              mainContent.classList.add('collapsed');
+            } else {
+              sidebar.classList.remove('collapsed'); 
+              mainContent.classList.remove('collapsed');
+            }
+          } else { 
+            sidebar.classList.remove('open'); 
+            sidebar.classList.remove('collapsed'); 
+            mainContent.classList.remove('collapsed'); 
+          }
+          updateDesktopToggleIcon();
+      }
+      
+      function applyInitialTheme() {
+          const storedTheme = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', storedTheme);
+          if (themeToggle) {
+              themeToggle.querySelector('i').className = storedTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+              const themeToggleText = themeToggle.querySelector('span');
+              if(themeToggleText) { 
+                  themeToggleText.textContent = storedTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
+              }
+          }
+      }
+
+      if(toggleBtnDesktop) {
+        toggleBtnDesktop.addEventListener('click', () => {
+          sidebar.classList.toggle('collapsed');
+          mainContent.classList.toggle('collapsed');
+          localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+          updateDesktopToggleIcon();
+        });
+      }
+
+      if(menuBtnMobile) {
+        menuBtnMobile.addEventListener('click', (event) => {
+          event.stopPropagation(); 
+          sidebar.classList.toggle('open'); 
+          menuBtnMobile.innerHTML = sidebar.classList.contains('open') ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+        });
+      }
+      
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('open') &&
+            !sidebar.contains(e.target) && menuBtnMobile && !menuBtnMobile.contains(e.target)) { 
+          sidebar.classList.remove('open');
+          if(menuBtnMobile) menuBtnMobile.innerHTML = '<i class="fas fa-bars"></i>';
         }
+      });
+      
+      window.addEventListener('resize', applyInitialSidebarState);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
-            const logoutButton = document.getElementById('logoutButton');
+      if(themeToggle) {
+        themeToggle.addEventListener('click', () => {
+          const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'; 
+          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+          const icon = themeToggle.querySelector('i');
+          const text = themeToggle.querySelector('span');
+          if (icon) icon.className = newTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+          if (text) text.textContent = newTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
+        });
+      }
 
-            // Rich text editor logic
-            const editorContent = document.getElementById('conteudo'); // Agora é o TEXTAREA
-            const modeloBaseSelect = document.getElementById('modelo_base_id');
-            const anamneseForm = document.getElementById('anamneseForm');
+      const currentPath = window.location.pathname;
+      const navLinks = sidebar ? sidebar.querySelectorAll('nav ul li.nav-item a') : [];
+      const prontuariosBaseUrl = "{{ url_for('buscar_prontuario') }}";
+      
+      navLinks.forEach(link => {
+          const linkParent = link.closest('.nav-item');
+          if (linkParent) linkParent.classList.remove('active');
+          
+          const linkHref = link.getAttribute('href');
+          if (linkHref === prontuariosBaseUrl && currentPath.startsWith('/prontuarios')) {
+              if(linkParent) linkParent.classList.add('active');
+          } else if (linkHref && linkHref !== '/' && currentPath.startsWith(linkHref)) {
+              if(linkParent) linkParent.classList.add('active');
+          } else if (linkHref === '/' && currentPath === '/') {
+              if(linkParent) linkParent.classList.add('active');
+          }
+      });
+      
+      const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+      let app;
+      let auth;
 
-            // A sincronização de 'input' não é estritamente necessária para o envio,
-            // mas pode ser útil para prever o que será enviado ou para futuras validações.
-            if (editorContent) {
-                editorContent.addEventListener('input', () => {
-                    console.log('[DEBUG - Editor Input]: Conteúdo do textarea:', editorContent.value.substring(0, 100) + '...');
-                });
-            }
+      if (firebaseConfig && Object.keys(firebaseConfig).length > 0) {
+        try {
+          app = initializeApp(firebaseConfig);
+          auth = getAuth(app);
+        } catch (e) { 
+          console.error("Firebase initialization error:", e.message);
+        }
+      } else {
+        console.warn("Firebase config not found. Logout may not work correctly via Firebase.");
+      }
 
-            // O listener de submit no formulário agora apenas permite a submissão,
-            // pois o textarea já é um campo de formulário nativo.
-            if (anamneseForm) {
-                anamneseForm.addEventListener('submit', function(event) {
-                    // event.preventDefault(); // Não precisamos mais previnir e submeter manualmente
-                    console.log('[DEBUG - Form Submit Listener]: Formulário será submetido com conteúdo do textarea diretamente.');
-                    // O valor do textarea 'conteudo' será enviado automaticamente.
-                });
-            }
-            
-            // Lida com os comandos da barra de ferramentas do editor
-            document.querySelectorAll('.editor-toolbar button').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    event.preventDefault(); // Impede o comportamento padrão do botão (que pode ser submeter o form)
-                    const command = button.dataset.command;
-                    
-                    const textarea = document.getElementById('conteudo');
-                    if (textarea) {
-                        const start = textarea.selectionStart;
-                        const end = textarea.selectionEnd;
-                        const selectedText = textarea.value.substring(start, end);
-                        let replacementText = selectedText;
-                        let newCursorPos = end; // Posição padrão do cursor
+      if (logoutButton) {
+        logoutButton.addEventListener('click', async function(event) {
+          event.preventDefault();
+          try {
+            if (auth && auth.currentUser) await firebaseSignOut(auth); 
+          } catch (error) {
+            console.error('Erro ao deslogar do Firebase:', error);
+          } finally {
+            fetch("{{ url_for('logout') }}", { method: 'POST' })
+              .then(response => response.json())
+              .then(data => { window.location.href = "{{ url_for('login_page') }}"; })
+              .catch(err => {
+                console.error("Erro ao limpar sessão do servidor:", err);
+                window.location.href = "{{ url_for('login_page') }}";
+              });
+          }
+        });
+      }
+      
+      const editor = document.getElementById('editor-content');
+      const hiddenTextarea = document.getElementById('conteudo');
+      const form = document.getElementById('anamneseForm');
+      const modeloSelect = document.getElementById('modelo_base_id');
 
-                        switch (command) {
-                            case 'bold':
-                                replacementText = `<b>${selectedText}</b>`;
-                                break;
-                            case 'italic':
-                                replacementText = `<i>${selectedText}</i>`;
-                                break;
-                            case 'underline':
-                                replacementText = `<u>${selectedText}</u>`;
-                                break;
-                            case 'insertUnorderedList':
-                                // Para listas, se houver texto selecionado, formatar como itens.
-                                // Se não houver seleção, inserir uma nova lista com um item.
-                                if (selectedText) {
-                                    const lines = selectedText.split('\n').map(line => `<li>${line}</li>`).join('');
-                                    replacementText = `<ul>${lines}</ul>`;
-                                    newCursorPos = start + `<ul>`.length + lines.length; // Posiciona no final da lista
-                                } else {
-                                    replacementText = `<ul><li></li></ul>`;
-                                    newCursorPos = start + `<ul><li>`.length; // Coloca o cursor dentro do <li>
-                                }
-                                break;
-                            case 'insertOrderedList':
-                                if (selectedText) {
-                                    const lines = selectedText.split('\n').map(line => `<li>${line}</li>`).join('');
-                                    replacementText = `<ol>${lines}</ol>`;
-                                    newCursorPos = start + `<ol>`.length + lines.length; // Posiciona no final da lista
-                                } else {
-                                    replacementText = `<ol><li></li></ol>`;
-                                    newCursorPos = start + `<ol><li>`.length; // Coloca o cursor dentro do <li>
-                                }
-                                break;
-                            case 'undo':
-                                document.execCommand('undo', false, null); // Funciona no textarea diretamente
-                                return; // Já tratou, sai da função
-                            case 'redo':
-                                document.execCommand('redo', false, null); // Funciona no textarea diretamente
-                                return; // Já tratou, sai da função
-                            default:
-                                break;
-                        }
-                        
-                        // Atualiza o valor do textarea com a formatação
-                        textarea.value = textarea.value.substring(0, start) + replacementText + textarea.value.substring(end);
-                        
-                        // Restaura a seleção/posição do cursor
-                        textarea.setSelectionRange(newCursorPos, newCursorPos);
-                    }
-                    textarea.focus(); // Mantém o foco no textarea
-                    console.log('[DEBUG - Toolbar Command]: Conteúdo do textarea após comando:', textarea.value.substring(0, 100) + '...');
-                });
-            });
+      if(editor && hiddenTextarea && form) {
+        // Sincroniza o conteúdo do editor com o textarea oculto sempre que houver uma alteração
+        editor.addEventListener('input', () => {
+          hiddenTextarea.value = editor.innerHTML;
+        });
 
-            // Aplica o conteúdo do modelo selecionado
-            if (modeloBaseSelect) {
-                modeloBaseSelect.addEventListener('change', async (event) => {
-                    const selectedModeloId = event.target.value;
-                    if (selectedModeloId) {
-                        const modelosAnamneseData = JSON.parse('{{ modelos_anamnese | tojson | safe }}');
-                        const selectedModelo = modelosAnamneseData.find(m => m.id === selectedModeloId);
+        // Adiciona funcionalidade aos botões da barra de ferramentas
+        document.querySelectorAll('.editor-toolbar button').forEach(button => {
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const command = e.currentTarget.dataset.command;
+            document.execCommand(command, false, null);
+            editor.focus();
+            hiddenTextarea.value = editor.innerHTML; // Garante a sincronização após o comando
+          });
+        });
+      }
 
-                        if (selectedModelo && selectedModelo.conteudo_modelo !== undefined) {
-                            if (!editorContent.value.trim() || confirm('Você já digitou conteúdo. Deseja substituí-lo pelo modelo?')) {
-                                editorContent.value = selectedModelo.conteudo_modelo; // Agora define o valor do textarea
-                                console.log('[DEBUG - Modelo Aplicado]: Conteúdo copiado para textarea:', editorContent.value.substring(0, 100) + '...');
-                            }
-                        }
-                    } else {
-                        // Se "Nenhum Modelo" for selecionado e o editor não estiver vazio, pergunta se quer limpar
-                        if (!"{{ anamnese.conteudo | safe if anamnese else '' }}".trim() || confirm('Deseja limpar o conteúdo da anamnese?')) {
-                             editorContent.value = ''; // Agora define o valor do textarea
-                             console.log('[DEBUG - Modelo Limpo]: Textarea limpo.');
-                        }
-                    }
-                    editorContent.focus();
-                });
-            }
+      if (modeloSelect && editor && hiddenTextarea) {
+        modeloSelect.addEventListener('change', (event) => {
+            const selectedOption = event.target.options[event.target.selectedIndex];
+            const conteudoModelo = selectedOption.dataset.conteudo;
 
-            // Lógica para controle da barra lateral (mantida como estava)
-            function updateDesktopToggleIcon() {
-                if (!toggleBtnDesktop) return; 
-                toggleBtnDesktop.innerHTML = sidebar.classList.contains('collapsed') ? '<i class="fas fa-indent"></i>' : '<i class="fas fa-outdent"></i>';
-            }
-
-            function applyInitialSidebarState() {
-                const isDesktop = window.innerWidth > 768;
-                if(menuBtnMobile) menuBtnMobile.style.display = isDesktop ? 'none' : 'block';
-                if(toggleBtnDesktop) toggleBtnDesktop.style.display = isDesktop ? 'block' : 'none';
-
-                if (isDesktop) {
-                    if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                        sidebar.classList.add('collapsed');
-                        mainContent.classList.add('collapsed');
-                    } else {
-                        sidebar.classList.remove('collapsed'); 
-                        mainContent.classList.remove('collapsed');
-                    }
-                } else { 
-                    sidebar.classList.remove('open'); 
-                    sidebar.classList.remove('collapsed'); 
-                    mainContent.classList.remove('collapsed'); 
+            if (conteudoModelo) {
+                if (!editor.innerHTML.trim() || confirm('Deseja substituir o conteúdo atual pelo modelo?')) {
+                    editor.innerHTML = conteudoModelo;
+                    hiddenTextarea.value = conteudoModelo;
                 }
-                updateDesktopToggleIcon();
-            }
-            
-            applyInitialSidebarState(); 
-            window.addEventListener('resize', applyInitialSidebarState); 
-
-            // Lógica de alternância de tema (mantida como estava)
-            const storedTheme = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-theme', storedTheme);
-            if (themeToggle) {
-                themeToggle.querySelector('i').className = storedTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-                const themeToggleText = themeToggle.querySelector('span');
-                if(themeToggleText) { 
-                    themeToggleText.textContent = storedTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
+            } else {
+                if (editor.innerHTML.trim() && confirm('Deseja limpar o conteúdo da anamnese?')) {
+                    editor.innerHTML = '';
+                    hiddenTextarea.value = '';
                 }
-            }
-
-            if(toggleBtnDesktop) {
-                toggleBtnDesktop.addEventListener('click', () => {
-                    sidebar.classList.toggle('collapsed');
-                    mainContent.classList.toggle('collapsed');
-                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                    updateDesktopToggleIcon();
-                });
-            }
-
-            if(menuBtnMobile) {
-                menuBtnMobile.addEventListener('click', (event) => {
-                    event.stopPropagation(); 
-                    sidebar.classList.toggle('open'); 
-                    menuBtnMobile.innerHTML = sidebar.classList.contains('open') ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
-                });
-            }
-            
-            document.addEventListener('click', (e) => {
-                if (window.innerWidth <= 768 && sidebar.classList.contains('open') &&
-                    !sidebar.contains(e.target) && menuBtnMobile && !menuBtnMobile.contains(e.target)) { 
-                    sidebar.classList.remove('open');
-                    if(menuBtnMobile) menuBtnMobile.innerHTML = '<i class="fas fa-bars"></i>';
-                }
-            });
-
-            if(themeToggle) {
-                themeToggle.addEventListener('click', () => {
-                    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'; 
-                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                    document.documentElement.setAttribute('data-theme', newTheme);
-                    localStorage.setItem('theme', newTheme);
-                    const icon = themeToggle.querySelector('i');
-                    const text = themeToggle.querySelector('span');
-                    if (icon) { 
-                        icon.className = newTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-                    }
-                    if (text) { 
-                        text.textContent = newTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
-                    }
-                });
-            }
-
-            // Lógica para ativar link da barra lateral com base na URL (mantida como estava)
-            const currentPath = window.location.pathname;
-            const navLinks = sidebar.querySelectorAll('nav ul li.nav-item a'); 
-            
-            navLinks.forEach(link => {
-                const linkParent = link.closest('.nav-item');
-                if (linkParent) linkParent.classList.remove('active');
-                
-                const linkHref = link.getAttribute('href');
-                if (linkHref) {
-                    if (linkHref === currentPath || (currentPath.startsWith(link.getAttribute('href')) && link.getAttribute('href') !== '/')) {
-                        if(linkParent) linkParent.classList.add('active');
-                    }
-                }
-            });
-            // Ativar link 'Prontuários' quando estiver em '/prontuarios' ou '/prontuarios/<id>' ou '/prontuarios/<id>/anamnese/novo' etc.
-            const prontuariosBaseUrl = "{{ url_for('buscar_prontuario') }}";
-            const regexVerProntuario = /^\/prontuarios\/[a-zA-Z0-9-]+$/;
-            const regexAnamnese = /^\/prontuarios\/[a-zA-Z0-9-]+\/anamnese\/(novo|editar\/[a-zA-Z0-9-]+)$/;
-
-            if (currentPath === prontuariosBaseUrl || regexVerProntuario.test(currentPath) || regexAnamnese.test(currentPath)) {
-                document.querySelector(`nav ul li.nav-item a[href="${prontuariosBaseUrl}"]`)?.closest('.nav-item')?.classList.add('active');
-            }
-
-            // Lógica de logout do Firebase e do servidor (mantida como estava)
-            if (logoutButton && auth) {
-                logoutButton.addEventListener('click', async function(event) {
-                    event.preventDefault();
-                    try {
-                        if (auth.currentUser) {
-                            await firebaseSignOut(auth); 
-                        }
-                    } catch (error) {
-                        console.error('Erro ao deslogar do Firebase:', error);
-                    } finally {
-                        fetch("{{ url_for('logout') }}", { 
-                                method: 'POST',
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                window.location.href = "{{ url_for('login_page') }}";
-                            })
-                            .catch(err => {
-                                console.error("Erro ao limpar sessão do servidor:", err);
-                                window.location.href = "{{ url_for('login_page') }}";
-                            });
-                    }
-                });
             }
         });
-    </script>
-    <script>
-        // Service Worker para PWA (mantido como estava)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
-                .then(registration => {
-                    console.log('Service Worker registrado com sucesso!');
-                })
-                .catch(err => {
-                    console.error('Falha ao registrar o Service Worker: ', err);
-                });
-            });
-        }
-    </script>
+      }
+
+      const generateBtn = document.getElementById('generate-anamnesis-btn');
+      const promptInput = document.getElementById('gemini-prompt');
+      const lgpdCheckbox = document.getElementById('lgpd-consent');
+        
+      if(lgpdCheckbox && generateBtn) {
+          lgpdCheckbox.addEventListener('change', () => {
+              generateBtn.disabled = !lgpdCheckbox.checked;
+          });
+      }
+        
+      if (generateBtn && promptInput && editor) {
+          generateBtn.addEventListener('click', async () => {
+              const userPrompt = promptInput.value.trim();
+              if (!userPrompt) {
+                  alert('Por favor, descreva o tipo de anamnese que você deseja gerar.');
+                  return;
+              }
+              
+              const fullPrompt = `Crie um modelo de anamnese clínica detalhado para o seguinte caso: "${userPrompt}". O modelo deve ser bem estruturado, usando títulos em negrito, listas e quebras de linha para facilitar a leitura e o preenchimento. O resultado deve ser em formato HTML.`;
+              
+              generateBtn.disabled = true;
+              generateBtn.classList.add('loading');
+              generateBtn.querySelector('span').textContent = 'Gerando...';
+
+              try {
+                  const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ";
+                  const genAI = new GoogleGenerativeAI(apiKey);
+                  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+
+                  const result = await model.generateContent(fullPrompt);
+                  const response = await result.response;
+                  const text = response.text();
+                  
+                  editor.innerHTML = text;
+                  hiddenTextarea.value = text;
+
+              } catch (error) {
+                  console.error('Gemini API Error:', error);
+                  alert('Ocorreu um erro ao se comunicar com a IA. Verifique o console para mais detalhes.');
+              } finally {
+                  generateBtn.disabled = !lgpdCheckbox.checked;
+                  generateBtn.classList.remove('loading');
+                  generateBtn.querySelector('span').textContent = 'Gerar';
+              }
+          });
+      }
+      
+      applyInitialSidebarState();
+      applyInitialTheme();
+    });
+  </script>
 </body>
 </html>
