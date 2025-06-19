@@ -5,18 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agendamentos - {{ session.clinica_nome_display or 'Clínica On' }}</title>
     
-    <!-- Ícone da Aba -->
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     
-    <!-- Fontes e Ícones -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Flatpickr (Date Picker) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
-
     <style>
         :root {
             --bg: #f1f5f9;
@@ -24,12 +17,14 @@
             --text: #0f172a;
             --muted: #64748b;
             --accent: #0f172a;
-            --primary: #0d9488; /* Teal-600 */
-            --secondary: #f59e0b; /* Amber-500 */
-            --danger: #dc2626; /* Red-600 */
-            --success: #16a34a; /* Green-600 */
-            --warning: #f59e0b; /* Amber-500 */
-            --info: #0ea5e9; /* Sky-500 */
+            --primary: #0d9488;
+            --primary-dark: #115e59;
+            --secondary: #f59e0b;
+            --danger: #dc2626;
+            --danger-dark: #b91c1c;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
             --border-color: #e2e8f0;
             
             --dark-bg: #0f172a;
@@ -62,189 +57,76 @@
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* --- Sidebar (Reused from Dashboard) --- */
-        .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, var(--primary), var(--accent));
-            color: white;
-            position: fixed;
-            top: 0; left: 0; height: 100vh;
-            transition: width 0.3s ease, transform 0.3s ease;
-            z-index: 1000; display: flex; flex-direction: column;
-        }
+        /* Sidebar Styles (Reused) */
+        .sidebar { width: 260px; background: linear-gradient(180deg, var(--primary), var(--accent)); color: white; position: fixed; top: 0; left: 0; height: 100vh; transition: width 0.3s ease, transform 0.3s ease; z-index: 1000; display: flex; flex-direction: column; }
         .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
-        .sidebar-header {
-            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
-        }
-        .sidebar-header .logo {
-            font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
-            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
-        }
+        .sidebar-header { padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center; }
+        .sidebar-header .logo { font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none; display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden; }
         .sidebar-header .logo i { font-size: 1.8rem; }
         .sidebar.collapsed { width: 78px; }
-        .sidebar.collapsed .sidebar-header .logo span { display: none; }
-        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+        .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: none; }
+        .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
         .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
         .sidebar nav ul { list-style: none; padding: 0; }
         .sidebar nav ul li { margin-bottom: 0.5rem; }
-        .sidebar nav ul li a {
-            color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
-            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
-            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
-        }
+        .sidebar nav ul li a { color: #e2e8f0; text-decoration: none; display: flex; align-items: center; padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem; font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease; }
         .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
-        .sidebar.collapsed nav ul li a span { display: none; }
-        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
         .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
         .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
-        .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
-        .sidebar-footer button, .sidebar-footer a {
-            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
-            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
-            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
-            font-size: 0.95rem; text-decoration: none;
-        }
+        .sidebar-footer button, .sidebar-footer a { background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem; border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem; transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif; font-size: 0.95rem; text-decoration: none; }
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        .sidebar.collapsed .sidebar-footer span { display: none; }
-        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
-
-        /* --- Main Content & Topbar (Reused from Dashboard) --- */
-        .main-content {
-            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 260px);
-        }
+        
+        /* Main Content Styles */
+        .main-content { flex: 1; margin-left: 260px; transition: margin-left 0.3s ease; display: flex; flex-direction: column; width: calc(100% - 260px); }
         .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
-        .topbar {
-            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
-            position: sticky; top: 0; z-index: 900;
-        }
+        .topbar { background-color: var(--card); color: var(--text); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0; position: sticky; top: 0; z-index: 900; }
         .topbar-left { display: flex; align-items: center; gap: 1rem; }
         .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
-        .toggle-btn {
-            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
-            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
+        .toggle-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; transition: background 0.2s ease, color 0.2s ease; }
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
-        .topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
+        main { flex-grow: 1; padding: 1.5rem; overflow: hidden; display: flex; gap: 1.5rem; }
+
+        /* Calendar View */
+        .calendar-container, .agenda-container { background-color: var(--card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); padding: 1.5rem; display: flex; flex-direction: column; }
+        .calendar-container { flex: 2; }
+        .agenda-container { flex: 1; min-width: 320px; max-width: 400px;}
         
-        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .calendar-header h2 { font-size: 1.5rem; color: var(--text); }
+        .calendar-nav { display: flex; gap: 0.5rem; align-items: center; }
+        .calendar-nav select, .calendar-nav button { background: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 0.8rem; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; font-size: 0.9rem; background-color: var(--card); color: var(--text); }
+        .calendar-nav select:hover, .calendar-nav button:hover { background-color: var(--bg); color: var(--primary); }
         
-        /* --- Buttons --- */
-        .btn {
-            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
-            font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;
-            border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
-        }
-        .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: var(--primary-dark); }
-        .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
-        .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
-        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
-        [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
-        .btn-danger { background-color: var(--danger); color: white; }
-        .btn-danger:hover { background-color: #b91c1c; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; flex-grow: 1; }
+        .calendar-grid .day-header { font-weight: 600; text-align: center; padding: 0.5rem; color: var(--muted); font-size: 0.9rem; }
+        .calendar-day { border-radius: 8px; border: 1px solid var(--border-color); padding: 0.5rem; cursor: pointer; transition: all 0.2s; min-height: 100px; display: flex; flex-direction: column; }
+        .calendar-day:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .calendar-day.other-month { background-color: var(--bg); color: var(--muted); }
+        .calendar-day.today { background-color: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
+        .calendar-day.selected { background-color: var(--primary); color: white; border-color: var(--primary-dark); }
+        .calendar-day.selected .day-number { color: white; }
+        .day-number { font-weight: 600; }
+        .day-events { font-size: 0.8rem; margin-top: 0.5rem; overflow: hidden; }
+        .day-event { background-color: var(--primary-dark); color: white; border-radius: 4px; padding: 2px 5px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .btn-filter.active { background-color: var(--primary-dark); color: white; border-color: var(--primary-dark);}
-        .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
-        
-        /* --- Summary Stat Cards --- */
-        .summary-stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .stat-card {
-            background-color: var(--card); padding: 1.2rem; border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            display: flex; align-items: center; gap: 1rem;
-            border-left: 5px solid;
-        }
-        .stat-card .icon-container {
-            font-size: 1.2rem; width: 48px; height: 48px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            color: white; flex-shrink: 0;
-        }
-        .stat-card .info h4 { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.1rem; font-weight: 600; text-transform: uppercase; }
-        .stat-card .info .count { font-size: 1.5rem; font-weight: 700; color: var(--text); }
-        .stat-card .info .value { font-size: 0.85rem; font-weight: 600; }
-        
-        .stat-card.confirmado { border-left-color: var(--primary); }
-        .stat-card.confirmado .icon-container { background-color: var(--primary); }
-        .stat-card.confirmado .info .value { color: var(--primary); }
+        /* Agenda View */
+        .agenda-header h3 { font-size: 1.25rem; margin-bottom: 1rem; text-align: center; }
+        .agenda-timeline { flex-grow: 1; overflow-y: auto; padding-right: 10px; max-height: 450px; /* Added for scroll */}
+        .time-slot { display: flex; align-items: center; border-bottom: 1px solid var(--border-color); padding: 0.75rem 0.5rem; border-radius: 6px; margin-bottom: 5px; transition: background-color 0.2s; }
+        .time-slot:not(.booked):hover { background-color: color-mix(in srgb, var(--primary) 5%, transparent); cursor: pointer;}
+        .time-slot.booked { background-color: color-mix(in srgb, var(--info) 10%, transparent); cursor: pointer; }
+        .time-slot.booked:hover { background-color: color-mix(in srgb, var(--info) 20%, transparent); }
+        .time-slot .time { font-weight: 600; color: var(--muted); width: 60px; }
+        .time-slot .details { flex-grow: 1; font-weight: 500; color: var(--primary); }
+        .time-slot.booked .details { color: var(--info); }
 
-        .stat-card.concluido { border-left-color: var(--success); }
-        .stat-card.concluido .icon-container { background-color: var(--success); }
-        .stat-card.concluido .info .value { color: var(--success); }
-
-        .stat-card.cancelado { border-left-color: var(--danger); }
-        .stat-card.cancelado .icon-container { background-color: var(--danger); }
-
-        .stat-card.pendente { border-left-color: var(--warning); }
-        .stat-card.pendente .icon-container { background-color: var(--warning); }
-        .stat-card.pendente .info .value { color: var(--warning); }
-        
-        /* --- Table --- */
-        .table-container {
-            width: 100%; overflow-x: auto; background: var(--card);
-            border-radius: 12px; padding: 1rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 800px; }
-        th, td {
-            padding: 0.9rem 1rem; font-size: 0.9rem; text-align: left; vertical-align: middle;
-            border-bottom: 1px solid var(--border-color);
-        }
-        thead th {
-            font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.8rem;
-            background-color: var(--bg); border-bottom: 2px solid var(--border-color);
-        }
-        thead th:first-child { border-top-left-radius: 8px; }
-        thead th:last-child { border-top-right-radius: 8px; }
-        tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
-        tbody tr:last-child td { border-bottom: none; }
-        tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
-        tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
-        .table-actions { white-space: nowrap; }
-        .status-badge { padding: 0.4em 0.8em; border-radius: 20px; font-size: 0.75em; font-weight: 600; text-transform: uppercase; color: white; }
-        .status-confirmado { background-color: var(--primary); }
-        .status-concluido { background-color: var(--success); }
-        .status-cancelado { background-color: var(--danger); }
-        .status-pendente { background-color: var(--warning); color: #854d0e; }
-        [data-theme="dark"] .status-pendente { color: #fefce8; }
-        .no-results-row td { text-align: center; padding: 2rem; color: var(--muted); }
-
-        /* --- Status Select --- */
-        .custom-select-wrapper { position: relative; }
-        .status-select {
-            appearance: none; -webkit-appearance: none; -moz-appearance: none;
-            padding: 0.5rem 0.8rem; border: none; border-radius: 8px;
-            font-size: 0.85rem; font-weight: 600; width: 100%;
-            cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;
-        }
-        .status-select-confirmado { background-color: var(--primary); color: white; }
-        .status-select-concluido { background-color: var(--success); color: white; }
-        .status-select-cancelado { background-color: var(--danger); color: white; }
-        .status-select-pendente { background-color: var(--warning); color: #854d0e; }
-
-        /* --- Modals --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
-            z-index: 2000; opacity: 0; transition: opacity 0.25s ease;
-        }
+        /* Modal Styles (reused) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.25s ease; }
         .modal-overlay.active { opacity: 1; display: flex; }
-        .modal-content {
-            background-color: var(--card); color: var(--text); border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 550px;
-            transform: translateY(-20px); transition: transform 0.25s ease;
-            max-height: calc(100vh - 60px); display: flex; flex-direction: column;
-        }
+        .modal-content { background-color: var(--card); color: var(--text); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 550px; transform: translateY(-20px); transition: transform 0.25s ease; max-height: calc(100vh - 60px); display: flex; flex-direction: column; }
         .modal-overlay.active .modal-content { transform: translateY(0); }
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
-        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
         .modal-header h3 { font-size: 1.2rem; color: var(--text); margin: 0; font-weight: 600; }
         .modal-header h3 i { margin-right: 0.75rem; color: var(--primary); }
         .modal-close-btn { background: none; border: none; font-size: 1.5rem; color: var(--muted); cursor: pointer; line-height: 1; transition: color 0.2s ease; }
@@ -253,64 +135,39 @@
         .form-group { margin-bottom: 1.25rem; }
         .form-group:last-child { margin-bottom: 0; }
         .form-group label { display: block; font-size: 0.9rem; color: var(--muted); font-weight: 500; margin-bottom: 0.5rem; }
-        .form-group input, .form-group select {
-            font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%;
-            border: 1px solid var(--border-color); border-radius: 8px;
-            background-color: var(--bg); color: var(--text);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-group input:focus, .form-group select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none;
-        }
+        .form-group input, .form-group select { font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg); color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-        .modal-footer {
-            padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);
-            display: flex; justify-content: flex-end; gap: 0.75rem; flex-shrink: 0;
-            background-color: var(--bg);
-        }
+        .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.75rem; flex-shrink: 0; background-color: var(--bg); }
         
-        /* --- Responsive Adjustments --- */
+        /* New Info Card Styles */
+        .info-card { background-color: var(--bg); padding: 1.5rem; border-radius: 8px; }
+        .info-card .info-item { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
+        .info-card .info-item:last-child { margin-bottom: 0; }
+        .info-card .info-item i { font-size: 1.1rem; color: var(--muted); margin-top: 4px; width: 20px; text-align: center; }
+        .info-card .info-item-content .label { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+        .info-card .info-item-content .value { font-size: 1rem; font-weight: 600; color: var(--text); }
+
+
+        .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-danger-outline { background-color: transparent; color: var(--danger); border-color: var(--danger); }
+        .btn-danger-outline:hover { background-color: var(--danger); color: white; }
+
+        .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
+        
+        /* Responsive */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
-
-        @media(min-width: 769px) {
-            .toggle-btn-desktop { display: grid; }
-            .menu-btn-mobile { display: none; }
-            .btn span.btn-text-desktop { display: inline; }
-        }
-
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
-            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
-            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
-            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
-            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
-            
-            main { padding: 1rem; }
-            .topbar { padding: 0 1rem; flex-wrap: wrap; height: auto; row-gap: 0.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem;}
-            .topbar-left, .topbar-actions { width: 100%; justify-content: space-between; }
-            .topbar-actions { padding-bottom: 0.5rem; }
-            .btn span.btn-text-desktop { display: none; }
-            .summary-stats-cards { grid-template-columns: 1fr 1fr; gap: 1rem; }
-            .stat-card { padding: 1rem; flex-direction: column; text-align: center; gap: 0.5rem; }
-            .stat-card .info .count { font-size: 1.3rem; }
-
-            .table-container { display: none; }
-            .mobile-cards-wrapper { display: block; }
-        }
-
-        /* --- Mobile Appointment Cards --- */
-        .mobile-cards-wrapper { display: none; }
-        /* Add other mobile styles if needed, they are similar to the dashboard */
+        @media(min-width: 769px) { .toggle-btn-desktop { display: grid; } .menu-btn-mobile { display: none; } }
+        @media (max-width: 992px) { main { flex-direction: column; overflow: auto; } .agenda-container { min-width: 100%; max-width: 100%; } }
+        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main-content, .main-content.collapsed { margin-left: 0; } main { padding: 1rem; } .topbar { padding: 0 1rem; } }
 
     </style>
 </head>
 <body>
-    {% set is_filter_active = request.args.get('paciente_nome') or request.args.get('profissional_id') or request.args.get('status') or request.args.get('data_inicio') or request.args.get('data_fim') %}
     <div class="layout">
         <aside class="sidebar">
             <div class="sidebar-inner-content">
@@ -336,7 +193,7 @@
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
+                    <button id="theme-toggle" aria-label="Alternar Tema">
                         <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
                     </button>
                     <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
@@ -351,189 +208,69 @@
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
                     <h1 class="page-title">Agendamentos</h1>
                 </div>
-                <div class="topbar-actions">
-                    <button class="btn btn-secondary btn-filter {% if is_filter_active %}active{% endif %}" id="btnAbrirModalFiltros">
-                        <i class="fas fa-filter"></i><span class="btn-text-desktop">&nbsp;Filtrar</span>
-                    </button>
-                    <button class="btn btn-primary" id="btnAbrirModalRegistroManual">
-                        <i class="fas fa-plus"></i><span class="btn-text-desktop">&nbsp;Registrar</span>
-                    </button>
-                </div>
             </header>
 
             <main>
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                    <div class="flash-message {{ category }}">{{ message }}</div>
-                    {% endfor %}
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <h2 id="calendar-month-year"></h2>
+                        <div class="calendar-nav">
+                            <button id="prev-month-btn" title="Mês Anterior"><i class="fas fa-chevron-left"></i></button>
+                            <select id="month-select" aria-label="Selecionar Mês"></select>
+                            <select id="year-select" aria-label="Selecionar Ano"></select>
+                            <button id="next-month-btn" title="Próximo Mês"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="day-header">Dom</div>
+                        <div class="day-header">Seg</div>
+                        <div class="day-header">Ter</div>
+                        <div class="day-header">Qua</div>
+                        <div class="day-header">Qui</div>
+                        <div class="day-header">Sex</div>
+                        <div class="day-header">Sáb</div>
+                    </div>
                 </div>
-                {% endif %}
-                {% endwith %}
 
-                <section class="summary-stats-cards">
-                    <div class="stat-card confirmado">
-                        <div class="icon-container"><i class="fa-solid fa-calendar-check"></i></div>
-                        <div class="info">
-                            <h4>Confirmados</h4>
-                            <p class="count">{{ stats_cards.confirmado.count if stats_cards and stats_cards.confirmado else 0 }}</p>
-                            <p class="value">{{ "R$ %.2f"|format(stats_cards.confirmado.total_valor|float if stats_cards and stats_cards.confirmado else 0.0) }}</p>
-                        </div>
+                <div class="agenda-container">
+                    <div class="agenda-header">
+                        <h3 id="agenda-date">Selecione um dia</h3>
                     </div>
-                    <div class="stat-card concluido">
-                        <div class="icon-container"><i class="fa-solid fa-check-double"></i></div>
-                        <div class="info">
-                            <h4>Concluídos</h4>
-                            <p class="count">{{ stats_cards.concluido.count if stats_cards and stats_cards.concluido else 0 }}</p>
-                            <p class="value">{{ "R$ %.2f"|format(stats_cards.concluido.total_valor|float if stats_cards and stats_cards.concluido else 0.0) }}</p>
-                        </div>
+                    <div class="agenda-timeline" id="agenda-timeline">
+                        <!-- Time slots will be generated here -->
                     </div>
-                    <div class="stat-card pendente">
-                        <div class="icon-container"><i class="fa-solid fa-hourglass-start"></i></div>
-                        <div class="info">
-                            <h4>Pendentes</h4>
-                            <p class="count">{{ stats_cards.pendente.count if stats_cards and stats_cards.pendente else 0 }}</p>
-                            <p class="value">{{ "R$ %.2f"|format(stats_cards.pendente.total_valor|float if stats_cards and stats_cards.pendente else 0.0) }}</p>
-                        </div>
-                    </div>
-                    <div class="stat-card cancelado">
-                        <div class="icon-container"><i class="fa-solid fa-ban"></i></div>
-                        <div class="info">
-                            <h4>Cancelados</h4>
-                            <p class="count">{{ stats_cards.cancelado.count if stats_cards and stats_cards.cancelado else 0 }}</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="appointments-container">
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>Profissional</th>
-                                    <th>Serviço</th>
-                                    <th>Data & Hora</th>
-                                    <th>Preço</th>
-                                    <th>Status</th>
-                                    <th>Alterar Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for agendamento in agendamentos %}
-                                <tr>
-                                    <td>{{ agendamento.paciente_nome }}</td>
-                                    <td>{{ agendamento.profissional_nome }}</td>
-                                    <td>{{ agendamento.servico_procedimento_nome }}</td>
-                                    <td>{{ agendamento.data_agendamento_fmt }} às {{ agendamento.hora_agendamento or 'N/A' }}</td>
-                                    <td>{{ agendamento.preco_servico_fmt }}</td>
-                                    <td><span class="status-badge status-{{ agendamento.status.lower() if agendamento.status else 'pendente' }}">{{ agendamento.status.capitalize() if agendamento.status else 'Pendente' }}</span></td>
-                                    <td class="table-actions">
-                                        <form action="{{ url_for('alterar_status_agendamento', agendamento_doc_id=agendamento.id) }}" method="post" class="status-change-form">
-                                            <div class="custom-select-wrapper">
-                                                <select name="status" class="status-select status-select-{{ agendamento.status.lower() }}" data-previous-status="{{ agendamento.status }}">
-                                                    <option value="confirmado" {% if agendamento.status == 'confirmado' %}selected{% endif %}>Confirmado</option>
-                                                    <option value="concluido" {% if agendamento.status == 'concluido' %}selected{% endif %}>Concluído</option>
-                                                    <option value="cancelado" {% if agendamento.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
-                                                    <option value="pendente" {% if agendamento.status == 'pendente' %}selected{% endif %}>Pendente</option>
-                                                </select>
-                                            </div>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr class="no-results-row">
-                                    <td colspan="7">Nenhum agendamento encontrado para os filtros selecionados.</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="mobile-cards-wrapper">
-                        <!-- Mobile cards logic here -->
-                    </div>
-                </section>
+                </div>
             </main>
         </div>
     </div>
 
-    <!-- Modal de Confirmação de Cancelamento -->
-    <div class="modal-overlay" id="modalConfirmacaoCancelamento">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger);"></i>Confirmar Cancelamento</h3>
-          <button class="modal-close-btn" data-close>&times;</button>
-        </div>
-        <div class="modal-body">
-          <p>Tem a certeza de que deseja cancelar este agendamento? Esta ação não pode ser desfeita.</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-close>Voltar</button>
-          <button type="button" class="btn btn-danger" id="btnConfirmarCancelamento">Confirmar Cancelamento</button>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Modal de Filtros -->
-    <div class="modal-overlay" id="modalFiltros">
-      <div class="modal-content">
-        <form method="GET" action="{{ url_for('listar_agendamentos') }}" id="formFiltros">
+    <!-- Modal de Detalhes do Agendamento -->
+    <div class="modal-overlay" id="modalDetalhesAgendamento">
+        <div class="modal-content">
             <div class="modal-header">
-              <h3><i class="fa-solid fa-filter"></i>Filtrar Agendamentos</h3>
-              <button type="button" class="modal-close-btn" data-close>&times;</button>
+                <h3><i class="fa-solid fa-calendar-check" style="color: var(--info);"></i> Detalhes do Agendamento</h3>
+                <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                  <label for="filtro_paciente_nome">Nome do Paciente</label>
-                  <input type="text" id="filtro_paciente_nome" name="paciente_nome" value="{{ filtros_atuais.paciente_nome if filtros_atuais else '' }}" placeholder="Buscar por nome...">
-                </div>
-                <div class="form-group">
-                  <label for="filtro_profissional_id">Profissional</label>
-                  <select id="filtro_profissional_id" name="profissional_id">
-                    <option value="">Todos os Profissionais</option>
-                    {% for profissional in profissionais_para_filtro %}
-                    <option value="{{ profissional.id }}" {% if filtros_atuais and filtros_atuais.profissional_id == profissional.id|string %}selected{% endif %}>
-                      {{ profissional.nome }}
-                    </option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="filtro_status">Status</label>
-                  <select id="filtro_status" name="status">
-                    <option value="">Todos os Status</option>
-                    <option value="confirmado" {% if filtros_atuais and filtros_atuais.status == 'confirmado' %}selected{% endif %}>Confirmado</option>
-                    <option value="concluido" {% if filtros_atuais and filtros_atuais.status == 'concluido' %}selected{% endif %}>Concluído</option>
-                    <option value="cancelado" {% if filtros_atuais and filtros_atuais.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
-                    <option value="pendente" {% if filtros_atuais and filtros_atuais.status == 'pendente' %}selected{% endif %}>Pendente</option>
-                  </select>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                      <label for="filtro_data_inicio">Data Início</label>
-                      <input type="text" id="filtro_data_inicio" name="data_inicio" value="{{ filtros_atuais.data_inicio if filtros_atuais else '' }}" class="flatpickr-input" placeholder="dd/mm/aaaa">
-                    </div>
-                    <div class="form-group">
-                      <label for="filtro_data_fim">Data Fim</label>
-                      <input type="text" id="filtro_data_fim" name="data_fim" value="{{ filtros_atuais.data_fim if filtros_atuais else '' }}" class="flatpickr-input" placeholder="dd/mm/aaaa">
-                    </div>
+                <div class="info-card" id="infoCardAgendamento">
+                    <!-- Detalhes serão injetados aqui via JS -->
                 </div>
             </div>
-            <div class="modal-footer">
-              <a href="{{ url_for('listar_agendamentos') }}" class="btn btn-secondary"><i class="fas fa-eraser"></i> Limpar</a>
-              <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Aplicar Filtros</button>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <button type="button" class="btn btn-danger-outline" id="btnApagarAgendamento"><i class="fas fa-trash"></i> Apagar Registro</button>
+                <button type="button" class="btn btn-primary" id="btnEditarAgendamento"><i class="fas fa-edit"></i> Editar Registro</button>
             </div>
-        </form>
-      </div>
+        </div>
     </div>
 
-    <!-- Modal de Registro Manual -->
+
+    <!-- Modal de Registro/Edição Manual -->
     <div class="modal-overlay" id="modalRegistroManual">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('registrar_atendimento_manual') }}" id="formRegistroManual">
+                <input type="hidden" name="agendamento_id" id="agendamento_id_manual">
                 <div class="modal-header">
-                    <h3><i class="fa-solid fa-plus-circle"></i>Registrar Atendimento</h3>
+                    <h3 id="modalRegistroManualTitle"><i class="fa-solid fa-plus-circle"></i> Registrar Atendimento</h3>
                     <button type="button" class="modal-close-btn" data-close>&times;</button>
                 </div>
                 <div class="modal-body">
@@ -547,19 +284,19 @@
                       </select>
                     </div>
                     <div class="form-group">
-                      <label for="cliente_nome_manual">Nome do Paciente (Novo ou selecionado)</label>
-                      <input type="text" id="cliente_nome_manual" name="cliente_nome_manual" required>
+                        <label for="cliente_nome_manual">Nome do Paciente (Novo ou selecionado)</label>
+                        <input type="text" id="cliente_nome_manual" name="cliente_nome_manual" required>
                     </div>
                     <div class="form-group">
-                      <label for="cliente_telefone_manual">Telefone do Paciente (Opcional)</label>
-                      <input type="tel" id="cliente_telefone_manual" name="cliente_telefone_manual" placeholder="(XX) XXXXX-XXXX">
+                        <label for="cliente_telefone_manual">Telefone do Paciente (Opcional)</label>
+                        <input type="tel" id="cliente_telefone_manual" name="cliente_telefone_manual" placeholder="(XX) XXXXX-XXXX">
                     </div>
                     <div class="form-group">
-                      <label for="barbeiro_id_manual">Profissional</label>
-                      <select id="barbeiro_id_manual" name="barbeiro_id_manual" required>
-                        <option value="">Selecione o profissional</option>
+                      <label for="profissional_id_manual">Profissional</label>
+                      <select id="profissional_id_manual" name="barbeiro_id_manual" required>
+                      <option value="">Selecione o profissional</option>
                         {% for profissional in profissionais_para_filtro %} 
-                        <option value="{{ profissional.id }}">{{ profissional.nome }}</option>
+                        <option value="{{ profissional.id }}">{{ profissional.nome }}</option> {# Corrigido aqui: professional para profissional #}
                         {% endfor %}
                       </select>
                     </div>
@@ -573,26 +310,26 @@
                       </select>
                     </div>
                     <div class="form-row">
-                      <div class="form-group">
-                        <label for="data_agendamento_manual">Data</label>
-                        <input type="text" id="data_agendamento_manual" name="data_agendamento_manual" class="flatpickr-input" required placeholder="Selecione a data">
-                      </div>
-                      <div class="form-group">
-                        <label for="hora_agendamento_manual">Hora</label>
-                        <input type="time" id="hora_agendamento_manual" name="hora_agendamento_manual" required>
-                      </div>
+                        <div class="form-group">
+                            <label for="data_agendamento_manual">Data</label>
+                            <input type="date" id="data_agendamento_manual" name="data_agendamento_manual" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="hora_agendamento_manual">Hora</label>
+                            <input type="time" id="hora_agendamento_manual" name="hora_agendamento_manual" required>
+                        </div>
                     </div>
                     <div class="form-group">
-                      <label for="preco_manual">Preço (R$)</label>
-                      <input type="number" id="preco_manual" name="preco_manual" step="0.01" min="0" placeholder="Preço do serviço" required readonly>
+                        <label for="preco_manual">Preço (R$)</label>
+                        <input type="number" id="preco_manual" name="preco_manual" step="0.01" min="0" required readonly>
                     </div>
                     <div class="form-group">
-                      <label for="status_manual">Status</label>
-                      <select id="status_manual" name="status_manual" required>
-                        <option value="concluido" selected>Concluído</option>
-                        <option value="confirmado">Confirmado</option>
-                        <option value="pendente">Pendente</option>
-                      </select>
+                        <label for="status_manual">Status</label>
+                        <select id="status_manual" name="status_manual" required>
+                            <option value="confirmado" selected>Confirmado</option>
+                            <option value="concluido">Concluído</option>
+                            <option value="pendente">Pendente</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -603,18 +340,13 @@
         </div>
     </div>
 
+    <!-- Formulário para Apagar (escondido) -->
+    <form id="formApagarAgendamento" method="POST" action="{{ url_for('apagar_agendamento') }}" style="display: none;">
+        <input type="hidden" name="agendamento_id" id="agendamento_id_apagar">
+    </form>
+
 
     <script type="module">
-        // Placeholder for Firebase - adjust with your actual config
-        const FAKE_FIREBASE = {
-            initializeApp: () => ({}),
-            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
-        };
-        const { initializeApp } = FAKE_FIREBASE;
-        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        let auth = getAuth(initializeApp(firebaseConfig));
-
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
             const sidebar = document.querySelector('.sidebar');
@@ -624,114 +356,286 @@
             const themeToggle = document.querySelector('#theme-toggle');
             const logoutButton = document.getElementById('logoutButton');
 
-            // --- Sidebar Logic ---
+            // --- Sidebar Logic (reused) ---
             function setupSidebar() {
                 if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
-                }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
-                });
+                const updateDesktopToggleIcon = () => { if (!toggleBtnDesktop) return; const icon = toggleBtnDesktop.querySelector('i'); icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered'; };
+                const applyInitialState = () => { if (window.innerWidth > 768) { if (localStorage.getItem('sidebarCollapsed') === 'true') { sidebar.classList.add('collapsed'); mainContent.classList.add('collapsed'); } } else { sidebar.classList.remove('open', 'collapsed'); mainContent.classList.remove('collapsed'); } updateDesktopToggleIcon(); };
+                if (toggleBtnDesktop) { toggleBtnDesktop.addEventListener('click', () => { sidebar.classList.toggle('collapsed'); mainContent.classList.toggle('collapsed'); localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed')); updateDesktopToggleIcon(); }); }
+                if (menuBtnMobile) { menuBtnMobile.addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); }); }
+                document.addEventListener('click', (e) => { if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) { sidebar.classList.remove('open'); } });
                 applyInitialState();
                 window.addEventListener('resize', applyInitialState);
             }
 
-            // --- Theme Logic ---
+            // --- Theme Logic (reused) ---
             function setupTheme() {
                 if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
+                const updateThemeUI = (theme) => { htmlEl.setAttribute('data-theme', theme); const icon = themeToggle.querySelector('i'); icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun'; };
                 const currentTheme = localStorage.getItem('theme') || 'light';
                 updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
+                themeToggle.addEventListener('click', () => { const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', newTheme); updateThemeUI(newTheme); });
             }
 
-            // --- Logout Logic ---
+            // --- Logout Logic (reused) ---
             function setupLogout() {
                 if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    try {
-                        if (auth.currentUser) await firebaseSignOut(auth);
-                    } catch (error) {
-                        console.error('Error signing out from Firebase:', error);
-                    } finally {
-                        fetch("{{ url_for('logout') }}", { method: 'POST' })
-                            .then(() => window.location.href = "{{ url_for('login_page') }}")
-                            .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                    }
-                });
+                logoutButton.addEventListener('click', async (event) => { event.preventDefault(); fetch("{{ url_for('logout') }}", { method: 'POST' }).then(() => window.location.href = "{{ url_for('login_page') }}").catch(() => window.location.href = "{{ url_for('login_page') }}"); });
             }
 
-            // --- Modal Logic ---
-            function setupModals() {
-                const openModalButtons = document.querySelectorAll('[id^="btnAbrirModal"]');
-                const overlays = document.querySelectorAll('.modal-overlay');
+            // --- Calendar & Agenda Logic ---
+            function setupCalendar() {
+                const calendarGrid = document.querySelector('.calendar-grid');
+                const monthYearDisplay = document.getElementById('calendar-month-year');
+                const agendaDateDisplay = document.getElementById('agenda-date');
+                const agendaTimeline = document.getElementById('agenda-timeline');
+                const prevMonthBtn = document.getElementById('prev-month-btn');
+                const nextMonthBtn = document.getElementById('next-month-btn');
+                const monthSelect = document.getElementById('month-select');
+                const yearSelect = document.getElementById('year-select');
+                
+                const modalRegistro = document.getElementById('modalRegistroManual');
+                const modalFormRegistro = document.getElementById('formRegistroManual');
+                const modalTitleRegistro = document.getElementById('modalRegistroManualTitle');
+                
+                const modalDetalhes = document.getElementById('modalDetalhesAgendamento');
+                const infoCardDetalhes = document.getElementById('infoCardAgendamento');
+                const btnEditar = document.getElementById('btnEditarAgendamento');
+                const btnApagar = document.getElementById('btnApagarAgendamento');
+                const formApagar = document.getElementById('formApagarAgendamento');
 
-                openModalButtons.forEach(button => {
-                    const modalId = button.id.replace('btnAbrirModal', 'modal');
-                    const modal = document.getElementById(modalId);
-                    if (modal) {
-                        button.addEventListener('click', () => modal.classList.add('active'));
+
+                let currentDate = new Date();
+                let selectedDate = new Date();
+                currentDate.setDate(1); // Start with the first day of the month
+
+                const agendamentosDoServidor = [
+                    {% for agendamento in agendamentos %}
+                        {
+                            "id": "{{ agendamento.id }}",
+                            "data_agendamento": "{{ agendamento.data_agendamento if agendamento.data_agendamento else '' }}",
+                            "hora_agendamento": "{{ agendamento.hora_agendamento }}",
+                            "paciente_id": "{{ agendamento.paciente_id }}",
+                            "paciente_nome": "{{ agendamento.paciente_nome | e }}",
+                            "profissional_id": "{{ agendamento.profissional_id }}",
+                            "profissional_nome": "{{ agendamento.profissional_nome | e }}",
+                            "servico_id": "{{ agendamento.servico_procedimento_id }}",
+                            "servico_nome": "{{ agendamento.servico_procedimento_nome | e }}",
+                            "preco": "{{ agendamento.servico_procedimento_preco }}",
+                            "status": "{{ agendamento.status }}"
+                        },
+                    {% endfor %}
+                ];
+
+                const appointments = {};
+                agendamentosDoServidor.forEach(ag => {
+                    if (ag.data_agendamento) {
+                        if (!appointments[ag.data_agendamento]) {
+                            appointments[ag.data_agendamento] = [];
+                        }
+                        appointments[ag.data_agendamento].push(ag);
                     }
+                });
+
+
+                function populateSelectors() {
+                    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+                    monthSelect.innerHTML = months.map((month, i) => `<option value="${i}">${month}</option>`).join('');
+                    const currentYear = new Date().getFullYear();
+                    yearSelect.innerHTML = '';
+                    for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+                        yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+                    }
+                }
+
+                function updateSelectors(date) {
+                    monthSelect.value = date.getMonth();
+                    yearSelect.value = date.getFullYear();
+                }
+
+                function renderCalendar(date) {
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+
+                    monthYearDisplay.textContent = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
+                    updateSelectors(date);
+
+                    let dayElements = '';
+                    const firstDayOfMonth = new Date(year, month, 1).getDay();
+                    for (let i = 0; i < firstDayOfMonth; i++) {
+                        dayElements += '<div class="calendar-day other-month"></div>';
+                    }
+
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const dayDate = new Date(year, month, day);
+                        const dateString = dayDate.toISOString().split('T')[0];
+                        let classes = 'calendar-day';
+                        if (dayDate.toDateString() === new Date().toDateString()) classes += ' today';
+                        if (dayDate.toDateString() === selectedDate.toDateString()) classes += ' selected';
+                        
+                        let eventHtml = '';
+                        if(appointments[dateString]) {
+                            eventHtml += '<div class="day-events">';
+                            appointments[dateString].slice(0, 2).forEach(app => {
+                                eventHtml += `<div class="day-event">${app.paciente_nome}</div>`;
+                            });
+                            if (appointments[dateString].length > 2) {
+                                eventHtml += `<div style="font-size: 0.7rem; text-align: center;">+${appointments[dateString].length - 2} mais...</div>`;
+                            }
+                            eventHtml += '</div>';
+                        }
+                        
+                        dayElements += `<div class="${classes}" data-date="${dateString}"><div class="day-number">${day}</div>${eventHtml}</div>`;
+                    }
+
+                    calendarGrid.innerHTML = `
+                        <div class="day-header">Dom</div><div class="day-header">Seg</div><div class="day-header">Ter</div><div class="day-header">Qua</div><div class="day-header">Qui</div><div class="day-header">Sex</div><div class="day-header">Sáb</div>
+                        ${dayElements}
+                    `;
+                    
+                    document.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayEl => {
+                             dayEl.addEventListener('click', () => {
+                                selectedDate = new Date(dayEl.dataset.date + 'T00:00:00');
+                                renderCalendar(currentDate); 
+                                renderAgenda(selectedDate);
+                             });
+                    });
+                }
+
+                function renderAgenda(date) {
+                    agendaDateDisplay.textContent = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' }).format(date);
+                    agendaTimeline.innerHTML = '';
+                    
+                    const dateString = date.toISOString().split('T')[0];
+                    const dailyAppointments = appointments[dateString] || [];
+
+                    for(let hour = 6; hour < 18; hour++) {
+                        for(let minute = 0; minute < 60; minute += 30) {
+                            const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                            const bookedAppointment = dailyAppointments.find(app => app.hora_agendamento === timeStr);
+                            
+                            const slotEl = document.createElement('div');
+                            slotEl.className = 'time-slot';
+                            slotEl.dataset.time = timeStr;
+                            
+                            const detailsText = bookedAppointment ? bookedAppointment.paciente_nome : 'Disponível';
+                            
+                            slotEl.innerHTML = `<div class="time">${timeStr}</div><div class="details">${detailsText}</div>`;
+                            
+                            if (bookedAppointment) {
+                                slotEl.classList.add('booked');
+                                slotEl.addEventListener('click', () => openDetailsModal(bookedAppointment));
+                            } else {
+                                slotEl.addEventListener('click', () => openBookingModal(date, timeStr));
+                            }
+                            agendaTimeline.appendChild(slotEl);
+                        }
+                    }
+                }
+                
+                function openBookingModal(date, time) {
+                    modalFormRegistro.reset();
+                    modalFormRegistro.action = "{{ url_for('registrar_atendimento_manual') }}";
+                    modalTitleRegistro.innerHTML = '<i class="fa-solid fa-plus-circle"></i> Registrar Atendimento';
+                    document.getElementById('agendamento_id_manual').value = '';
+
+                    document.getElementById('data_agendamento_manual').value = date.toISOString().split('T')[0];
+                    document.getElementById('hora_agendamento_manual').value = time;
+                    document.getElementById('cliente_nome_manual').readOnly = false;
+                    document.getElementById('cliente_telefone_manual').readOnly = false;
+                    modalRegistro.classList.add('active');
+                }
+
+                function openDetailsModal(agendamento) {
+                    infoCardDetalhes.innerHTML = `
+                        <div class="info-item">
+                            <i class="fa-solid fa-user"></i>
+                            <div class="info-item-content">
+                                <span class="label">Paciente</span>
+                                <span class="value">${agendamento.paciente_nome}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-user-doctor"></i>
+                            <div class="info-item-content">
+                                <span class="label">Profissional</span>
+                                <span class="value">${agendamento.profissional_nome}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-syringe"></i>
+                            <div class="info-item-content">
+                                <span class="label">Serviço</span>
+                                <span class="value">${agendamento.servico_nome}</span>
+                            </div>
+                        </div>
+                           <div class="info-item">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                            <div class="info-item-content">
+                                <span class="label">Preço</span>
+                                <span class="value">R$ ${parseFloat(agendamento.preco).toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-toggle-on"></i>
+                            <div class="info-item-content">
+                                <span class="label">Status</span>
+                                <span class="value">${agendamento.status.charAt(0).toUpperCase() + agendamento.status.slice(1)}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    btnEditar.onclick = () => {
+                        modalDetalhes.classList.remove('active');
+                        openEditModal(agendamento);
+                    };
+
+                    btnApagar.onclick = () => {
+                             if (confirm('Tem certeza que deseja apagar este agendamento? Esta ação não pode ser desfeita.')) {
+                                formApagar.action = "{{ url_for('apagar_agendamento') }}"; // Ação da rota já configurada
+                                document.getElementById('agendamento_id_apagar').value = agendamento.id; // Define o ID no campo oculto
+                                formApagar.submit();
+                             }
+                    };
+
+                    modalDetalhes.classList.add('active');
+                }
+
+                function openEditModal(agendamento) {
+                    modalFormRegistro.reset();
+                    // Assumindo que você terá uma rota para editar
+                    modalFormRegistro.action = `{{ url_for('editar_agendamento') }}`;
+                    modalTitleRegistro.innerHTML = '<i class="fas fa-edit"></i> Editar Agendamento';
+                    
+                    // Preenche o formulário com os dados existentes
+                    document.getElementById('agendamento_id_manual').value = agendamento.id;
+                    document.getElementById('cliente_nome_manual').value = agendamento.paciente_nome;
+                    document.getElementById('paciente_id_manual').value = agendamento.paciente_id;
+                    document.getElementById('profissional_id_manual').value = agendamento.profissional_id;
+                    document.getElementById('servico_id_manual').value = agendamento.servico_id;
+                    document.getElementById('data_agendamento_manual').value = agendamento.data_agendamento;
+                    document.getElementById('hora_agendamento_manual').value = agendamento.hora_agendamento;
+                    document.getElementById('preco_manual').value = parseFloat(agendamento.preco).toFixed(2);
+                    document.getElementById('status_manual').value = agendamento.status;
+                    
+                    // Dispara o evento change para que a lógica de nome/telefone do paciente seja acionada se necessário
+                    document.getElementById('paciente_id_manual').dispatchEvent(new Event('change'));
+                    
+                    modalRegistro.classList.add('active');
+                }
+
+
+                prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(currentDate); });
+                nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(currentDate); });
+                monthSelect.addEventListener('change', () => { currentDate.setMonth(monthSelect.value); renderCalendar(currentDate); });
+                yearSelect.addEventListener('change', () => { currentDate.setFullYear(yearSelect.value); renderCalendar(currentDate); });
+
+                document.querySelectorAll('.modal-overlay').forEach(modalEl => {
+                    modalEl.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => modalEl.classList.remove('active')));
+                    modalEl.addEventListener('click', (e) => { if (e.target === modalEl) modalEl.classList.remove('active'); });
                 });
                 
-                overlays.forEach(overlay => {
-                    overlay.addEventListener('click', (e) => {
-                        if (e.target === overlay || e.target.hasAttribute('data-close')) {
-                            overlay.classList.remove('active');
-                        }
-                    });
-                });
-            }
-            
-            // --- Page-Specific Logic ---
-            function setupAppointmentsPage() {
-                // Flatpickr initialization
-                const commonFlatpickrConfig = { altInput: true, altFormat: "d/m/Y", dateFormat: "Y-m-d", locale: "pt" };
-                flatpickr("#filtro_data_inicio", commonFlatpickrConfig);
-                flatpickr("#filtro_data_fim", commonFlatpickrConfig);
-                flatpickr("#data_agendamento_manual", { ...commonFlatpickrConfig, defaultDate: "today" });
-
-                // Manual registration modal logic
                 const servicoSelect = document.getElementById('servico_id_manual');
                 const precoInput = document.getElementById('preco_manual');
                 if (servicoSelect && precoInput) {
@@ -742,64 +646,37 @@
                     });
                 }
                 
-                const pacienteSelect = document.getElementById('paciente_id_manual');
-                const nomeInput = document.getElementById('cliente_nome_manual');
-                const telefoneInput = document.getElementById('cliente_telefone_manual');
-                if(pacienteSelect && nomeInput && telefoneInput) {
-                    pacienteSelect.addEventListener('change', (e) => {
-                        const selected = e.target.options[e.target.selectedIndex];
-                        if (selected.value) {
-                            nomeInput.value = selected.text;
-                            telefoneInput.value = selected.dataset.telefone || '';
-                            nomeInput.readOnly = true;
-                        } else {
-                            nomeInput.value = '';
-                            telefoneInput.value = '';
-                            nomeInput.readOnly = false;
-                        }
-                    });
+                const pacienteSelectManual = document.getElementById('paciente_id_manual');
+                const nomeInputManual = document.getElementById('cliente_nome_manual');
+                const telefoneInputManual = document.getElementById('cliente_telefone_manual');
+                if(pacienteSelectManual && nomeInputManual && telefoneInputManual) {
+                    pacienteSelectManual.addEventListener('change', function() {
+                           const selectedOption = this.options[this.selectedIndex];
+                           if (selectedOption.value) {
+                               nomeInputManual.value = selectedOption.text;
+                               telefoneInputManual.value = selectedOption.dataset.telefone || '';
+                               nomeInputManual.readOnly = true;
+                               // Telefone pode ser editado mesmo com paciente selecionado
+                               telefoneInputManual.readOnly = false;
+                           } else {
+                               nomeInputManual.value = '';
+                               telefoneInputManual.value = '';
+                               nomeInputManual.readOnly = false;
+                               telefoneInputManual.readOnly = false;
+                           }
+                     });
                 }
-
-                // Status change logic
-                const statusForms = document.querySelectorAll('.status-change-form');
-                const cancelModal = document.getElementById('modalConfirmacaoCancelamento');
-                const confirmCancelBtn = document.getElementById('btnConfirmarCancelamento');
-                let formToSubmit = null;
-
-                statusForms.forEach(form => {
-                    const select = form.querySelector('select');
-                    if (select) {
-                        select.addEventListener('change', (e) => {
-                            const newStatus = e.target.value;
-                            const prevStatus = e.target.dataset.previousStatus;
-                            if (newStatus === 'cancelado') {
-                                formToSubmit = form;
-                                if(cancelModal) cancelModal.classList.add('active');
-                            } else {
-                                form.submit();
-                            }
-                        });
-                        // Update select color based on status
-                        const currentStatus = select.dataset.previousStatus.toLowerCase();
-                        select.className = `status-select status-select-${currentStatus}`;
-                    }
-                });
                 
-                if (confirmCancelBtn) {
-                    confirmCancelBtn.addEventListener('click', () => {
-                        if (formToSubmit) {
-                            formToSubmit.submit();
-                        }
-                    });
-                }
+                populateSelectors();
+                renderCalendar(currentDate);
+                renderAgenda(selectedDate);
             }
 
             // --- Initialization ---
             setupSidebar();
             setupTheme();
             setupLogout();
-            setupModals();
-            setupAppointmentsPage();
+            setupCalendar();
         });
     </script>
 </body>

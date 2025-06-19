@@ -358,8 +358,8 @@ def index():
     try:
         # Consulta agendamentos confirmados ou concluídos no mês atual para análise.
         query_geral_mes = agendamentos_ref.where(filter=FieldFilter('status', 'in', ['confirmado', 'concluido'])) \
-                                          .where(filter=FieldFilter('data_agendamento_ts', '>=', inicio_mes_dt)) \
-                                          .where(filter=FieldFilter('data_agendamento_ts', '<', fim_mes_dt)).stream()
+                                         .where(filter=FieldFilter('data_agendamento_ts', '>=', inicio_mes_dt)) \
+                                         .where(filter=FieldFilter('data_agendamento_ts', '<', fim_mes_dt)).stream()
         
         for doc in query_geral_mes:
             ag_data = doc.to_dict()
@@ -451,11 +451,11 @@ def index():
         flash("Erro ao carregar próximos agendamentos.", "danger")
 
     return render_template('dashboard.html', hoje_data=hoje_data, semana_data=semana_data,
-                           mes_data=mes_data, proximos_agendamentos=proximos_agendamentos_lista,
-                           nome_clinica=session.get('clinica_nome_display', 'Sua Clínica'), # Alterado para 'clinic_name'
-                           current_year=current_year,
-                           dados_desempenho_semana=dados_desempenho_semana,
-                           dados_servicos_populares=dados_servicos_populares)
+                            mes_data=mes_data, proximos_agendamentos=proximos_agendamentos_lista,
+                            nome_clinica=session.get('clinica_nome_display', 'Sua Clínica'), # Alterado para 'clinic_name'
+                            current_year=current_year,
+                            dados_desempenho_semana=dados_desempenho_semana,
+                            dados_servicos_populares=dados_servicos_populares)
 
 @app.route('/usuarios')
 @login_required
@@ -838,8 +838,8 @@ def listar_pacientes():
                                 .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
             # Para pesquisar por telefone (se for um campo de texto)
             query_telefone = pacientes_ref.order_by('contato_telefone')\
-                                         .where(filter=FieldFilter('contato_telefone', '>=', search_query))\
-                                         .where(filter=FieldFilter('contato_telefone', '<=', search_query + '\uf8ff'))
+                                    .where(filter=FieldFilter('contato_telefone', '>=', search_query))\
+                                    .where(filter=FieldFilter('contato_telefone', '<=', search_query + '\uf8ff'))
             
             # Executa ambas as consultas e combina os resultados (removendo duplicatas)
             pacientes_set = set()
@@ -1321,10 +1321,10 @@ def adicionar_horario():
     clinica_id = session['clinica_id']
     profissionais_ativos_lista = []
     try:
-        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
-        for doc in profissionais_docs:
-            p_data = doc.to_dict()
-            if p_data: profissionais_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)})
+        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream() # Alterado
+        for doc in profissionais_docs: # Alterado
+            p_data = doc.to_dict() # Alterado
+            if p_data: profissionais_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)}) # Alterado
     except Exception as e:
         flash('Erro ao carregar profissionais ativos.', 'danger')
         print(f"Erro ao carregar profissionais (add_schedule GET): {e}")
@@ -1424,7 +1424,7 @@ def editar_horario(profissional_doc_id, horario_doc_id): # Alterado
         except Exception as e:
             flash(f'Erro ao atualizar horário: {e}', 'danger')
             print(f"Erro edit_schedule (POST): {e}")
-    
+            
     try:
         horario_doc_snapshot = horario_ref.get()
         if horario_doc_snapshot.exists:
@@ -1438,7 +1438,7 @@ def editar_horario(profissional_doc_id, horario_doc_id): # Alterado
                 if profissional_pai_doc.exists: # Alterado
                     profissional_pai_data = profissional_pai_doc.to_dict() # Alterado
                     if profissional_pai_data: # Alterado
-                         horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id) # Alterado
+                        horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id) # Alterado
                 
                 return render_template('horario_form.html', 
                                        profissionais=profissionais_ativos_lista, # Alterado
@@ -1711,6 +1711,87 @@ def alterar_status_agendamento(agendamento_doc_id):
         print(f"Erro change_appointment_status: {e}")
     return redirect(url_for('listar_agendamentos'))
 
+# --- INÍCIO DAS NOVAS ROTAS ---
+@app.route('/agendamentos/editar', methods=['POST'])
+@login_required
+def editar_agendamento():
+    clinica_id = session['clinica_id']
+    agendamento_id = request.form.get('agendamento_id')
+
+    if not agendamento_id:
+        flash('ID do agendamento não fornecido para edição.', 'danger')
+        return redirect(url_for('listar_agendamentos'))
+
+    try:
+        agendamento_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_id)
+        
+        # Coleta todos os dados do formulário
+        paciente_nome = request.form.get('cliente_nome_manual')
+        profissional_id_manual = request.form.get('barbeiro_id_manual')
+        servico_procedimento_id_manual = request.form.get('servico_id_manual')
+        data_agendamento_str = request.form.get('data_agendamento_manual')
+        hora_agendamento_str = request.form.get('hora_agendamento_manual')
+        preco_str = request.form.get('preco_manual')
+        status_manual = request.form.get('status_manual')
+
+        if not all([paciente_nome, profissional_id_manual, servico_procedimento_id_manual, data_agendamento_str, hora_agendamento_str, preco_str, status_manual]):
+            flash('Todos os campos obrigatórios devem ser preenchidos para editar.', 'danger')
+            return redirect(url_for('listar_agendamentos'))
+        
+        # Reutiliza a lógica de obter nomes e formatar datas
+        profissional_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get()
+        servico_procedimento_doc = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get()
+
+        profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
+        servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A'
+        
+        dt_agendamento_naive = datetime.datetime.strptime(f"{data_agendamento_str} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
+        dt_agendamento_sp = SAO_PAULO_TZ.localize(dt_agendamento_naive)
+        data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
+
+        update_data = {
+            'paciente_nome': paciente_nome,
+            'profissional_id': profissional_id_manual,
+            'profissional_nome': profissional_nome,
+            'servico_procedimento_id': servico_procedimento_id_manual,
+            'servico_procedimento_nome': servico_procedimento_nome,
+            'data_agendamento': data_agendamento_str,
+            'hora_agendamento': hora_agendamento_str,
+            'data_agendamento_ts': data_agendamento_ts_utc,
+            'servico_procedimento_preco': float(preco_str.replace(',', '.')),
+            'status': status_manual,
+            'atualizado_em': firestore.SERVER_TIMESTAMP
+        }
+
+        agendamento_ref.update(update_data)
+        flash('Agendamento atualizado com sucesso!', 'success')
+
+    except Exception as e:
+        flash(f'Erro ao atualizar agendamento: {e}', 'danger')
+        print(f"Erro edit_appointment: {e}")
+        
+    return redirect(url_for('listar_agendamentos'))
+
+# ROTA CORRIGIDA PARA APAGAR AGENDAMENTO
+@app.route('/agendamentos/apagar', methods=['POST']) # <--- ROTA ALTERADA AQUI
+@login_required
+def apagar_agendamento(): # <--- agendamento_id não é mais um parâmetro da URL
+    clinica_id = session['clinica_id']
+    agendamento_id = request.form.get('agendamento_id') # <--- Obtém o ID do formulário
+    if not agendamento_id:
+        flash('ID do agendamento não fornecido para exclusão.', 'danger')
+        return redirect(url_for('listar_agendamentos'))
+
+    try:
+        db.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_id).delete()
+        flash('Agendamento apagado com sucesso!', 'success')
+    except Exception as e:
+        flash(f'Erro ao apagar agendamento: {e}', 'danger')
+        print(f"Erro delete_appointment: {e}")
+    return redirect(url_for('listar_agendamentos'))
+# --- FIM DAS NOVAS ROTAS ---
+
+
 # --- ROTAS DE PRONTUÁRIOS DE PACIENTES (NOVO) ---
 @app.route('/prontuarios')
 @login_required
@@ -1727,7 +1808,7 @@ def buscar_prontuario():
             # Implementa a busca por nome ou CPF (se o CPF estiver disponível)
             # Para nome:
             query_nome = pacientes_ref.where(filter=FieldFilter('nome', '>=', search_query))\
-                                      .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
+                                     .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
             
             # Para CPF: (adicionar apenas se o campo 'cpf' existir nos documentos do paciente)
             query_cpf = pacientes_ref.where(filter=FieldFilter('cpf', '==', search_query)) # CPF deve ser exato
@@ -1829,7 +1910,7 @@ def adicionar_anamnese(paciente_doc_id):
     profissional_nome = "Profissional Desconhecido"
     try:
         prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais')\
-                       .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
+                           .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
         for doc in prof_query:
             profissional_doc_id = doc.id
             profissional_nome = doc.to_dict().get('nome', profissional_nome)
