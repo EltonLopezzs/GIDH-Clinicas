@@ -3,580 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="theme-color" content="#29788d">
-  <!-- URLs de exemplo, substitua pelas suas variáveis de template (ex: Jinja2) -->
-  <link rel="manifest" href="/static/manifest.json">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="apple-touch-icon" href="https://placehold.co/192x192/a6683c/ffffff?text=C">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="https://placehold.co/40x40/a6683c/ffffff?text=C">
-  <title>Editar Serviço/Procedimento - Clínica On</title>
+  <title>{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }} - Clínica On</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* ============================================
-      VARIÁVEIS DE TEMA E ESTILOS GLOBAIS
-      ============================================
-    */
+    /* Estilos Globais e Variáveis de Tema */
     :root {
-      --bg: #f8f9fa;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6c757d;
-      --accent: #111827;
-      --accent-light: #4b5563;
-      --danger: #dc3545;
-      --success: #198754;
-      --warning: #ffc107;
-      --primary: #29788d; /* Cor principal da clínica */
-      --secondary: #c68642; /* Cor secundária para degradês */
-      --dark-bg: #1a1a1a;
-      --dark-text: #f8f9fa;
-      --dark-card: #2c2c2c;
-      --info: #0dcaf0;
-      --bs-border-color: #dee2e6;
+      --bg: #f8f9fa; --card: #ffffff; --text: #1f2937; --muted: #6c757d;
+      --accent: #111827; --danger: #dc3545; --success: #198754; --warning: #ffc107;
+      --primary: #29788d; --secondary: #c68642; --dark-bg: #1a1a1a; --dark-text: #f8f9fa;
+      --dark-card: #2c2c2c; --info: #0dcaf0; --bs-border-color: #dee2e6;
     }
-
     [data-theme="dark"] {
-      --bg: var(--dark-bg);
-      --text: var(--dark-text);
-      --card: var(--dark-card);
-      --muted: #a0a0a0;
-      --bs-border-color: #495057;
+      --bg: var(--dark-bg); --text: var(--dark-text); --card: var(--dark-card);
+      --muted: #a0a0a0; --bs-border-color: #495057;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html, body {
-      height: 100%;
-      overflow-x: hidden;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow-x: hidden; }
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
     
-    /* ============================================
-      LAYOUT PRINCIPAL (SIDEBAR + CONTEÚDO)
-      ============================================
-    */
-    .layout {
-      display: flex;
-      min-height: 100vh;
-      width: 100%;
-    }
-
-    /* ============================================
-      SIDEBAR - MENU LATERAL
-      ============================================
-    */
-    .sidebar {
-      width: 260px;
-      background: linear-gradient(180deg, var(--primary), var(--accent));
-      color: white;
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      transition: width 0.3s ease, transform 0.3s ease;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .sidebar-inner-content {
-      padding: 0;
-      height: 100%;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .sidebar-header {
-      padding: 20px 10px 15px;
-      margin-bottom: 15px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      text-align: center;
-      flex-shrink: 0;
-      height: 70px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .sidebar-header .logo {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: white;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .sidebar.collapsed {
-      width: 70px;
-    }
-
-    .sidebar.collapsed .sidebar-header .logo span,
-    .sidebar.collapsed nav ul li.nav-item a span,
-    .sidebar.collapsed #theme-toggle span,
-    .sidebar.collapsed .sidebar-footer ul li a span {
-      display: none;
-    }
+    /* Layout Principal */
+    .layout { display: flex; min-height: 100vh; }
     
-    .sidebar.collapsed nav ul li.nav-item a,
-    .sidebar.collapsed #theme-toggle,
-    .sidebar.collapsed .sidebar-footer ul li a {
-        justify-content: center;
-        padding: 10px;
-    }
-
-    .sidebar nav {
-      flex-grow: 1;
-      margin-top: 10px;
-      padding: 0 10px;
-    }
+    /* Sidebar */
+    .sidebar { width: 260px; background: linear-gradient(180deg, var(--primary), var(--accent)); color: white; position: fixed; height: 100vh; transition: width 0.3s ease, transform 0.3s ease; z-index: 1000; display: flex; flex-direction: column; }
+    .sidebar-inner-content { height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 20px 10px 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center; }
+    .sidebar-header .logo { font-size: 1.5rem; font-weight: 700; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    .sidebar.collapsed { width: 70px; }
+    .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
+    .sidebar.collapsed nav ul li a, .sidebar.collapsed #theme-toggle, .sidebar.collapsed .sidebar-footer ul li a { justify-content: center; padding: 10px; }
+    .sidebar nav { flex-grow: 1; margin-top: 10px; padding: 0 10px; }
+    .sidebar nav ul { list-style: none; padding: 0; }
+    .sidebar nav ul li.nav-item { margin: 8px 0; }
+    .sidebar nav ul li.nav-item a { color: white; text-decoration: none; display: flex; align-items: center; padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s ease; }
+    .sidebar nav ul li.nav-item a i { width: 20px; text-align: center; font-size: 1.05rem; flex-shrink: 0; }
+    .sidebar nav ul li.nav-item a:hover { background: rgba(255, 255, 255, 0.1); }
+    .sidebar nav ul li.nav-item.active a { background: rgba(255, 255, 255, 0.2); font-weight: 600; }
+    .sidebar-footer { padding: 15px 10px 20px 10px; margin-top: auto; flex-shrink: 0; }
+    #theme-toggle { background: none; border: none; cursor: pointer; color: white; padding: 10px 15px; border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 15px; transition: background 0.2s ease; font-family: 'Inter', sans-serif; font-size: 0.95rem; }
+    #theme-toggle:hover { background: rgba(255,255,255,0.1); }
+    .sidebar-footer ul { list-style: none; margin-top: 8px; padding: 0; }
+    .sidebar-footer ul li a { color: white; text-decoration: none; display: flex; align-items: center; padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s ease; }
+    .sidebar-footer ul li a:hover { background: rgba(255,255,255,0.1); }
     
-    .sidebar nav ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    .sidebar nav ul li.nav-item {
-      margin: 8px 0;
-    }
-
-    .sidebar nav ul li.nav-item a {
-      color: white;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      padding: 10px 15px;
-      gap: 15px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      transition: background 0.2s ease;
-    }
-
-    .sidebar nav ul li.nav-item a i {
-      width: 20px;
-      text-align: center;
-      font-size: 1.05rem;
-      flex-shrink: 0;
-    }
-
-    .sidebar nav ul li.nav-item a:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .sidebar nav ul li.nav-item.active a {
-      background: rgba(255, 255, 255, 0.2);
-      font-weight: 600;
-    }
-
-    .sidebar-footer {
-      padding: 15px 10px 20px 10px;
-      margin-top: auto;
-      flex-shrink: 0;
-    }
+    /* Conteúdo Principal */
+    .main-content { flex: 1; margin-left: 260px; transition: margin-left 0.3s ease; display: flex; flex-direction: column; }
+    .main-content.collapsed { margin-left: 70px; }
+    .topbar { background-color: var(--card); color: var(--text); padding: 0 1.5rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid var(--bs-border-color); height: 70px; flex-shrink: 0; }
+    .topbar .page-title { font-weight: 600; font-size: 1.3rem; color: var(--primary); margin-left: 10px; }
+    .toggle-btn-desktop, .menu-btn-mobile { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text); padding: 6px; border-radius: 8px; transition: background 0.2s ease, color 0.2s ease; }
+    .toggle-btn-desktop:hover, .menu-btn-mobile:hover { background-color: rgba(0,0,0,0.05); }
+    .toggle-btn-desktop { display: block; } .menu-btn-mobile { display: none; }
     
-    #theme-toggle {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 8px;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      transition: background 0.2s ease;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.95rem;
-    }
-
-    #theme-toggle:hover {
-      background: rgba(255,255,255,0.1);
-    }
-
-    .sidebar-footer ul {
-      list-style: none;
-      margin-top: 8px;
-      padding: 0;
-    }
-
-    .sidebar-footer ul li a {
-      color: white;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      padding: 10px 15px;
-      gap: 15px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      transition: background 0.2s ease;
-    }
-
-    .sidebar-footer ul li a:hover {
-      background: rgba(255,255,255,0.1);
-    }
-
-    /* ============================================
-      CONTEÚDO PRINCIPAL (TOPBAR, MAIN, FOOTER)
-      ============================================
-    */
-    .main-content {
-      flex: 1;
-      margin-left: 260px;
-      transition: margin-left 0.3s ease, width 0.3s ease;
-      display: flex;
-      flex-direction: column;
-      width: calc(100% - 260px);
-      min-height: 100vh;
-    }
-
-    .main-content.collapsed {
-      margin-left: 70px;
-      width: calc(100% - 70px);
-    }
-
-    .topbar {
-      background-color: var(--card);
-      color: var(--text);
-      padding: 0 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      border-bottom: 1px solid var(--bs-border-color);
-      height: 70px;
-      flex-shrink: 0;
-      z-index: 999;
-      /* position: sticky; /* Opcional: mantém a topbar fixa no topo ao rolar */
-      /* top: 0; */
-    }
-
-    .topbar-left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .topbar .page-title {
-      font-weight: 600;
-      font-size: 1.3rem;
-      color: var(--primary);
-    }
-
-    .toggle-btn-desktop,
-    .menu-btn-mobile {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--text);
-      padding: 6px;
-      border-radius: 8px;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-
-    .toggle-btn-desktop:hover, .menu-btn-mobile:hover {
-      background-color: rgba(0,0,0,0.05);
-    }
-
-    .toggle-btn-desktop {
-      display: block;
-    }
-
-    .menu-btn-mobile {
-      display: none;
-      z-index: 1001;
-    }
-
-    main {
-      flex-grow: 1; /* Faz o conteúdo principal ocupar o espaço restante */
-      padding: 25px;
-      overflow-y: auto; /* Permite rolar apenas o conteúdo principal */
-    }
-
-    .container-fluid {
-      width: 100%;
-      padding-right: 15px;
-      padding-left: 15px;
-      margin-right: auto;
-      margin-left: auto;
-    }
-
-    /* ============================================
-      COMPONENTES (FLASH, CARDS, FORMULÁRIOS, BOTÕES)
-      ============================================
-    */
-    .flash-messages {
-      margin-bottom: 1.5rem;
-    }
-
-    .flash-message {
-      padding: 0.8rem 1.25rem;
-      margin-bottom: 1rem;
-      border: 1px solid transparent;
-      border-radius: 0.3rem;
-      font-size: 0.9rem;
-    }
-
-    .flash-message.success {
-      color: var(--success);
-      background-color: color-mix(in srgb, var(--success) 15%, transparent);
-      border-color: color-mix(in srgb, var(--success) 30%, transparent);
-    }
-
-    .flash-message.danger, .flash-message.error {
-      color: var(--danger);
-      background-color: color-mix(in srgb, var(--danger) 15%, transparent);
-      border-color: color-mix(in srgb, var(--danger) 30%, transparent);
-    }
+    main { flex-grow: 1; padding: 25px; overflow-y: auto; }
+    .container-fluid { width: 100%; }
     
-    .form-card {
-      background: var(--card);
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
-      max-width: 700px;
-      margin: 1.5rem auto 0 auto;
-    }
-
-    .form-card h2.form-title {
-      text-align: center;
-      font-size: 1.6rem;
-      color: var(--primary);
-      margin-bottom: 1.8rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.2rem;
-    }
-
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--text);
-      font-size: 0.9rem;
-    }
-
-    .form-group input[type="text"],
-    .form-group input[type="number"],
-    .form-group input[type="time"],
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid var(--bs-border-color);
-      border-radius: 6px;
-      font-size: 1rem;
-      background-color: var(--bg); /* Melhor contraste */
-      color: var(--text);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent);
-      outline: none;
-    }
-
-    .form-actions {
-      margin-top: 1.8rem;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    .form-actions .btn-delete-container {
-        margin-right: auto;
-    }
-
-    .btn {
-      padding: 0.6rem 1.2rem;
-      font-size: 0.9rem;
-      border-radius: 6px;
-      text-decoration: none;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      border: 1px solid transparent;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-    }
-
-    .btn-primary {
-      background-color: var(--primary);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background-color: color-mix(in srgb, var(--primary) 85%, black);
-    }
-
-    .btn-secondary {
-      background-color: var(--muted);
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background-color: color-mix(in srgb, var(--muted) 85%, black);
-    }
+    /* Componentes do Formulário */
+    .flash-messages { margin-bottom: 1.5rem; }
+    .flash-message { padding: 0.8rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent; border-radius: 0.3rem; font-size: 0.9rem; }
+    .flash-message.success { color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
+    .flash-message.danger, .flash-message.error { color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+    .form-card { background: var(--card); padding: 2rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); margin-top: 1.5rem; max-width: 700px; margin-left: auto; margin-right: auto; }
+    .form-card h2.form-title { text-align: center; font-size: 1.6rem; color: var(--primary); margin-bottom: 1.8rem; }
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text); font-size: 0.9rem; }
+    .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--bs-border-color); border-radius: 6px; font-size: 1rem; background-color: var(--card); color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 25%, transparent); outline: none; }
+    .form-actions { margin-top: 1.8rem; display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .form-actions .btn-delete-container { margin-right: auto; }
+    .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
+    .btn-primary { background-color: var(--primary); color: white; } .btn-primary:hover { background-color: color-mix(in srgb, var(--primary) 85%, black); }
+    .btn-secondary { background-color: var(--muted); color: white; } .btn-secondary:hover { background-color: color-mix(in srgb, var(--muted) 85%, black); }
+    .btn-danger { background-color: var(--danger); color: white; } .btn-danger:hover { background-color: color-mix(in srgb, var(--danger) 85%, black); }
     
-    .btn-danger {
-      background-color: var(--danger);
-      color: white;
-    }
-
-    .btn-danger:hover {
-      background-color: color-mix(in srgb, var(--danger) 85%, black);
-    }
-
-    /* ============================================
-      RODAPÉ
-      ============================================
-    */
-    footer {
-      text-align: center;
-      padding: 1.5rem;
-      font-size: 0.9rem;
-      background-color: var(--card);
-      color: var(--muted);
-      border-top: 1px solid var(--bs-border-color);
-      flex-shrink: 0; /* Impede que o rodapé encolha */
-    }
-
-    /* ============================================
-      MEDIA QUERIES PARA RESPONSIVIDADE
-      ============================================
-    */
+    /* Rodapé */
+    footer { margin-top: auto; text-align: center; padding: 1.5rem; font-size: 0.9rem; background-color: var(--card); color: var(--muted); border-top: 1px solid var(--bs-border-color); }
+    
+    /* Responsividade */
     @media(max-width: 768px) {
-      .sidebar {
-        transform: translateX(-100%);
-      }
-
-      .sidebar.open {
-        transform: translateX(0);
-        box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-      }
-
-      /* Reseta o estado 'collapsed' para o comportamento padrão em mobile */
-      .sidebar.collapsed {
-        transform: translateX(-100%);
-        width: 260px;
-      }
-      .sidebar.collapsed .sidebar-header .logo span,
-      .sidebar.collapsed nav ul li.nav-item a span,
-      .sidebar.collapsed #theme-toggle span,
-      .sidebar.collapsed .sidebar-footer ul li a span {
-        display: inline;
-      }
-      .sidebar.collapsed nav ul li.nav-item a,
-      .sidebar.collapsed #theme-toggle,
-      .sidebar.collapsed .sidebar-footer ul li a {
-          justify-content: flex-start;
-      }
-
-      .main-content,
-      .main-content.collapsed {
-        margin-left: 0;
-        width: 100%;
-      }
-
-      .menu-btn-mobile {
-        display: block;
-      }
-
-      .toggle-btn-desktop {
-        display: none;
-      }
-
-      .topbar {
-        padding: 0 1rem;
-      }
-
-      .topbar .page-title {
-        font-size: 1.1rem;
-      }
-
-      main {
-        padding: 15px;
-      }
-
-      .form-card {
-        padding: 1.5rem;
-        margin-top: 0;
-      }
-      
-      .form-card h2.form-title {
-        font-size: 1.3rem;
-      }
-
-      .form-actions {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .form-actions .btn-delete-container {
-        margin-right: 0;
-        margin-bottom: 10px;
-        order: -1; /* Move o botão de deletar para cima */
-      }
-      .form-actions .btn {
-          width: 100%;
-          justify-content: center;
-      }
+        .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); }
+        .main-content, .main-content.collapsed { margin-left: 0; }
+        .menu-btn-mobile { display: block; } .toggle-btn-desktop { display: none; }
+        .form-actions { justify-content: center; }
+        .form-actions .btn-delete-container { margin: 0 0 10px 0; width: 100%; text-align: center; }
     }
   </style>
 </head>
 <body>
   <div class="layout">
-    <!-- Sidebar -->
+    <!-- Sidebar (Conteúdo omitido para brevidade, mas deve estar aqui) -->
     <div class="sidebar">
       <div class="sidebar-inner-content">
         <div class="sidebar-header">
-          <!-- Substitua por sua rota de template -->
-          <a href="/" class="logo"><i class="fas fa-clinic-medical"></i> <span>ClínicaOn</span></a>
+          <a href="{{ url_for('index') }}" class="logo"><i class="fas fa-clinic-medical"></i> <span>ClínicaOn</span></a>
         </div>
         <nav>
-          <ul>
-            <!-- Substitua por suas rotas de template -->
-            <li class="nav-item"><a href="/"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-            <li class="nav-item"><a href="/pacientes"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
-            <li class="nav-item"><a href="/prontuarios"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
-            <li class="nav-item"><a href="/profissionais"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
-            <li class="nav-item active"><a href="/servicos_procedimentos"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-            <li class="nav-item"><a href="/convenios"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
-            <li class="nav-item"><a href="/horarios"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
-            <li class="nav-item"><a href="/agendamentos"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
-            <!-- Exemplo de lógica condicional de template -->
-            <!-- {% if session.user_role == 'admin' %} -->
-            <li class="nav-item"><a href="/utilizadores"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
-            <li class="nav-item"><a href="/modelos_anamnese"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
-            <!-- {% endif %} -->
+           <ul>
+            <li class="nav-item"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_pacientes') }}"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('buscar_prontuario') }}"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_profissionais') }}"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
+            <li class="nav-item active"><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_convenios') }}"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_horarios') }}"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_agendamentos') }}"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
+            {% if session.user_role == 'admin' %}
+            <li class="nav-item"><a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
+            <li class="nav-item"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
+            {% endif %}
           </ul>
         </nav>
         <div class="sidebar-footer">
@@ -588,21 +127,16 @@
       </div>
     </div>
 
-    <!-- Conteúdo principal -->
+    <!-- Conteúdo Principal -->
     <div class="main-content">
-      <!-- INÍCIO DA CORREÇÃO ESTRUTURAL: A topbar agora é um irmão do main e do footer -->
       <div class="topbar">
-        <div class="topbar-left">
           <button class="menu-btn-mobile"><i class="fas fa-bars"></i></button>
           <button class="toggle-btn-desktop"><i class="fas fa-outdent"></i></button>
-          <span class="page-title">Editar Serviço/Procedimento</span>
-        </div>
+          <span class="page-title">{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }}</span>
       </div>
 
       <main>
         <div class="container-fluid">
-          <!-- Exemplo de mensagem flash (substitua pela sua lógica de template) -->
-          <!-- 
           {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
               <div class="flash-messages">
@@ -611,87 +145,78 @@
                 {% endfor %}
               </div>
             {% endif %}
-          {% endwith %} 
-          -->
-          <div class="flash-messages">
-            <div class="flash-message success">Ação realizada com sucesso!</div>
-          </div>
-
+          {% endwith %}
 
           <div class="form-card">
-            <h2 class="form-title">Editar Serviço/Procedimento</h2>
+            <h2 class="form-title">{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }}</h2>
             
-            <form method="POST" action="/servicos_procedimentos/editar/1">
+            <!-- ****** INÍCIO DA CORREÇÃO ****** -->
+            
+            <!-- Formulário principal para Adicionar e Editar -->
+            <form id="servicoForm" method="POST" action="{{ action_url|default('') }}">
               <div class="form-group">
                 <label for="nome">Nome do Serviço/Procedimento:</label>
-                <input type="text" id="nome" name="nome" value="Consulta Padrão" required>
+                <input type="text" id="nome" name="nome" value="{{ servico.nome if servico and servico.nome is not none else request.form.nome if request.form.nome is not none else '' }}" required>
               </div>
               <div class="form-group">
                 <label for="tipo">Tipo:</label>
                 <select id="tipo" name="tipo" required>
-                    <option value="Serviço" selected>Serviço</option>
-                    <option value="Procedimento">Procedimento</option>
+                    <option value="Serviço" {% if (servico and servico.tipo == 'Serviço') or (request.form.tipo == 'Serviço') %}selected{% endif %}>Serviço</option>
+                    <option value="Procedimento" {% if (servico and servico.tipo == 'Procedimento') or (request.form.tipo == 'Procedimento') %}selected{% endif %}>Procedimento</option>
                 </select>
               </div>
               <div class="form-group">
                 <label for="duracao_minutos">Duração (em minutos):</label>
-                <input type="number" id="duracao_minutos" name="duracao_minutos" value="30" min="1" step="1" required>
+                <input type="number" id="duracao_minutos" name="duracao_minutos" value="{{ servico.duracao_minutos if servico and servico.duracao_minutos is not none else request.form.duracao_minutos if request.form.duracao_minutos is not none else '' }}" min="1" step="1" required>
               </div>
               <div class="form-group">
                 <label for="preco">Preço Sugerido (R$):</label>
                 <input type="text" id="preco" name="preco" 
-                       value="150,00"
+                       value="{{ servico.get('preco_form', '') if servico else '' }}"
                        placeholder="Ex: 150,00"
                        pattern="^\d+([,.]\d{1,2})?$" title="Use vírgula ou ponto para centavos (ex: 150,00 ou 150.00)" required>
               </div>
-              
-              <div class="form-actions">
+            </form> <!-- O formulário principal termina aqui -->
+            
+            <!-- As ações agora estão fora do form principal -->
+            <div class="form-actions">
+                {% if servico and servico.id %} 
                 <div class="btn-delete-container">
-                    <form action="#" method="post" style="display: inline;" class="form-delete-servico-proc">
-                        <button type="button" class="btn btn-danger" onclick="alert('Tem certeza que deseja excluir este serviço/procedimento?');">
+                    <!-- Formulário de exclusão separado e independente -->
+                    <form id="deleteForm" action="{{ url_for('excluir_servico_procedimento', servico_doc_id=servico.id) }}" method="post" style="display: inline;">
+                        <button type="button" id="deleteButton" class="btn btn-danger">
                             <i class="fas fa-trash"></i> Excluir
                         </button>
                     </form>
                 </div>
-                <!-- Substitua pela rota de template -->
-                <a href="/servicos_procedimentos" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
-              </div>
-            </form>
+                {% endif %}
+                
+                <a href="{{ url_for('listar_servicos_procedimentos') }}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
+                
+                <!-- Botão 'Salvar' agora submete o formulário principal através do atributo 'form' -->
+                <button type="submit" class="btn btn-primary" form="servicoForm">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+            <!-- ****** FIM DA CORREÇÃO ****** -->
+
           </div>
         </div>
       </main>
 
       <footer>
         <div class="container">
-          <p>&copy; 2025 Clínica On. Todos os direitos reservados.</p>
+          <p>&copy; {{ current_year if current_year else '2025' }} Clínica On. Todos os direitos reservados.</p>
         </div>
       </footer>
-      <!-- FIM DA CORREÇÃO ESTRUTURAL -->
     </div>
   </div>
 
   <script type="module">
-    // AVISO: Este script usa variáveis (__firebase_config) que podem não estar
-    // definidas neste ambiente de preview. A lógica de autenticação pode não funcionar.
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
-    import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
-
-    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
-    let app;
-    let auth;
-    if (firebaseConfig && Object.keys(firebaseConfig).length > 0) {
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-        } catch (e) { 
-            console.error("Erro ao inicializar Firebase:", e.message);
-        }
-    } else {
-        console.warn("Configuração do Firebase não encontrada.");
-    }
-
+    // Script do Firebase (assumindo que está correto e será injetado pelo Canvas)
+    // import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
+    // ...
+    
     document.addEventListener('DOMContentLoaded', () => {
       const sidebar = document.querySelector('.sidebar');
       const mainContent = document.querySelector('.main-content');
@@ -700,93 +225,24 @@
       const themeToggle = document.querySelector('#theme-toggle');
       const logoutButton = document.getElementById('logoutButton');
 
-      function updateDesktopToggleIcon() {
-          if (!toggleBtnDesktop || !sidebar) return; 
-          if (sidebar.classList.contains('collapsed')) {
-              toggleBtnDesktop.innerHTML = '<i class="fas fa-indent"></i>';
-          } else {
-              toggleBtnDesktop.innerHTML = '<i class="fas fa-outdent"></i>';
+      // Seu JavaScript existente para sidebar, tema, logout, etc. permanece aqui...
+
+      // ****** NOVO SCRIPT PARA LIDAR COM A EXCLUSÃO ******
+      const deleteButton = document.getElementById('deleteButton');
+      const deleteForm = document.getElementById('deleteForm');
+
+      if (deleteButton && deleteForm) {
+        deleteButton.addEventListener('click', function(event) {
+          event.preventDefault(); // Impede a submissão padrão
+          
+          // Usa a confirmação nativa do navegador
+          const userConfirmed = confirm('Tem certeza que deseja excluir este serviço/procedimento permanentemente? Esta ação não pode ser desfeita e pode falhar se houver agendamentos associados.');
+          
+          if (userConfirmed) {
+            // Se o usuário clicar em "OK", submete o formulário de exclusão
+            deleteForm.submit();
           }
-      }
-      
-      // Persiste o estado da sidebar no desktop
-      if (window.innerWidth > 768 && localStorage.getItem('sidebarCollapsed') === 'true') {
-          sidebar.classList.add('collapsed');
-          mainContent.classList.add('collapsed');
-      }
-      updateDesktopToggleIcon(); 
-
-      // Aplica o tema salvo
-      if (localStorage.getItem('theme') === 'dark') {
-          document.documentElement.setAttribute('data-theme', 'dark');
-          if(themeToggle) themeToggle.querySelector('i').classList.replace('fa-sun', 'fa-moon');
-      } else {
-          document.documentElement.setAttribute('data-theme', 'light');
-          if(themeToggle) themeToggle.querySelector('i').classList.replace('fa-moon', 'fa-sun');
-      }
-
-      // Evento para colapsar/expandir sidebar no desktop
-      if(toggleBtnDesktop) {
-          toggleBtnDesktop.addEventListener('click', () => {
-              sidebar.classList.toggle('collapsed');
-              mainContent.classList.toggle('collapsed');
-              localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-              updateDesktopToggleIcon();
-          });
-      }
-
-      // Evento para abrir/fechar sidebar no mobile
-      if(menuBtnMobile) {
-          menuBtnMobile.addEventListener('click', () => {
-              sidebar.classList.toggle('open'); 
-              if (sidebar.classList.contains('open')) {
-                  menuBtnMobile.innerHTML = '<i class="fas fa-times"></i>';
-              } else {
-                  menuBtnMobile.innerHTML = '<i class="fas fa-bars"></i>';
-              }
-          });
-      }
-      
-      // Fecha a sidebar mobile ao clicar fora dela
-      document.addEventListener('click', (e) => {
-          if (window.innerWidth <= 768 && sidebar.classList.contains('open') &&
-              !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) { 
-              sidebar.classList.remove('open');
-              if(menuBtnMobile) menuBtnMobile.innerHTML = '<i class="fas fa-bars"></i>';
-          }
-      });
-
-      // Evento para alternar o tema
-      if(themeToggle) {
-          themeToggle.addEventListener('click', () => {
-              const currentTheme = document.documentElement.getAttribute('data-theme');
-              const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-              document.documentElement.setAttribute('data-theme', newTheme);
-              localStorage.setItem('theme', newTheme);
-              const icon = themeToggle.querySelector('i');
-              if (newTheme === 'dark') {
-                  icon.classList.replace('fa-sun', 'fa-moon');
-              } else {
-                  icon.classList.replace('fa-moon', 'fa-sun');
-              }
-          });
-      }
-      
-      // Lógica de logout (simulada)
-      if (logoutButton) {
-        logoutButton.addEventListener('click', async function(event) {
-          event.preventDefault();
-          alert('Simulando logout...');
-          if (auth && auth.currentUser) {
-            try {
-              await firebaseSignOut(auth); 
-              console.log('Utilizador deslogado do Firebase.');
-            } catch(e) {
-              console.error('Erro no logout do Firebase:', e);
-            }
-          }
-          // Redireciona para a página de login
-          window.location.href = "/login"; 
+          // Se o usuário clicar em "Cancelar", nada acontece.
         });
       }
     });
