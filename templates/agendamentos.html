@@ -85,6 +85,36 @@
         .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
         .toggle-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; transition: background 0.2s ease, color 0.2s ease; }
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+        
+        /* New Filter Button in Topbar */
+        .topbar-right { display: flex; align-items: center; gap: 1rem; }
+        .btn-filter {
+            background-color: var(--card);
+            color: var(--text);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        .btn-filter:hover {
+            background-color: var(--bg);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+        /* Style for active filter button */
+        .btn-filter.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-filter.active:hover {
+            background-color: var(--primary-dark);
+            color: white;
+        }
+
         main { flex-grow: 1; padding: 1.5rem; overflow: hidden; display: flex; gap: 1.5rem; }
 
         /* Calendar View */
@@ -106,7 +136,6 @@
         .calendar-day.today { background-color: color-mix(in srgb, var(--primary) 10%, transparent); border-color: var(--primary); }
         .calendar-day.selected { background-color: var(--primary); color: white; border-color: var(--primary-dark); }
         .calendar-day.selected .day-number { color: white; }
-        .day-number { font-weight: 600; }
         .day-events { font-size: 0.8rem; margin-top: 0.5rem; overflow: hidden; }
         .day-event { background-color: var(--primary-dark); color: white; border-radius: 4px; padding: 2px 5px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -165,6 +194,22 @@
         @media (max-width: 992px) { main { flex-direction: column; overflow: auto; } .agenda-container { min-width: 100%; max-width: 100%; } }
         @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main-content, .main-content.collapsed { margin-left: 0; } main { padding: 1rem; } .topbar { padding: 0 1rem; } }
 
+        /* Filter Bar Styles (for the modal, hidden initially) */
+        .filter-bar-modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem; /* Equivalent to form-group margin-bottom */
+        }
+        .filter-bar-modal-body .form-row {
+            display: grid;
+            grid-template-columns: 1fr; /* Stack on small screens */
+            gap: 1.25rem;
+        }
+        @media (min-width: 500px) { /* Adjust breakpoint as needed */
+            .filter-bar-modal-body .form-row {
+                grid-template-columns: 1fr 1fr; /* Two columns on larger screens */
+            }
+        }
     </style>
 </head>
 <body>
@@ -208,6 +253,11 @@
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
                     <h1 class="page-title">Agendamentos</h1>
                 </div>
+                <div class="topbar-right">
+                    <button class="btn btn-filter" id="openFilterModalBtn">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </div>
             </header>
 
             <main>
@@ -237,14 +287,63 @@
                         <h3 id="agenda-date">Selecione um dia</h3>
                     </div>
                     <div class="agenda-timeline" id="agenda-timeline">
-                        <!-- Time slots will be generated here -->
-                    </div>
+                        </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Modal de Detalhes do Agendamento -->
+    <div class="modal-overlay" id="modalFiltros">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-filter"></i> Filtrar Agendamentos</h3>
+                <button type="button" class="modal-close-btn" data-close>&times;</button>
+            </div>
+            <form method="GET" action="{{ url_for('listar_agendamentos') }}" id="formFiltros">
+                <div class="modal-body filter-bar-modal-body">
+                    <div class="form-group">
+                        <label for="filter_paciente_nome">Nome do Paciente</label>
+                        <input type="text" id="filter_paciente_nome" name="paciente_nome" value="{{ filtros_atuais.paciente_nome or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="filter_profissional_id">Profissional</label>
+                        <select id="filter_profissional_id" name="profissional_id">
+                            <option value="">Todos</option>
+                            {% for profissional in profissionais_para_filtro %}
+                            <option value="{{ profissional.id }}" {% if filtros_atuais.profissional_id == profissional.id %}selected{% endif %}>{{ profissional.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter_status">Status</label>
+                        <select id="filter_status" name="status">
+                            <option value="">Todos</option>
+                            <option value="confirmado" {% if filtros_atuais.status == 'confirmado' %}selected{% endif %}>Confirmado</option>
+                            <option value="concluido" {% if filtros_atuais.status == 'concluido' %}selected{% endif %}>Concluído</option>
+                            <option value="pendente" {% if filtros_atuais.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                            <option value="cancelado" {% if filtros_atuais.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="filter_data_inicio">Data Início</label>
+                            <input type="date" id="filter_data_inicio" name="data_inicio" value="{{ filtros_atuais.data_inicio or '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="filter_data_fim">Data Fim</label>
+                            <input type="date" id="filter_data_fim" name="data_fim" value="{{ filtros_atuais.data_fim or '' }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="clearFiltersBtn">Limpar Filtros</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Aplicar Filtros</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <div class="modal-overlay" id="modalDetalhesAgendamento">
         <div class="modal-content">
             <div class="modal-header">
@@ -253,8 +352,7 @@
             </div>
             <div class="modal-body">
                 <div class="info-card" id="infoCardAgendamento">
-                    <!-- Detalhes serão injetados aqui via JS -->
-                </div>
+                    </div>
             </div>
             <div class="modal-footer" style="justify-content: space-between;">
                 <button type="button" class="btn btn-danger-outline" id="btnApagarAgendamento"><i class="fas fa-trash"></i> Apagar Registro</button>
@@ -264,7 +362,6 @@
     </div>
 
 
-    <!-- Modal de Registro/Edição Manual -->
     <div class="modal-overlay" id="modalRegistroManual">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('registrar_atendimento_manual') }}" id="formRegistroManual">
@@ -340,7 +437,6 @@
         </div>
     </div>
 
-    <!-- Formulário para Apagar (escondido) -->
     <form id="formApagarAgendamento" method="POST" action="{{ url_for('apagar_agendamento') }}" style="display: none;">
         <input type="hidden" name="agendamento_id" id="agendamento_id_apagar">
     </form>
@@ -403,6 +499,12 @@
                 const btnEditar = document.getElementById('btnEditarAgendamento');
                 const btnApagar = document.getElementById('btnApagarAgendamento');
                 const formApagar = document.getElementById('formApagarAgendamento');
+
+                // Novos elementos para os filtros
+                const openFilterModalBtn = document.getElementById('openFilterModalBtn');
+                const modalFiltros = document.getElementById('modalFiltros');
+                const formFiltros = document.getElementById('formFiltros');
+                const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
 
                 let currentDate = new Date();
@@ -510,7 +612,8 @@
                     const dateString = date.toISOString().split('T')[0];
                     const dailyAppointments = appointments[dateString] || [];
 
-                    for(let hour = 6; hour < 18; hour++) {
+                    // Loop para gerar horários das 00:00 às 23:30
+                    for(let hour = 0; hour < 24; hour++) { 
                         for(let minute = 0; minute < 60; minute += 30) {
                             const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                             const bookedAppointment = dailyAppointments.find(app => app.hora_agendamento === timeStr);
@@ -670,6 +773,63 @@
                 populateSelectors();
                 renderCalendar(currentDate);
                 renderAgenda(selectedDate);
+
+                // --- Lógica de Filtros (Nova) ---
+                const currentFilters = {{ filtros_atuais | tojson }}; // Pega os filtros do Flask
+                const filterBtn = document.getElementById('openFilterModalBtn');
+                const filterModal = document.getElementById('modalFiltros');
+                const filterForm = document.getElementById('formFiltros');
+                const clearFiltersButton = document.getElementById('clearFiltersBtn');
+
+                // Verifica se há filtros aplicados para mudar a cor do botão
+                function checkActiveFilters() {
+                    let filtersApplied = false;
+                    for (const key in currentFilters) {
+                        // Ignora os filtros de data padrão do mês atual
+                        const isDefaultDateFilter = (key === 'data_inicio' || key === 'data_fim') && 
+                                                    (new Date(currentFilters[key]).getMonth() === new Date().getMonth() &&
+                                                     new Date(currentFilters[key]).getFullYear() === new Date().getFullYear() &&
+                                                     new Date(currentFilters[key]).getDate() === (key === 'data_inicio' ? 1 : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()));
+
+                        if (currentFilters[key] && currentFilters[key] !== '' && !isDefaultDateFilter) {
+                            filtersApplied = true;
+                            break;
+                        }
+                    }
+                    if (filtersApplied) {
+                        filterBtn.classList.add('active');
+                    } else {
+                        filterBtn.classList.remove('active');
+                    }
+                }
+
+                // Abre a modal de filtros
+                openFilterModalBtn.addEventListener('click', () => {
+                    filterModal.classList.add('active');
+                });
+
+                // Limpa os filtros
+                clearFiltersButton.addEventListener('click', () => {
+                    // Limpa todos os campos do formulário de filtros
+                    filterForm.querySelectorAll('input, select').forEach(element => {
+                        if (element.type === 'select-one' || element.type === 'text' || element.type === 'date') {
+                            element.value = '';
+                        }
+                    });
+                    // Define o valor padrão das datas para o mês atual novamente antes de submeter
+                    const today = new Date();
+                    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+                    document.getElementById('filter_data_inicio').value = firstDayOfMonth.toISOString().split('T')[0];
+                    document.getElementById('filter_data_fim').value = lastDayOfMonth.toISOString().split('T')[0];
+
+                    filterForm.submit(); // Submete o formulário para recarregar a página sem filtros
+                });
+
+                // Chama a função para verificar filtros ao carregar a página
+                checkActiveFilters();
+
             }
 
             // --- Initialization ---
