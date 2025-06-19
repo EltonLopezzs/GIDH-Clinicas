@@ -30,7 +30,7 @@
         .sidebar-header { padding: 20px 10px 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center; }
         .sidebar-header .logo { font-size: 1.5rem; font-weight: 700; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
         .sidebar.collapsed { width: 70px; }
-        .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li.nav-item a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
+        .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
         .sidebar.collapsed nav ul li a, .sidebar.collapsed #theme-toggle, .sidebar.collapsed .sidebar-footer ul li a { justify-content: center; padding: 10px; }
         .sidebar nav { flex-grow: 1; margin-top: 10px; padding: 0 10px; }
         .sidebar nav ul { list-style: none; padding: 0; }
@@ -161,9 +161,16 @@
                 </select>
               </div>
 
-              <div class="form-group" id="crm_field_container" style="display: {{ 'block' if user and user.role == 'medico' else 'none' }};">
-                <label for="crm_ou_registro">CRM/Registro Profissional (se for médico):</label>
-                <input type="text" id="crm_ou_registro" name="crm_ou_registro" value="{{ user.crm_ou_registro if user else '' }}">
+              <div class="form-group" id="professional_field_container" style="display: {{ 'block' if user and user.role == 'medico' else 'none' }};">
+                <label for="profissional_associado_id">Associar ao Profissional:</label>
+                <select id="profissional_associado_id" name="profissional_associado_id">
+                    <option value="">Nenhum</option>
+                    {% for prof in profissionais %}
+                        <option value="{{ prof.id }}" {% if user and user.profissional_id == prof.id %}selected{% endif %}>
+                            {{ prof.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
               </div>
               
               <div class="form-actions">
@@ -196,7 +203,7 @@
       const logoutButton = document.getElementById('logoutButton');
       const userForm = document.getElementById('userForm');
       const roleSelect = document.getElementById('role');
-      const crmContainer = document.getElementById('crm_field_container');
+      const professionalContainer = document.getElementById('professional_field_container');
 
       function updateDesktopToggleIcon() {
           if (!toggleBtnDesktop || !sidebar) return; 
@@ -222,6 +229,12 @@
               const themeToggleText = themeToggle.querySelector('span');
               if(themeToggleText) themeToggleText.textContent = storedTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
           }
+      }
+
+      function toggleMedicoFields() {
+        if(roleSelect && professionalContainer){
+            professionalContainer.style.display = roleSelect.value === 'medico' ? 'block' : 'none';
+        }
       }
 
       if(toggleBtnDesktop) {
@@ -286,14 +299,8 @@
         });
       }
 
-      if(roleSelect && crmContainer){
-        roleSelect.addEventListener('change', function() {
-          if (this.value === 'medico') {
-            crmContainer.style.display = 'block';
-          } else {
-            crmContainer.style.display = 'none';
-          }
-        });
+      if(roleSelect){
+        roleSelect.addEventListener('change', toggleMedicoFields);
       }
 
       const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
@@ -330,6 +337,7 @@
       
       applyInitialSidebarState();
       applyInitialTheme();
+      toggleMedicoFields(); // Call on load to set initial state
     });
   </script>
 </body>

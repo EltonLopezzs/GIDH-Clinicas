@@ -510,8 +510,7 @@ def adicionar_usuario():
         password = request.form['password']
         role = request.form['role']
         nome_completo = request.form.get('nome_completo', '').strip()
-        # ID do profissional selecionado no formulário
-        profissional_associado_id = request.form.get('profissional_associado_id')
+        profissional_associado_id = request.form.get('profissional_associado_id') # Captura o ID do profissional
 
         if not all([email, password, role]):
             flash('E-mail, senha e função são obrigatórios.', 'danger')
@@ -532,7 +531,6 @@ def adicionar_usuario():
             # Se for médico e um profissional foi selecionado, associa
             if role == 'medico' and profissional_associado_id:
                 user_data_firestore['profissional_id'] = profissional_associado_id
-                # Opcional: Atualiza o documento do profissional com o UID do usuário
                 db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_associado_id).update({
                     'user_uid': user.uid
                 })
@@ -541,8 +539,6 @@ def adicionar_usuario():
             
             flash(f'Utilizador {email} ({role}) criado com sucesso!', 'success')
             return redirect(url_for('listar_usuarios'))
-        except firebase_auth_admin.EmailAlreadyExistsError:
-            flash('O e-mail fornecido já está em uso.', 'danger')
         except Exception as e:
             flash(f'Erro ao adicionar utilizador: {e}', 'danger')
 
@@ -556,7 +552,6 @@ def editar_usuario(user_uid):
     clinica_id = session['clinica_id']
     user_map_ref = db.collection('User').document(user_uid)
     
-    # Busca profissionais para associar ao usuário
     profissionais_disponiveis = []
     try:
         profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').order_by('nome').stream()
@@ -576,20 +571,16 @@ def editar_usuario(user_uid):
             firebase_auth_admin.update_user(user_uid, email=email, display_name=nome_completo)
             
             user_data_update = {
-                'email': email,
-                'role': role,
-                'nome_completo': nome_completo,
+                'email': email, 'role': role, 'nome_completo': nome_completo,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             }
             
             if role == 'medico' and profissional_associado_id:
                 user_data_update['profissional_id'] = profissional_associado_id
             else:
-                # Remove a associação se a função não for médico ou nenhum for selecionado
                 user_data_update['profissional_id'] = firestore.DELETE_FIELD
             
             user_map_ref.update(user_data_update)
-
             flash(f'Utilizador {email} atualizado com sucesso!', 'success')
             return redirect(url_for('listar_usuarios'))
         except Exception as e:
@@ -600,7 +591,7 @@ def editar_usuario(user_uid):
         if user_doc.exists:
             user_data = user_doc.to_dict()
             user_data['uid'] = user_doc.id
-            return render_template('usuario_form.html', user=user_data, page_title=f"Editar Utilizador", action_url=url_for('editar_usuario', user_uid=user_uid), roles=['admin', 'medico'], profissionais=profissionais_disponiveis)
+            return render_template('usuario_form.html', user=user_data, page_title="Editar Utilizador", action_url=url_for('editar_usuario', user_uid=user_uid), roles=['admin', 'medico'], profissionais=profissionais_disponiveis)
         else:
             flash('Utilizador não encontrado.', 'danger')
             return redirect(url_for('listar_usuarios'))
