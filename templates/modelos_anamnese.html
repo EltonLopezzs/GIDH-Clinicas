@@ -2,216 +2,326 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="theme-color" content="#29788d">
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/a6683c/ffffff?text=C">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Modelos de Anamnese - {{ session.clinica_nome_display or 'Clínica On' }}</title>
-    <link rel="icon" type="image/png" href="https://placehold.co/40x40/a6683c/ffffff?text=C">
+    
+    <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
         :root {
-            --bg: #f8f9fa; --card: #ffffff; --text: #1f2937; --muted: #6c757d;
-            --accent: #111827; --danger: #dc3545; --success: #198754; --warning: #ffc107;
-            --primary: #29788d; --secondary: #c68642; --dark-bg: #1a1a1a; --dark-text: #f8f9fa;
-            --dark-card: #2c2c2c; --info: #0dcaf0; --bs-border-color: #dee2e6;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #0f172a;
+            --primary: #0d9488; /* Teal-600 */
+            --primary-dark: #115e59;
+            --secondary: #f59e0b; /* Amber-500 */
+            --danger: #dc2626; /* Red-600 */
+            --success: #16a34a; /* Green-600 */
+            --warning: #f59e0b;
+            --border-color: #e2e8f0;
+            
+            --dark-bg: #0f172a;
+            --dark-card: #1e293b;
+            --dark-text: #f1f5f9;
+            --dark-muted: #94a3b8;
+            --dark-border-color: #334155;
+            
+            color-scheme: light;
         }
+
         [data-theme="dark"] {
-            --bg: var(--dark-bg); --text: var(--dark-text); --card: var(--dark-card);
-            --muted: #a0a0a0; --bs-border-color: #495057;
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
+            color-scheme: dark;
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; overflow-x: hidden; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; transition: background-color 0.3s ease, color 0.3s ease; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
         .layout { display: flex; min-height: 100vh; width: 100%; }
-        .sidebar { width: 260px; background: linear-gradient(180deg, var(--primary), var(--accent)); color: white; position: fixed; top: 0; left: 0; height: 100vh; padding: 0; transition: width 0.3s ease, transform 0.3s ease; z-index: 1000; display: flex; flex-direction: column; }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--primary), var(--accent));
+            color: white;
+            position: fixed;
+            top: 0; left: 0; height: 100vh;
+            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 1000; display: flex; flex-direction: column;
+        }
         .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px 10px 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center; }
-        .sidebar-header .logo { font-size: 1.5rem; font-weight: 700; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-        .sidebar.collapsed { width: 70px; }
-        .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li.nav-item a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
-        .sidebar.collapsed nav ul li a, .sidebar.collapsed #theme-toggle, .sidebar.collapsed .sidebar-footer ul li a { justify-content: center; padding: 10px; }
-        .sidebar nav { flex-grow: 1; margin-top: 10px; padding: 0 10px; }
+        .sidebar-header {
+            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
+        }
+        .sidebar-header .logo {
+            font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
+            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
+        }
+        .sidebar-header .logo i { font-size: 1.8rem; }
+        .sidebar.collapsed { width: 78px; }
+        .sidebar.collapsed .sidebar-header .logo span { display: none; }
+        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+        .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
         .sidebar nav ul { list-style: none; padding: 0; }
-        .sidebar nav ul li.nav-item { margin: 8px 0; }
-        .sidebar nav ul li a { color: white; text-decoration: none; display: flex; align-items: center; padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s ease; }
-        .sidebar nav ul li a i { width: 20px; text-align: center; font-size: 1.05rem; flex-shrink: 0; }
-        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); }
-        .sidebar nav ul li.active a { background: rgba(255, 255, 255, 0.2); font-weight: 600; }
-        .sidebar-footer { padding: 15px 10px 20px 10px; margin-top: auto; flex-shrink: 0; }
-        #theme-toggle { background: none; border: none; cursor: pointer; color: white; padding: 10px 15px; border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 15px; transition: background 0.2s ease; font-family: 'Inter', sans-serif; font-size: 0.95rem; }
-        #theme-toggle:hover { background: rgba(255,255,255,0.1); }
-        .sidebar-footer ul { list-style: none; margin-top: 8px; padding: 0; }
-        .sidebar-footer ul li a { color: white; text-decoration: none; display: flex; align-items: center; padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s ease; }
-        .sidebar-footer ul li a:hover { background: rgba(255,255,255,0.1); }
-        .main-content { flex: 1; margin-left: 260px; transition: margin-left 0.3s ease; display: flex; flex-direction: column; width: calc(100% - 260px); }
-        .main-content.collapsed { margin-left: 70px; width: calc(100% - 70px); }
-        .topbar { background-color: var(--card); color: var(--text); padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid var(--bs-border-color); height: 70px; flex-shrink: 0; }
-        .topbar-left { display: flex; align-items: center; gap: 0.5rem; }
-        .topbar .page-title { font-weight: 600; font-size: 1.1rem; color: var(--primary); }
-        .toggle-btn-desktop, .menu-btn-mobile { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text); padding: 6px; border-radius: 8px; transition: background 0.2s ease, color 0.2s ease; }
-        .toggle-btn-desktop:hover, .menu-btn-mobile:hover { background-color: rgba(0,0,0,0.05); }
+        .sidebar nav ul li { margin-bottom: 0.5rem; }
+        .sidebar nav ul li a {
+            color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
+            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
+            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
+        }
+        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+        .sidebar.collapsed nav ul li a span { display: none; }
+        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
+        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
+        .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
+        .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
+        .sidebar-footer button, .sidebar-footer a {
+            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
+            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
+            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
+            font-size: 0.95rem; text-decoration: none;
+        }
+        .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .sidebar.collapsed .sidebar-footer span { display: none; }
+        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+        
+        /* --- Main Content & Topbar --- */
+        .main-content {
+            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 260px);
+        }
+        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
+        .topbar {
+            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
+            position: sticky; top: 0; z-index: 900;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
+        .toggle-btn {
+            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
+            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+        
+        /* --- Buttons --- */
+        .btn {
+            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
+            font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
+        }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+        .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
+        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
+        [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .btn-warning { background-color: var(--warning); color: #854d0e; }
+        [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
+        .btn-warning:hover { background-color: #fcd34d; }
+
+        /* --- Table --- */
+        .table-container {
+            width: 100%; overflow-x: auto; background: var(--card);
+            border-radius: 12px; padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 600px; }
+        th, td {
+            padding: 0.9rem 1rem; font-size: 0.9rem; text-align: left; vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+        }
+        thead th {
+            font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.8rem;
+            background-color: var(--bg); border-bottom-width: 2px;
+        }
+        thead th:first-child { border-top-left-radius: 8px; }
+        thead th:last-child { border-top-right-radius: 8px; }
+        tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+        tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+        .table-actions { display: flex; gap: 0.5rem; }
+        .no-results td { text-align: center; padding: 2rem; color: var(--muted); }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
+            z-index: 2000; opacity: 0; transition: opacity 0.25s ease;
+        }
+        .modal-overlay.active { opacity: 1; display: flex; }
+        .modal-content {
+            background-color: var(--card); color: var(--text); border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 450px;
+            transform: translateY(-20px); transition: transform 0.25s ease;
+            text-align: center; padding: 2rem;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-icon { font-size: 3rem; color: var(--danger); margin-bottom: 1rem; }
+        .modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+        .modal-text { font-size: 1rem; color: var(--muted); margin-bottom: 1.5rem; }
+        .modal-actions { display: flex; justify-content: center; gap: 0.75rem; }
+
+        /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
-        main { flex-grow: 1; padding: 25px; overflow-y: auto; }
-        .container-fluid { width: 100%; padding-right: 15px; padding-left: 15px; margin-right: auto; margin-left: auto; }
-        .flash-messages { margin-bottom: 1.5rem; }
-        .flash-message { padding: 0.8rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent; border-radius: 0.3rem; font-size: 0.9rem; }
-        .flash-message.success { color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
-        .flash-message.danger, .flash-message.error { color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
-        .table-responsive { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; color: var(--text); }
-        @media (min-width: 992px) { .table-responsive { background: var(--card); padding: 1rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); } table { min-width: 600px; } }
-        th, td { padding: 0.9rem 1rem; font-size: 0.9rem; border-bottom: 1px solid var(--bs-border-color); text-align: left; vertical-align: middle; }
-        thead { background-color: var(--primary); color: white; }
-        thead th { font-weight: 600; border-bottom-width: 0; }
-        tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 5%, transparent); }
-        tr:last-child td { border-bottom: none; }
-        .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
-        .btn-primary { background-color: var(--primary); color: white; border-color: var(--primary); }
-        .btn-primary:hover { background-color: color-mix(in srgb, var(--primary) 85%, black); }
-        .btn-warning { background-color: var(--warning); color: var(--accent); border-color: var(--warning); }
-        .btn-warning:hover { background-color: color-mix(in srgb, var(--warning) 90%, black 5%); }
-        .btn-danger { background-color: var(--danger); color: white; border-color: var(--danger); }
-        .btn-danger:hover { background-color: color-mix(in srgb, var(--danger) 85%, black); }
-        .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
-        .btn-text-desktop { display: none; }
-        .table-actions { display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; justify-content: flex-start; }
-        .table-actions a, .table-actions form, .table-actions button { flex-shrink: 0; margin: 0; }
-        footer { margin-top: auto; text-align: center; padding: 1.5rem; font-size: 0.9rem; background-color: var(--card); color: var(--muted); border-top: 1px solid var(--bs-border-color); }
-        .mobile-cards-wrapper { display: none; }
-        @media (max-width: 991px) { .table-responsive { display: none; } .mobile-cards-wrapper { display: block; } }
-        @media (min-width: 769px) { .toggle-btn-desktop { display: block; } .menu-btn-mobile { display: none; } .topbar { padding: 0 1.5rem; } .topbar-left { gap: 1rem; } .topbar .page-title { font-size: 1.3rem; } .btn-text-desktop { display: inline; } }
+
+        @media(min-width: 769px) {
+            .toggle-btn-desktop { display: grid; }
+            .menu-btn-mobile { display: none; }
+            span.btn-text-desktop { display: inline; }
+        }
         @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); width: 260px; }
-            .sidebar.open { transform: translateX(0); }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
             .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
-            .sidebar.collapsed nav ul li a, .sidebar.collapsed #theme-toggle, .sidebar.collapsed .sidebar-footer ul li a { justify-content: flex-start; }
-            .sidebar.collapsed nav ul li a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: inline; }
+            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
+            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
             .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
-            .topbar .page-title { margin-left: 0; }
-            .table-actions { flex-direction: column; }
-            .table-actions .btn, .table-actions form { width: 100%; }
-
-            /* Alterações para a visualização de cards mobile */
-            .modelo-anamnese-card-mobile { display: none; background-color: var(--card); border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); margin-bottom: 1rem; position: relative; max-width: 400px; margin-left: auto; margin-right: auto; overflow: hidden; }
-            .modelo-anamnese-card-mobile.card-visible { display: block; }
-            .card-header-modelo { padding: 1rem; border-bottom: 1px solid var(--bs-border-color); }
-            .card-header-modelo h4 { font-weight: 600; font-size: 1.1rem; margin: 0; }
-            .card-actions-footer { padding: 1rem; background-color: color-mix(in srgb, var(--bs-border-color) 40%, transparent); display: flex; flex-direction: column; gap: 0.75rem; }
-            [data-theme="dark"] .card-actions-footer { background-color: color-mix(in srgb, var(--bs-border-color) 70%, transparent); }
-            .card-actions-footer .btn { width: 100%; justify-content: center; }
-            .card-nav-btn { display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background-color: var(--card); color: var(--text); border: 1px solid var(--bs-border-color); border-radius: 50%; width: 36px; height: 36px; font-size: 0.9rem; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-            .card-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-            
-            /* === CORREÇÃO CSS === */
-            .modelos-anamnese-container-mobile { position: relative; } /* Garante que os botões de navegação se posicionem corretamente */
-            
-            .modelos-anamnese-container-mobile.expanded-view .card-nav-btn { display: none; }
-            #prev-card-btn { left: -45px; }
-            #next-card-btn { right: -45px; }
-            .card-slider-controls { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; margin-bottom: 1rem; }
-            .modelos-anamnese-container-mobile.expanded-view .card-slider-controls { display: none; }
-            #card-counter { font-weight: 600; color: var(--muted); }
-            .btn-link { background: none; border: none; color: var(--primary); text-decoration: underline; font-weight: 600; padding: 0; }
-            .no-results-row { display: block; text-align: center; padding: 20px; background-color: var(--card); border-radius: 12px; }
+            main { padding: 1rem; }
+            .topbar { padding: 0 1rem; }
+            .table-container { display: none; }
+            .mobile-cards-wrapper { display: block; }
         }
+
+        /* --- Mobile Cards --- */
+        .mobile-cards-wrapper { display: none; }
+        .modelo-card-mobile {
+            background-color: var(--card); border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 1rem; overflow: hidden;
+        }
+        .card-header-modelo {
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);
+        }
+        .card-header-modelo h4 { font-weight: 600; font-size: 1.1rem; margin: 0; }
+        .card-actions-footer {
+            padding: 1rem 1.5rem; background-color: var(--bg); display: flex;
+            gap: 0.75rem;
+        }
+        .card-actions-footer .btn, .card-actions-footer form { flex-grow: 1; }
+        .card-actions-footer .btn i { margin-right: 0.5rem; }
     </style>
 </head>
 <body>
-  <div class="layout">
-    <div class="sidebar">
-      <div class="sidebar-inner-content">
-        <div class="sidebar-header">
-          <a href="{{ url_for('index') }}" class="logo"><i class="fas fa-clinic-medical"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span></a>
-        </div>
-        <nav>
-          <ul>
-            <li class="nav-item"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_pacientes') }}"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('buscar_prontuario') }}"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_profissionais') }}"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_convenios') }}"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_horarios') }}"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_agendamentos') }}"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
-            {% if session.user_role == 'admin' %}
-            <li class="nav-item"><a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
-            <li class="nav-item active"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
-            {% endif %}
-          </ul>
-        </nav>
-        <div class="sidebar-footer">
-          <button id="theme-toggle" aria-label="Alternar tema"><i class="fas fa-sun"></i> <span>Alternar Tema</span></button>
-          <ul>
-            <li><a href="#" id="logoutButton"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="main-content">
-      <div class="topbar">
-        <div class="topbar-left">
-            <button class="menu-btn-mobile"><i class="fas fa-bars"></i></button>
-            <button class="toggle-btn-desktop"><i class="fas fa-outdent"></i></button>
-            <span class="page-title">Modelos de Anamnese</span> 
-        </div>
-        <a href="{{ url_for('adicionar_modelo_anamnese') }}" class="btn btn-primary"> 
-            <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Modelo</span>
-        </a>
-      </div>
-
-      <main>
-        <div class="container-fluid">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              <div class="flash-messages">
-                {% for category, message in messages %}
-                  <div class="flash-message {{ category }}">{{ message }}</div>
-                {% endfor %}
-              </div>
-            {% endif %}
-          {% endwith %}
-
-          <div class="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th>Identificação do Modelo</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for modelo in modelos %}
-                <tr>
-                  <td>{{ modelo.identificacao }}</td>
-                  <td class="table-actions">
-                    <a href="{{ url_for('editar_modelo_anamnese', modelo_doc_id=modelo.id) }}" class="btn btn-sm btn-warning">
-                      <i class="fas fa-edit"></i> Editar
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-inner-content">
+                <div class="sidebar-header">
+                    <a href="{{ url_for('index') }}" class="logo">
+                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
                     </a>
-                    <form action="{{ url_for('excluir_modelo_anamnese', modelo_doc_id=modelo.id) }}" method="post" class="form-confirm-action">
-                      <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger">
-                          <i class="fas fa-trash"></i> Excluir
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-                {% else %}
-                <tr>
-                  <td colspan="2" style="text-align: center; padding: 20px;">Nenhum modelo de anamnese cadastrado.</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          
-            <div class="mobile-cards-wrapper">
-                <div class="modelos-anamnese-container-mobile">
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        {% if session.user_role == 'admin' %}
+                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li class="active"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="theme-toggle" aria-label="Alternar tema">
+                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
+                    </button>
+                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
+                    <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
+                    <h1 class="page-title">Modelos de Anamnese</h1>
+                </div>
+                <a href="{{ url_for('adicionar_modelo_anamnese') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 
+                    <span class="btn-text-desktop">Adicionar Modelo</span>
+                </a>
+            </header>
+
+            <main>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    <div class="flash-messages">
+                      {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Identificação do Modelo</th>
+                                <th style="width: 150px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for modelo in modelos %}
+                            <tr>
+                                <td>{{ modelo.identificacao }}</td>
+                                <td class="table-actions">
+                                    <a href="{{ url_for('editar_modelo_anamnese', modelo_doc_id=modelo.id) }}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="{{ url_for('excluir_modelo_anamnese', modelo_doc_id=modelo.id) }}" method="post" class="form-confirm-action">
+                                        <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr class="no-results">
+                                <td colspan="2">Nenhum modelo de anamnese cadastrado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                 <div class="mobile-cards-wrapper">
                     {% for modelo in modelos %}
-                    <div class="modelo-anamnese-card-mobile">
+                    <div class="modelo-card-mobile">
                         <div class="card-header-modelo">
                             <h4>{{ modelo.identificacao }}</h4>
                         </div>
@@ -226,320 +336,152 @@
                             </form>
                         </div>
                     </div>
+                    {% else %}
+                        <div class="table-container" style="text-align: center; padding: 2rem;">Nenhum modelo de anamnese cadastrado.</div>
                     {% endfor %}
-
-                    {% if modelos %}
-                      <button class="card-nav-btn" id="prev-card-btn"><i class="fas fa-chevron-left"></i></button>
-                      <button class="card-nav-btn" id="next-card-btn"><i class="fas fa-chevron-right"></i></button>
-                    {% endif %}
                 </div>
-                {% if modelos %}
-                    <div class="card-slider-controls">
-                        <span id="card-counter"></span>
-                        <button class="btn btn-link btn-sm" id="toggle-view-btn">Ver Todos</button>
-                    </div>
-                {% endif %}
-                {% if not modelos %}
-                <div class="no-results-row">
-                    Nenhum modelo de anamnese cadastrado.
-                </div>
-                {% endif %}
+            </main>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="customConfirmModal">
+        <div class="modal-content">
+            <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="modal-title">Confirmar Exclusão</h3>
+            <p class="modal-text">Tem certeza que deseja excluir este modelo? Esta ação não pode ser desfeita.</p>
+            <div class="modal-actions">
+                <button id="customConfirmCancel" class="btn btn-secondary">Cancelar</button>
+                <button id="customConfirmOk" class="btn btn-danger">Confirmar</button>
             </div>
-
         </div>
-      </main>
-
-      <footer> 
-        <div class="container"> 
-            <p>&copy; {{ current_year if current_year else '2025' }} {{ session.clinica_nome_display or 'Clínica On' }}. Todos os direitos reservados.</p>
-        </div>
-      </footer>
     </div>
-  </div>
-  
-  <div id="customConfirmModal" style="display:none; position:fixed; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); z-index:1001; align-items:center; justify-content:center;">
-    <div style="background-color:var(--card); color:var(--text); padding:30px; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.3); text-align:center; max-width:400px; width:90%;">
-      <p id="customConfirmMessage" style="margin-bottom:20px; font-size:1.1rem;"></p>
-      <button id="customConfirmOk" class="btn btn-danger" style="margin-right:10px;">Confirmar</button>
-      <button id="customConfirmCancel" class="btn btn-secondary">Cancelar</button>
-    </div>
-  </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
-    import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    <script type="module">
+        // Placeholder for Firebase
+        const FAKE_FIREBASE = {
+            initializeApp: () => ({}),
+            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
+        };
+        const { initializeApp } = FAKE_FIREBASE;
+        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        let auth = getAuth(initializeApp(firebaseConfig));
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const sidebar = document.querySelector('.sidebar');
-      const mainContent = document.querySelector('.main-content');
-      const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-      const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-      const themeToggle = document.querySelector('#theme-toggle');
-      const logoutButton = document.getElementById('logoutButton');
-      
-      function updateDesktopToggleIcon() {
-          if (!toggleBtnDesktop || !sidebar) return; 
-          toggleBtnDesktop.innerHTML = sidebar.classList.contains('collapsed') ? '<i class="fas fa-indent"></i>' : '<i class="fas fa-outdent"></i>';
-      }
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+            const themeToggle = document.querySelector('#theme-toggle');
+            const logoutButton = document.getElementById('logoutButton');
 
-      function applyInitialSidebarState() {
-          const isDesktop = window.innerWidth > 768;
-          if(menuBtnMobile) menuBtnMobile.style.display = isDesktop ? 'none' : 'block';
-          if(toggleBtnDesktop) toggleBtnDesktop.style.display = isDesktop ? 'block' : 'none';
-
-          if (isDesktop) {
-            if (localStorage.getItem('sidebarCollapsed') === 'true') {
-              sidebar.classList.add('collapsed');
-              mainContent.classList.add('collapsed');
-            } else {
-              sidebar.classList.remove('collapsed'); 
-              mainContent.classList.remove('collapsed');
+            // --- Sidebar Logic ---
+            function setupSidebar() {
+                if (!sidebar || !mainContent) return;
+                const updateDesktopToggleIcon = () => {
+                    if (!toggleBtnDesktop) return;
+                    const icon = toggleBtnDesktop.querySelector('i');
+                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
+                };
+                const applyInitialState = () => {
+                    if (window.innerWidth > 768) {
+                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                            sidebar.classList.add('collapsed');
+                            mainContent.classList.add('collapsed');
+                        }
+                    } else {
+                        sidebar.classList.remove('open', 'collapsed');
+                        mainContent.classList.remove('collapsed');
+                    }
+                    updateDesktopToggleIcon();
+                };
+                if (toggleBtnDesktop) {
+                    toggleBtnDesktop.addEventListener('click', () => {
+                        sidebar.classList.toggle('collapsed');
+                        mainContent.classList.toggle('collapsed');
+                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                        updateDesktopToggleIcon();
+                    });
+                }
+                if (menuBtnMobile) {
+                    menuBtnMobile.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        sidebar.classList.toggle('open');
+                    });
+                }
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+                applyInitialState();
+                window.addEventListener('resize', applyInitialState);
             }
-          } else { 
-            sidebar.classList.remove('open'); 
-            sidebar.classList.remove('collapsed'); 
-            mainContent.classList.remove('collapsed'); 
-          }
-          updateDesktopToggleIcon();
-      }
-      
-      function applyInitialTheme() {
-          const storedTheme = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-          document.documentElement.setAttribute('data-theme', storedTheme);
-          if (themeToggle) {
-              const icon = themeToggle.querySelector('i');
-              const text = themeToggle.querySelector('span');
-              if(icon) {
-                  icon.className = storedTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-              }
-              if(text) { 
-                  text.textContent = storedTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
-              }
-          }
-      }
 
-      if(toggleBtnDesktop) {
-        toggleBtnDesktop.addEventListener('click', () => {
-          sidebar.classList.toggle('collapsed');
-          mainContent.classList.toggle('collapsed');
-          localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-          updateDesktopToggleIcon();
-        });
-      }
-
-      if(menuBtnMobile) {
-        menuBtnMobile.addEventListener('click', (event) => {
-          event.stopPropagation(); 
-          sidebar.classList.toggle('open'); 
-          menuBtnMobile.innerHTML = sidebar.classList.contains('open') ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
-        });
-      }
-      
-      document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('open') &&
-            !sidebar.contains(e.target) && menuBtnMobile && !menuBtnMobile.contains(e.target)) { 
-          sidebar.classList.remove('open');
-          if(menuBtnMobile) menuBtnMobile.innerHTML = '<i class="fas fa-bars"></i>';
-        }
-      });
-      
-      window.addEventListener('resize', applyInitialSidebarState);
-
-      if(themeToggle) {
-        themeToggle.addEventListener('click', () => {
-          const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'; 
-          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-          document.documentElement.setAttribute('data-theme', newTheme);
-          localStorage.setItem('theme', newTheme);
-          const icon = themeToggle.querySelector('i');
-          const text = themeToggle.querySelector('span');
-          if (icon) icon.className = newTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-          if (text) text.textContent = newTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
-        });
-      }
-
-      const currentPath = window.location.pathname;
-      const navLinks = sidebar ? sidebar.querySelectorAll('nav ul li.nav-item a') : [];
-      const modelosBaseUrl = "{{ url_for('listar_modelos_anamnese') }}";
-      
-      navLinks.forEach(link => {
-          const linkParent = link.closest('.nav-item');
-          if (linkParent) linkParent.classList.remove('active');
-          
-          const linkHref = link.getAttribute('href');
-          // Verifica se a URL atual começa com a URL base dos modelos de anamnese
-          if (linkHref === modelosBaseUrl && currentPath.startsWith(modelosBaseUrl)) {
-              if(linkParent) linkParent.classList.add('active');
-          } else if (linkHref && linkHref !== '/' && currentPath.startsWith(linkHref)) {
-              // Garante que não ative o link de modelos se estiver em uma subpágina dele
-              if (link.getAttribute('href') !== modelosBaseUrl) {
-                linkParent.classList.add('active');
-              }
-          } else if (linkHref === '/' && currentPath === '/') {
-              if(linkParent) linkParent.classList.add('active');
-          }
-      });
-      
-      const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-      let app;
-      let auth;
-
-      if (firebaseConfig && Object.keys(firebaseConfig).length > 0) {
-        try {
-          app = initializeApp(firebaseConfig);
-          auth = getAuth(app);
-        } catch (e) { 
-          console.error("Firebase initialization error:", e.message);
-        }
-      } else {
-        console.warn("Firebase config not found. Logout may not work correctly via Firebase.");
-      }
-      
-      // === CORREÇÃO JAVASCRIPT: Removida a segunda declaração 'const logoutButton' daqui ===
-      if (logoutButton) {
-        logoutButton.addEventListener('click', async function(event) {
-          event.preventDefault();
-          try {
-            if (auth && auth.currentUser) await firebaseSignOut(auth); 
-          } catch (error) {
-            console.error('Erro ao deslogar do Firebase:', error);
-          } finally {
-            fetch("{{ url_for('logout') }}", { method: 'POST' })
-              .then(response => response.json())
-              .then(data => { window.location.href = "{{ url_for('login_page') }}"; })
-              .catch(err => {
-                console.error("Erro ao limpar sessão do servidor:", err);
-                window.location.href = "{{ url_for('login_page') }}";
-              });
-          }
-        });
-      }
-      
-      const confirmModal = document.getElementById('customConfirmModal');
-      const confirmMessage = document.getElementById('customConfirmMessage');
-      const confirmOk = document.getElementById('customConfirmOk');
-      const confirmCancel = document.getElementById('customConfirmCancel');
-      let formToSubmit = null;
-
-      document.querySelectorAll('.btn-confirm-trigger').forEach(button => {
-        button.addEventListener('click', function(e) {
-            formToSubmit = this.closest('form');
-            const actionText = this.textContent.trim().toLowerCase();
-            if(confirmMessage) confirmMessage.textContent = `Tem a certeza que deseja ${actionText} este modelo?`;
-            if(confirmModal) confirmModal.style.display = 'flex';
-        });
-      });
-      
-      if(confirmOk) {
-        confirmOk.addEventListener('click', () => {
-            if(formToSubmit) {
-                formToSubmit.submit();
+            // --- Theme Logic ---
+            function setupTheme() {
+                if (!themeToggle) return;
+                const updateThemeUI = (theme) => {
+                    htmlEl.setAttribute('data-theme', theme);
+                    const icon = themeToggle.querySelector('i');
+                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                };
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                updateThemeUI(currentTheme);
+                themeToggle.addEventListener('click', () => {
+                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeUI(newTheme);
+                });
             }
-        });
-      }
-      if(confirmCancel) {
-        confirmCancel.addEventListener('click', () => {
-            formToSubmit = null;
-            if(confirmModal) confirmModal.style.display = 'none';
-        });
-      }
 
-      // Lógica para os cards mobile
-      const mobileContainer = document.querySelector('.modelos-anamnese-container-mobile');
-      const cards = document.querySelectorAll('.modelo-anamnese-card-mobile');
-      const prevBtn = document.getElementById('prev-card-btn');
-      const nextBtn = document.getElementById('next-card-btn');
-      const counter = document.getElementById('card-counter');
-      const toggleBtn = document.getElementById('toggle-view-btn');
-      let currentIndex = 0;
-      let isExpanded = false;
-
-      function updateCardView() {
-        if (cards.length === 0) {
-          if (counter) counter.style.display = 'none';
-          if (prevBtn) prevBtn.style.display = 'none';
-          if (nextBtn) nextBtn.style.display = 'none';
-          if (toggleBtn) toggleBtn.style.display = 'none';
-          return;
-        }
-        if (isExpanded) return;
-        
-        if (prevBtn) prevBtn.style.display = 'flex';
-        if (nextBtn) nextBtn.style.display = 'flex';
-        if (counter) counter.style.display = 'block';
-        if (toggleBtn) toggleBtn.style.display = 'block';
-
-        cards.forEach((card, index) => {
-          card.style.display = (index === currentIndex) ? 'block' : 'none';
-        });
-        if(counter) counter.textContent = `${currentIndex + 1} de ${cards.length}`;
-        if(prevBtn) prevBtn.disabled = currentIndex === 0;
-        if(nextBtn) nextBtn.disabled = currentIndex >= cards.length - 1;
-      }
-
-      function toggleExpandedView() {
-        isExpanded = !isExpanded;
-        if (mobileContainer) mobileContainer.classList.toggle('expanded-view', isExpanded);
-        
-        if (isExpanded) {
-          if (toggleBtn) toggleBtn.innerHTML = 'Ver um por um';
-          cards.forEach(card => card.style.display = 'block');
-          if(prevBtn) prevBtn.style.display = 'none';
-          if(nextBtn) nextBtn.style.display = 'none';
-          if(counter) counter.style.display = 'none';
-        } else {
-          if (toggleBtn) toggleBtn.innerHTML = 'Ver Todos';
-          updateCardView();
-        }
-      }
-      
-      function handleResize() {
-        const isMobile = window.innerWidth <= 768;
-        if(isMobile) {
-          if(cards.length > 0) {
-            if(isExpanded){
-              if(toggleBtn) toggleBtn.innerHTML = 'Ver um por um';
-              cards.forEach(card => card.style.display = 'block');
-              if(prevBtn) prevBtn.style.display = 'none';
-              if(nextBtn) nextBtn.style.display = 'none';
-              if(counter) counter.style.display = 'none';
-            } else {
-              updateCardView();
+            // --- Logout Logic ---
+            function setupLogout() {
+                if (!logoutButton) return;
+                logoutButton.addEventListener('click', async (event) => {
+                    event.preventDefault();
+                    fetch("{{ url_for('logout') }}", { method: 'POST' })
+                        .then(() => window.location.href = "{{ url_for('login_page') }}")
+                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
+                });
             }
-          }
-        } 
-      }
 
-      if(prevBtn) {
-        prevBtn.addEventListener('click', () => {
-          if (currentIndex > 0) {
-            currentIndex--;
-            updateCardView();
-          }
+            // --- Confirmation Modal Logic ---
+            function setupConfirmationModal() {
+                const modal = document.getElementById('customConfirmModal');
+                if (!modal) return;
+                
+                const okBtn = document.getElementById('customConfirmOk');
+                const cancelBtn = document.getElementById('customConfirmCancel');
+                let formToSubmit = null;
+
+                document.querySelectorAll('.btn-confirm-trigger').forEach(button => {
+                    button.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        formToSubmit = this.closest('form.form-confirm-action');
+                        modal.classList.add('active');
+                    });
+                });
+
+                okBtn.addEventListener('click', () => {
+                    if (formToSubmit) {
+                        formToSubmit.submit();
+                    }
+                });
+
+                cancelBtn.addEventListener('click', () => modal.classList.remove('active'));
+                modal.addEventListener('click', (e) => {
+                    if(e.target === modal) modal.classList.remove('active');
+                });
+            }
+
+            // --- Initialization ---
+            setupSidebar();
+            setupTheme();
+            setupLogout();
+            setupConfirmationModal();
         });
-      }
-
-      if(nextBtn) {
-        nextBtn.addEventListener('click', () => {
-          if (currentIndex < cards.length - 1) {
-            currentIndex++;
-            updateCardView();
-          }
-        });
-      }
-
-      if(toggleBtn) {
-        toggleBtn.addEventListener('click', toggleExpandedView);
-      }
-      
-      window.addEventListener('resize', handleResize);
-      
-      // === CORREÇÃO JAVASCRIPT: Funções de inicialização movidas para o final ===
-      // para garantir que executem após todo o código ser lido sem erros.
-      applyInitialTheme();
-      applyInitialSidebarState();
-      handleResize(); // Executa para configurar a visão mobile/desktop inicial
-    });
-  </script>
+    </script>
 </body>
 </html>

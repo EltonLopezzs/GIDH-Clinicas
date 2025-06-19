@@ -1,692 +1,806 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agendamentos - {{ session.clinica_nome_display or 'Clínica On' }}</title>
-    <!-- Ícone da Aba e PWA -->
-    <link rel="icon" type="image/png" href="https://placehold.co/40x40/a6683c/ffffff?text=C">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/a6683c/ffffff?text=C">
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <meta name="theme-color" content="#29788d">
-
+    
+    <!-- Ícone da Aba -->
+    <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
+    
     <!-- Fontes e Ícones -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Flatpickr (Date Picker) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script> 
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
 
     <style>
         :root {
-            --bg: #f8f9fa; --card: #ffffff; --text: #1f2937; --muted: #6c757d;
-            --accent: #111827; --danger: #dc3545; --success: #198754; --warning: #ffc107;
-            --primary: #29788d; --secondary: #c68642; --dark-bg: #1a1a1a; --dark-text: #f8f9fa;
-            --dark-card: #2c2c2c; --info: #0dcaf0; --bs-border-color: #dee2e6;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #0f172a;
+            --primary: #0d9488; /* Teal-600 */
+            --secondary: #f59e0b; /* Amber-500 */
+            --danger: #dc2626; /* Red-600 */
+            --success: #16a34a; /* Green-600 */
+            --warning: #f59e0b; /* Amber-500 */
+            --info: #0ea5e9; /* Sky-500 */
+            --border-color: #e2e8f0;
+            
+            --dark-bg: #0f172a;
+            --dark-card: #1e293b;
+            --dark-text: #f1f5f9;
+            --dark-muted: #94a3b8;
+            --dark-border-color: #334155;
+            
+            color-scheme: light;
         }
+
         [data-theme="dark"] {
-            --bg: var(--dark-bg); --text: var(--dark-text); --card: var(--dark-card);
-            --muted: #a0a0a0; --bs-border-color: #495057;
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
+            color-scheme: dark;
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; overflow-x: hidden; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; transition: background-color 0.3s ease, color 0.3s ease; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
         .layout { display: flex; min-height: 100vh; width: 100%; }
-        .sidebar { width: 260px; background: linear-gradient(180deg, var(--primary), var(--accent)); color: white; position: fixed; top: 0; left: 0; height: 100vh; padding: 0; transition: width 0.3s ease, transform 0.3s ease; z-index: 1000; display: flex; flex-direction: column; }
+
+        /* --- Sidebar (Reused from Dashboard) --- */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--primary), var(--accent));
+            color: white;
+            position: fixed;
+            top: 0; left: 0; height: 100vh;
+            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 1000; display: flex; flex-direction: column;
+        }
         .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px 10px 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center; }
-        .sidebar-header .logo { font-size: 1.5rem; font-weight: 700; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-        .sidebar.collapsed { width: 70px; }
-        .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li.nav-item a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: none; }
-        .sidebar.collapsed nav ul li a, .sidebar.collapsed #theme-toggle, .sidebar.collapsed .sidebar-footer ul li a { justify-content: center; padding: 10px; }
-        .sidebar nav { flex-grow: 1; margin-top: 10px; padding: 0 10px; }
+        .sidebar-header {
+            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
+        }
+        .sidebar-header .logo {
+            font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
+            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
+        }
+        .sidebar-header .logo i { font-size: 1.8rem; }
+        .sidebar.collapsed { width: 78px; }
+        .sidebar.collapsed .sidebar-header .logo span { display: none; }
+        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+        .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
         .sidebar nav ul { list-style: none; padding: 0; }
-        .sidebar nav ul li.nav-item { margin: 8px 0; }
-        .sidebar nav ul li a { color: white; text-decoration: none; display: flex; align-items: center; padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s ease; }
-        .sidebar nav ul li a i { width: 20px; text-align: center; font-size: 1.05rem; flex-shrink: 0; }
-        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); }
-        .sidebar nav ul li.active a { background: rgba(255, 255, 255, 0.2); font-weight: 600; }
-        .sidebar-footer { padding: 15px 10px 20px 10px; margin-top: auto; flex-shrink: 0; }
-        #theme-toggle { background: none; border: none; cursor: pointer; color: white; padding: 10px 15px; border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 15px; transition: background 0.2s ease; font-family: 'Inter', sans-serif; font-size: 0.95rem; }
-        #theme-toggle:hover { background: rgba(255,255,255,0.1); }
-        .sidebar-footer ul { list-style: none; margin-top: 8px; padding: 0; }
-        .sidebar-footer ul li a { color: white; text-decoration: none; display: flex; align-items: center; padding: 10px 15px; gap: 15px; border-radius: 8px; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.2s ease; }
-        .sidebar-footer ul li a:hover { background: rgba(255,255,255,0.1); }
-        .main-content { flex: 1; margin-left: 260px; transition: margin-left 0.3s ease; display: flex; flex-direction: column; width: calc(100% - 260px); }
-        .main-content.collapsed { margin-left: 70px; width: calc(100% - 70px); }
-        .topbar { background-color: var(--card); color: var(--text); padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid var(--bs-border-color); height: auto; min-height: 70px; }
-        .topbar-left { display: flex; align-items: center; gap: 0.5rem; }
-        .topbar .page-title { font-weight: 600; font-size: 1.1rem; color: var(--primary); }
-        .topbar-actions { display: flex; gap: 0.5rem; align-items: center; }
-        .toggle-btn-desktop, .menu-btn-mobile { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text); padding: 6px; border-radius: 8px; transition: background 0.2s ease, color 0.2s ease; }
-        .toggle-btn-desktop:hover, .menu-btn-mobile:hover { background-color: rgba(0,0,0,0.05); }
-        .toggle-btn-desktop { display: none; }
-        .menu-btn-mobile { display: block; }
-        main { flex-grow: 1; padding: 25px; overflow-y: auto; }
-        .container-fluid { width: 100%; padding-right: 15px; padding-left: 15px; margin-right: auto; margin-left: auto; }
-        .flash-messages { margin-bottom: 1.5rem; }
-        .flash-message { padding: 0.8rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent; border-radius: 0.3rem; font-size: 0.9rem; }
-        .flash-message.success { color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
+        .sidebar nav ul li { margin-bottom: 0.5rem; }
+        .sidebar nav ul li a {
+            color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
+            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
+            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
+        }
+        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+        .sidebar.collapsed nav ul li a span { display: none; }
+        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
+        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
+        .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
+        .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
+        .sidebar-footer button, .sidebar-footer a {
+            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
+            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
+            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
+            font-size: 0.95rem; text-decoration: none;
+        }
+        .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .sidebar.collapsed .sidebar-footer span { display: none; }
+        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+
+        /* --- Main Content & Topbar (Reused from Dashboard) --- */
+        .main-content {
+            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 260px);
+        }
+        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
+        .topbar {
+            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
+            position: sticky; top: 0; z-index: 900;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
+        .toggle-btn {
+            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
+            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+        .topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
+        
+        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+        
+        /* --- Buttons --- */
+        .btn {
+            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
+            font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;
+            border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
+        }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+        .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
+        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
+        [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+
+        .btn-filter.active { background-color: var(--primary-dark); color: white; border-color: var(--primary-dark);}
+        .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
+        
+        /* --- Summary Stat Cards --- */
         .summary-stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .stat-card { background-color: var(--card); padding: 1.2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.07); display: flex; align-items: center; gap: 1rem; border-left: 5px solid; }
-        .stat-card .icon-container { font-size: 1.2rem; width: 44px; height: 44px; padding: 0.8rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
-        .stat-card .icon-container i { font-weight: 900; }
+        .stat-card {
+            background-color: var(--card); padding: 1.2rem; border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            display: flex; align-items: center; gap: 1rem;
+            border-left: 5px solid;
+        }
+        .stat-card .icon-container {
+            font-size: 1.2rem; width: 48px; height: 48px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            color: white; flex-shrink: 0;
+        }
         .stat-card .info h4 { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.1rem; font-weight: 600; text-transform: uppercase; }
         .stat-card .info .count { font-size: 1.5rem; font-weight: 700; color: var(--text); }
-        .stat-card .info .value { font-size: 0.85rem; color: var(--success); font-weight: 600; }
+        .stat-card .info .value { font-size: 0.85rem; font-weight: 600; }
+        
         .stat-card.confirmado { border-left-color: var(--primary); }
         .stat-card.confirmado .icon-container { background-color: var(--primary); }
+        .stat-card.confirmado .info .value { color: var(--primary); }
+
         .stat-card.concluido { border-left-color: var(--success); }
         .stat-card.concluido .icon-container { background-color: var(--success); }
+        .stat-card.concluido .info .value { color: var(--success); }
+
         .stat-card.cancelado { border-left-color: var(--danger); }
         .stat-card.cancelado .icon-container { background-color: var(--danger); }
+
         .stat-card.pendente { border-left-color: var(--warning); }
         .stat-card.pendente .icon-container { background-color: var(--warning); }
         .stat-card.pendente .info .value { color: var(--warning); }
-        .table-responsive { width: 100%; }
-        .appointments-container { position: relative; }
-        table { width: 100%; border-collapse: collapse; color: var(--text); }
-        @media (min-width: 992px) { .table-responsive { background: var(--card); padding: 1rem; box-shadow: 0 4px 16px rgba(0,0,0,0.05); border-radius: 12px; overflow-x: auto; } table { min-width: 800px; } }
-        th, td { padding: 0.9rem 1rem; font-size: 0.9rem; border-bottom: 1px solid var(--bs-border-color); text-align: left; vertical-align: middle; }
-        thead { background-color: var(--primary); color: white; }
-        thead th { font-weight: 600; border-bottom-width: 0; }
-        tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 5%, transparent); }
-        .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
-        .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
-        .btn-text-desktop { display: none; }
-        .btn-filter.active { background-color: var(--success); border-color: var(--success); color: white; }
-        .btn-filter.active:hover { background-color: color-mix(in srgb, var(--success) 85%, black); }
-        .btn-filter.active .fa-filter::after { content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-weight: 900; font-size: 0.6em; position: absolute; bottom: -2px; right: -3px; color: var(--success); background-color: white; border-radius: 50%; line-height: 1; padding: 0.15em; }
+        
+        /* --- Table --- */
+        .table-container {
+            width: 100%; overflow-x: auto; background: var(--card);
+            border-radius: 12px; padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 800px; }
+        th, td {
+            padding: 0.9rem 1rem; font-size: 0.9rem; text-align: left; vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+        }
+        thead th {
+            font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.8rem;
+            background-color: var(--bg); border-bottom: 2px solid var(--border-color);
+        }
+        thead th:first-child { border-top-left-radius: 8px; }
+        thead th:last-child { border-top-right-radius: 8px; }
+        tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+        tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
         .table-actions { white-space: nowrap; }
-        .status-badge { padding: 0.4em 0.8em; border-radius: 20px; font-size: 0.75em; font-weight: 600; text-transform: uppercase; color: white; letter-spacing: 0.5px; }
+        .status-badge { padding: 0.4em 0.8em; border-radius: 20px; font-size: 0.75em; font-weight: 600; text-transform: uppercase; color: white; }
         .status-confirmado { background-color: var(--primary); }
         .status-concluido { background-color: var(--success); }
         .status-cancelado { background-color: var(--danger); }
-        .status-pendente { background-color: var(--warning); color: var(--text); }
-        .custom-select-wrapper { position: relative; display: inline-block; width: 100%; }
-        .custom-select-wrapper::after { content: '\f078'; font-family: 'Font Awesome 5 Free'; font-weight: 900; position: absolute; top: 50%; right: 12px; transform: translateY(-50%); pointer-events: none; color: inherit; font-size: 0.8em; }
-        .status-select { appearance: none; -webkit-appearance: none; -moz-appearance: none; padding: 0.6rem 2rem 0.6rem 1rem; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600; width: 100%; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; }
-        .status-select:disabled { opacity: 0.7; cursor: not-allowed; }
+        .status-pendente { background-color: var(--warning); color: #854d0e; }
+        [data-theme="dark"] .status-pendente { color: #fefce8; }
+        .no-results-row td { text-align: center; padding: 2rem; color: var(--muted); }
+
+        /* --- Status Select --- */
+        .custom-select-wrapper { position: relative; }
+        .status-select {
+            appearance: none; -webkit-appearance: none; -moz-appearance: none;
+            padding: 0.5rem 0.8rem; border: none; border-radius: 8px;
+            font-size: 0.85rem; font-weight: 600; width: 100%;
+            cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease;
+        }
         .status-select-confirmado { background-color: var(--primary); color: white; }
         .status-select-concluido { background-color: var(--success); color: white; }
         .status-select-cancelado { background-color: var(--danger); color: white; }
-        .status-select-pendente { background-color: var(--warning); color: var(--text); }
-        [data-theme="dark"] .status-select-pendente { color: var(--accent); }
-        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.25s ease; }
+        .status-select-pendente { background-color: var(--warning); color: #854d0e; }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
+            z-index: 2000; opacity: 0; transition: opacity 0.25s ease;
+        }
         .modal-overlay.active { opacity: 1; display: flex; }
-        .modal-content { background-color: var(--card); color: var(--text); border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); width: 90%; max-width: 500px; transform: translateY(-20px); transition: transform 0.25s ease; max-height: calc(100vh - 60px); display: flex; flex-direction: column; overflow: hidden; }
+        .modal-content {
+            background-color: var(--card); color: var(--text); border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 550px;
+            transform: translateY(-20px); transition: transform 0.25s ease;
+            max-height: calc(100vh - 60px); display: flex; flex-direction: column;
+        }
         .modal-overlay.active .modal-content { transform: translateY(0); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--bs-border-color); flex-shrink: 0; }
-        .modal-header h3 { font-size: 1.1rem; color: var(--primary); margin: 0; font-weight: 600; }
-        .modal-header h3 i { margin-right: 0.5rem; }
-        .modal-close-btn { background: none; border: none; font-size: 1.4rem; color: var(--muted); cursor: pointer; padding: 0.2rem; line-height: 1; transition: color 0.2s ease; }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
+        }
+        .modal-header h3 { font-size: 1.2rem; color: var(--text); margin: 0; font-weight: 600; }
+        .modal-header h3 i { margin-right: 0.75rem; color: var(--primary); }
+        .modal-close-btn { background: none; border: none; font-size: 1.5rem; color: var(--muted); cursor: pointer; line-height: 1; transition: color 0.2s ease; }
         .modal-close-btn:hover { color: var(--danger); }
-        .modal-body { overflow-y: auto; padding: 1.25rem; flex-grow: 1; }
-        .modal-body .form-group { margin-bottom: 1rem; }
-        .modal-body .form-group:last-child { margin-bottom: 0; }
-        .modal-body .form-group label { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-bottom: 0.25rem; }
-        .modal-body .form-group input, .modal-body .form-group select { font-size: 0.9rem; padding: 0.6rem 0.75rem; width: 100%; border: 1px solid var(--bs-border-color); border-radius: 6px; background-color: var(--bg); color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-        .modal-body .form-group input:focus, .modal-body .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--primary) 25%, transparent); outline: none; }
-        .modal-body .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .modal-body .form-row .form-group { margin-bottom: 0; }
-        .modal-footer { padding: 0.8rem 1.25rem; margin-top: 0; border-top: 1px solid var(--bs-border-color); display: flex; justify-content: flex-end; gap: 0.6rem; flex-shrink: 0; background-color: color-mix(in srgb, var(--card) 95%, black); }
-        [data-theme="dark"] .modal-footer { background-color: color-mix(in srgb, var(--card) 95%, white); }
-        .modal-footer .btn { padding: 0.5rem 1rem; font-size: 0.85rem; }
-        footer { margin-top: auto; text-align: center; padding: 1.5rem; font-size: 0.9rem; background-color: var(--card); color: var(--muted); border-top: 1px solid var(--bs-border-color); }
+        .modal-body { overflow-y: auto; padding: 1.5rem; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group:last-child { margin-bottom: 0; }
+        .form-group label { display: block; font-size: 0.9rem; color: var(--muted); font-weight: 500; margin-bottom: 0.5rem; }
+        .form-group input, .form-group select {
+            font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%;
+            border: 1px solid var(--border-color); border-radius: 8px;
+            background-color: var(--bg); color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+        .modal-footer {
+            padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);
+            display: flex; justify-content: flex-end; gap: 0.75rem; flex-shrink: 0;
+            background-color: var(--bg);
+        }
+        
+        /* --- Responsive Adjustments --- */
+        .toggle-btn-desktop { display: none; }
+        .menu-btn-mobile { display: block; }
+
+        @media(min-width: 769px) {
+            .toggle-btn-desktop { display: grid; }
+            .menu-btn-mobile { display: none; }
+            .btn span.btn-text-desktop { display: inline; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
+            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
+            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
+            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
+            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
+            
+            main { padding: 1rem; }
+            .topbar { padding: 0 1rem; flex-wrap: wrap; height: auto; row-gap: 0.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem;}
+            .topbar-left, .topbar-actions { width: 100%; justify-content: space-between; }
+            .topbar-actions { padding-bottom: 0.5rem; }
+            .btn span.btn-text-desktop { display: none; }
+            .summary-stats-cards { grid-template-columns: 1fr 1fr; gap: 1rem; }
+            .stat-card { padding: 1rem; flex-direction: column; text-align: center; gap: 0.5rem; }
+            .stat-card .info .count { font-size: 1.3rem; }
+
+            .table-container { display: none; }
+            .mobile-cards-wrapper { display: block; }
+        }
+
+        /* --- Mobile Appointment Cards --- */
         .mobile-cards-wrapper { display: none; }
-        @media (max-width: 991px) { .table-responsive { display: none; } .mobile-cards-wrapper { display: block; } .topbar { padding: 1rem; } .topbar-left, .topbar-actions { width: 100%; justify-content: space-between; margin-bottom: 0.5rem; } .topbar-actions .btn-primary span { display: none; } .topbar-actions .search-form { flex-grow: 1; } }
-        @media (min-width: 769px) { .toggle-btn-desktop { display: block; } .menu-btn-mobile { display: none; } .topbar { padding: 0 1.5rem; flex-wrap: nowrap; } .topbar-left { gap: 1rem; width: auto; } .topbar .page-title { font-size: 1.3rem; } .btn-text-desktop { display: inline; } .topbar-actions { width: auto; } }
-        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); width: 260px; } .sidebar.open { transform: translateX(0); } .sidebar.collapsed { transform: translateX(-100%); width: 260px; } .sidebar.collapsed nav ul li a, .sidebar.collapsed #theme-toggle, .sidebar.collapsed .sidebar-footer ul li a { justify-content: flex-start; } .sidebar.collapsed nav ul li a span, .sidebar.collapsed #theme-toggle span, .sidebar.collapsed .sidebar-footer ul li a span { display: inline; } .sidebar.collapsed .sidebar-header .logo span { display: inline; } .main-content, .main-content.collapsed { margin-left: 0; width: 100%; } .topbar .page-title { margin-left: 0; } .modal-content { width: 95%; padding: 0; max-height: 85vh; } .modal-header { padding: 1rem 1.25rem; margin-bottom:0; } .modal-body { padding: 1rem 1.25rem; } .modal-footer { padding: 1rem 1.25rem; } .modal-header h3 { font-size: 1.1rem; } .summary-stats-cards { grid-template-columns: 1fr 1fr; gap: 1rem; } .stat-card { padding: 1rem; flex-direction: column; text-align: center; gap: 0.5rem; } .stat-card .info .count { font-size: 1.3rem; } .stat-card .info .value { font-size: 0.8rem; } .agendamento-card-mobile { display: none; background-color: var(--card); border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); margin-bottom: 1rem; position: relative; max-width: 400px; margin-left: auto; margin-right: auto; overflow: hidden; } .agendamento-card-mobile.card-visible { display: block; } .card-transfer-header { display: flex; align-items: center; justify-content: center; padding: 1rem; gap: 1rem; border-bottom: 1px solid var(--bs-border-color); } .card-transfer-party { font-weight: 600; font-size: 1rem; text-align: center; } .card-transfer-arrow { display: flex; align-items: center; justify-content: center; background-color: var(--bg); border-radius: 50%; width: 30px; height: 30px; color: var(--muted); } .card-details-body { padding: 0.5rem 0; } .card-detail-item { display: flex; justify-content: space-between; padding: 0.7rem 1rem; font-size: 0.9rem; } .card-detail-item-label { color: var(--muted); font-weight: 500; } .card-detail-item-value { font-weight: 600; } .card-actions-footer { padding: 1rem; background-color: color-mix(in srgb, var(--bs-border-color) 40%, transparent); } [data-theme="dark"] .card-actions-footer { background-color: color-mix(in srgb, var(--bs-border-color) 70%, transparent); } .card-nav-btn { display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background-color: var(--card); color: var(--text); border: 1px solid var(--bs-border-color); border-radius: 50%; width: 36px; height: 36px; font-size: 0.9rem; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); } .card-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; } .appointments-container-mobile.expanded-view .card-nav-btn { display: none; } #prev-card-btn { left: -45px; } #next-card-btn { right: -45px; } .card-slider-controls { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; margin-bottom: 1rem; } .appointments-container-mobile.expanded-view .card-slider-controls { display: none; } #card-counter { font-weight: 600; color: var(--muted); } .btn-link { background: none; border: none; color: var(--primary); text-decoration: underline; font-weight: 600; padding: 0; } .no-results-row { display: block; text-align: center; padding: 20px; background-color: var(--card); border-radius: 12px; } }
+        /* Add other mobile styles if needed, they are similar to the dashboard */
+
     </style>
 </head>
 <body>
-  {% set is_filter_active = request.args.get('paciente_nome') or request.args.get('profissional_id') or request.args.get('status') or request.args.get('data_inicio') or request.args.get('data_fim') %}
-  <div class="layout">
-    <div class="sidebar">
-      <div class="sidebar-inner-content">
-        <div class="sidebar-header">
-          <a href="{{ url_for('index') }}" class="logo"><i class="fas fa-clinic-medical"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span></a>
-        </div>
-        <nav>
-          <ul>
-            <li class="nav-item"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_pacientes') }}"><i class="fas fa-user-injured"></i> <span>Pacientes</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('buscar_prontuario') }}"><i class="fas fa-notes-medical"></i> <span>Prontuários</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_profissionais') }}"><i class="fas fa-user-md"></i> <span>Profissionais</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fas fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_convenios') }}"><i class="fas fa-handshake"></i> <span>Convênios</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_horarios') }}"><i class="fas fa-clock"></i> <span>Horários</span></a></li>
-            <li class="nav-item active"><a href="{{ url_for('listar_agendamentos') }}"><i class="fas fa-calendar-alt"></i> <span>Agendamentos</span></a></li>
-            {% if session.user_role == 'admin' %}
-            <li class="nav-item"><a href="{{ url_for('listar_usuarios') }}"><i class="fas fa-users-cog"></i> <span>Utilizadores</span></a></li>
-            <li class="nav-item"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fas fa-file-alt"></i> <span>Modelos Anamnese</span></a></li>
-            {% endif %}
-          </ul>
-        </nav>
-        <div class="sidebar-footer">
-          <button id="theme-toggle" aria-label="Alternar tema"><i class="fas fa-sun"></i> <span>Alternar Tema</span></button>
-          <ul>
-            <li><a href="#" id="logoutButton"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    {% set is_filter_active = request.args.get('paciente_nome') or request.args.get('profissional_id') or request.args.get('status') or request.args.get('data_inicio') or request.args.get('data_fim') %}
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-inner-content">
+                <div class="sidebar-header">
+                    <a href="{{ url_for('index') }}" class="logo">
+                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
+                    </a>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li class="active"><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        {% if session.user_role == 'admin' %}
+                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="theme-toggle" aria-label="Alternar tema">
+                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
+                    </button>
+                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
+                </div>
+            </div>
+        </aside>
 
-    <div class="main-content">
-      <div class="topbar">
-        <div class="topbar-left">
-            <button class="menu-btn-mobile"><i class="fas fa-bars"></i></button>
-            <button class="toggle-btn-desktop"><i class="fas fa-outdent"></i></button>
-            <span class="page-title">Agendamentos</span>
-        </div>
-        <div class="topbar-actions">
-            <button class="btn btn-secondary btn-filter {% if is_filter_active %}active{% endif %}" id="btnAbrirModalFiltros">
-                <i class="fas fa-filter"></i><span class="btn-text-desktop">&nbsp;Filtrar</span>
-            </button>
-            <button class="btn btn-primary" id="btnAbrirModalRegistroManual">
-                <i class="fas fa-plus-circle"></i><span class="btn-text-desktop">&nbsp;Registrar</span>
-            </button>
-        </div>
-      </div>
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
+                    <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
+                    <h1 class="page-title">Agendamentos</h1>
+                </div>
+                <div class="topbar-actions">
+                    <button class="btn btn-secondary btn-filter {% if is_filter_active %}active{% endif %}" id="btnAbrirModalFiltros">
+                        <i class="fas fa-filter"></i><span class="btn-text-desktop">&nbsp;Filtrar</span>
+                    </button>
+                    <button class="btn btn-primary" id="btnAbrirModalRegistroManual">
+                        <i class="fas fa-plus"></i><span class="btn-text-desktop">&nbsp;Registrar</span>
+                    </button>
+                </div>
+            </header>
 
-      <main>
-        <div class="container-fluid">
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              <div class="flash-messages">
-                {% for category, message in messages %}
-                  <div class="flash-message {{ category }}">{{ message }}</div>
-                {% endfor %}
-              </div>
-            {% endif %}
-          {% endwith %}
-
-          <div class="summary-stats-cards">
-            <div class="stat-card confirmado">
-              <div class="icon-container"><i class="fas fa-calendar-check"></i></div>
-              <div class="info">
-                <h4>Confirmados</h4>
-                <p class="count">{{ stats_cards.confirmado.count if stats_cards and stats_cards.confirmado else 0 }}</p>
-                <p class="value">{{ "R$ %.2f"|format(stats_cards.confirmado.total_valor|float if stats_cards and stats_cards.confirmado else 0.0) }}</p>
-              </div>
-            </div>
-            <div class="stat-card concluido">
-              <div class="icon-container"><i class="fas fa-check-double"></i></div>
-              <div class="info">
-                <h4>Concluídos</h4>
-                <p class="count">{{ stats_cards.concluido.count if stats_cards and stats_cards.concluido else 0 }}</p>
-                <p class="value">{{ "R$ %.2f"|format(stats_cards.concluido.total_valor|float if stats_cards and stats_cards.concluido else 0.0) }}</p>
-              </div>
-            </div>
-            <div class="stat-card pendente"> 
-              <div class="icon-container"><i class="fas fa-hourglass-start"></i></div>
-              <div class="info">
-                <h4>Pendentes</h4>
-                <p class="count">{{ stats_cards.pendente.count if stats_cards and stats_cards.pendente else 0 }}</p>
-                <p class="value">{{ "R$ %.2f"|format(stats_cards.pendente.total_valor|float if stats_cards and stats_cards.pendente else 0.0) }}</p>
-              </div>
-            </div>
-            <div class="stat-card cancelado">
-              <div class="icon-container"><i class="fas fa-ban"></i></div>
-              <div class="info">
-                <h4>Cancelados</h4>
-                <p class="count">{{ stats_cards.cancelado.count if stats_cards and stats_cards.cancelado else 0 }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="appointments-container">
-            <div class="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Paciente</th>
-                    <th>Profissional</th>
-                    <th>Serviço/Procedimento</th>
-                    <th>Data & Hora</th>
-                    <th>Preço</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for agendamento in agendamentos %}
-                  <tr class="d-desktop">
-                    <td>{{ agendamento.paciente_nome }}</td>
-                    <td>{{ agendamento.profissional_nome }}</td>
-                    <td>{{ agendamento.servico_procedimento_nome }}</td>
-                    <td>{{ agendamento.data_agendamento_fmt }} às {{ agendamento.hora_agendamento or 'N/A' }}</td>
-                    <td>{{ agendamento.preco_servico_fmt }}</td>
-                    <td>
-                      <span class="status-badge status-{{ agendamento.status.lower() if agendamento.status else 'pendente' }}">{{ agendamento.status.capitalize() if agendamento.status else 'Pendente' }}</span>
-                    </td>
-                    <td class="table-actions">
-                      <form action="{{ url_for('alterar_status_agendamento', agendamento_doc_id=agendamento.id) }}" method="post" class="status-change-form">
-                          <label for="status-select-{{ agendamento.id }}" class="sr-only">Alterar Status para {{ agendamento.paciente_nome }}</label>
-                          <div class="custom-select-wrapper">
-                            <select name="status" id="status-select-{{ agendamento.id }}" class="status-select" data-previous-status="{{ agendamento.status }}">
-                              <option value="confirmado" {% if agendamento.status == 'confirmado' %}selected{% endif %}>Confirmado</option>
-                              <option value="concluido" {% if agendamento.status == 'concluido' %}selected{% endif %}>Concluído</option>
-                              <option value="cancelado" {% if agendamento.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
-                              <option value="pendente" {% if agendamento.status == 'pendente' %}selected{% endif %}>Pendente</option>
-                            </select>
-                          </div>
-                      </form>
-                    </td>
-                  </tr>
-                  {% else %}
-                  <tr class="no-results-row">
-                    <td colspan="7">Nenhum agendamento encontrado para o período selecionado.</td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            
-            <div class="mobile-cards-wrapper">
-                <div class="appointments-container-mobile">
-                    {% for agendamento in agendamentos %}
-                    <div class="agendamento-card-mobile">
-                        <div class="card-transfer-header">
-                            <div class="card-transfer-party">{{ agendamento.paciente_nome }}</div>
-                            <div class="card-transfer-arrow"><i class="fas fa-long-arrow-alt-right"></i></div>
-                            <div class="card-transfer-party">{{ agendamento.profissional_nome }}</div>
-                        </div>
-                        <div class="card-details-body">
-                            <div class="card-detail-item">
-                                <span class="card-detail-item-label">Serviço/Procedimento</span>
-                                <span class="card-detail-item-value">{{ agendamento.servico_procedimento_nome }}</span>
-                            </div>
-                            <div class="card-detail-item">
-                                <span class="card-detail-item-label">Data</span>
-                                <span class="card-detail-item-value">{{ agendamento.data_agendamento_fmt }} às {{ agendamento.hora_agendamento or 'N/A' }}</span>
-                            </div>
-                            <div class="card-detail-item">
-                                <span class="card-detail-item-label">Preço</span>
-                                <span class="card-detail-item-value">{{ agendamento.preco_servico_fmt }}</span>
-                            </div>
-                            <div class="card-detail-item">
-                                <span class="card-detail-item-label">Telefone</span>
-                                <span class="card-detail-item-value">{{ agendamento.paciente_numero or 'N/A' }}</span>
-                            </div>
-                        </div>
-                        <div class="card-actions-footer">
-                            <form action="{{ url_for('alterar_status_agendamento', agendamento_doc_id=agendamento.id) }}" method="post" class="status-change-form">
-                                <label for="status-select-mobile-{{ agendamento.id }}" class="sr-only">Alterar Status para {{ agendamento.paciente_nome }}</label>
-                                <div class="custom-select-wrapper">
-                                  <select name="status" id="status-select-mobile-{{ agendamento.id }}" class="status-select" data-previous-status="{{ agendamento.status }}">
-                                    <option value="confirmado" {% if agendamento.status == 'confirmado' %}selected{% endif %}>Confirmado</option>
-                                    <option value="concluido" {% if agendamento.status == 'concluido' %}selected{% endif %}>Concluído</option>
-                                    <option value="cancelado" {% if agendamento.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
-                                    <option value="pendente" {% if agendamento.status == 'pendente' %}selected{% endif %}>Pendente</option>
-                                  </select>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+            <main>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
                     {% endfor %}
-
-                    {% if agendamentos %}
-                      <button class="card-nav-btn" id="prev-card-btn"><i class="fas fa-chevron-left"></i></button>
-                      <button class="card-nav-btn" id="next-card-btn"><i class="fas fa-chevron-right"></i></button>
-                    {% endif %}
                 </div>
-                {% if agendamentos %}
-                    <div class="card-slider-controls">
-                        <span id="card-counter"></span>
-                        <button class="btn btn-link btn-sm" id="toggle-view-btn">Ver Todos</button>
-                    </div>
                 {% endif %}
-            </div>
-            
-             {% if not agendamentos %}
-             <div class="no-results-row">
-                Nenhum agendamento encontrado para os filtros selecionados.
-             </div>
-             {% endif %}
-          </div>
+                {% endwith %}
+
+                <section class="summary-stats-cards">
+                    <div class="stat-card confirmado">
+                        <div class="icon-container"><i class="fa-solid fa-calendar-check"></i></div>
+                        <div class="info">
+                            <h4>Confirmados</h4>
+                            <p class="count">{{ stats_cards.confirmado.count if stats_cards and stats_cards.confirmado else 0 }}</p>
+                            <p class="value">{{ "R$ %.2f"|format(stats_cards.confirmado.total_valor|float if stats_cards and stats_cards.confirmado else 0.0) }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card concluido">
+                        <div class="icon-container"><i class="fa-solid fa-check-double"></i></div>
+                        <div class="info">
+                            <h4>Concluídos</h4>
+                            <p class="count">{{ stats_cards.concluido.count if stats_cards and stats_cards.concluido else 0 }}</p>
+                            <p class="value">{{ "R$ %.2f"|format(stats_cards.concluido.total_valor|float if stats_cards and stats_cards.concluido else 0.0) }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card pendente">
+                        <div class="icon-container"><i class="fa-solid fa-hourglass-start"></i></div>
+                        <div class="info">
+                            <h4>Pendentes</h4>
+                            <p class="count">{{ stats_cards.pendente.count if stats_cards and stats_cards.pendente else 0 }}</p>
+                            <p class="value">{{ "R$ %.2f"|format(stats_cards.pendente.total_valor|float if stats_cards and stats_cards.pendente else 0.0) }}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card cancelado">
+                        <div class="icon-container"><i class="fa-solid fa-ban"></i></div>
+                        <div class="info">
+                            <h4>Cancelados</h4>
+                            <p class="count">{{ stats_cards.cancelado.count if stats_cards and stats_cards.cancelado else 0 }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="appointments-container">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>Profissional</th>
+                                    <th>Serviço</th>
+                                    <th>Data & Hora</th>
+                                    <th>Preço</th>
+                                    <th>Status</th>
+                                    <th>Alterar Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for agendamento in agendamentos %}
+                                <tr>
+                                    <td>{{ agendamento.paciente_nome }}</td>
+                                    <td>{{ agendamento.profissional_nome }}</td>
+                                    <td>{{ agendamento.servico_procedimento_nome }}</td>
+                                    <td>{{ agendamento.data_agendamento_fmt }} às {{ agendamento.hora_agendamento or 'N/A' }}</td>
+                                    <td>{{ agendamento.preco_servico_fmt }}</td>
+                                    <td><span class="status-badge status-{{ agendamento.status.lower() if agendamento.status else 'pendente' }}">{{ agendamento.status.capitalize() if agendamento.status else 'Pendente' }}</span></td>
+                                    <td class="table-actions">
+                                        <form action="{{ url_for('alterar_status_agendamento', agendamento_doc_id=agendamento.id) }}" method="post" class="status-change-form">
+                                            <div class="custom-select-wrapper">
+                                                <select name="status" class="status-select status-select-{{ agendamento.status.lower() }}" data-previous-status="{{ agendamento.status }}">
+                                                    <option value="confirmado" {% if agendamento.status == 'confirmado' %}selected{% endif %}>Confirmado</option>
+                                                    <option value="concluido" {% if agendamento.status == 'concluido' %}selected{% endif %}>Concluído</option>
+                                                    <option value="cancelado" {% if agendamento.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                                                    <option value="pendente" {% if agendamento.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                                                </select>
+                                            </div>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr class="no-results-row">
+                                    <td colspan="7">Nenhum agendamento encontrado para os filtros selecionados.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mobile-cards-wrapper">
+                        <!-- Mobile cards logic here -->
+                    </div>
+                </section>
+            </main>
         </div>
-      </main>
     </div>
-  </div>
 
-  <!-- Modal de Confirmação de Cancelamento -->
-  <div class="modal-overlay" id="modalConfirmacaoCancelamento">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3><i class="fas fa-exclamation-triangle" style="color: var(--danger); margin-right: 10px;"></i>Confirmar Cancelamento</h3>
-        <button class="modal-close-btn" id="btnFecharModalCancelamento">&times;</button>
-      </div>
-      <div class="modal-body">
-          <p>Tem a certeza de que deseja cancelar este agendamento? Esta ação não pode ser desfeita.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="btnVoltarModalCancelamento">Voltar</button>
-        <button type="button" class="btn btn-danger" id="btnConfirmarCancelamento">Confirmar Cancelamento</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal de Filtros -->
-  <div class="modal-overlay" id="modalFiltros">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3><i class="fas fa-filter" style="margin-right: 10px;"></i>Filtrar Agendamentos</h3>
-        <button class="modal-close-btn" id="btnFecharModalFiltros">&times;</button>
-      </div>
-      <form method="GET" action="{{ url_for('listar_agendamentos') }}" id="formFiltros">
+    <!-- Modal de Confirmação de Cancelamento -->
+    <div class="modal-overlay" id="modalConfirmacaoCancelamento">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger);"></i>Confirmar Cancelamento</h3>
+          <button class="modal-close-btn" data-close>&times;</button>
+        </div>
         <div class="modal-body">
-            <div class="form-group">
-              <label for="filtro_paciente_nome">Nome do Paciente</label>
-              <input type="text" id="filtro_paciente_nome" name="paciente_nome" value="{{ filtros_atuais.paciente_nome if filtros_atuais else '' }}" placeholder="Buscar por nome...">
-            </div>
-            <div class="form-group">
-              <label for="filtro_profissional_id">Profissional</label>
-              <select id="filtro_profissional_id" name="profissional_id">
-                <option value="">Todos os Profissionais</option>
-                {% for profissional in profissionais_para_filtro %}
-                <option value="{{ profissional.id }}" {% if filtros_atuais and filtros_atuais.profissional_id == profissional.id|string %}selected{% endif %}>
-                  {{ profissional.nome }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="filtro_status">Status</label>
-              <select id="filtro_status" name="status">
-                <option value="">Todos os Status</option>
-                <option value="confirmado" {% if filtros_atuais and filtros_atuais.status == 'confirmado' %}selected{% endif %}>Confirmado</option>
-                <option value="concluido" {% if filtros_atuais and filtros_atuais.status == 'concluido' %}selected{% endif %}>Concluído</option>
-                <option value="cancelado" {% if filtros_atuais and filtros_atuais.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
-                <option value="pendente" {% if filtros_atuais and filtros_atuais.status == 'pendente' %}selected{% endif %}>Pendente</option>
-              </select>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                  <label for="filtro_data_inicio">Data Início</label>
-                  <input type="text" id="filtro_data_inicio" name="data_inicio" value="{{ filtros_atuais.data_inicio if filtros_atuais else '' }}" class="flatpickr-input" placeholder="dd/mm/aaaa">
-                </div>
-                <div class="form-group">
-                  <label for="filtro_data_fim">Data Fim</label>
-                  <input type="text" id="filtro_data_fim" name="data_fim" value="{{ filtros_atuais.data_fim if filtros_atuais else '' }}" class="flatpickr-input" placeholder="dd/mm/aaaa">
-                </div>
-            </div>
+          <p>Tem a certeza de que deseja cancelar este agendamento? Esta ação não pode ser desfeita.</p>
         </div>
         <div class="modal-footer">
-          <a href="{{ url_for('listar_agendamentos') }}" class="btn btn-secondary"><i class="fas fa-eraser"></i> Limpar</a>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Aplicar Filtros</button>
+          <button type="button" class="btn btn-secondary" data-close>Voltar</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmarCancelamento">Confirmar Cancelamento</button>
         </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal de Registro Manual -->
-  <div class="modal-overlay" id="modalRegistroManual">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3><i class="fas fa-plus-circle" style="margin-right: 10px;"></i>Registrar Atendimento</h3> 
-        <button class="modal-close-btn" id="btnFecharModalRegistroManual">&times;</button>
-      </div>
-      <form method="POST" action="{{ url_for('registrar_atendimento_manual') }}" id="formRegistroManual"> 
-        <div class="modal-body">
-          <!-- CORREÇÃO: ADICIONADO SELECT PARA PACIENTES EXISTENTES -->
-          <div class="form-group">
-              <label for="paciente_id_manual">Selecionar Paciente Existente</label>
-              <select id="paciente_id_manual" name="paciente_id">
-                  <option value="">-- Ou digite um novo paciente abaixo --</option>
-                  {% for paciente in pacientes_para_filtro %}
-                      <option value="{{ paciente.id }}" data-telefone="{{ paciente.contato_telefone or '' }}">{{ paciente.nome }}</option>
-                  {% endfor %}
-              </select>
-          </div>
-
-          <div class="form-group">
-            <label for="cliente_nome_manual">Nome do Paciente (Novo ou selecionado)</label>
-            <input type="text" id="cliente_nome_manual" name="cliente_nome_manual" required>
-          </div>
-          <div class="form-group">
-            <label for="cliente_telefone_manual">Telefone do Paciente (Opcional)</label>
-            <input type="tel" id="cliente_telefone_manual" name="cliente_telefone_manual" placeholder="(XX) XXXXX-XXXX">
-          </div>
-          <div class="form-group">
-            <label for="barbeiro_id_manual">Profissional</label>
-            <select id="barbeiro_id_manual" name="barbeiro_id_manual" required>
-              <option value="">Selecione o profissional</option>
-              {% for profissional in profissionais_para_filtro %} 
-              <option value="{{ profissional.id }}">{{ profissional.nome }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="servico_id_manual">Serviço/Procedimento</label>
-            <select id="servico_id_manual" name="servico_id_manual" required>
-              <option value="">Selecione o serviço/procedimento</option>
-              {% for servico_proc in servicos_ativos %} 
-              <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }} (R$ {{ "%.2f"|format(servico_proc.preco|float) }})</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="data_agendamento_manual">Data</label>
-              <input type="text" id="data_agendamento_manual" name="data_agendamento_manual" class="flatpickr-input" required placeholder="Selecione a data">
-            </div>
-            <div class="form-group">
-              <label for="hora_agendamento_manual">Hora</label>
-              <input type="time" id="hora_agendamento_manual" name="hora_agendamento_manual" required>
-            </div>
-          </div>
-          
-           <div class="form-group">
-            <label for="preco_manual">Preço (R$)</label>
-            <input type="number" id="preco_manual" name="preco_manual" step="0.01" min="0" placeholder="Preço do serviço" required readonly>
-          </div>
-          <div class="form-group">
-            <label for="status_manual">Status</label>
-            <select id="status_manual" name="status_manual" required>
-              <option value="concluido" selected>Concluído</option>
-              <option value="confirmado">Confirmado</option>
-              <option value="pendente">Pendente</option>
-            </select>
-          </div>
-        </div>
-      </form>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="btnCancelarModalRegistroManual">Cancelar</button>
-        <button type="submit" class="btn btn-primary" form="formRegistroManual"><i class="fas fa-save"></i> Salvar Atendimento</button>
       </div>
     </div>
-  </div>
+    
+    <!-- Modal de Filtros -->
+    <div class="modal-overlay" id="modalFiltros">
+      <div class="modal-content">
+        <form method="GET" action="{{ url_for('listar_agendamentos') }}" id="formFiltros">
+            <div class="modal-header">
+              <h3><i class="fa-solid fa-filter"></i>Filtrar Agendamentos</h3>
+              <button type="button" class="modal-close-btn" data-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                  <label for="filtro_paciente_nome">Nome do Paciente</label>
+                  <input type="text" id="filtro_paciente_nome" name="paciente_nome" value="{{ filtros_atuais.paciente_nome if filtros_atuais else '' }}" placeholder="Buscar por nome...">
+                </div>
+                <div class="form-group">
+                  <label for="filtro_profissional_id">Profissional</label>
+                  <select id="filtro_profissional_id" name="profissional_id">
+                    <option value="">Todos os Profissionais</option>
+                    {% for profissional in profissionais_para_filtro %}
+                    <option value="{{ profissional.id }}" {% if filtros_atuais and filtros_atuais.profissional_id == profissional.id|string %}selected{% endif %}>
+                      {{ profissional.nome }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="filtro_status">Status</label>
+                  <select id="filtro_status" name="status">
+                    <option value="">Todos os Status</option>
+                    <option value="confirmado" {% if filtros_atuais and filtros_atuais.status == 'confirmado' %}selected{% endif %}>Confirmado</option>
+                    <option value="concluido" {% if filtros_atuais and filtros_atuais.status == 'concluido' %}selected{% endif %}>Concluído</option>
+                    <option value="cancelado" {% if filtros_atuais and filtros_atuais.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                    <option value="pendente" {% if filtros_atuais and filtros_atuais.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                      <label for="filtro_data_inicio">Data Início</label>
+                      <input type="text" id="filtro_data_inicio" name="data_inicio" value="{{ filtros_atuais.data_inicio if filtros_atuais else '' }}" class="flatpickr-input" placeholder="dd/mm/aaaa">
+                    </div>
+                    <div class="form-group">
+                      <label for="filtro_data_fim">Data Fim</label>
+                      <input type="text" id="filtro_data_fim" name="data_fim" value="{{ filtros_atuais.data_fim if filtros_atuais else '' }}" class="flatpickr-input" placeholder="dd/mm/aaaa">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+              <a href="{{ url_for('listar_agendamentos') }}" class="btn btn-secondary"><i class="fas fa-eraser"></i> Limpar</a>
+              <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Aplicar Filtros</button>
+            </div>
+        </form>
+      </div>
+    </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
-    import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    <!-- Modal de Registro Manual -->
+    <div class="modal-overlay" id="modalRegistroManual">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('registrar_atendimento_manual') }}" id="formRegistroManual">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-plus-circle"></i>Registrar Atendimento</h3>
+                    <button type="button" class="modal-close-btn" data-close>&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                      <label for="paciente_id_manual">Selecionar Paciente Existente</label>
+                      <select id="paciente_id_manual" name="paciente_id">
+                          <option value="">-- Ou digite um novo paciente abaixo --</option>
+                          {% for paciente in pacientes_para_filtro %}
+                              <option value="{{ paciente.id }}" data-telefone="{{ paciente.contato_telefone or '' }}">{{ paciente.nome }}</option>
+                          {% endfor %}
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="cliente_nome_manual">Nome do Paciente (Novo ou selecionado)</label>
+                      <input type="text" id="cliente_nome_manual" name="cliente_nome_manual" required>
+                    </div>
+                    <div class="form-group">
+                      <label for="cliente_telefone_manual">Telefone do Paciente (Opcional)</label>
+                      <input type="tel" id="cliente_telefone_manual" name="cliente_telefone_manual" placeholder="(XX) XXXXX-XXXX">
+                    </div>
+                    <div class="form-group">
+                      <label for="barbeiro_id_manual">Profissional</label>
+                      <select id="barbeiro_id_manual" name="barbeiro_id_manual" required>
+                        <option value="">Selecione o profissional</option>
+                        {% for profissional in profissionais_para_filtro %} 
+                        <option value="{{ profissional.id }}">{{ profissional.nome }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="servico_id_manual">Serviço/Procedimento</label>
+                      <select id="servico_id_manual" name="servico_id_manual" required>
+                        <option value="">Selecione o serviço/procedimento</option>
+                        {% for servico_proc in servicos_ativos %} 
+                        <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }} (R$ {{ "%.2f"|format(servico_proc.preco|float) }})</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="data_agendamento_manual">Data</label>
+                        <input type="text" id="data_agendamento_manual" name="data_agendamento_manual" class="flatpickr-input" required placeholder="Selecione a data">
+                      </div>
+                      <div class="form-group">
+                        <label for="hora_agendamento_manual">Hora</label>
+                        <input type="time" id="hora_agendamento_manual" name="hora_agendamento_manual" required>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="preco_manual">Preço (R$)</label>
+                      <input type="number" id="preco_manual" name="preco_manual" step="0.01" min="0" placeholder="Preço do serviço" required readonly>
+                    </div>
+                    <div class="form-group">
+                      <label for="status_manual">Status</label>
+                      <select id="status_manual" name="status_manual" required>
+                        <option value="concluido" selected>Concluído</option>
+                        <option value="confirmado">Confirmado</option>
+                        <option value="pendente">Pendente</option>
+                      </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const sidebar = document.querySelector('.sidebar');
-      const mainContent = document.querySelector('.main-content');
-      const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-      const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-      const themeToggle = document.querySelector('#theme-toggle');
-      
-      const modalRegistroManual = document.getElementById('modalRegistroManual');
-      const btnAbrirModalRegistroManual = document.getElementById('btnAbrirModalRegistroManual');
-      const btnFecharModalRegistroManual = document.getElementById('btnFecharModalRegistroManual');
-      const btnCancelarModalRegistroManual = document.getElementById('btnCancelarModalRegistroManual');
-      
-      const modalFiltros = document.getElementById('modalFiltros');
-      const btnAbrirModalFiltros = document.getElementById('btnAbrirModalFiltros');
-      const btnFecharModalFiltros = document.getElementById('btnFecharModalFiltros');
-      
-      const modalConfirmacaoCancelamento = document.getElementById('modalConfirmacaoCancelamento');
-      const btnConfirmarCancelamento = document.getElementById('btnConfirmarCancelamento');
-      const btnVoltarModalCancelamento = document.getElementById('btnVoltarModalCancelamento');
 
-      const formRegistroManual = document.getElementById('formRegistroManual');
-      const pacienteSelectManual = document.getElementById('paciente_id_manual');
-      const nomeInputManual = document.getElementById('cliente_nome_manual');
-      const telefoneInputManual = document.getElementById('cliente_telefone_manual');
-      const servicoSelectManual = document.getElementById('servico_id_manual');
-      const precoInputManual = document.getElementById('preco_manual');
-      const dataManualInput = document.getElementById('data_agendamento_manual'); 
-      const horaManualInput = document.getElementById('hora_agendamento_manual');
-      const filtroDataInicio = document.getElementById('filtro_data_inicio');
-      const filtroDataFim = document.getElementById('filtro_data_fim');
+    <script type="module">
+        // Placeholder for Firebase - adjust with your actual config
+        const FAKE_FIREBASE = {
+            initializeApp: () => ({}),
+            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
+        };
+        const { initializeApp } = FAKE_FIREBASE;
+        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        let auth = getAuth(initializeApp(firebaseConfig));
 
-      flatpickr(dataManualInput, { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "pt", disableMobile: "true" });
-      flatpickr(filtroDataInicio, { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "pt", disableMobile: "true" });
-      flatpickr(filtroDataFim, { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "pt", disableMobile: "true" });
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+            const themeToggle = document.querySelector('#theme-toggle');
+            const logoutButton = document.getElementById('logoutButton');
 
-      function setupModal(openBtn, closeBtn, modal, cancelBtn) {
-        if (openBtn) openBtn.addEventListener('click', () => modal.classList.add('active'));
-        if (closeBtn) closeBtn.addEventListener('click', () => modal.classList.remove('active'));
-        if (cancelBtn) cancelBtn.addEventListener('click', () => modal.classList.remove('active'));
-        if (modal) modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.remove('active'); });
-      }
+            // --- Sidebar Logic ---
+            function setupSidebar() {
+                if (!sidebar || !mainContent) return;
+                const updateDesktopToggleIcon = () => {
+                    if (!toggleBtnDesktop) return;
+                    const icon = toggleBtnDesktop.querySelector('i');
+                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
+                };
+                const applyInitialState = () => {
+                    if (window.innerWidth > 768) {
+                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                            sidebar.classList.add('collapsed');
+                            mainContent.classList.add('collapsed');
+                        }
+                    } else {
+                        sidebar.classList.remove('open', 'collapsed');
+                        mainContent.classList.remove('collapsed');
+                    }
+                    updateDesktopToggleIcon();
+                };
+                if (toggleBtnDesktop) {
+                    toggleBtnDesktop.addEventListener('click', () => {
+                        sidebar.classList.toggle('collapsed');
+                        mainContent.classList.toggle('collapsed');
+                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                        updateDesktopToggleIcon();
+                    });
+                }
+                if (menuBtnMobile) {
+                    menuBtnMobile.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        sidebar.classList.toggle('open');
+                    });
+                }
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+                applyInitialState();
+                window.addEventListener('resize', applyInitialState);
+            }
 
-      setupModal(btnAbrirModalRegistroManual, btnFecharModalRegistroManual, modalRegistroManual, btnCancelarModalRegistroManual);
-      setupModal(btnAbrirModalFiltros, btnFecharModalFiltros, modalFiltros);
-      setupModal(null, document.getElementById('btnFecharModalCancelamento'), modalConfirmacaoCancelamento, btnVoltarModalCancelamento);
+            // --- Theme Logic ---
+            function setupTheme() {
+                if (!themeToggle) return;
+                const updateThemeUI = (theme) => {
+                    htmlEl.setAttribute('data-theme', theme);
+                    const icon = themeToggle.querySelector('i');
+                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                };
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                updateThemeUI(currentTheme);
+                themeToggle.addEventListener('click', () => {
+                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeUI(newTheme);
+                });
+            }
 
-      if (btnAbrirModalRegistroManual) {
-        btnAbrirModalRegistroManual.addEventListener('click', () => {
-          const now = new Date();
-          if(formRegistroManual) formRegistroManual.reset(); 
-          if(dataManualInput && dataManualInput._flatpickr) dataManualInput._flatpickr.setDate(now, true); 
-          if(horaManualInput) horaManualInput.value = now.toTimeString().split(' ')[0].substring(0,5);
-          if(precoInputManual) precoInputManual.value = ''; 
+            // --- Logout Logic ---
+            function setupLogout() {
+                if (!logoutButton) return;
+                logoutButton.addEventListener('click', async (event) => {
+                    event.preventDefault();
+                    try {
+                        if (auth.currentUser) await firebaseSignOut(auth);
+                    } catch (error) {
+                        console.error('Error signing out from Firebase:', error);
+                    } finally {
+                        fetch("{{ url_for('logout') }}", { method: 'POST' })
+                            .then(() => window.location.href = "{{ url_for('login_page') }}")
+                            .catch(() => window.location.href = "{{ url_for('login_page') }}");
+                    }
+                });
+            }
+
+            // --- Modal Logic ---
+            function setupModals() {
+                const openModalButtons = document.querySelectorAll('[id^="btnAbrirModal"]');
+                const overlays = document.querySelectorAll('.modal-overlay');
+
+                openModalButtons.forEach(button => {
+                    const modalId = button.id.replace('btnAbrirModal', 'modal');
+                    const modal = document.getElementById(modalId);
+                    if (modal) {
+                        button.addEventListener('click', () => modal.classList.add('active'));
+                    }
+                });
+                
+                overlays.forEach(overlay => {
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay || e.target.hasAttribute('data-close')) {
+                            overlay.classList.remove('active');
+                        }
+                    });
+                });
+            }
+            
+            // --- Page-Specific Logic ---
+            function setupAppointmentsPage() {
+                // Flatpickr initialization
+                const commonFlatpickrConfig = { altInput: true, altFormat: "d/m/Y", dateFormat: "Y-m-d", locale: "pt" };
+                flatpickr("#filtro_data_inicio", commonFlatpickrConfig);
+                flatpickr("#filtro_data_fim", commonFlatpickrConfig);
+                flatpickr("#data_agendamento_manual", { ...commonFlatpickrConfig, defaultDate: "today" });
+
+                // Manual registration modal logic
+                const servicoSelect = document.getElementById('servico_id_manual');
+                const precoInput = document.getElementById('preco_manual');
+                if (servicoSelect && precoInput) {
+                    servicoSelect.addEventListener('change', (e) => {
+                        const selectedOption = e.target.options[e.target.selectedIndex];
+                        const price = selectedOption.dataset.preco || '';
+                        precoInput.value = price ? parseFloat(price).toFixed(2) : '';
+                    });
+                }
+                
+                const pacienteSelect = document.getElementById('paciente_id_manual');
+                const nomeInput = document.getElementById('cliente_nome_manual');
+                const telefoneInput = document.getElementById('cliente_telefone_manual');
+                if(pacienteSelect && nomeInput && telefoneInput) {
+                    pacienteSelect.addEventListener('change', (e) => {
+                        const selected = e.target.options[e.target.selectedIndex];
+                        if (selected.value) {
+                            nomeInput.value = selected.text;
+                            telefoneInput.value = selected.dataset.telefone || '';
+                            nomeInput.readOnly = true;
+                        } else {
+                            nomeInput.value = '';
+                            telefoneInput.value = '';
+                            nomeInput.readOnly = false;
+                        }
+                    });
+                }
+
+                // Status change logic
+                const statusForms = document.querySelectorAll('.status-change-form');
+                const cancelModal = document.getElementById('modalConfirmacaoCancelamento');
+                const confirmCancelBtn = document.getElementById('btnConfirmarCancelamento');
+                let formToSubmit = null;
+
+                statusForms.forEach(form => {
+                    const select = form.querySelector('select');
+                    if (select) {
+                        select.addEventListener('change', (e) => {
+                            const newStatus = e.target.value;
+                            const prevStatus = e.target.dataset.previousStatus;
+                            if (newStatus === 'cancelado') {
+                                formToSubmit = form;
+                                if(cancelModal) cancelModal.classList.add('active');
+                            } else {
+                                form.submit();
+                            }
+                        });
+                        // Update select color based on status
+                        const currentStatus = select.dataset.previousStatus.toLowerCase();
+                        select.className = `status-select status-select-${currentStatus}`;
+                    }
+                });
+                
+                if (confirmCancelBtn) {
+                    confirmCancelBtn.addEventListener('click', () => {
+                        if (formToSubmit) {
+                            formToSubmit.submit();
+                        }
+                    });
+                }
+            }
+
+            // --- Initialization ---
+            setupSidebar();
+            setupTheme();
+            setupLogout();
+            setupModals();
+            setupAppointmentsPage();
         });
-      }
-
-      // CORREÇÃO: Lógica para preencher dados do paciente ao selecionar
-      if(pacienteSelectManual && nomeInputManual && telefoneInputManual) {
-          pacienteSelectManual.addEventListener('change', function() {
-              const selectedOption = this.options[this.selectedIndex];
-              if (selectedOption.value) {
-                  nomeInputManual.value = selectedOption.text;
-                  telefoneInputManual.value = selectedOption.dataset.telefone || '';
-                  nomeInputManual.readOnly = true;
-              } else {
-                  nomeInputManual.value = '';
-                  telefoneInputManual.value = '';
-                  nomeInputManual.readOnly = false;
-              }
-          });
-      }
-
-      if (servicoSelectManual && precoInputManual) {
-        servicoSelectManual.addEventListener('change', function() {
-          const selectedOption = this.options[this.selectedIndex];
-          const preco = selectedOption.getAttribute('data-preco');
-          precoInputManual.value = preco ? parseFloat(preco).toFixed(2) : '';
-        });
-      }
-
-      function updateDesktopToggleIcon() {
-          if (!toggleBtnDesktop || !sidebar) return; 
-          toggleBtnDesktop.innerHTML = sidebar.classList.contains('collapsed') ? '<i class="fas fa-indent"></i>' : '<i class="fas fa-outdent"></i>';
-      }
-
-      function applyInitialSidebarState() {
-          const isDesktop = window.innerWidth > 768;
-          if(menuBtnMobile) menuBtnMobile.style.display = isDesktop ? 'none' : 'block';
-          if(toggleBtnDesktop) toggleBtnDesktop.style.display = isDesktop ? 'block' : 'none';
-          if (isDesktop && localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebar.classList.add('collapsed');
-            mainContent.classList.add('collapsed');
-          }
-          updateDesktopToggleIcon();
-      }
-      
-      function applyInitialTheme() {
-          const storedTheme = localStorage.getItem('theme') || 'light';
-          document.documentElement.setAttribute('data-theme', storedTheme);
-          if (themeToggle) {
-              themeToggle.querySelector('i').className = storedTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-              themeToggle.querySelector('span').textContent = storedTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
-          }
-      }
-
-      if(toggleBtnDesktop) {
-        toggleBtnDesktop.addEventListener('click', () => {
-          sidebar.classList.toggle('collapsed');
-          mainContent.classList.toggle('collapsed');
-          localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-          updateDesktopToggleIcon();
-        });
-      }
-
-      if(menuBtnMobile) {
-        menuBtnMobile.addEventListener('click', (event) => {
-          event.stopPropagation(); 
-          sidebar.classList.toggle('open'); 
-          menuBtnMobile.innerHTML = sidebar.classList.contains('open') ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
-        });
-      }
-      
-      document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('open') &&
-            !sidebar.contains(e.target) && menuBtnMobile && !menuBtnMobile.contains(e.target)) { 
-          sidebar.classList.remove('open');
-          if(menuBtnMobile) menuBtnMobile.innerHTML = '<i class="fas fa-bars"></i>';
-        }
-      });
-      
-      window.addEventListener('resize', applyInitialSidebarState);
-
-      if(themeToggle) {
-        themeToggle.addEventListener('click', () => {
-          const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'; 
-          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-          document.documentElement.setAttribute('data-theme', newTheme);
-          localStorage.setItem('theme', newTheme);
-          const icon = themeToggle.querySelector('i');
-          const text = themeToggle.querySelector('span');
-          if (icon) icon.className = newTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
-          if (text) text.textContent = newTheme === 'dark' ? 'Tema Claro' : 'Tema Escuro';
-        });
-      }
-      
-      const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-      let app;
-      let auth;
-
-      if(firebaseConfig && Object.keys(firebaseConfig).length > 0){
-        try {
-          app = initializeApp(firebaseConfig);
-          auth = getAuth(app);
-        } catch (e) { 
-          console.error("Firebase initialization error:", e.message);
-        }
-      } else {
-        console.warn("Firebase config not found. Logout may not work correctly via Firebase.");
-      }
-      
-      const logoutButton = document.getElementById('logoutButton');
-      if (logoutButton) {
-        logoutButton.addEventListener('click', async function(event) {
-          event.preventDefault();
-          try {
-            if (auth && auth.currentUser) await firebaseSignOut(auth); 
-          } catch (error) {
-            console.error('Erro ao deslogar do Firebase:', error);
-          } finally {
-            fetch("{{ url_for('logout') }}", { method: 'POST' })
-              .then(response => response.json())
-              .then(data => { window.location.href = "{{ url_for('login_page') }}"; })
-              .catch(err => {
-                console.error("Erro ao limpar sessão do servidor:", err);
-                window.location.href = "{{ url_for('login_page') }}";
-              });
-          }
-        });
-      }
-      
-      applyInitialSidebarState();
-      applyInitialTheme();
-    });
-  </script>
+    </script>
 </body>
 </html>
