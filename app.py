@@ -494,53 +494,60 @@ def listar_usuarios():
 @admin_required
 def adicionar_usuario():
     clinica_id = session['clinica_id']
+    
+    # Busca profissionais para associar ao usuário
+    profissionais_disponiveis = []
+    try:
+        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').order_by('nome').stream()
+        for doc in profissionais_docs:
+            prof_data = doc.to_dict()
+            profissionais_disponiveis.append({'id': doc.id, 'nome': prof_data.get('nome')})
+    except Exception as e:
+        flash('Erro ao carregar a lista de profissionais.', 'danger')
+
     if request.method == 'POST':
         email = request.form['email'].strip()
         password = request.form['password']
         role = request.form['role']
         nome_completo = request.form.get('nome_completo', '').strip()
-        crm_ou_registro = request.form.get('crm_ou_registro', '').strip()
+        # ID do profissional selecionado no formulário
+        profissional_associado_id = request.form.get('profissional_associado_id')
 
         if not all([email, password, role]):
             flash('E-mail, senha e função são obrigatórios.', 'danger')
-            return render_template('usuario_form.html', action_url=url_for('adicionar_usuario'), page_title="Adicionar Novo Usuário", roles=['admin', 'medico'])
+            return render_template('usuario_form.html', page_title="Adicionar Novo Utilizador", roles=['admin', 'medico'], profissionais=profissionais_disponiveis, user=request.form)
 
         try:
-            # Cria o usuário na Autenticação do Firebase
-            user = firebase_auth_admin.create_user(email=email, password=password)
-            user_uid = user.uid
-
-            # Salva o mapeamento na coleção 'User' no Firestore
-            db.collection('User').document(user_uid).set({
+            user = firebase_auth_admin.create_user(email=email, password=password, display_name=nome_completo)
+            
+            user_data_firestore = {
                 'email': email,
                 'clinica_id': clinica_id,
                 'nome_clinica_display': session.get('clinica_nome_display', 'Clínica On'),
                 'role': role,
-                'nome_completo': nome_completo if nome_completo else None,
-                'crm_ou_registro': crm_ou_registro if crm_ou_registro else None,
+                'nome_completo': nome_completo,
                 'associado_em': firestore.SERVER_TIMESTAMP
-            })
+            }
 
-            # Se o usuário for um médico, pode ser interessante criar um registro em 'profissionais'
-            if role == 'medico':
-                db.collection('clinicas').document(clinica_id).collection('profissionais').add({
-                    'nome': nome_completo,
-                    'email': email,
-                    'crm_ou_registro': crm_ou_registro,
-                    'user_uid': user_uid, # Referência ao UID do usuário criado
-                    'ativo': True, # Por padrão, médicos criados estão ativos
-                    'criado_em': firestore.SERVER_TIMESTAMP
+            # Se for médico e um profissional foi selecionado, associa
+            if role == 'medico' and profissional_associado_id:
+                user_data_firestore['profissional_id'] = profissional_associado_id
+                # Opcional: Atualiza o documento do profissional com o UID do usuário
+                db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_associado_id).update({
+                    'user_uid': user.uid
                 })
 
-            flash(f'Usuário {email} ({role}) adicionado com sucesso!', 'success')
+            db.collection('User').document(user.uid).set(user_data_firestore)
+            
+            flash(f'Utilizador {email} ({role}) criado com sucesso!', 'success')
             return redirect(url_for('listar_usuarios'))
-        except firebase_admin.auth.EmailAlreadyExistsError:
-            flash('O e-mail fornecido já está em uso por outro usuário.', 'danger')
+        except firebase_auth_admin.EmailAlreadyExistsError:
+            flash('O e-mail fornecido já está em uso.', 'danger')
         except Exception as e:
-            flash(f'Erro ao adicionar usuário: {e}', 'danger')
-            print(f"Erro add_user: {e}")
-    
-    return render_template('usuario_form.html', action_url=url_for('adicionar_usuario'), page_title="Adicionar Novo Usuário", roles=['admin', 'medico'])
+            flash(f'Erro ao adicionar utilizador: {e}', 'danger')
+
+    return render_template('usuario_form.html', page_title="Adicionar Novo Utilizador", action_url=url_for('adicionar_usuario'), roles=['admin', 'medico'], profissionais=profissionais_disponiveis)
+
 
 @app.route('/usuarios/editar/<string:user_uid>', methods=['GET', 'POST'])
 @login_required
@@ -548,71 +555,59 @@ def adicionar_usuario():
 def editar_usuario(user_uid):
     clinica_id = session['clinica_id']
     user_map_ref = db.collection('User').document(user_uid)
+    
+    # Busca profissionais para associar ao usuário
+    profissionais_disponiveis = []
+    try:
+        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').order_by('nome').stream()
+        for doc in profissionais_docs:
+            prof_data = doc.to_dict()
+            profissionais_disponiveis.append({'id': doc.id, 'nome': prof_data.get('nome')})
+    except Exception as e:
+        flash('Erro ao carregar a lista de profissionais.', 'danger')
 
     if request.method == 'POST':
         email = request.form['email'].strip()
         role = request.form['role']
         nome_completo = request.form.get('nome_completo', '').strip()
-        crm_ou_registro = request.form.get('crm_ou_registro', '').strip()
-        
+        profissional_associado_id = request.form.get('profissional_associado_id')
+
         try:
-            # Atualiza o registro do usuário no Firestore
-            user_map_ref.update({
+            firebase_auth_admin.update_user(user_uid, email=email, display_name=nome_completo)
+            
+            user_data_update = {
                 'email': email,
                 'role': role,
-                'nome_completo': nome_completo if nome_completo else None,
-                'crm_ou_registro': crm_ou_registro if crm_ou_registro else None,
+                'nome_completo': nome_completo,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
-            })
-
-            # Atualiza o e-mail na Autenticação do Firebase (se diferente)
-            firebase_auth_user = firebase_auth_admin.get_user(user_uid)
-            if firebase_auth_user.email != email:
-                firebase_auth_admin.update_user(user_uid, email=email)
+            }
             
-            # Se for um médico, atualiza o registro correspondente em 'profissionais'
-            if role == 'medico':
-                profissionais_ref = db.collection('clinicas').document(clinica_id).collection('profissionais')
-                prof_query = profissionais_ref.where(filter=FieldFilter('user_uid', '==', user_uid)).limit(1).stream()
-                prof_doc = next(prof_query, None)
-                if prof_doc:
-                    profissionais_ref.document(prof_doc.id).update({
-                        'nome': nome_completo,
-                        'email': email,
-                        'crm_ou_registro': crm_ou_registro,
-                        'atualizado_em': firestore.SERVER_TIMESTAMP
-                    })
-                else: # Se não encontrado, cria (caso tenha mudado de função ou sido criado sem associação)
-                     profissionais_ref.add({
-                        'nome': nome_completo,
-                        'email': email,
-                        'crm_ou_registro': crm_ou_registro,
-                        'user_uid': user_uid,
-                        'ativo': True,
-                        'criado_em': firestore.SERVER_TIMESTAMP
-                    })
+            if role == 'medico' and profissional_associado_id:
+                user_data_update['profissional_id'] = profissional_associado_id
+            else:
+                # Remove a associação se a função não for médico ou nenhum for selecionado
+                user_data_update['profissional_id'] = firestore.DELETE_FIELD
+            
+            user_map_ref.update(user_data_update)
 
-            flash(f'Usuário {email} ({role}) adicionado com sucesso!', 'success')
+            flash(f'Utilizador {email} atualizado com sucesso!', 'success')
             return redirect(url_for('listar_usuarios'))
-        except firebase_admin.auth.EmailAlreadyExistsError:
-            flash('O e-mail fornecido já está em uso por outro usuário.', 'danger')
         except Exception as e:
-            flash(f'Erro ao atualizar usuário: {e}', 'danger')
-            print(f"Erro edit_user (POST): {e}")
-
+            flash(f'Erro ao atualizar utilizador: {e}', 'danger')
+            
     try:
-        user_map_doc = user_map_ref.get()
-        if user_map_doc.exists:
-            user_data = user_map_doc.to_dict()
-            user_data['uid'] = user_map_doc.id
-            return render_template('usuario_form.html', user=user_data, action_url=url_for('editar_usuario', user_uid=user_uid), page_title=f"Editar Usuário: {user_data.get('nome_completo') or user_data.get('email')}", roles=['admin', 'medico'])
+        user_doc = user_map_ref.get()
+        if user_doc.exists:
+            user_data = user_doc.to_dict()
+            user_data['uid'] = user_doc.id
+            return render_template('usuario_form.html', user=user_data, page_title=f"Editar Utilizador", action_url=url_for('editar_usuario', user_uid=user_uid), roles=['admin', 'medico'], profissionais=profissionais_disponiveis)
         else:
-            flash('Usuário não encontrado.', 'danger')
+            flash('Utilizador não encontrado.', 'danger')
             return redirect(url_for('listar_usuarios'))
     except Exception as e:
-        flash(f'Erro ao carregar usuário para edição: {e}', 'danger')
-        print(f"Erro edit_user (GET): {e}")
+        flash(f'Erro ao carregar utilizador: {e}', 'danger')
         return redirect(url_for('listar_usuarios'))
+
 
 
 @app.route('/usuarios/ativar_desativar/<string:user_uid>', methods=['POST'])
