@@ -1007,7 +1007,7 @@
                         generateGenericBtn.classList.add('loading');
                         
                         try {
-                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; 
+                            const apiKey = ""; 
                             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                             
                             const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
@@ -1134,11 +1134,25 @@
                 });
 
                 // --- Lógica de Geração de PDF ---
+                // Função melhorada para converter HTML em texto plano para o PDF
                 function htmlToPlainText(html) {
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = html;
-                    // Conversão simples para texto, idealmente isso seria mais robusto
-                    return tempDiv.textContent || tempDiv.innerText || "";
+                    
+                    // Remove tags de script e estilo para não aparecerem no PDF
+                    tempDiv.querySelectorAll('script, style').forEach(el => el.remove());
+
+                    // Substitui quebras de linha por espaços para evitar duplicação
+                    tempDiv.innerHTML = tempDiv.innerHTML.replace(/<br\s*\/?>/gi, '\n');
+
+                    // Adiciona quebras de linha após elementos de bloco para melhor formatação
+                    tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, div, li').forEach(el => {
+                        el.appendChild(document.createTextNode('\n'));
+                    });
+                    
+                    // Converte para texto plano, removendo espaços excessivos e quebras de linha
+                    let text = tempDiv.textContent || tempDiv.innerText || "";
+                    return text.replace(/\n\s*\n/g, '\n').trim();
                 }
 
                 function generatePdfForRecord(button) {
@@ -1159,40 +1173,39 @@
 
                      let yPos = 20;
                      const margin = 15;
-                     const contentLineHeight = 6; 
+                     // Ajustes de fonte e espaçamento
+                     const contentLineHeight = 5; // Altura da linha reduzida
+                     const contentFontSize = 9;   // Tamanho da fonte do conteúdo reduzido
                      const maxWidth = doc.internal.pageSize.width - margin * 2;
 
                      // Cabeçalho da Clínica
-                     doc.setFontSize(14).setFont("helvetica", "bold").text(clinicName, margin, yPos);
-                     yPos += 10; 
+                     doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, margin, yPos);
+                     yPos += 8; 
                      doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
-                     yPos += 10;
+                     yPos += 8;
 
                      // Informações do Paciente
-                     doc.setFontSize(12).setFont("helvetica", "normal");
+                     doc.setFontSize(10).setFont("helvetica", "normal");
                      doc.text(`Paciente: ${patientName}`, margin, yPos);
-                     yPos += 7;
+                     yPos += 6;
                      doc.text(`CPF: ${patientCpf}`, margin, yPos);
                      doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
-                     yPos += 10;
+                     yPos += 8;
                      
                      // Título do Registro
-                     doc.setFontSize(16).setFont("helvetica", "bold").text(title, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
-                     yPos += 10;
+                     doc.setFontSize(14).setFont("helvetica", "bold").text(title, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                     yPos += 8;
 
                      // Metadados do Registro
-                     doc.setFontSize(10).setFont("helvetica", "italic").text(`Data: ${date} | Profissional: ${professional}`, margin, yPos);
-                     yPos += 7;
+                     doc.setFontSize(9).setFont("helvetica", "italic").text(`Data: ${date} | Profissional: ${professional}`, margin, yPos);
+                     yPos += 6;
                      doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
-                     yPos += 10;
+                     yPos += 8;
 
                      // Conteúdo do Registro
-                     doc.setFontSize(11).setFont("helvetica", "normal");
-                     // Usando a função experimental fromHTML para melhor formatação
-                     // Nota: fromHTML está obsoleto em versões mais novas, mas funciona para este caso.
-                     // Para HTML complexo, uma biblioteca como html2canvas seria melhor.
-                     const plainText = htmlToPlainText(contentHtml); // Fallback
-                     const splitText = doc.splitTextToSize(plainText, maxWidth);
+                     doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                     const contentText = htmlToPlainText(contentHtml);
+                     const splitText = doc.splitTextToSize(contentText, maxWidth);
                      
                      splitText.forEach(line => {
                          if (yPos > doc.internal.pageSize.height - margin) {
@@ -1203,7 +1216,7 @@
                          yPos += contentLineHeight;
                      });
 
-                     doc.save(`${title.toLowerCase().replace(/\s/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                     doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
 
 
