@@ -279,138 +279,217 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    clinica_id = session['clinica_id']
-    agendamentos_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos')
-    servicos_procedimentos_ref = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos')
-    current_year = datetime.datetime.now(SAO_PAULO_TZ).year
-
-    servicos_procedimentos_map = {}
+    # --- 1. CONFIGURAÇÃO INICIAL E ACESSO À SESSÃO ---
     try:
-        servicos_docs_stream = servicos_procedimentos_ref.stream()
-        for serv_doc in servicos_docs_stream:
-            serv_data_dict = serv_doc.to_dict()
-            if serv_data_dict and 'preco_sugerido' in serv_data_dict and 'nome' in serv_data_dict:
-                servicos_procedimentos_map[serv_doc.id] = {
-                    'nome': serv_data_dict.get('nome', 'Serviço/Procedimento Desconhecido'),
-                    'preco': float(serv_data_dict.get('preco_sugerido', 0))
-                }
-    except Exception as e:
-        print(f"ERRO CRÍTICO ao buscar serviços/procedimentos para o painel: {e}")
-        flash("Erro crítico ao carregar dados de serviço/procedimento. O painel pode não exibir os totais corretos.", "danger")
+        clinica_id = session['clinica_id']
+        user_role = session.get('user_role')
+        user_uid = session.get('user_uid') # UID do Firebase Auth do usuário logado
+    except KeyError:
+        flash("Sessão inválida ou expirada. Por favor, faça login novamente.", "danger")
+        return redirect(url_for('login_page'))
 
+    # --- BUSCA O ID DO PROFISSIONAL ASSOCIADO AO USUÁRIO LOGADO ---
+    profissional_id_logado = None
+    if user_role != 'admin':
+        if not user_uid:
+            flash("UID do usuário não encontrado na sessão. Faça login novamente.", "danger")
+            return redirect(url_for('login_page'))
+        try:
+            # Busca no documento de mapeamento 'User' qual profissional (pelo seu ID) está ligado a este UID
+            user_doc = db.collection('User').document(user_uid).get()
+            if user_doc.exists:
+                profissional_id_logado = user_doc.to_dict().get('profissional_id')
+            
+            if not profissional_id_logado:
+                flash("Sua conta de usuário não está corretamente associada a um perfil de profissional. Contate o administrador.", "warning")
+        except Exception as e:
+            flash(f"Erro ao buscar informações do profissional: {e}", "danger")
+            return render_template('dashboard.html', kpi={}, proximos_agendamentos=[])
+
+    agendamentos_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos')
+    pacientes_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
+    current_year = datetime.datetime.now(SAO_PAULO_TZ).year
+    
+    # --- 2. DEFINIÇÃO DE PERÍODOS E DADOS GERAIS ---
     hoje_dt = datetime.datetime.now(SAO_PAULO_TZ)
-    hoje_inicio_dt = hoje_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    mes_atual_nome = hoje_dt.strftime('%B').capitalize()
     
-    count_hoje, receita_hoje = 0, 0.0
-    count_semana, receita_semana = 0, 0.0
-    count_mes, receita_mes = 0, 0.0
+    inicio_mes_atual_dt = hoje_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    fim_mes_anterior_dt = inicio_mes_atual_dt - datetime.timedelta(seconds=1)
+    inicio_mes_anterior_dt = fim_mes_anterior_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    inicio_semana_dt = hoje_inicio_dt - datetime.timedelta(days=hoje_dt.weekday())
-    fim_semana_dt = inicio_semana_dt + datetime.timedelta(days=7)
-    
-    inicio_mes_dt = hoje_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    if inicio_mes_dt.month == 12:
-        fim_mes_dt = inicio_mes_dt.replace(year=inicio_mes_dt.year + 1, month=1, day=1)
-    else:
-        fim_mes_dt = inicio_mes_dt.replace(month=inicio_mes_dt.month + 1, day=1)
-
+    # --- 3. CONSULTA PRINCIPAL DE DADOS PARA ANÁLISE (KPIs e Gráficos) ---
     agendamentos_para_analise = []
     try:
-        query_geral_mes = agendamentos_ref.where(filter=FieldFilter('status', 'in', ['confirmado', 'concluido'])) \
-                                         .where(filter=FieldFilter('data_agendamento_ts', '>=', inicio_mes_dt)) \
-                                         .where(filter=FieldFilter('data_agendamento_ts', '<', fim_mes_dt)).stream()
-        
-        for doc in query_geral_mes:
-            ag_data = doc.to_dict()
-            if not ag_data: continue
+        query_analise = agendamentos_ref.where(
+            filter=FieldFilter('status', 'in', ['confirmado', 'concluido'])
+        ).where(
+            filter=FieldFilter('data_agendamento_ts', '>=', inicio_mes_anterior_dt)
+        )
 
-            ag_timestamp_firestore = ag_data.get('data_agendamento_ts')
-            if isinstance(ag_timestamp_firestore, datetime.datetime):
+        # *** LÓGICA DE PERMISSÃO: FILTRA POR PROFISSIONAL SE NÃO FOR ADMIN ***
+        if user_role != 'admin':
+            if profissional_id_logado:
+                # CORREÇÃO: Usando 'profissional_id' para consistência com o resto do app
+                query_analise = query_analise.where(
+                    filter=FieldFilter('profissional_id', '==', profissional_id_logado)
+                )
+            else:
+                # Se não encontrou um profissional_id, força a consulta a não retornar nada para este usuário.
+                query_analise = query_analise.where(
+                    filter=FieldFilter('profissional_id', '==', 'ID_INVALIDO_PARA_NAO_RETORNAR_NADA')
+                )
+
+        docs_analise = query_analise.stream()
+        for doc in docs_analise:
+            ag_data = doc.to_dict()
+            if ag_data:
                 agendamentos_para_analise.append(ag_data)
 
     except Exception as e:
-        print(f"Erro na consulta geral para o painel: {e}. Verifique seus índices do Firestore.")
+        print(f"Erro na consulta de agendamentos para o painel: {e}")
         flash("Erro ao calcular estatísticas do painel. Verifique seus índices do Firestore.", "danger")
 
-    agendamentos_por_dia_semana = [0] * 7
-    labels_dias_semana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-    contagem_servicos_semana = Counter()
+    # --- 4. CÁLCULO DOS KPIs (CARDS DE RESUMO) ---
+    receita_mes_atual = 0.0
+    atendimentos_mes_atual = 0
+    receita_mes_anterior = 0.0
+    atendimentos_mes_anterior = 0
+    
+    # Contagem de novos pacientes (métrica da clínica, visível para todos)
+    try:
+        novos_pacientes_mes = pacientes_ref.where(
+            filter=FieldFilter('data_cadastro', '>=', inicio_mes_atual_dt)
+        ).count().get()[0][0].value
+    except Exception:
+        novos_pacientes_mes = 0 # Fallback
 
-    for ag_data in agendamentos_para_analise:
-        ag_timestamp_sp = ag_data.get('data_agendamento_ts').astimezone(SAO_PAULO_TZ)
-        preco_servico_atual = float(servicos_procedimentos_map.get(ag_data.get('servico_procedimento_id'), {}).get('preco', 0))
+    for ag in agendamentos_para_analise:
+        ag_timestamp = ag.get('data_agendamento_ts')
+        preco = float(ag.get('servico_procedimento_preco', 0))
         
-        count_mes += 1
-        receita_mes += preco_servico_atual
+        if ag_timestamp and inicio_mes_atual_dt <= ag_timestamp:
+            receita_mes_atual += preco
+            atendimentos_mes_atual += 1
+        elif ag_timestamp and inicio_mes_anterior_dt <= ag_timestamp < inicio_mes_atual_dt:
+            receita_mes_anterior += preco
+            atendimentos_mes_anterior += 1
 
-        if inicio_semana_dt <= ag_timestamp_sp < fim_semana_dt:
-            count_semana += 1
-            receita_semana += preco_servico_atual
+    def calcular_variacao(atual, anterior):
+        if anterior == 0:
+            return 100.0 if atual > 0 else 0.0
+        return ((atual - anterior) / anterior) * 100
+
+    kpi_cards = {
+        'receita_mes_atual': receita_mes_atual,
+        'atendimentos_mes_atual': atendimentos_mes_atual,
+        'variacao_receita': calcular_variacao(receita_mes_atual, receita_mes_anterior),
+        'variacao_atendimentos': calcular_variacao(atendimentos_mes_atual, atendimentos_mes_anterior),
+        'novos_pacientes_mes': novos_pacientes_mes,
+    }
+
+    # --- 5. PREPARAÇÃO DOS DADOS PARA OS GRÁFICOS ---
+    atendimentos_por_dia = Counter()
+    receita_por_dia = Counter()
+    hoje_date = hoje_dt.date()
+    for i in range(15):
+        data = hoje_date - datetime.timedelta(days=i)
+        atendimentos_por_dia[data.strftime('%d/%m')] = 0
+        receita_por_dia[data.strftime('%d/%m')] = 0
+
+    for ag in agendamentos_para_analise:
+        ag_ts = ag.get('data_agendamento_ts')
+        if ag_ts:
+          ag_date = ag_ts.date()
+          if (hoje_date - ag_date).days < 15:
+              dia_str = ag_date.strftime('%d/%m')
+              atendimentos_por_dia[dia_str] += 1
+              receita_por_dia[dia_str] += float(ag.get('servico_procedimento_preco', 0))
+
+    labels_atend_receita = sorted(atendimentos_por_dia.keys(), key=lambda x: datetime.datetime.strptime(x, '%d/%m'))
+    dados_atendimento_vs_receita = {
+        "labels": labels_atend_receita,
+        "atendimentos": [atendimentos_por_dia[label] for label in labels_atend_receita],
+        "receitas": [receita_por_dia[label] for label in labels_atend_receita]
+    }
+
+    receita_por_procedimento = Counter()
+    for ag in agendamentos_para_analise:
+        ag_ts = ag.get('data_agendamento_ts')
+        if ag_ts and ag_ts >= inicio_mes_atual_dt:
+            nome_proc = ag.get('servico_procedimento_nome', 'Desconhecido')
+            receita_por_procedimento[nome_proc] += float(ag.get('servico_procedimento_preco', 0))
+    
+    top_5_procedimentos = receita_por_procedimento.most_common(5)
+    dados_receita_procedimento = {
+        "labels": [item[0] for item in top_5_procedimentos],
+        "valores": [item[1] for item in top_5_procedimentos]
+    }
+
+    atendimentos_por_profissional = Counter()
+    for ag in agendamentos_para_analise:
+        ag_ts = ag.get('data_agendamento_ts')
+        if ag_ts and ag_ts >= inicio_mes_atual_dt:
+            nome_prof = ag.get('profissional_nome', 'Desconhecido')
+            atendimentos_por_profissional[nome_prof] += 1
             
-            dia_da_semana_num = ag_timestamp_sp.weekday()
-            agendamentos_por_dia_semana[dia_da_semana_num] += 1
-
-            servico_procedimento_id = ag_data.get('servico_procedimento_id')
-            if servico_procedimento_id:
-                nome_servico = servicos_procedimentos_map.get(servico_procedimento_id, {}).get('nome', 'Desconhecido')
-                contagem_servicos_semana[nome_servico] += 1
-
-        if ag_timestamp_sp.date() == hoje_dt.date():
-            count_hoje +=1
-            receita_hoje += preco_servico_atual
-
-    hoje_data = {'count': count_hoje, 'receita': receita_hoje}
-    semana_data = {'count': count_semana, 'receita': receita_semana}
-    mes_data = {'count': count_mes, 'receita': receita_mes}
-
-    dados_desempenho_semana = {
-        'labels': labels_dias_semana,
-        'valores': agendamentos_por_dia_semana
+    top_5_profissionais = atendimentos_por_profissional.most_common(5)
+    dados_desempenho_profissional = {
+        "labels": [item[0] for item in top_5_profissionais],
+        "valores": [item[1] for item in top_5_profissionais]
     }
 
-    servicos_populares_comuns = contagem_servicos_semana.most_common(5)
-    dados_servicos_populares = {
-        'labels': [item[0] for item in servicos_populares_comuns] or ['Nenhum Agendamento Esta Semana'],
-        'valores': [item[1] for item in servicos_populares_comuns] or [0]
-    }
-
+    # --- 6. CONSULTA DOS PRÓXIMOS AGENDAMENTOS (LISTA) ---
     proximos_agendamentos_lista = []
     try:
-        query_proximos = agendamentos_ref.where(filter=FieldFilter('status', '==', 'confirmado')) \
-                                         .where(filter=FieldFilter('data_agendamento_ts', '>=', hoje_inicio_dt)) \
-                                         .order_by('data_agendamento_ts') \
-                                         .limit(5).stream()
-        for doc in query_proximos:
-            ag_data = doc.to_dict()
-            if not ag_data: continue
+        query_proximos = agendamentos_ref.where(
+            filter=FieldFilter('status', '==', 'confirmado')
+        ).where(
+            filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt.replace(hour=0, minute=0, second=0))
+        )
+        
+        # *** LÓGICA DE PERMISSÃO APLICADA AQUI TAMBÉM ***
+        if user_role != 'admin':
+            if profissional_id_logado:
+                # CORREÇÃO: Usando 'profissional_id' para consistência com o resto do app
+                query_proximos = query_proximos.where(
+                    filter=FieldFilter('profissional_id', '==', profissional_id_logado)
+                )
+            else:
+                # Se não houver profissional associado, a lista ficará vazia.
+                proximos_agendamentos_lista = [] 
 
-            servico_info = servicos_procedimentos_map.get(ag_data.get('servico_procedimento_id'), {'nome': 'N/A', 'preco': 0.0})
-            data_fmt = "N/A"
-            if ag_data.get('data_agendamento'):
-                try:
-                    data_fmt = datetime.datetime.strptime(ag_data['data_agendamento'], '%Y-%m-%d').strftime('%d/%m/%Y')
-                except ValueError:
-                    data_fmt = ag_data['data_agendamento']
-
-            proximos_agendamentos_lista.append({
-                'data_agendamento': data_fmt,
-                'hora_agendamento': ag_data.get('hora_agendamento', "N/A"),
-                'cliente_nome': ag_data.get('paciente_nome', "N/A"),
-                'profissional_nome': ag_data.get('profissional_nome', "N/A"),
-                'servico_procedimento_nome': servico_info.get('nome'),
-                'preco': float(servico_info.get('preco', 0)),
-                'status': ag_data.get('status', "N/A")
-            })
+        # Apenas executa a query se for admin ou se for um profissional válido
+        if user_role == 'admin' or profissional_id_logado:
+            docs_proximos = query_proximos.order_by('data_agendamento_ts').limit(10).stream()
+            for doc in docs_proximos:
+                ag_data = doc.to_dict()
+                if ag_data and ag_data.get('data_agendamento_ts'):
+                    proximos_agendamentos_lista.append({
+                        'id_profissional': ag_data.get('profissional_id'), # CORREÇÃO: campo correto
+                        'data_agendamento': ag_data.get('data_agendamento_ts').strftime('%d/%m/%Y'),
+                        'hora_agendamento': ag_data.get('hora_agendamento', "N/A"),
+                        'cliente_nome': ag_data.get('paciente_nome', "N/A"),
+                        'profissional_nome': ag_data.get('profissional_nome', "N/A"),
+                        'servico_procedimento_nome': ag_data.get('servico_procedimento_nome', "N/A"),
+                        'preco': float(ag_data.get('servico_procedimento_preco', 0.0))
+                    })
     except Exception as e:
-        print(f"ERRO CRÍTICO ao buscar próximos agendamentos: {e}. Verifique os índices.")
+        print(f"ERRO ao buscar próximos agendamentos: {e}")
         flash("Erro ao carregar próximos agendamentos.", "danger")
 
-    return render_template('dashboard.html', hoje_data=hoje_data, semana_data=semana_data,
-                            mes_data=mes_data, proximos_agendamentos=proximos_agendamentos_lista,
-                            nome_clinica=session.get('clinica_nome_display', 'Sua Clínica'),
-                            current_year=current_year,
-                            dados_desempenho_semana=dados_desempenho_semana,
-                            dados_servicos_populares=dados_servicos_populares)
+    # --- 7. RENDERIZAÇÃO DO TEMPLATE ---
+    return render_template(
+        'dashboard.html',
+        current_year=current_year,
+        mes_atual_nome=mes_atual_nome,
+        kpi=kpi_cards,
+        proximos_agendamentos=proximos_agendamentos_lista,
+        dados_atendimento_vs_receita=json.dumps(dados_atendimento_vs_receita),
+        dados_receita_procedimento=json.dumps(dados_receita_procedimento),
+        dados_desempenho_profissional=json.dumps(dados_desempenho_profissional)
+    )
+
 
 @app.route('/usuarios')
 @login_required
