@@ -1,38 +1,55 @@
+import datetime
+import json  # Alterado de ujson para a biblioteca padrão json
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, render_template_string
-from flask_cors import CORS
+from functools import wraps
+
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth_admin
-import datetime
+from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify, render_template_string
+from flask_cors import CORS
 import pytz
-from collections import Counter
-import ujson as json
 
 from google.cloud.firestore_v1.base_query import FieldFilter
-
+from collections import Counter # Importação adicionada, pois Counter é usado no dashboard
 
 app = Flask(__name__)
 # A chave secreta será usada para segurança da sessão do Flask
-app.secret_key = os.urandom(24)
+app.secret_key = os.urandom(24) # Mantenha esta linha para geração de chave segura
 CORS(app) # 2. INICIALIZAÇÃO DO CORS (ESSENCIAL PARA O LOGIN FUNCIONAR)
 
+# Inicialização do Firebase Admin SDK
 db = None
 try:
-    # Tenta inicializar o Firebase Admin SDK usando um arquivo de chave de conta de serviço local.
-    # Isso é útil para desenvolvimento local, mas para produção, variáveis de ambiente são recomendadas por segurança.
-    cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
-    if not os.path.exists(cred_path):
-        raise FileNotFoundError("serviceAccountKey.json file not found in project root. It is required for Firebase connection.")
-
-    cred = credentials.Certificate(cred_path)
-    if not firebase_admin._apps:
-        firebase_admin.initialize_app(cred)
-        print("🔥 Firebase Admin SDK inicializado pela primeira vez!")
+    # Use as variáveis de ambiente fornecidas pelo ambiente Canvas
+    # __firebase_config é uma string JSON que contém as credenciais da conta de serviço
+    firebase_config_str = os.environ.get('__firebase_config')
+    if firebase_config_str:
+        firebase_config_dict = json.loads(firebase_config_str)
+        cred = credentials.Certificate(firebase_config_dict)
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred)
+            print("🔥 Firebase Admin SDK inicializado usando __firebase_config!")
+        else:
+            print("🔥 Firebase Admin SDK já foi inicializado.")
+        db = firestore.client()
     else:
-        print("🔥 Firebase Admin SDK já foi inicializado.")
-    db = firestore.client()
+        # Fallback para ambiente de desenvolvimento local se __firebase_config não estiver presente
+        # Em produção no Canvas, essa parte NÃO será executada.
+        cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app(cred)
+                print("🔥 Firebase Admin SDK inicializado a partir de serviceAccountKey.json (desenvolvimento)!")
+            else:
+                print("🔥 Firebase Admin SDK já foi inicializado.")
+            db = firestore.client()
+        else:
+            print("⚠️ Nenhuma credencial Firebase encontrada (__firebase_config ou serviceAccountKey.json). Firebase Admin SDK não inicializado.")
 except Exception as e:
     print(f"🚨 ERRO CRÍTICO ao inicializar o Firebase Admin SDK: {e}")
+    # Em um ambiente de produção real, você pode querer registrar este erro e sair do aplicativo
+    # exit(1)
 
 # Define o fuso horário de São Paulo para consistência nas operações de data e hora.
 SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
@@ -56,8 +73,8 @@ def convert_doc_to_dict(doc_snapshot):
             return {k: _convert_value(v) for k, v in value.items()}
         elif isinstance(value, list):
             return [_convert_value(item) for item in value]
-        if isinstance(value, type(app.jinja_env.undefined)):
-            return None
+        # if isinstance(value, type(app.jinja_env.undefined)): # Removido, pois app.jinja_env pode não estar disponível em todos os contextos
+        #     return None
         return value
 
     return {k: _convert_value(v) for k, v in data.items()}
@@ -85,7 +102,6 @@ def parse_date_input(date_string):
 
 
 def login_required(f):
-    from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session or 'clinica_id' not in session or 'user_uid' not in session:
@@ -97,7 +113,6 @@ def login_required(f):
     return decorated_function
 
 def admin_required(f):
-    from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session or 'clinica_id' not in session or 'user_uid' not in session:
@@ -143,6 +158,7 @@ def session_login():
             session['clinica_id'] = mapeamento_data['clinica_id']
             session['clinica_nome_display'] = mapeamento_data.get('nome_clinica_display', 'Clínica On')
             session['user_role'] = mapeamento_data['role']
+            session['user_name'] = mapeamento_data.get('nome_completo', email) # Adicionado para uso em templates
 
             print(f"Usuário {email} logado com sucesso. Função: {session['user_role']}")
             return jsonify({"success": True, "message": "Login bem-sucedido!"})
@@ -1525,7 +1541,7 @@ def ativar_desativar_horario(profissional_doc_id, horario_doc_id):
             flash('Horário não encontrado.', 'danger')
     except Exception as e:
         flash(f'Erro ao alterar o status do horário: {e}', 'danger')
-        print(f"Erro em activate_deactivate_schedule: {e}")
+        print(f"Erro in activate_deactivate_schedule: {e}")
     return redirect(url_for('listar_horarios'))
 
 @app.route('/agendamentos')
@@ -1594,13 +1610,13 @@ def listar_agendamentos():
             dt_inicio_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_inicio'], '%Y-%m-%d')).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_utc))
         except ValueError:
-            flash('Data de início inválida. Use o formatoญี่ป-MM-DD.', 'warning')
+            flash('Data de início inválida. Use o formato AAAA-MM-DD.', 'warning')
     if filtros_atuais['data_fim']:
         try:
             dt_fim_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_fim'], '%Y-%m-%d').replace(hour=23, minute=59, second=59)).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_utc))
         except ValueError:
-            flash('Data de término inválida. Use o formatoญี่ป-MM-DD.', 'warning')
+            flash('Data de término inválida. Use o formato AAAA-MM-DD.', 'warning')
 
     try:
         docs_stream = query.order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING).stream()
@@ -1668,7 +1684,7 @@ def registrar_atendimento_manual():
         preco_servico = float(preco_str.replace(',', '.'))
 
         paciente_ref_query = db.collection('clinicas').document(clinica_id).collection('pacientes')\
-                               .where(filter=FieldFilter('nome', '==', paciente_nome)).limit(1).get()
+                                     .where(filter=FieldFilter('nome', '==', paciente_nome)).limit(1).get()
         
         paciente_doc_id = None
         if paciente_ref_query:
@@ -1920,14 +1936,14 @@ def adicionar_anamnese(paciente_doc_id):
     profissional_nome = "Profissional Desconhecido"
     try:
         prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais')\
-                               .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
+                                     .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
         for doc in prof_query:
             profissional_doc_id = doc.id
             profissional_nome = doc.to_dict().get('nome', profissional_nome)
             break
         if not profissional_doc_id:
-              flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
-              return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+             flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
+             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     except Exception as e:
         flash(f'Erro ao verificar profissional associado: {e}', 'danger')
@@ -1964,6 +1980,7 @@ def adicionar_anamnese(paciente_doc_id):
                 'profissional_id': profissional_doc_id,
                 'data_registro': firestore.SERVER_TIMESTAMP,
                 'tipo_registro': 'anamnese',
+                'titulo': 'Anamnese', # Adicionado um título padrão para anamnese
                 'conteudo': conteudo,
                 'modelo_base_id': modelo_base_id if modelo_base_id else None
             })
@@ -1984,6 +2001,24 @@ def adicionar_anamnese(paciente_doc_id):
 @login_required
 def editar_anamnese(paciente_doc_id, anamnese_doc_id):
     clinica_id = session['clinica_id']
+    profissional_logado_uid = session.get('user_uid')
+
+    # FIX: Obter profissional_doc_id no bloco GET para que esteja disponível
+    profissional_doc_id = None
+    try:
+        prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais')\
+                                     .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
+        for doc in prof_query:
+            profissional_doc_id = doc.id
+            break
+        if not profissional_doc_id:
+             flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
+             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+    except Exception as e:
+        flash(f'Erro ao verificar profissional associado para edição: {e}', 'danger')
+        print(f"Erro edit_anamnesis (GET - professional check): {e}")
+        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
     anamnese_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(anamnese_doc_id)
     paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
     
@@ -2028,7 +2063,8 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         if anamnese_doc.exists and anamnese_doc.to_dict().get('tipo_registro') == 'anamnese':
             anamnese_data = anamnese_doc.to_dict()
             anamnese_data['id'] = anamnese_doc.id    
-            anamnese_data['profissional_id_fk'] = profissional_doc_id # Assuming you need this for display, though not for update
+            # PROFISSIONAL_DOC_ID AGORA ESTÁ DISPONÍVEL AQUI
+            anamnese_data['profissional_id_fk'] = profissional_doc_id # Adicionado para compatibilidade, se necessário no template
             
             return render_template('anamnese_form.html',    
                                     paciente_id=paciente_doc_id,    
@@ -2055,7 +2091,7 @@ def registrar_registro_generico(paciente_doc_id):
     profissional_nome = "Profissional Desconhecido"
     try:
         prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais') \
-                               .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
+                                     .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
         for doc in prof_query:
             profissional_doc_id = doc.id
             profissional_nome = doc.to_dict().get('nome', profissional_nome)
@@ -2235,3 +2271,4 @@ def excluir_modelo_anamnese(modelo_doc_id):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
+
