@@ -16,19 +16,23 @@ CORS(app)
 
 db = None
 try:
-    cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
-    if not os.path.exists(cred_path):
-        raise FileNotFoundError("serviceAccountKey.json file not found in project root. It is required for Firebase connection.")
+    key_json_str = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY_JSON")
+    if not key_json_str:
+        raise EnvironmentError("Variável de ambiente 'GOOGLE_SERVICE_ACCOUNT_KEY_JSON' não encontrada.")
+    
+    key_json = json.loads(key_json_str)
+    cred = credentials.Certificate(key_json)
 
-    cred = credentials.Certificate(cred_path)
     if not firebase_admin._apps:
         firebase_admin.initialize_app(cred)
-        print("🔥 Firebase Admin SDK inicializado pela primeira vez!")
+        print("🔥 Firebase Admin SDK inicializado pela primeira vez via variável de ambiente!")
     else:
-        print("🔥 Firebase Admin SDK já foi inicializado.")
+        print("🔥 Firebase Admin SDK já estava inicializado.")
+
     db = firestore.client()
+
 except Exception as e:
-    print(f"🚨 ERRO CRÍTICO ao inicializar o Firebase Admin SDK: {e}")
+    print(f"🚨 ERRO CRÍTICO ao inicializar Firebase Admin SDK: {e}")
 
 SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
 
