@@ -34,6 +34,12 @@
             --dark-border-color: #334155;
             
             color-scheme: light;
+
+            /* Cores para os status dos agendamentos */
+            --status-confirmado: #16a34a; /* Verde */
+            --status-concluido: #0ea5e9; /* Azul */
+            --status-pendente: #f59e0b; /* Laranja */
+            --status-cancelado: #dc2626; /* Vermelho */
         }
 
         [data-theme="dark"] {
@@ -43,6 +49,12 @@
             --muted: var(--dark-muted);
             --border-color: var(--dark-border-color);
             color-scheme: dark;
+
+            /* Cores para os status em tema escuro (opcionalmente ajustadas) */
+            --status-confirmado: #22c55e;
+            --status-concluido: #38bdf8;
+            --status-pendente: #fbbf24;
+            --status-cancelado: #ef4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -147,8 +159,14 @@
         .time-slot.booked { background-color: color-mix(in srgb, var(--info) 10%, transparent); cursor: pointer; }
         .time-slot.booked:hover { background-color: color-mix(in srgb, var(--info) 20%, transparent); }
         .time-slot .time { font-weight: 600; color: var(--muted); width: 60px; }
-        .time-slot .details { flex-grow: 1; font-weight: 500; color: var(--primary); }
-        .time-slot.booked .details { color: var(--info); }
+        .time-slot .details { flex-grow: 1; font-weight: 500; } /* Removido a cor primária padrão */
+
+        /* Adicionado para colorir o nome do paciente de acordo com o status */
+        .time-slot .details.status-confirmado { color: var(--status-confirmado); }
+        .time-slot .details.status-concluido { color: var(--status-concluido); }
+        .time-slot .details.status-pendente { color: var(--status-pendente); }
+        .time-slot .details.status-cancelado { color: var(--status-cancelado); }
+
 
         /* Modal Styles (reused) */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.25s ease; }
@@ -372,13 +390,13 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                      <label for="paciente_id_manual">Selecionar Paciente Existente</label>
-                      <select id="paciente_id_manual" name="paciente_id">
-                          <option value="">-- Ou digite um novo paciente abaixo --</option>
-                          {% for paciente in pacientes_para_filtro %}
-                              <option value="{{ paciente.id }}" data-telefone="{{ paciente.contato_telefone or '' }}">{{ paciente.nome }}</option>
-                          {% endfor %}
-                      </select>
+                        <label for="paciente_id_manual">Selecionar Paciente Existente</label>
+                        <select id="paciente_id_manual" name="paciente_id">
+                            <option value="">-- Ou digite um novo paciente abaixo --</option>
+                            {% for paciente in pacientes_para_filtro %}
+                                <option value="{{ paciente.id }}" data-telefone="{{ paciente.contato_telefone or '' }}">{{ paciente.nome }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="cliente_nome_manual">Nome do Paciente (Novo ou selecionado)</label>
@@ -389,22 +407,22 @@
                         <input type="tel" id="cliente_telefone_manual" name="cliente_telefone_manual" placeholder="(XX) XXXXX-XXXX">
                     </div>
                     <div class="form-group">
-                      <label for="profissional_id_manual">Profissional</label>
-                      <select id="profissional_id_manual" name="barbeiro_id_manual" required>
-                      <option value="">Selecione o profissional</option>
-                        {% for profissional in profissionais_para_filtro %} 
-                        <option value="{{ profissional.id }}">{{ profissional.nome }}</option> {# Corrigido aqui: professional para profissional #}
-                        {% endfor %}
-                      </select>
+                        <label for="profissional_id_manual">Profissional</label>
+                        <select id="profissional_id_manual" name="barbeiro_id_manual" required>
+                        <option value="">Selecione o profissional</option>
+                            {% for professional in profissionais_para_filtro %} 
+                            <option value="{{ professional.id }}">{{ professional.nome }}</option> {# Corrigido aqui: professional para profissional #}
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="form-group">
-                      <label for="servico_id_manual">Serviço/Procedimento</label>
-                      <select id="servico_id_manual" name="servico_id_manual" required>
-                        <option value="">Selecione o serviço/procedimento</option>
-                        {% for servico_proc in servicos_ativos %} 
-                        <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }} (R$ {{ "%.2f"|format(servico_proc.preco|float) }})</option>
-                        {% endfor %}
-                      </select>
+                        <label for="servico_id_manual">Serviço/Procedimento</label>
+                        <select id="servico_id_manual" name="servico_id_manual" required>
+                            <option value="">Selecione o serviço/procedimento</option>
+                            {% for servico_proc in servicos_ativos %} 
+                            <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }} (R$ {{ "%.2f"|format(servico_proc.preco|float) }})</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -426,6 +444,7 @@
                             <option value="confirmado" selected>Confirmado</option>
                             <option value="concluido">Concluído</option>
                             <option value="pendente">Pendente</option>
+                            <option value="cancelado">Cancelado</option>
                         </select>
                     </div>
                 </div>
@@ -579,8 +598,10 @@
                         let eventHtml = '';
                         if(appointments[dateString]) {
                             eventHtml += '<div class="day-events">';
+                            // Usar map para adicionar a classe de status
                             appointments[dateString].slice(0, 2).forEach(app => {
-                                eventHtml += `<div class="day-event">${app.paciente_nome}</div>`;
+                                // Adiciona a classe 'status-' + status do agendamento
+                                eventHtml += `<div class="day-event status-${app.status}">${app.paciente_nome}</div>`;
                             });
                             if (appointments[dateString].length > 2) {
                                 eventHtml += `<div style="font-size: 0.7rem; text-align: center;">+${appointments[dateString].length - 2} mais...</div>`;
@@ -597,11 +618,11 @@
                     `;
                     
                     document.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayEl => {
-                             dayEl.addEventListener('click', () => {
-                                selectedDate = new Date(dayEl.dataset.date + 'T00:00:00');
-                                renderCalendar(currentDate); 
-                                renderAgenda(selectedDate);
-                             });
+                                   dayEl.addEventListener('click', () => {
+                                   selectedDate = new Date(dayEl.dataset.date + 'T00:00:00');
+                                   renderCalendar(currentDate); 
+                                   renderAgenda(selectedDate);
+                                  });
                     });
                 }
 
@@ -624,7 +645,9 @@
                             
                             const detailsText = bookedAppointment ? bookedAppointment.paciente_nome : 'Disponível';
                             
-                            slotEl.innerHTML = `<div class="time">${timeStr}</div><div class="details">${detailsText}</div>`;
+                            // Adiciona a classe de status ao elemento 'details'
+                            const statusClass = bookedAppointment ? `status-${bookedAppointment.status}` : '';
+                            slotEl.innerHTML = `<div class="time">${timeStr}</div><div class="details ${statusClass}">${detailsText}</div>`;
                             
                             if (bookedAppointment) {
                                 slotEl.classList.add('booked');
@@ -695,11 +718,11 @@
                     };
 
                     btnApagar.onclick = () => {
-                             if (confirm('Tem certeza que deseja apagar este agendamento? Esta ação não pode ser desfeita.')) {
-                                formApagar.action = "{{ url_for('apagar_agendamento') }}"; // Ação da rota já configurada
-                                document.getElementById('agendamento_id_apagar').value = agendamento.id; // Define o ID no campo oculto
-                                formApagar.submit();
-                             }
+                                   if (confirm('Tem certeza que deseja apagar este agendamento? Esta ação não pode ser desfeita.')) {
+                                       formApagar.action = "{{ url_for('apagar_agendamento') }}"; // Ação da rota já configurada
+                                       document.getElementById('agendamento_id_apagar').value = agendamento.id; // Define o ID no campo oculto
+                                       formApagar.submit();
+                                   }
                     };
 
                     modalDetalhes.classList.add('active');
@@ -754,20 +777,20 @@
                 const telefoneInputManual = document.getElementById('cliente_telefone_manual');
                 if(pacienteSelectManual && nomeInputManual && telefoneInputManual) {
                     pacienteSelectManual.addEventListener('change', function() {
-                           const selectedOption = this.options[this.selectedIndex];
-                           if (selectedOption.value) {
-                               nomeInputManual.value = selectedOption.text;
-                               telefoneInputManual.value = selectedOption.dataset.telefone || '';
-                               nomeInputManual.readOnly = true;
-                               // Telefone pode ser editado mesmo com paciente selecionado
-                               telefoneInputManual.readOnly = false;
-                           } else {
-                               nomeInputManual.value = '';
-                               telefoneInputManual.value = '';
-                               nomeInputManual.readOnly = false;
-                               telefoneInputManual.readOnly = false;
-                           }
-                     });
+                               const selectedOption = this.options[this.selectedIndex];
+                               if (selectedOption.value) {
+                                   nomeInputManual.value = selectedOption.text;
+                                   telefoneInputManual.value = selectedOption.dataset.telefone || '';
+                                   nomeInputManual.readOnly = true;
+                                   // Telefone pode ser editado mesmo com paciente selecionado
+                                   telefoneInputManual.readOnly = false;
+                               } else {
+                                   nomeInputManual.value = '';
+                                   telefoneInputManual.value = '';
+                                   nomeInputManual.readOnly = false;
+                                   telefoneInputManual.readOnly = false;
+                               }
+                           });
                 }
                 
                 populateSelectors();
