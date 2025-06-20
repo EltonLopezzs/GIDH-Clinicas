@@ -1814,6 +1814,7 @@ def apagar_agendamento():
         flash(f'Erro ao apagar agendamento: {e}', 'danger')
         print(f"Erro delete_appointment: {e}")
     return redirect(url_for('listar_agendamentos'))
+
 @app.route('/prontuarios')
 @login_required
 def buscar_prontuario():
@@ -1919,14 +1920,14 @@ def adicionar_anamnese(paciente_doc_id):
     profissional_nome = "Profissional Desconhecido"
     try:
         prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais')\
-                                     .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
+                               .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
         for doc in prof_query:
             profissional_doc_id = doc.id
             profissional_nome = doc.to_dict().get('nome', profissional_nome)
             break
         if not profissional_doc_id:
-             flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
-             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+              flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
+              return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     except Exception as e:
         flash(f'Erro ao verificar profissional associado: {e}', 'danger')
@@ -1963,7 +1964,6 @@ def adicionar_anamnese(paciente_doc_id):
                 'profissional_id': profissional_doc_id,
                 'data_registro': firestore.SERVER_TIMESTAMP,
                 'tipo_registro': 'anamnese',
-                'titulo': 'Anamnese', # Adicionado um título padrão para anamnese
                 'conteudo': conteudo,
                 'modelo_base_id': modelo_base_id if modelo_base_id else None
             })
@@ -1984,24 +1984,6 @@ def adicionar_anamnese(paciente_doc_id):
 @login_required
 def editar_anamnese(paciente_doc_id, anamnese_doc_id):
     clinica_id = session['clinica_id']
-    profissional_logado_uid = session.get('user_uid')
-
-    # FIX: Obter profissional_doc_id no bloco GET para que esteja disponível
-    profissional_doc_id = None
-    try:
-        prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais')\
-                                     .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
-        for doc in prof_query:
-            profissional_doc_id = doc.id
-            break
-        if not profissional_doc_id:
-             flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
-             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
-    except Exception as e:
-        flash(f'Erro ao verificar profissional associado para edição: {e}', 'danger')
-        print(f"Erro edit_anamnesis (GET - professional check): {e}")
-        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
-
     anamnese_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(anamnese_doc_id)
     paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
     
@@ -2046,8 +2028,7 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         if anamnese_doc.exists and anamnese_doc.to_dict().get('tipo_registro') == 'anamnese':
             anamnese_data = anamnese_doc.to_dict()
             anamnese_data['id'] = anamnese_doc.id    
-            # PROFISSIONAL_DOC_ID AGORA ESTÁ DISPONÍVEL AQUI
-            anamnese_data['profissional_id_fk'] = profissional_doc_id # Adicionado para compatibilidade, se necessário no template
+            anamnese_data['profissional_id_fk'] = profissional_doc_id # Assuming you need this for display, though not for update
             
             return render_template('anamnese_form.html',    
                                     paciente_id=paciente_doc_id,    
@@ -2074,7 +2055,7 @@ def registrar_registro_generico(paciente_doc_id):
     profissional_nome = "Profissional Desconhecido"
     try:
         prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais') \
-                                     .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
+                               .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
         for doc in prof_query:
             profissional_doc_id = doc.id
             profissional_nome = doc.to_dict().get('nome', profissional_nome)
@@ -2254,4 +2235,3 @@ def excluir_modelo_anamnese(modelo_doc_id):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
-
