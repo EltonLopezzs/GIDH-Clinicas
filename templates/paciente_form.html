@@ -262,13 +262,13 @@
 
             <main>
                 {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
-                    <div class="flash-messages">
-                      {% for category, message in messages %}
-                        <div class="flash-message {{ category }}">{{ message }}</div>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="flash-message {{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 {% endwith %}
 
                 <div class="form-card">
@@ -353,6 +353,18 @@
                         </div>
                         
                         <h3 class="section-title">Outras Informações</h3>
+                        <div class="form-group">
+                            <label for="convenio_id">Convênio</label>
+                            <select id="convenio_id" name="convenio_id">
+                                <option value="">Nenhum / Particular</option>
+                                {% for convenio in convenios %}
+                                    <option value="{{ convenio.id }}" 
+                                        {% if (request.form.convenio_id and request.form.convenio_id == convenio.id) or (paciente and paciente.convenio_id == convenio.id) %}selected{% endif %}>
+                                        {{ convenio.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label for="observacoes">Observações Gerais (Serão exibidas no prontuário)</label>
                             <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações relevantes sobre o paciente, alergias, etc.">{{ request.form.observacoes if 'observacoes' in request.form else paciente.observacoes if paciente else '' }}</textarea>
