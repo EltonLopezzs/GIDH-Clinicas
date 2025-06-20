@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - OnClínica</title>
-    
+
     <!-- Ícone da Aba e PWA -->
-    <link rel="icon" type="image/png" href="https://placehold.co/40x40/a6683c/ffffff?text=C">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/a6683c/ffffff?text=C">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/SMYRwQT.png"> <!-- Novo ícone -->
+    <link rel="apple-touch-icon" href="https://i.imgur.com/SMYRwQT.png"> <!-- Novo ícone -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#29788d">
 
@@ -24,16 +24,24 @@
             --text-color: #374151;
             --muted-color: #6c757d;
             --danger-color: #dc3545;
+            --success-color: #28a745; /* Cor para mensagens de sucesso */
             --medical-blue: #2196F3; 
+            --input-border: #e2e8f0; /* Cor da borda dos inputs */
+            --input-focus-shadow: rgba(41, 120, 141, 0.25); /* Sombra ao focar input */
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        /* Reset básico e box-sizing */
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
 
         body {
             font-family: 'Inter', sans-serif; 
             background-image: 
                 linear-gradient(rgba(17, 24, 39, 0.8), rgba(17, 24, 39, 0.8)),
-              url('https://i.imgur.com/DsaI1J3.jpeg');   /*  https://wallpapers.com/images/hd/blue-vital-sign-hd-medical-m0tj1swas1gb75k9.jpg */
+                url('https://i.imgur.com/DsaI1J3.jpeg'); 
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -43,72 +51,265 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 20px; /* Adiciona padding ao body para respiro em telas pequenas */
         }
 
-        .login-wrapper { max-width: 380px; width: 100%; }
+        .login-wrapper { 
+            max-width: 400px; /* Aumenta um pouco a largura máxima do wrapper */
+            width: 100%; 
+        }
         
         .login-card {
             background: var(--card-bg);
-            padding: 35px;
+            padding: 40px; /* Aumenta o padding do card para mais espaço interno */
             border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); /* Sombra mais pronunciada */
             text-align: center;
             animation: fadeIn 0.5s ease-out;
+            border: 1px solid #e0e0e0; /* Adiciona uma borda sutil */
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
+            from { opacity: 0; transform: translateY(-20px); } /* Efeito de entrada mais suave */
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .login-header { margin-bottom: 25px; }
-        .login-header .logo-container { margin-bottom: 15px; } 
-        .login-header .logo-icon { 
-            font-size: 4rem; 
-            color: var(--primary-color); 
-            display: block; 
-            margin: 0 auto 10px;
+        .login-header { 
+            margin-bottom: 30px; /* Mais espaço abaixo do cabeçalho */
         }
-        .login-header h2 { font-size: 1.8rem; color: var(--text-color); font-weight: 700; }
+        .login-header .logo-container { 
+            margin-bottom: 20px; /* Espaço abaixo do logo */
+        } 
+        .login-header .logo-img { 
+            width: 90px; /* Aumenta um pouco o tamanho do logo */
+            height: 90px;
+            display: block;
+            margin: 0 auto 10px;
+            border-radius: 50%; 
+            object-fit: cover;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Sombra suave para o logo */
+        }
+        .login-header h2 { 
+            font-size: 2rem; /* Aumenta um pouco o título */
+            color: var(--text-color); 
+            font-weight: 700; 
+            letter-spacing: -0.5px; /* Ajuste para melhor leitura */
+        }
         
-        .form-group { margin-bottom: 18px; position: relative; }
+        .form-group { 
+            margin-bottom: 20px; /* Aumenta o espaçamento entre os grupos de formulário */
+            position: relative; 
+        }
         .form-group .input-icon {
-            position: absolute; left: 15px; top: 50%;
-            transform: translateY(-50%); color: var(--muted-color);
+            position: absolute; 
+            left: 18px; /* Ajusta a posição do ícone */
+            top: 50%;
+            transform: translateY(-50%); 
+            color: var(--muted-color);
+            font-size: 1.1rem; /* Aumenta um pouco o ícone */
         }
         .form-group input {
-            width: 100%; padding: 14px 14px 14px 45px;
-            border: 1px solid #dee2e6; border-radius: 8px; font-size: 1rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%; 
+            padding: 15px 15px 15px 50px; /* Mais padding interno e para o ícone */
+            border: 1px solid var(--input-border); 
+            border-radius: 10px; /* Cantos mais arredondados */
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease; /* Transição mais suave */
+            background-color: #f9fafb; /* Fundo levemente cinza para os inputs */
+            color: var(--text-color);
+        }
+        .form-group input::placeholder {
+            color: var(--muted-color);
+            opacity: 0.7; /* Torna o placeholder mais sutil */
         }
         .form-group input:focus {
-            outline: none; border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent);
+            outline: none; 
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px var(--input-focus-shadow); /* Sombra de foco mais visível */
+            background-color: var(--card-bg); /* Fundo branco ao focar */
         }
         
         .btn-login {
-            width: 100%; padding: 15px;
+            width: 100%; 
+            padding: 16px; /* Mais padding para o botão */
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white; border: none; border-radius: 8px; font-size: 1.1rem;
-            font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
-            text-transform: uppercase; letter-spacing: 0.5px;
+            color: white; 
+            border: none; 
+            border-radius: 10px; /* Cantos mais arredondados */
+            font-size: 1.15rem; /* Fonte um pouco maior */
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+            text-transform: uppercase; 
+            letter-spacing: 1px; /* Mais espaçamento entre letras */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Sombra para o botão */
         }
-        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+        .btn-login:hover { 
+            transform: translateY(-3px); /* Efeito de elevação mais pronunciado */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); 
+            background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 90%, black), color-mix(in srgb, var(--secondary-color) 90%, black)); /* Escurece o gradiente no hover */
+        }
+        .btn-login:active {
+            transform: translateY(0); /* Volta ao normal no clique */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
         
-        .firebase-error, .flash-message {
-            margin-top: 15px; font-weight: 500;
-            padding: 10px; border-radius: 8px;
+        /* Mensagens de erro/sucesso */
+        .firebase-error, .flash-message, .form-message { 
+            margin-top: 20px; /* Mais espaço acima das mensagens */
+            font-weight: 500;
+            padding: 12px; /* Mais padding */
+            border-radius: 10px; /* Cantos mais arredondados */
             border: 1px solid transparent;
+            text-align: left; 
+            font-size: 0.95rem; /* Ajuste no tamanho da fonte */
         }
-        .firebase-error, .flash-message.danger { color: var(--danger-color); background-color: color-mix(in srgb, var(--danger-color) 10%, transparent); border-color: color-mix(in srgb, var(--danger-color) 20%, transparent); }
+        .firebase-error, .flash-message.danger, .form-message.error { 
+            color: var(--danger-color); 
+            background-color: color-mix(in srgb, var(--danger-color) 15%, transparent); 
+            border-color: color-mix(in srgb, var(--danger-color) 30%, transparent); 
+        }
+        .form-message.success { 
+            color: var(--success-color); 
+            background-color: color-mix(in srgb, var(--success-color) 15%, transparent); 
+            border-color: color-mix(in srgb, var(--success-color) 30%, transparent); 
+        }
 
-        #loading-indicator { display: none; margin-top: 15px; font-style: italic; color: var(--muted-color); }
+        #loading-indicator { 
+            display: none; 
+            margin-top: 20px; /* Mais espaço */
+            font-style: italic; 
+            color: var(--muted-color); 
+        }
 
-        .support-link { margin-top: 25px; font-size: 0.9rem; color: #e5e7eb; text-align: center; }
-        .support-link a { color: var(--secondary-color); font-weight: 600; text-decoration: none; transition: color 0.2s; }
-        .support-link a:hover { color: #ffffff; text-decoration: underline; }
+        .forgot-password-link {
+            margin-top: 20px; /* Mais espaço para o link */
+            font-size: 0.9rem;
+        }
+        .forgot-password-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+        .forgot-password-link a:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
 
+        .support-link { 
+            margin-top: 30px; /* Mais espaço do card */
+            font-size: 0.9rem; 
+            color: #e5e7eb; 
+            text-align: center; 
+        }
+        .support-link a { 
+            color: var(--secondary-color); 
+            font-weight: 600; 
+            text-decoration: none; 
+            transition: color 0.2s; 
+        }
+        .support-link a:hover { 
+            color: #ffffff; 
+            text-decoration: underline; 
+        }
+
+        /* Estilos para o Modal de Redefinição de Senha */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            padding: 35px; /* Aumenta o padding do modal */
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Sombra mais forte */
+            text-align: center;
+            max-width: 420px; /* Ajusta a largura máxima */
+            width: 90%;
+            transform: translateY(-30px); /* Efeito de entrada mais visível */
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            position: relative; 
+            border: 1px solid #dcdcdc; /* Borda sutil */
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal-card h3 {
+            font-size: 1.6rem; /* Título maior */
+            color: var(--primary-color);
+            margin-bottom: 25px; /* Mais espaço abaixo do título */
+            font-weight: 700;
+        }
+
+        .modal-card .form-group {
+            margin-bottom: 25px; /* Mais espaço entre os inputs do modal */
+        }
+
+        .modal-card .btn-reset {
+            width: 100%;
+            padding: 14px; /* Mais padding para o botão */
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-card .btn-reset:hover {
+            background-color: color-mix(in srgb, var(--primary-color) 85%, black);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.25);
+        }
+        .modal-card .btn-reset:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-card .close-modal-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.6rem; /* Tamanho maior para o 'x' */
+            color: var(--muted-color);
+            cursor: pointer;
+            transition: color 0.2s ease;
+            padding: 5px; /* Adiciona padding para facilitar o clique */
+            line-height: 1;
+        }
+
+        .modal-card .close-modal-btn:hover {
+            color: var(--danger-color);
+        }
+
+        /* Notificações PWA */
         .install-notification {
             position: fixed;
             bottom: 20px;
@@ -125,20 +326,76 @@
             gap: 15px;
             animation: slideUp 0.5s ease-out;
             max-width: 90%;
+            font-size: 0.95rem; /* Ajuste do tamanho da fonte */
         }
         @keyframes slideUp {
             from { transform: translate(-50%, 100px); opacity: 0; }
             to { transform: translate(-50%, 0); opacity: 1; }
         }
-        .install-notification img { width: 40px; height: 40px; border-radius: 8px; }
-        .install-notification .install-text { font-size: 0.95rem; }
+        .install-notification img { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 8px; 
+            flex-shrink: 0; /* Impede que a imagem encolha */
+        }
+        .install-notification .install-text { 
+            flex-grow: 1; /* Permite que o texto ocupe o espaço disponível */
+            line-height: 1.4;
+        }
         .install-notification .install-btn {
-            background-color: var(--primary-color); color: white; border: none;
-            padding: 8px 15px; border-radius: 8px; font-weight: 600; cursor: pointer;
+            background-color: var(--primary-color); 
+            color: white; 
+            border: none;
+            padding: 10px 18px; /* Mais padding */
+            border-radius: 8px; 
+            font-weight: 600; 
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            white-space: nowrap; /* Evita que o texto do botão quebre linha */
+        }
+        .install-notification .install-btn:hover {
+            background-color: color-mix(in srgb, var(--primary-color) 85%, black);
         }
         .install-notification .close-btn {
-            background: none; border: none; color: #9ca3af;
-            font-size: 1.2rem; cursor: pointer; padding: 5px; line-height: 1;
+            background: none; 
+            border: none; 
+            color: #9ca3af;
+            font-size: 1.3rem; /* Tamanho maior para o 'x' */
+            cursor: pointer; 
+            padding: 5px; 
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .install-notification .close-btn:hover {
+            color: white;
+        }
+
+        /* Media Queries para responsividade */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 25px; /* Menor padding em telas muito pequenas */
+            }
+            .login-header h2 {
+                font-size: 1.6rem;
+            }
+            .form-group input {
+                padding: 12px 12px 12px 40px;
+                font-size: 0.95rem;
+            }
+            .form-group .input-icon {
+                left: 12px;
+                font-size: 1rem;
+            }
+            .btn-login {
+                padding: 14px;
+                font-size: 1rem;
+            }
+            .modal-card {
+                padding: 30px;
+            }
+            .modal-card h3 {
+                font-size: 1.4rem;
+            }
         }
     </style>
 </head>
@@ -147,7 +404,7 @@
         <div class="login-card">
             <div class="login-header">
                 <div class="logo-container">
-                    <i class="fas fa-clinic-medical logo-icon"></i>
+                    <img src="https://i.imgur.com/SMYRwQT.png" alt="Logo OnClínica" class="logo-img">
                 </div>
                 <h2>Painel da Clínica</h2>
             </div>
@@ -175,193 +432,314 @@
             </form>
             <div id="firebase-error-message" class="firebase-error" style="display:none;"></div>
             <div id="loading-indicator">Autenticando...</div>
+
+            <div class="forgot-password-link">
+                <a href="#" id="forgotPasswordLink">Esqueceu sua senha?</a>
+            </div>
         </div>
 
         <div class="support-link">
             Para falar com o suporte, <a href="https://wa.me/5567981540598?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20acesso%20ao%20painel." target="_blank">entre em contato</a>.
         </div>
     </div>
-     
+    
+    <!-- Modal de Redefinição de Senha -->
+    <div id="resetPasswordModal" class="modal-overlay">
+        <div class="modal-card">
+            <button class="close-modal-btn" id="closeResetModalBtn">&times;</button>
+            <h3>Redefinir Senha</h3>
+            <form id="resetPasswordForm">
+                <div class="form-group">
+                    <i class="fas fa-envelope input-icon"></i>
+                    <input type="email" id="resetEmail" name="resetEmail" placeholder="Seu e-mail" required>
+                </div>
+                <button type="submit" class="btn-reset">Enviar Link de Redefinição</button>
+            </form>
+            <div id="resetPasswordMessage" class="form-message" style="display:none;"></div>
+            <div id="resetLoadingIndicator" style="display:none; margin-top: 15px; font-style: italic; color: var(--muted-color);">Enviando...</div>
+        </div>
+    </div>
+
+    <!-- Notificações PWA -->
     <div id="install-notification-android" class="install-notification" style="display: none;">
-        <img src="https://placehold.co/40x40/a6683c/ffffff?text=C" alt="Logo da Clínica">
+        <img src="https://i.imgur.com/SMYRwQT.png" alt="Logo da Clínica">
         <span class="install-text">Instale o app para acesso rápido!</span>
         <button id="install-btn" class="install-btn">Instalar</button>
         <button class="close-btn" data-target="install-notification-android">&times;</button>
     </div>
- 
+    
     <div id="install-notification-ios" class="install-notification" style="display: none;">
-        <img src="https://placehold.co/40x40/a6683c/ffffff?text=C" alt="Logo da Clínica">
+        <img src="https://i.imgur.com/SMYRwQT.png" alt="Logo da Clínica">
         <span class="install-text">Para instalar: toque em <i class="fas fa-share-square"></i> e "Adicionar à Tela de Início".</span>
         <button class="close-btn" data-target="install-notification-ios">&times;</button>
     </div>
 
     <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-      import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
-       
-      // Sua configuração do Firebase (obtida do console do Firebase)
-      const firebaseConfig = {
-        apiKey: "AIzaSyA-E7I86omFlb1CjCxgA0MBpdnifhBny3M",
-        authDomain: "planilha-daa63.firebaseapp.com",
-        projectId: "planilha-daa63",
-        storageBucket: "planilha-daa63.firebasestorage.app",
-        messagingSenderId: "803607802636",
-        appId: "1:803607802636:web:c79a2ea583c3da8c74cf29",
-        measurementId: "G-39KX4QG28W" 
-      };
+        // Importa as funções necessárias do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+        
+        // Sua configuração do Firebase (obtida do console do Firebase)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-E7I86omFlb1CjCxgA0MBpdnifhBny3M",
+            authDomain: "planilha-daa63.firebaseapp.com",
+            projectId: "planilha-daa63",
+            storageBucket: "planilha-daa63.firebasestorage.app",
+            messagingSenderId: "803607802636",
+            appId: "1:803607802636:web:c79a2ea583c3da8c74cf29",
+            measurementId: "G-39KX4QG28W" 
+        };
 
-      let app;
-      let auth;
-      try {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app); 
-        console.log('[DEBUG - Firebase App]: Firebase App and Auth initialized successfully.');
-      } catch (e) { 
-        console.error('[DEBUG - Firebase Init Error]:', e);
-        if (Object.keys(firebaseConfig).length === 0) {
-            document.getElementById('firebase-error-message').textContent = 'Erro de configuração do Firebase. Por favor, contacte o suporte.';
+        let app;
+        let auth;
+        try {
+            // Inicializa o aplicativo Firebase
+            app = initializeApp(firebaseConfig);
+            // Obtém a instância de autenticação do Firebase
+            auth = getAuth(app); 
+            console.log('[DEBUG - Firebase App]: Firebase App e Auth inicializados com sucesso.');
+        } catch (e) { 
+            console.error('[DEBUG - Firebase Init Error]:', e);
+            // Exibe mensagem de erro se a inicialização do Firebase falhar
+            if (Object.keys(firebaseConfig).length === 0) {
+                document.getElementById('firebase-error-message').textContent = 'Erro de configuração do Firebase. Por favor, contacte o suporte.';
+                document.getElementById('firebase-error-message').style.display = 'block';
+            }
+        }
+
+        // Elementos do DOM para o formulário de login
+        const loginForm = document.getElementById('loginForm');
+        const firebaseErrorMessage = document.getElementById('firebase-error-message');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // Elementos do DOM para o modal de redefinição de senha
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const resetPasswordModal = document.getElementById('resetPasswordModal');
+        const closeResetModalBtn = document.getElementById('closeResetModalBtn');
+        const resetPasswordForm = document.getElementById('resetPasswordForm');
+        const resetPasswordMessage = document.getElementById('resetPasswordMessage');
+        const resetLoadingIndicator = document.getElementById('resetLoadingIndicator');
+
+        // Adiciona ouvinte de evento para o envio do formulário de login
+        if (loginForm) { 
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Impede o envio padrão do formulário
+                console.log('[DEBUG - Form Submit]: Interceptando envio do formulário.');
+                const email = loginForm.email.value;
+                const password = loginForm.password.value;
+
+                // Limpa mensagens de erro e mostra indicador de carregamento
+                firebaseErrorMessage.textContent = '';
+                firebaseErrorMessage.style.display = 'none';
+                loadingIndicator.style.display = 'block';
+
+                try {
+                    // Verifica se a autenticação do Firebase foi inicializada
+                    if (!auth) { 
+                        throw new Error('Firebase Auth não inicializado. Por favor, contacte o suporte.');
+                    }
+
+                    // Tenta fazer login com e-mail e senha usando Firebase
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    const idToken = await user.getIdToken();
+                    console.log('[DEBUG - Firebase Auth]: Usuário logado com Firebase. Enviando ID Token para o servidor.');
+
+                    // Envia o ID Token para o servidor para validação de sessão
+                    const response = await fetch("{{ url_for('session_login') }}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ idToken: idToken }),
+                    });
+
+                    loadingIndicator.style.display = 'none'; // Esconde indicador de carregamento
+                    const serverResponse = await response.json();
+                    console.log('[DEBUG - Server Response]:', serverResponse);
+
+                    // Redireciona se o login for bem-sucedido, caso contrário exibe erro
+                    if (response.ok && serverResponse.success) {
+                        window.location.href = "{{ url_for('index') }}";
+                    } else {
+                        firebaseErrorMessage.textContent = serverResponse.message || 'Utilizador não autorizado ou erro no servidor.';
+                        firebaseErrorMessage.style.display = 'block';
+                        firebaseSignOut(auth).catch(err => console.error("Erro ao deslogar do Firebase:", err));
+                    }
+
+                } catch (error) {
+                    loadingIndicator.style.display = 'none'; // Esconde indicador de carregamento em caso de erro
+                    console.error('[DEBUG - Login Process Error]:', error); 
+                    // Mapeia códigos de erro do Firebase para mensagens amigáveis
+                    let friendlyMessage = "Erro ao fazer login. Verifique suas credenciais.";
+                    if (error.code) {
+                        switch (error.code) {
+                            case 'auth/user-not-found':
+                            case 'auth/wrong-password':
+                            case 'auth/invalid-credential':
+                                friendlyMessage = "E-mail ou senha inválidos.";
+                                break;
+                            case 'auth/invalid-email':
+                                friendlyMessage = "O formato do e-mail é inválido.";
+                                break;
+                            case 'auth/network-request-failed':
+                                friendlyMessage = "Erro de rede. Verifique sua conexão.";
+                                break;
+                            case 'auth/too-many-requests':
+                                friendlyMessage = "Muitas tentativas de login. Tente novamente mais tarde.";
+                                break;
+                            default:
+                                friendlyMessage = `Erro: ${error.message}`;
+                        }
+                    } else if (error.message.includes('Firebase Auth failed to initialize')) {
+                        friendlyMessage = 'Problema de inicialização do Firebase Auth. Por favor, contacte o suporte (código: F002).';
+                    }
+                    firebaseErrorMessage.textContent = friendlyMessage;
+                    firebaseErrorMessage.style.display = 'block';
+                }
+            });
+        } else {
+            console.error('[DEBUG - Element Not Found]: Elemento loginForm não encontrado. Ouvinte de evento não anexado.');
+            document.getElementById('firebase-error-message').textContent = 'Erro interno: Formulário de login não encontrado. Por favor, contacte o suporte.';
             document.getElementById('firebase-error-message').style.display = 'block';
         }
-      }
 
-      const loginForm = document.getElementById('loginForm');
-      const firebaseErrorMessage = document.getElementById('firebase-error-message');
-      const loadingIndicator = document.getElementById('loading-indicator');
+        // --- Lógica para o Modal de Redefinição de Senha ---
 
-      if (loginForm) { 
-        loginForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          console.log('[DEBUG - Form Submit]: Intercepted form submission.');
-          const email = loginForm.email.value;
-          const password = loginForm.password.value;
-
-          firebaseErrorMessage.textContent = '';
-          firebaseErrorMessage.style.display = 'none';
-          loadingIndicator.style.display = 'block';
-
-          try {
-            if (!auth) { 
-                throw new Error('Firebase Auth failed to initialize. Please contact support.');
-            }
-
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            const idToken = await user.getIdToken();
-            console.log('[DEBUG - Firebase Auth]: User signed in with Firebase. Sending ID Token to server.');
-
-            const response = await fetch("{{ url_for('session_login') }}", {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ idToken: idToken }),
+        // Abre o modal quando o link "Esqueceu sua senha?" é clicado
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                resetPasswordModal.classList.add('active');
+                resetPasswordMessage.style.display = 'none'; // Limpa mensagens anteriores
+                resetPasswordMessage.textContent = '';
+                document.getElementById('resetEmail').value = ''; // Limpa o campo de e-mail
             });
+        }
 
-            loadingIndicator.style.display = 'none';
-            const serverResponse = await response.json();
-            console.log('[DEBUG - Server Response]:', serverResponse);
-
-            if (response.ok && serverResponse.success) {
-              window.location.href = "{{ url_for('index') }}";
-            } else {
-              firebaseErrorMessage.textContent = serverResponse.message || 'Utilizador não autorizado ou erro no servidor.';
-              firebaseErrorMessage.style.display = 'block';
-              firebaseSignOut(auth).catch(err => console.error("Erro ao deslogar do Firebase:", err));
-            }
-
-          } catch (error) {
-            loadingIndicator.style.display = 'none';
-            console.error('[DEBUG - Login Process Error]:', error); 
-            let friendlyMessage = "Erro ao fazer login. Verifique suas credenciais.";
-            if (error.code) {
-              switch (error.code) {
-                case 'auth/user-not-found':
-                case 'auth/wrong-password':
-                case 'auth/invalid-credential':
-                  friendlyMessage = "E-mail ou senha inválidos.";
-                  break;
-                case 'auth/invalid-email':
-                  friendlyMessage = "O formato do e-mail é inválido.";
-                  break;
-                case 'auth/network-request-failed':
-                  friendlyMessage = "Erro de rede. Verifique sua conexão.";
-                  break;
-                case 'auth/too-many-requests':
-                  friendlyMessage = "Muitas tentativas de login. Tente novamente mais tarde.";
-                  break;
-                default:
-                  friendlyMessage = `Erro: ${error.message}`;
-              }
-            } else if (error.message.includes('Firebase Auth failed to initialize')) {
-                friendlyMessage = 'Problema de inicialização do Firebase Auth. Por favor, contacte o suporte (código: F002).';
-            }
-            firebaseErrorMessage.textContent = friendlyMessage;
-            firebaseErrorMessage.style.display = 'block';
-          }
-        });
-      } else {
-          console.error('[DEBUG - Element Not Found]: loginForm element not found. Event listener not attached.');
-          document.getElementById('firebase-error-message').textContent = 'Erro interno: Formulário de login não encontrado. Por favor, contacte o suporte.';
-          document.getElementById('firebase-error-message').style.display = 'block';
-      }
-    </script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
-            .then(registration => {
-              console.log('Service Worker registrado com sucesso!');
-            })
-            .catch(err => {
-              console.error('Falha ao registrar o Service Worker: ', err);
+        // Fecha o modal quando o botão 'X' é clicado
+        if (closeResetModalBtn) {
+            closeResetModalBtn.addEventListener('click', () => {
+                resetPasswordModal.classList.remove('active');
             });
-        });
-      }
+        }
 
-      document.addEventListener('DOMContentLoaded', () => {
-        let deferredPrompt;
-        const androidNotification = document.getElementById('install-notification-android');
-        const iosNotification = document.getElementById('install-notification-ios');
-        const installBtn = document.getElementById('install-btn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-          e.preventDefault();
-          deferredPrompt = e;
-          if (androidNotification) {
-            androidNotification.style.display = 'flex';
-          }
-        });
-
-        if (installBtn) {
-            installBtn.addEventListener('click', async () => {
-                if(deferredPrompt) {
-                    androidNotification.style.display = 'none';
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log(`Resposta do utilizador: ${outcome}`);
-                    deferredPrompt = null;
+        // Fecha o modal se clicar fora do card (overlay)
+        if (resetPasswordModal) {
+            resetPasswordModal.addEventListener('click', (e) => {
+                if (e.target === resetPasswordModal) {
+                    resetPasswordModal.classList.remove('active');
                 }
             });
         }
-        
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-        
-        if (isIOS && !isStandalone) {
-          iosNotification.style.display = 'flex';
+
+        // Lida com o envio do formulário de redefinição de senha
+        if (resetPasswordForm) {
+            resetPasswordForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const emailToReset = document.getElementById('resetEmail').value;
+
+                resetPasswordMessage.style.display = 'none';
+                resetPasswordMessage.textContent = '';
+                resetLoadingIndicator.style.display = 'block';
+
+                try {
+                    if (!auth) {
+                        throw new Error('Firebase Auth não inicializado para redefinição de senha.');
+                    }
+                    // Envia o e-mail de redefinição de senha
+                    await sendPasswordResetEmail(auth, emailToReset);
+                    resetPasswordMessage.textContent = 'Um link de redefinição de senha foi enviado para o seu e-mail.';
+                    resetPasswordMessage.classList.remove('error');
+                    resetPasswordMessage.classList.add('success');
+                    resetPasswordMessage.style.display = 'block';
+                    console.log(`[DEBUG - Password Reset]: Link de redefinição enviado para ${emailToReset}`);
+                } catch (error) {
+                    console.error('[DEBUG - Password Reset Error]:', error);
+                    let friendlyMessage = "Erro ao enviar o link de redefinição de senha. Por favor, tente novamente.";
+                    if (error.code) {
+                        switch (error.code) {
+                            case 'auth/invalid-email':
+                                friendlyMessage = "O formato do e-mail é inválido.";
+                                break;
+                            case 'auth/user-not-found':
+                                friendlyMessage = "Não há registro de usuário correspondente a este e-mail.";
+                                break;
+                            case 'auth/network-request-failed':
+                                friendlyMessage = "Erro de rede. Verifique sua conexão.";
+                                break;
+                            default:
+                                friendlyMessage = `Erro: ${error.message}`;
+                        }
+                    }
+                    resetPasswordMessage.textContent = friendlyMessage;
+                    resetPasswordMessage.classList.remove('success');
+                    resetPasswordMessage.classList.add('error');
+                    resetPasswordMessage.style.display = 'block';
+                } finally {
+                    resetLoadingIndicator.style.display = 'none';
+                }
+            });
         }
 
-        document.querySelectorAll('.close-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                const targetId = button.getAttribute('data-target');
-                document.getElementById(targetId).style.display = 'none';
+        // --- Lógica para PWA (Service Worker e Notificações de Instalação) ---
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                    .then(registration => {
+                        console.log('Service Worker registrado com sucesso!');
+                    })
+                    .catch(err => {
+                        console.error('Falha ao registrar o Service Worker: ', err);
+                    });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let deferredPrompt;
+            const androidNotification = document.getElementById('install-notification-android');
+            const iosNotification = document.getElementById('install-notification-ios');
+            const installBtn = document.getElementById('install-btn');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (androidNotification) {
+                    androidNotification.style.display = 'flex';
+                }
+            });
+
+            if (installBtn) {
+                installBtn.addEventListener('click', async () => {
+                    if(deferredPrompt) {
+                        androidNotification.style.display = 'none';
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        console.log(`Resposta do utilizador: ${outcome}`);
+                        deferredPrompt = null;
+                    }
+                });
+            }
+            
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            
+            if (isIOS && !isStandalone) {
+                iosNotification.style.display = 'flex';
+            }
+
+            document.querySelectorAll('.close-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.getAttribute('data-target');
+                    document.getElementById(targetId).style.display = 'none';
+                });
+            });
+
+            window.addEventListener('appinstalled', () => {
+                if(androidNotification) androidNotification.style.display = 'none';
+                if(iosNotification) iosNotification.style.display = 'none';
+                deferredPrompt = null;
             });
         });
-
-        window.addEventListener('appinstalled', () => {
-            if(androidNotification) androidNotification.style.display = 'none';
-            if(iosNotification) iosNotification.style.display = 'none';
-            deferredPrompt = null;
-        });
-      });
     </script>
 </body>
 </html>
