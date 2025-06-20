@@ -11,14 +11,11 @@ import ujson as json
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 app = Flask(__name__)
-# A chave secreta será usada para segurança da sessão do Flask
 app.secret_key = os.urandom(24)
-CORS(app) # 2. INICIALIZAÇÃO DO CORS (ESSENCIAL PARA O LOGIN FUNCIONAR)
+CORS(app)
 
 db = None
 try:
-    # Tenta inicializar o Firebase Admin SDK usando um arquivo de chave de conta de serviço local.
-    # Isso é útil para desenvolvimento local, mas para produção, variáveis de ambiente são recomendadas por segurança.
     cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
     if not os.path.exists(cred_path):
         raise FileNotFoundError("serviceAccountKey.json file not found in project root. It is required for Firebase connection.")
@@ -33,140 +30,114 @@ try:
 except Exception as e:
     print(f"🚨 ERRO CRÍTICO ao inicializar o Firebase Admin SDK: {e}")
 
-# Define o fuso horário de São Paulo para consistência nas operações de data e hora.
 SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
 
-# Função auxiliar para formatar timestamps do Firestore para serialização JSON
 def format_firestore_timestamp(timestamp):
     if isinstance(timestamp, datetime.datetime):
-        # Converte para o fuso horário local antes de formatar para exibição
-        return timestamp.astimezone(SAO_PAULO_TZ).strftime('%Y-%m-%dT%H:%M:%S') # Formato ISO para compatibilidade com JS
-    return None # Ou lida com outros tipos, se necessário
+        return timestamp.astimezone(SAO_PAULO_TZ).strftime('%Y-%m-%dT%H:%M:%S')
+    return None
 
-# Função auxiliar para converter recursivamente dados de documentos Firestore para um dicionário serializável
 def convert_doc_to_dict(doc_snapshot):
     data = doc_snapshot.to_dict()
     if not data:
         return {}
     
-    # Adiciona o ID do documento
     data['id'] = doc_snapshot.id
 
     def _convert_value(value):
         if isinstance(value, datetime.datetime):
-            return format_firestore_timestamp(value) # Usa o formatador existente
+            return format_firestore_timestamp(value)
         elif isinstance(value, dict):
             return {k: _convert_value(v) for k, v in value.items()}
         elif isinstance(value, list):
             return [_convert_value(item) for item in value]
-        # Garante que quaisquer objetos Jinja2 Undefined sejam convertidos para None
-        if isinstance(value, type(app.jinja_env.undefined)): # Verifica se é um objeto Jinja2 Undefined
+        if isinstance(value, type(app.jinja_env.undefined)):
             return None
         return value
 
     return {k: _convert_value(v) for k, v in data.items()}
 
-# Função auxiliar para analisar a entrada de data com vários formatos e converter para datetime.datetime
 def parse_date_input(date_string):
     if not date_string:
         return None
     
     parsed_date = None
-    # Tenta YYYY-MM-DD primeiro (esperado do dateFormat do flatpickr)
     try:
         parsed_date = datetime.datetime.strptime(date_string, '%Y-%m-%d').date()
     except ValueError:
-        pass # Volta para o próximo formato
+        pass
 
-    # Tenta DD/MM/YYYY (entrada manual comum ou altFormat do flatpickr)
     if parsed_date is None:
         try:
             parsed_date = datetime.datetime.strptime(date_string, '%d/%m/%Y').date()
         except ValueError:
-            pass # Nenhuma correspondência
+            pass
     
     if parsed_date:
-        # Converte datetime.date para datetime.datetime no início do dia no SAO_PAULO_TZ
         return SAO_PAULO_TZ.localize(datetime.datetime(parsed_date.year, parsed_date.month, parsed_date.day, 0, 0, 0))
     
-    return None # Retorna None se nenhum formato válido for encontrado
+    return None
 
 
-# Decorador personalizado para exigir que o usuário esteja logado.
 def login_required(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Verifica se as chaves necessárias estão na sessão.
         if 'logged_in' not in session or 'clinica_id' not in session or 'user_uid' not in session:
-            # Se não estiver logado, redireciona para a página de login.
             return redirect(url_for('login_page'))
-        # Verifica se a conexão com o banco de dados está ativa.
         if not db:
             flash('Erro crítico: A conexão com o banco de dados falhou. Entre em contato com o suporte.', 'danger')
             return redirect(url_for('login_page'))
         return f(*args, **kwargs)
     return decorated_function
 
-# Decorador para exigir uma função de administrador.
 def admin_required(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Primeiro, garanta que o usuário esteja logado.
         if 'logged_in' not in session or 'clinica_id' not in session or 'user_uid' not in session:
             flash('Acesso não autorizado. Faça login.', 'danger')
             return redirect(url_for('login_page'))
-        # Verifica se a função do usuário na sessão é 'admin'.
         if session.get('user_role') != 'admin':
             flash('Acesso negado: Você não tem permissões de administrador para esta ação.', 'danger')
-            # Pode redirecionar para o painel ou uma página de erro.
             return redirect(url_for('index')) 
         return f(*args, **kwargs)
     return decorated_function
 
-# --- ROTAS DE AUTENTICAÇÃO E CONFIGURAÇÃO ---
 @app.route('/login', methods=['GET'])
 def login_page():
-    # Se o usuário já estiver logado, redireciona para o painel.
     if 'logged_in' in session:
         return redirect(url_for('index'))
     return render_template('login.html')
 
 @app.route('/session-login', methods=['POST'])
 def session_login():
-    # Verifica se o banco de dados está inicializado.
     if not db:
         return jsonify({"success": False, "message": "Erro crítico do servidor (DB não inicializado)."}), 500
 
-    # Obtém o ID Token do corpo da solicitação JSON.
     id_token = request.json.get('idToken')
     if not id_token:
         return jsonify({"success": False, "message": "ID Token não fornecido."}), 400
 
     try:
-        # Verifica o ID Token usando o Firebase Admin SDK.
         decoded_token = firebase_auth_admin.verify_id_token(id_token)
         uid_from_token = decoded_token['uid']
         email = decoded_token.get('email', '')
 
-        # Procura pelo mapeamento do usuário na coleção 'User'.
         mapeamento_ref = db.collection('User').document(uid_from_token.strip())
         mapeamento_doc = mapeamento_ref.get()
 
         if mapeamento_doc.exists:
             mapeamento_data = mapeamento_doc.to_dict()
-            # Verifica se os dados essenciais estão presentes no mapeamento.
             if not mapeamento_data or 'clinica_id' not in mapeamento_data or 'role' not in mapeamento_data:
                 return jsonify({"success": False, "message": "Configuração de usuário incompleta. Entre em contato com o administrador."}), 500
 
-            # Define as variáveis de sessão para o usuário logado.
             session['logged_in'] = True
             session['user_uid'] = uid_from_token
             session['user_email'] = email
             session['clinica_id'] = mapeamento_data['clinica_id']
             session['clinica_nome_display'] = mapeamento_data.get('nome_clinica_display', 'Clínica On')
-            session['user_role'] = mapeamento_data['role'] # Armazena a função do usuário
+            session['user_role'] = mapeamento_data['role']
 
             print(f"Usuário {email} logado com sucesso. Função: {session['user_role']}")
             return jsonify({"success": True, "message": "Login bem-sucedido!"})
@@ -183,8 +154,6 @@ def session_login():
         print(f"Erro na verificação de token/mapeamento: {type(e).__name__} - {e}")
         return jsonify({"success": False, "message": f"Erro do servidor durante o login: {str(e)}"}), 500
 
-# Rota de configuração inicial para um super-administrador associar um UID a uma clínica.
-# Esta rota deve ser usada com extrema cautela e desativada/altamente protegida em produção.
 @app.route('/setup-mapeamento-admin', methods=['GET', 'POST'])
 def setup_mapeamento_admin():
     if not db: return "Firebase não inicializado", 500
@@ -193,36 +162,31 @@ def setup_mapeamento_admin():
         email_para_referencia = request.form['email_para_referencia'].strip().lower()
         clinica_id_associada = request.form['clinica_id_associada'].strip()
         nome_clinica_display = request.form['nome_clinica_display'].strip()
-        user_role = request.form.get('user_role', 'medico').strip() # Permite definir a função
+        user_role = request.form.get('user_role', 'medico').strip()
 
         if not all([user_uid, email_para_referencia, clinica_id_associada, nome_clinica_display, user_role]):
             flash("Todos os campos são obrigatórios.", "danger")
         else:
             try:
-                # Cria ou verifica a coleção da clínica.
                 clinica_ref = db.collection('clinicas').document(clinica_id_associada)
                 if not clinica_ref.get().exists:
                     clinica_ref.set({
                         'nome_oficial': nome_clinica_display,
                         'criada_em_dashboard_setup': firestore.SERVER_TIMESTAMP
                     })
-                # Mapeia o usuário para a função e a clínica.
                 db.collection('User').document(user_uid).set({
                     'email': email_para_referencia,
                     'clinica_id': clinica_id_associada,
                     'nome_clinica_display': nome_clinica_display,
-                    'role': user_role, # Salva a função do usuário
+                    'role': user_role,
                     'associado_em': firestore.SERVER_TIMESTAMP
                 })
                 flash(f'UID do usuário {user_uid} ({user_role}) associado à clínica {nome_clinica_display} ({clinica_id_associada})! Agora você pode tentar <a href="{url_for("login_page")}">fazer login</a>.', 'success')
             except Exception as e:
                 flash(f'Erro ao associar usuário: {e}', 'danger')
                 print(f"Erro em setup_mapeamento_admin: {e}")
-        # Redireciona para a própria rota setup-mapeamento-admin para exibir a mensagem flash
         return redirect(url_for('setup_mapeamento_admin'))
     
-    # Este é o HTML que será renderizado no GET da rota /setup-mapeamento-admin
-    # Usamos render_template_string para que o Jinja2 possa processar variáveis como url_for
     return render_template_string("""
         <!DOCTYPE html>
         <html>
@@ -309,10 +273,9 @@ def setup_mapeamento_admin():
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    session.clear() # Limpa todas as variáveis de sessão.
+    session.clear()
     return jsonify({"success": True, "message": "Sessão do servidor limpa."})
 
-# --- ROTA PRINCIPAL (DASHBOARD) ---
 @app.route('/')
 @login_required
 def index():
@@ -321,7 +284,6 @@ def index():
     servicos_procedimentos_ref = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos')
     current_year = datetime.datetime.now(SAO_PAULO_TZ).year
 
-    # Mapa para armazenar informações de serviço/procedimento (nome e preço)
     servicos_procedimentos_map = {}
     try:
         servicos_docs_stream = servicos_procedimentos_ref.stream()
@@ -343,11 +305,9 @@ def index():
     count_semana, receita_semana = 0, 0.0
     count_mes, receita_mes = 0, 0.0
 
-    # Calcula o início e o fim da semana atual.
     inicio_semana_dt = hoje_inicio_dt - datetime.timedelta(days=hoje_dt.weekday())
     fim_semana_dt = inicio_semana_dt + datetime.timedelta(days=7)
     
-    # Calcula o início e o fim do mês atual.
     inicio_mes_dt = hoje_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     if inicio_mes_dt.month == 12:
         fim_mes_dt = inicio_mes_dt.replace(year=inicio_mes_dt.year + 1, month=1, day=1)
@@ -356,7 +316,6 @@ def index():
 
     agendamentos_para_analise = []
     try:
-        # Consulta agendamentos confirmados ou concluídos no mês atual para análise.
         query_geral_mes = agendamentos_ref.where(filter=FieldFilter('status', 'in', ['confirmado', 'concluido'])) \
                                          .where(filter=FieldFilter('data_agendamento_ts', '>=', inicio_mes_dt)) \
                                          .where(filter=FieldFilter('data_agendamento_ts', '<', fim_mes_dt)).stream()
@@ -373,14 +332,12 @@ def index():
         print(f"Erro na consulta geral para o painel: {e}. Verifique seus índices do Firestore.")
         flash("Erro ao calcular estatísticas do painel. Verifique seus índices do Firestore.", "danger")
 
-    # Inicializa dados para os gráficos.
-    agendamentos_por_dia_semana = [0] * 7 # 0=Segunda-feira, ..., 6=Domingo (weekday do Python)
+    agendamentos_por_dia_semana = [0] * 7
     labels_dias_semana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
     contagem_servicos_semana = Counter()
 
     for ag_data in agendamentos_para_analise:
         ag_timestamp_sp = ag_data.get('data_agendamento_ts').astimezone(SAO_PAULO_TZ)
-        # Usa 'servico_procedimento_id' e 'servicos_procedimentos_map'
         preco_servico_atual = float(servicos_procedimentos_map.get(ag_data.get('servico_procedimento_id'), {}).get('preco', 0))
         
         count_mes += 1
@@ -419,7 +376,6 @@ def index():
 
     proximos_agendamentos_lista = []
     try:
-        # Consulta os próximos agendamentos confirmados (até 5).
         query_proximos = agendamentos_ref.where(filter=FieldFilter('status', '==', 'confirmado')) \
                                          .where(filter=FieldFilter('data_agendamento_ts', '>=', hoje_inicio_dt)) \
                                          .order_by('data_agendamento_ts') \
@@ -428,7 +384,6 @@ def index():
             ag_data = doc.to_dict()
             if not ag_data: continue
 
-            # Obtém informações de serviço/procedimento.
             servico_info = servicos_procedimentos_map.get(ag_data.get('servico_procedimento_id'), {'nome': 'N/A', 'preco': 0.0})
             data_fmt = "N/A"
             if ag_data.get('data_agendamento'):
@@ -440,9 +395,9 @@ def index():
             proximos_agendamentos_lista.append({
                 'data_agendamento': data_fmt,
                 'hora_agendamento': ag_data.get('hora_agendamento', "N/A"),
-                'cliente_nome': ag_data.get('paciente_nome', "N/A"), # Alterado de 'cliente_name' para 'paciente_name'
-                'profissional_nome': ag_data.get('profissional_nome', "N/A"), # Alterado de 'barber_name' para 'professional_name'
-                'servico_procedimento_nome': servico_info.get('nome'), # Alterado para 'service_procedure_name'
+                'cliente_nome': ag_data.get('paciente_nome', "N/A"),
+                'profissional_nome': ag_data.get('profissional_nome', "N/A"),
+                'servico_procedimento_nome': servico_info.get('nome'),
                 'preco': float(servico_info.get('preco', 0)),
                 'status': ag_data.get('status', "N/A")
             })
@@ -452,35 +407,30 @@ def index():
 
     return render_template('dashboard.html', hoje_data=hoje_data, semana_data=semana_data,
                             mes_data=mes_data, proximos_agendamentos=proximos_agendamentos_lista,
-                            nome_clinica=session.get('clinica_nome_display', 'Sua Clínica'), # Alterado para 'clinic_name'
+                            nome_clinica=session.get('clinica_nome_display', 'Sua Clínica'),
                             current_year=current_year,
                             dados_desempenho_semana=dados_desempenho_semana,
                             dados_servicos_populares=dados_servicos_populares)
 
 @app.route('/usuarios')
 @login_required
-@admin_required # Somente administradores podem gerenciar usuários
+@admin_required
 def listar_usuarios():
     clinica_id = session['clinica_id']
     usuarios_ref = db.collection('User')
     usuarios_lista = []
     try:
-        # Filtra usuários por clinica_id e ordena por e-mail
         docs = usuarios_ref.where(filter=FieldFilter('clinica_id', '==', clinica_id)).order_by('email').stream()
         for doc in docs:
             user_data = doc.to_dict()
             if user_data:
-                user_data['uid'] = doc.id # UID é o ID do documento
+                user_data['uid'] = doc.id
                 
-                # --- INÍCIO DA CORREÇÃO ---
-                # Busca o status do usuário (ativo/desativado) no Firebase Auth
                 try:
                     firebase_user = firebase_auth_admin.get_user(doc.id)
                     user_data['disabled'] = firebase_user.disabled
                 except firebase_auth_admin.UserNotFoundError:
-                    # Se o usuário não for encontrado no Auth, trata como desativado
                     user_data['disabled'] = True
-                # --- FIM DA CORREÇÃO ---
 
                 usuarios_lista.append(user_data)
     except Exception as e:
@@ -497,16 +447,12 @@ def adicionar_usuario():
         flash('ID da clínica não encontrado na sessão.', 'danger')
         return redirect(url_for('sua_pagina_de_erro_ou_home'))
 
-    # Busca profissionais para associar ao usuário
     profissionais_disponiveis = []
     try:
-        # Removido o order_by para evitar a necessidade de índices compostos complexos.
-        # A ordenação pode ser feita no Python se necessário.
         profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').stream()
         for doc in profissionais_docs:
             prof_data = doc.to_dict()
             profissionais_disponiveis.append({'id': doc.id, 'nome': prof_data.get('nome')})
-        # Ordenando a lista de profissionais em Python
         profissionais_disponiveis.sort(key=lambda x: x.get('nome', '').lower())
     except Exception as e:
         flash(f'Erro ao carregar a lista de profissionais: {e}', 'danger')
@@ -516,24 +462,21 @@ def adicionar_usuario():
         password = request.form['password']
         role = request.form['role']
         nome_completo = request.form.get('nome_completo', '').strip()
-        profissional_associado_id = request.form.get('profissional_associado_id') # Pode ser uma string vazia
+        profissional_associado_id = request.form.get('profissional_associado_id')
 
         if not all([email, password, role]):
             flash('E-mail, senha e função são obrigatórios.', 'danger')
             return render_template('usuario_form.html', page_title="Adicionar Novo Utilizador", roles=['admin', 'medico'], profissionais=profissionais_disponiveis, user=request.form)
 
         try:
-            # 1. Cria o usuário no Firebase Authentication
             user = firebase_auth_admin.create_user(
                 email=email,
                 password=password,
                 display_name=nome_completo
             )
             
-            # --- Inicia um lote para garantir que ambas as escritas funcionem ---
             batch = db.batch()
 
-            # 2. Prepara os dados do usuário para o Firestore
             user_data_firestore = {
                 'email': email,
                 'clinica_id': clinica_id,
@@ -543,20 +486,15 @@ def adicionar_usuario():
                 'associado_em': firestore.SERVER_TIMESTAMP
             }
 
-            # 3. Se for médico e um profissional foi selecionado, faz a associação
             if role == 'medico' and profissional_associado_id:
-                # Adiciona o ID do profissional no documento do usuário
                 user_data_firestore['profissional_id'] = profissional_associado_id
                 
-                # Atualiza o documento do profissional com o UID do usuário
                 prof_ref = db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_associado_id)
                 batch.update(prof_ref, {'user_uid': user.uid})
 
-            # 4. Adiciona a criação do documento do usuário ao lote
             user_ref = db.collection('User').document(user.uid)
             batch.set(user_ref, user_data_firestore)
             
-            # 5. Executa todas as operações no lote atomicamente
             batch.commit()
             
             flash(f'Utilizador {email} ({role}) criado com sucesso!', 'success')
@@ -581,7 +519,6 @@ def editar_usuario(user_uid):
         
     user_ref = db.collection('User').document(user_uid)
     
-    # Busca profissionais para o dropdown
     profissionais_disponiveis = []
     try:
         profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').stream()
@@ -592,7 +529,6 @@ def editar_usuario(user_uid):
     except Exception as e:
         flash(f'Erro ao carregar a lista de profissionais: {e}', 'danger')
 
-    # Busca os dados atuais do usuário para obter a associação antiga
     try:
         user_doc = user_ref.get()
         if not user_doc.exists:
@@ -608,42 +544,32 @@ def editar_usuario(user_uid):
         email = request.form['email'].strip()
         role = request.form['role']
         nome_completo = request.form.get('nome_completo', '').strip()
-        new_profissional_id = request.form.get('profissional_associado_id') # Pode ser '' se 'Nenhum' for selecionado
+        new_profissional_id = request.form.get('profissional_associado_id')
 
         try:
-            # --- Inicia um lote para garantir atomicidade ---
             batch = db.batch()
 
-            # 1. Atualiza o usuário no Firebase Auth
             firebase_auth_admin.update_user(user_uid, email=email, display_name=nome_completo)
             
-            # 2. Prepara a atualização para o documento na coleção 'User'
             user_data_update = {
                 'email': email, 'role': role, 'nome_completo': nome_completo,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             }
             
-            # 3. Lógica para atualizar a associação do profissional
             if old_profissional_id != new_profissional_id:
-                # A. Remove o user_uid do profissional ANTIGO, se existir
                 if old_profissional_id:
                     old_prof_ref = db.collection(f'clinicas/{clinica_id}/profissionais').document(old_profissional_id)
                     batch.update(old_prof_ref, {'user_uid': firestore.DELETE_FIELD})
                 
-                # B. Adiciona o user_uid ao profissional NOVO, se aplicável
                 if role == 'medico' and new_profissional_id:
                     new_prof_ref = db.collection(f'clinicas/{clinica_id}/profissionais').document(new_profissional_id)
                     batch.update(new_prof_ref, {'user_uid': user_uid})
                     user_data_update['profissional_id'] = new_profissional_id
                 else:
-                    # Se o novo papel não for 'medico' ou nenhum profissional for selecionado,
-                    # garante que o campo profissional_id seja removido do usuário.
                     user_data_update['profissional_id'] = firestore.DELETE_FIELD
             
-            # 4. Adiciona a atualização do documento do usuário ao lote
             batch.update(user_ref, user_data_update)
 
-            # 5. Executa todas as operações no lote
             batch.commit()
             
             flash(f'Utilizador {email} atualizado com sucesso!', 'success')
@@ -651,9 +577,7 @@ def editar_usuario(user_uid):
             
         except Exception as e:
             flash(f'Erro ao atualizar utilizador: {e}', 'danger')
-            # Em caso de erro, os dados do formulário serão repreenchidos abaixo
-    
-    # Para requisição GET ou se o POST falhar, renderiza o formulário com os dados
+            
     user_data_original['uid'] = user_uid
     return render_template(
         'usuario_form.html', 
@@ -667,7 +591,7 @@ def editar_usuario(user_uid):
 
 @app.route('/usuarios/ativar_desativar/<string:user_uid>', methods=['POST'])
 @login_required
-@admin_required # Somente administradores podem ativar/desativar profissionais
+@admin_required
 def ativar_desativar_usuario(user_uid):
     clinica_id = session['clinica_id']
     try:
@@ -675,18 +599,17 @@ def ativar_desativar_usuario(user_uid):
         if user_map_doc.exists:
             user_data = user_map_doc.to_dict()
             current_status_firebase = firebase_auth_admin.get_user(user_uid).disabled
-            new_status_firebase = not current_status_firebase # Se estiver desabilitado, habilita; se não, desabilita.
+            new_status_firebase = not current_status_firebase
 
             firebase_auth_admin.update_user(user_uid, disabled=new_status_firebase)
             
-            # Se for um médico, também atualiza o status em 'profissionais'
             if user_data.get('role') == 'medico':
                 profissionais_ref = db.collection('clinicas').document(clinica_id).collection('profissionais')
                 prof_query = profissionais_ref.where(filter=FieldFilter('user_uid', '==', user_uid)).limit(1).stream()
                 prof_doc = next(prof_query, None)
                 if prof_doc:
                     profissionais_ref.document(prof_doc.id).update({
-                        'ativo': not new_status_firebase, # Inverte, pois 'disabled' é o oposto de 'active'
+                        'ativo': not new_status_firebase,
                         'atualizado_em': firestore.SERVER_TIMESTAMP
                     })
 
@@ -700,7 +623,6 @@ def ativar_desativar_usuario(user_uid):
         print(f"Erro activate_deactivate_user: {e}")
     return redirect(url_for('listar_usuarios'))
 
-# --- ROTAS DE PROFISSIONAIS (ANTIGOS BARBEIROS) ---
 @app.route('/profissionais')
 @login_required
 def listar_profissionais():
@@ -717,18 +639,18 @@ def listar_profissionais():
     except Exception as e:
         flash(f'Erro ao listar profissionais: {e}.', 'danger')
         print(f"Erro list_professionals: {e}")
-    return render_template('profissionais.html', profissionais=profissionais_lista) # Renomeado para professionals.html
+    return render_template('profissionais.html', profissionais=profissionais_lista)
 
 @app.route('/profissionais/novo', methods=['GET', 'POST'])
 @login_required
-@admin_required # Somente administradores podem adicionar profissionais diretamente
+@admin_required
 def adicionar_profissional():
     clinica_id = session['clinica_id']
     if request.method == 'POST':
         nome = request.form['nome']
         telefone = request.form.get('telefone')
-        email_profissional = request.form.get('email_profissional') # Novo campo de e-mail para o profissional
-        crm_ou_registro = request.form.get('crm_ou_registro') # Novo campo
+        email_profissional = request.form.get('email_profissional')
+        crm_ou_registro = request.form.get('crm_ou_registro')
         ativo = 'ativo' in request.form
         try:
             if telefone and not telefone.isdigit():
@@ -738,8 +660,8 @@ def adicionar_profissional():
             db.collection('clinicas').document(clinica_id).collection('profissionais').add({
                 'nome': nome,
                 'telefone': telefone if telefone else None,
-                'email': email_profissional if email_profissional else None, # Salva o e-mail
-                'crm_ou_registro': crm_ou_registro if crm_ou_registro else None, # Salva CRM/registro
+                'email': email_profissional if email_profissional else None,
+                'crm_ou_registro': crm_ou_registro if crm_ou_registro else None,
                 'ativo': ativo,
                 'criado_em': firestore.SERVER_TIMESTAMP
             })
@@ -748,7 +670,7 @@ def adicionar_profissional():
         except Exception as e:
             flash(f'Erro ao adicionar profissional: {e}', 'danger')
             print(f"Erro add_professional: {e}")
-    return render_template('profissional_form.html', profissional=None, action_url=url_for('adicionar_profissional')) # Renomeado para profissional_form.html
+    return render_template('profissional_form.html', profissional=None, action_url=url_for('adicionar_profissional'))
 
 
 @app.route('/profissionais/editar/<string:profissional_doc_id>', methods=['GET', 'POST'])
@@ -797,7 +719,7 @@ def editar_profissional(profissional_doc_id):
 
 @app.route('/profissionais/ativar_desativar/<string:profissional_doc_id>', methods=['POST'])
 @login_required
-@admin_required # Somente administradores podem ativar/desativar profissionais
+@admin_required
 def ativar_desativar_profissional(profissional_doc_id):
     clinica_id = session['clinica_id']
     profissional_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id)
@@ -819,7 +741,6 @@ def ativar_desativar_profissional(profissional_doc_id):
         print(f"Erro activate_deactivate_user: {e}")
     return redirect(url_for('listar_profissionais'))
 
-# --- ROTAS DE PACIENTES (NOVO) ---
 @app.route('/pacientes')
 @login_required
 def listar_pacientes():
@@ -827,21 +748,16 @@ def listar_pacientes():
     pacientes_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
     pacientes_lista = []
     try:
-        # Permite pesquisar por nome ou telefone
         search_query = request.args.get('search', '').strip()
         query = pacientes_ref.order_by('nome')
 
         if search_query:
-            # O Firestore não suporta 'LIKE' diretamente, então fazemos uma pesquisa de intervalo.
-            # Para pesquisar por nome
             query_nome = pacientes_ref.where(filter=FieldFilter('nome', '>=', search_query))\
-                                .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
-            # Para pesquisar por telefone (se for um campo de texto)
+                                 .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
             query_telefone = pacientes_ref.order_by('contato_telefone')\
-                                    .where(filter=FieldFilter('contato_telefone', '>=', search_query))\
-                                    .where(filter=FieldFilter('contato_telefone', '<=', search_query + '\uf8ff'))
+                                         .where(filter=FieldFilter('contato_telefone', '>=', search_query))\
+                                         .where(filter=FieldFilter('contato_telefone', '<=', search_query + '\uf8ff'))
             
-            # Executa ambas as consultas e combina os resultados (removendo duplicatas)
             pacientes_set = set()
             for doc in query_nome.stream():
                 paciente_data = doc.to_dict()
@@ -856,9 +772,8 @@ def listar_pacientes():
                     pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
             
             pacientes_lista = [json.loads(p) for p in pacientes_set]
-            pacientes_lista.sort(key=lambda x: x.get('nome', '')) # Garante a ordem após combinar
+            pacientes_lista.sort(key=lambda x: x.get('nome', ''))
         else:
-            # Se não houver pesquisa, lista todos
             docs = query.stream()
             for doc in docs:
                 paciente = doc.to_dict()
@@ -876,7 +791,6 @@ def listar_pacientes():
 def adicionar_paciente():
     clinica_id = session['clinica_id']
     
-    # Carrega convênios para o formulário
     convenios_lista = []
     try:
         convenios_docs = db.collection('clinicas').document(clinica_id).collection('convenios').order_by('nome').stream()
@@ -901,7 +815,6 @@ def adicionar_paciente():
         convenio_id = request.form.get('convenio_id', '').strip()
         observacoes = request.form.get('observacoes', '').strip()
 
-        # Endereço
         cep = request.form.get('cep', '').strip()
         logradouro = request.form.get('logradouro', '').strip()
         numero = request.form.get('numero', '').strip()
@@ -915,16 +828,15 @@ def adicionar_paciente():
             return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
 
         try:
-            # Converte a data de nascimento para um objeto datetime se fornecida
-            data_nascimento_dt = parse_date_input(data_nascimento) # Usa o novo parser
+            data_nascimento_dt = parse_date_input(data_nascimento)
             
-            if data_nascimento and data_nascimento_dt is None: # Verifica se a entrada foi fornecida, mas a análise falhou
-                flash('Formato de data de nascimento inválido. Use YYYY-MM-DD ou DD/MM/YYYY.', 'danger') # Mensagem corrigida
+            if data_nascimento and data_nascimento_dt is None:
+                flash('Formato de data de nascimento inválido. Use YYYY-MM-DD ou DD/MM/YYYY.', 'danger')
                 return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
 
             paciente_data = {
                 'nome': nome,
-                'data_nascimento': data_nascimento_dt, # Usa o objeto datetime.datetime analisado
+                'data_nascimento': data_nascimento_dt,
                 'cpf': cpf if cpf else None,
                 'rg': rg if rg else None,
                 'genero': genero if genero else None,
@@ -961,7 +873,6 @@ def editar_paciente(paciente_doc_id):
     clinica_id = session['clinica_id']
     paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
     
-    # Carrega convênios para o formulário
     convenios_lista = []
     try:
         convenios_docs = db.collection('clinicas').document(clinica_id).collection('convenios').order_by('nome').stream()
@@ -986,7 +897,6 @@ def editar_paciente(paciente_doc_id):
         convenio_id = request.form.get('convenio_id', '').strip()
         observacoes = request.form.get('observacoes', '').strip()
 
-        # Endereço
         cep = request.form.get('cep', '').strip()
         logradouro = request.form.get('logradouro', '').strip()
         numero = request.form.get('numero', '').strip()
@@ -1000,15 +910,15 @@ def editar_paciente(paciente_doc_id):
             return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
 
         try:
-            data_nascimento_dt = parse_date_input(data_nascimento) # Usa o novo parser
+            data_nascimento_dt = parse_date_input(data_nascimento)
             
-            if data_nascimento and data_nascimento_dt is None: # Verifica se a entrada foi fornecida, mas a análise falhou
-                flash('Formato de data de nascimento inválido. Use YYYY-MM-DD ou DD/MM/YYYY.', 'danger') # Mensagem corrigida
+            if data_nascimento and data_nascimento_dt is None:
+                flash('Formato de data de nascimento inválido. Use YYYY-MM-DD ou DD/MM/YYYY.', 'danger')
                 return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
 
             paciente_data_update = {
                 'nome': nome,
-                'data_nascimento': data_nascimento_dt, # Usa o objeto datetime.datetime analisado
+                'data_nascimento': data_nascimento_dt,
                 'cpf': cpf if cpf else None,
                 'rg': rg if rg else None,
                 'genero': genero if genero else None,
@@ -1042,15 +952,12 @@ def editar_paciente(paciente_doc_id):
         if paciente_doc.exists:
             paciente = paciente_doc.to_dict()
             paciente['id'] = paciente_doc.id
-            # Formata a data de nascimento para o campo input type="date"
             if paciente.get('data_nascimento') and isinstance(paciente['data_nascimento'], datetime.date):
                 paciente['data_nascimento'] = paciente['data_nascimento'].strftime('%Y-%m-%d')
-            # Se for um timestamp do Firestore, converte para datetime.date
             elif isinstance(paciente.get('data_nascimento'), datetime.datetime):
                 paciente['data_nascimento'] = paciente['data_nascimento'].date().strftime('%Y-%m-%d')
-            # Lida com casos em que data_nascimento pode ser None ou uma string vazia, para evitar erros no formulário
             else:
-                paciente['data_nascimento'] = '' # Garante que seja uma string vazia se inválido/None
+                paciente['data_nascimento'] = ''
 
             return render_template('paciente_form.html', paciente=paciente, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
         else:
@@ -1061,7 +968,6 @@ def editar_paciente(paciente_doc_id):
         print(f"Erro edit_patient (GET): {e}")
         return redirect(url_for('listar_pacientes'))
 
-# --- ROTAS DE SERVIÇOS/PROCEDIMENTOS (ANTIGOS SERVIÇOS) ---
 @app.route('/servicos_procedimentos')
 @login_required
 def listar_servicos_procedimentos():
@@ -1079,16 +985,16 @@ def listar_servicos_procedimentos():
     except Exception as e:
         flash(f'Erro ao listar serviços/procedimentos: {e}.', 'danger')
         print(f"Erro list_services_procedures: {e}")
-    return render_template('servicos_procedimentos.html', servicos=servicos_procedimentos_lista) # Renomeado
+    return render_template('servicos_procedimentos.html', servicos=servicos_procedimentos_lista)
 
 @app.route('/servicos_procedimentos/novo', methods=['GET', 'POST'])
 @login_required
-@admin_required # Administradores e possivelmente médicos podem criar/editar serviços? Definir.
+@admin_required
 def adicionar_servico_procedimento():
     clinica_id = session['clinica_id']
     if request.method == 'POST':
         nome = request.form['nome']
-        tipo = request.form['tipo'] # 'Service' ou 'Procedure'
+        tipo = request.form['tipo']
         try:
             duracao_minutos = int(request.form['duracao_minutos'])
             preco_sugerido = float(request.form['preco'].replace(',', '.'))
@@ -1096,7 +1002,7 @@ def adicionar_servico_procedimento():
                 'nome': nome,
                 'tipo': tipo,
                 'duracao_minutos': duracao_minutos,
-                'preco_sugerido': preco_sugerido, # Alterado para preco_sugerido
+                'preco_sugerido': preco_sugerido,
                 'criado_em': firestore.SERVER_TIMESTAMP
             })
             flash('Serviço/Procedimento adicionado com sucesso!', 'success')
@@ -1106,7 +1012,7 @@ def adicionar_servico_procedimento():
         except Exception as e:
             flash(f'Erro ao adicionar serviço/procedimento: {e}', 'danger')
             print(f"Erro add_service_procedure: {e}")
-    return render_template('servico_procedimento_form.html', servico=None, action_url=url_for('adicionar_servico_procedimento')) # Renomeado
+    return render_template('servico_procedimento_form.html', servico=None, action_url=url_for('adicionar_servico_procedimento'))
 
 
 @app.route('/servicos_procedimentos/editar/<string:servico_doc_id>', methods=['GET', 'POST'])
@@ -1137,7 +1043,7 @@ def editar_servico_procedimento(servico_doc_id):
     try:
         servico_doc = servico_ref.get()
         if servico_doc.exists:
-            servico = servico_doc.to_dict() # Corrigido: usar servico_doc.to_dict()
+            servico = servico_doc.to_dict()
             if servico:
                 servico['id'] = servico_doc.id
                 servico['preco_form'] = str(servico.get('preco_sugerido', '0.00')).replace('.', ',')
@@ -1156,7 +1062,6 @@ def excluir_servico_procedimento(servico_doc_id):
     clinica_id = session['clinica_id']
     try:
         agendamentos_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos')
-        # Verifica se há agendamentos associados a este serviço/procedimento
         agendamentos_com_servico = agendamentos_ref.where(filter=FieldFilter('servico_procedimento_id', '==', servico_doc_id)).limit(1).get()
         if len(agendamentos_com_servico) > 0:
             flash('Este serviço/procedimento não pode ser excluído, pois está associado a um ou mais agendamentos.', 'danger')
@@ -1169,7 +1074,6 @@ def excluir_servico_procedimento(servico_doc_id):
         print(f"Erro delete_service_procedure: {e}")
     return redirect(url_for('listar_servicos_procedimentos'))
 
-# --- ROTAS DE CONVÊNIOS (NOVO) ---
 @app.route('/convenios')
 @login_required
 def listar_convenios():
@@ -1264,7 +1168,6 @@ def excluir_convenio(convenio_doc_id):
     clinica_id = session['clinica_id']
     try:
         pacientes_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
-        # Verifica se há pacientes associados a este convênio
         pacientes_com_convenio = pacientes_ref.where(filter=FieldFilter('convenio_id', '==', convenio_doc_id)).limit(1).get()
         if len(pacientes_com_convenio) > 0:
             flash('Este convênio não pode ser excluído, pois está associado a um ou mais pacientes.', 'danger')
@@ -1277,7 +1180,6 @@ def excluir_convenio(convenio_doc_id):
         print(f"Erro delete_covenant: {e}")
     return redirect(url_for('listar_convenios'))
 
-# --- ROTAS DE AGENDAMENTOS ---
 @app.route('/horarios')
 @login_required
 def listar_horarios():
@@ -1293,14 +1195,14 @@ def listar_horarios():
             profissional_nome_atual = profissional_info.get('nome', f"ID: {profissional_id_atual}")
 
             horarios_disponiveis_ref = profissionais_main_ref.document(profissional_id_atual).collection('horarios_disponiveis')
-            horarios_docs_para_profissional_stream = horarios_disponiveis_ref.order_by('dia_semana').order_by('hora_inicio').stream() 
+            horarios_docs_para_profissional_stream = horarios_disponiveis_ref.order_by('dia_semana').order_by('hora_inicio').stream()
 
             for horario_doc in horarios_docs_para_profissional_stream:
                 horario = horario_doc.to_dict()
                 if horario:
-                    horario['id'] = horario_doc.id 
-                    horario['profissional_id_fk'] = profissional_id_atual # Alterado
-                    horario['profissional_nome'] = profissional_nome_atual # Alterado
+                    horario['id'] = horario_doc.id
+                    horario['profissional_id_fk'] = profissional_id_atual
+                    horario['profissional_nome'] = profissional_nome_atual
                     
                     dias_semana_map = {0: 'Domingo', 1: 'Segunda-feira', 2: 'Terça-feira', 3: 'Quarta-feira', 4: 'Quinta-feira', 5: 'Sexta-feira', 6: 'Sábado'}
                     horario['dia_semana_nome'] = dias_semana_map.get(horario.get('dia_semana'), 'N/A')
@@ -1316,15 +1218,15 @@ def listar_horarios():
 
 @app.route('/horarios/novo', methods=['GET', 'POST'])
 @login_required
-@admin_required # Somente administradores podem adicionar horários diretamente (ou o próprio médico)
+@admin_required
 def adicionar_horario():
     clinica_id = session['clinica_id']
     profissionais_ativos_lista = []
     try:
-        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream() # Alterado
-        for doc in profissionais_docs: # Alterado
-            p_data = doc.to_dict() # Alterado
-            if p_data: profissionais_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)}) # Alterado
+        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+        for doc in profissionais_docs:
+            p_data = doc.to_dict()
+            if p_data: profissionais_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)})
     except Exception as e:
         flash('Erro ao carregar profissionais ativos.', 'danger')
         print(f"Erro ao carregar profissionais (add_schedule GET): {e}")
@@ -1333,7 +1235,7 @@ def adicionar_horario():
 
     if request.method == 'POST':
         try:
-            profissional_id_selecionado = request.form['profissional_id'] # Alterado
+            profissional_id_selecionado = request.form['profissional_id']
             dia_semana = int(request.form['dia_semana'])
             hora_inicio = request.form['hora_inicio']
             hora_fim = request.form['hora_fim']
@@ -1356,7 +1258,7 @@ def adicionar_horario():
                 if intervalo_minutos is not None:
                     horario_data['intervalo_minutos'] = intervalo_minutos
 
-                db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_selecionado).collection('horarios_disponiveis').add(horario_data) # Alterado
+                db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_selecionado).collection('horarios_disponiveis').add(horario_data)
                 flash('Horário adicionado com sucesso!', 'success')
                 return redirect(url_for('listar_horarios'))
         except ValueError:
@@ -1366,7 +1268,7 @@ def adicionar_horario():
             print(f"Erro add_schedule (POST): {e}")
             
     return render_template('horario_form.html', 
-                           profissionais=profissionais_ativos_lista, # Alterado
+                           profissionais=profissionais_ativos_lista,
                            dias_semana=dias_semana_map, 
                            horario=None, 
                            action_url=url_for('adicionar_horario'),
@@ -1374,21 +1276,21 @@ def adicionar_horario():
                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 
-@app.route('/profissionais/<string:profissional_doc_id>/horarios/editar/<string:horario_doc_id>', methods=['GET', 'POST']) # Alterado
+@app.route('/profissionais/<string:profissional_doc_id>/horarios/editar/<string:horario_doc_id>', methods=['GET', 'POST'])
 @login_required
-def editar_horario(profissional_doc_id, horario_doc_id): # Alterado
+def editar_horario(profissional_doc_id, horario_doc_id):
     clinica_id = session['clinica_id']
-    horario_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id) # Alterado
+    horario_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id)
     
-    profissionais_ativos_lista = [] # Alterado
+    profissionais_ativos_lista = []
     try:
-        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream() # Alterado
-        for doc in profissionais_docs: # Alterado
-            p_data = doc.to_dict() # Alterado
-            if p_data: profissionais_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)}) # Alterado
+        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+        for doc in profissionais_docs:
+            p_data = doc.to_dict()
+            if p_data: profissionais_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)})
     except Exception as e:
-        flash('Erro ao carregar profissionais ativos para o formulário.', 'danger') # Alterado
-        print(f"Erro ao carregar profissionais (edit_schedule GET): {e}") # Alterado
+        flash('Erro ao carregar profissionais ativos para o formulário.', 'danger')
+        print(f"Erro ao carregar profissionais (edit_schedule GET): {e}")
 
     dias_semana_map = {0: 'Domingo', 1: 'Segunda-feira', 2: 'Terça-feira', 3: 'Quarta-feira', 4: 'Quinta-feira', 5: 'Sexta-feira', 6: 'Sábado'}
 
@@ -1431,21 +1333,20 @@ def editar_horario(profissional_doc_id, horario_doc_id): # Alterado
             horario_data_db = horario_doc_snapshot.to_dict()
             if horario_data_db:
                 horario_data_db['id'] = horario_doc_snapshot.id 
-                horario_data_db['profissional_id_fk'] = profissional_doc_id # Alterado
+                horario_data_db['profissional_id_fk'] = profissional_doc_id
                 
-                # Obtém o nome do profissional (antigo barbeiro)
-                profissional_pai_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get() # Alterado
-                if profissional_pai_doc.exists: # Alterado
-                    profissional_pai_data = profissional_pai_doc.to_dict() # Alterado
-                    if profissional_pai_data: # Alterado
-                        horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id) # Alterado
+                profissional_pai_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
+                if profissional_pai_doc.exists:
+                    profissional_pai_data = profissional_pai_doc.to_dict()
+                    if profissional_pai_data:
+                        horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id)
                 
                 return render_template('horario_form.html', 
-                                       profissionais=profissionais_ativos_lista, # Alterado
+                                       profissionais=profissionais_ativos_lista,
                                        dias_semana=dias_semana_map, 
                                        horario=horario_data_db, 
-                                       action_url=url_for('editar_horario', profissional_doc_id=profissional_doc_id, horario_doc_id=horario_doc_id), # Alterado
-                                       page_title=f"Editar Horário para {horario_data_db.get('profissional_nome_atual', 'Profissional')}", # Alterado
+                                       action_url=url_for('editar_horario', profissional_doc_id=profissional_doc_id, horario_doc_id=horario_doc_id),
+                                       page_title=f"Editar Horário para {horario_data_db.get('profissional_nome_atual', 'Profissional')}",
                                        current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
         else:
             flash('Horário específico não encontrado.', 'danger')
@@ -1456,25 +1357,25 @@ def editar_horario(profissional_doc_id, horario_doc_id): # Alterado
         return redirect(url_for('listar_horarios'))
 
 
-@app.route('/profissionais/<string:profissional_doc_id>/horarios/excluir/<string:horario_doc_id>', methods=['POST']) # Alterado
+@app.route('/profissionais/<string:profissional_doc_id>/horarios/excluir/<string:horario_doc_id>', methods=['POST'])
 @login_required
-@admin_required # Somente administradores podem excluir horários (ou o próprio médico)
-def excluir_horario(profissional_doc_id, horario_doc_id): # Alterado
+@admin_required
+def excluir_horario(profissional_doc_id, horario_doc_id):
     clinica_id = session['clinica_id']
     try:
-        db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id).delete() # Alterado
+        db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id).delete()
         flash('Horário disponível excluído com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao excluir horário: {e}', 'danger')
         print(f"Erro delete_schedule: {e}")
     return redirect(url_for('listar_horarios'))
 
-@app.route('/profissionais/<string:profissional_doc_id>/horarios/ativar_desativar/<string:horario_doc_id>', methods=['POST']) # Alterado
+@app.route('/profissionais/<string:profissional_doc_id>/horarios/ativar_desativar/<string:horario_doc_id>', methods=['POST'])
 @login_required
-@admin_required # Somente administradores podem ativar/desativar horários (ou o próprio médico)
-def ativar_desativar_horario(profissional_doc_id, horario_doc_id): # Alterado
+@admin_required
+def ativar_desativar_horario(profissional_doc_id, horario_doc_id):
     clinica_id = session['clinica_id']
-    horario_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id) # Alterado
+    horario_ref = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).collection('horarios_disponiveis').document(horario_doc_id)
     try:
         horario_doc = horario_ref.get()
         if horario_doc.exists:
@@ -1493,7 +1394,6 @@ def ativar_desativar_horario(profissional_doc_id, horario_doc_id): # Alterado
         print(f"Erro em activate_deactivate_schedule: {e}")
     return redirect(url_for('listar_horarios'))
 
-# --- ROTAS DE AGENDAMENTOS ---
 @app.route('/agendamentos')
 @login_required
 def listar_agendamentos():
@@ -1501,20 +1401,20 @@ def listar_agendamentos():
     agendamentos_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos')
     agendamentos_lista = []
     
-    profissionais_para_filtro = [] # Alterado
-    servicos_procedimentos_ativos = [] # Alterado
-    pacientes_para_filtro = [] # Novo
+    profissionais_para_filtro = []
+    servicos_procedimentos_ativos = []
+    pacientes_para_filtro = []
 
     try:
-        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream() # Alterado
-        for doc in profissionais_docs: # Alterado
-            p_data = doc.to_dict() # Alterado
-            if p_data: profissionais_para_filtro.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)}) # Alterado
+        profissionais_docs = db.collection('clinicas').document(clinica_id).collection('profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+        for doc in profissionais_docs:
+            p_data = doc.to_dict()
+            if p_data: profissionais_para_filtro.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)})
         
-        servicos_docs = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').order_by('nome').stream() # Alterado
-        for doc in servicos_docs: # Alterado
-            s_data = doc.to_dict() # Alterado
-            if s_data: servicos_procedimentos_ativos.append({'id': doc.id, 'nome': s_data.get('nome', doc.id), 'preco': s_data.get('preco_sugerido', 0.0)}) # Alterado
+        servicos_docs = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').order_by('nome').stream()
+        for doc in servicos_docs:
+            s_data = doc.to_dict()
+            if s_data: servicos_procedimentos_ativos.append({'id': doc.id, 'nome': s_data.get('nome', doc.id), 'preco': s_data.get('preco_sugerido', 0.0)})
 
         pacientes_docs = db.collection('clinicas').document(clinica_id).collection('pacientes').order_by('nome').stream()
         for doc in pacientes_docs:
@@ -1524,17 +1424,16 @@ def listar_agendamentos():
 
     except Exception as e:
         flash('Erro ao carregar dados para filtros/modal.', 'warning')
-        print(f"Erro ao carregar profissionais/serviços_procedimentos/pacientes para filtros: {e}") # Alterado
+        print(f"Erro ao carregar profissionais/serviços_procedimentos/pacientes para filtros: {e}")
 
     filtros_atuais = {
-        'paciente_nome': request.args.get('paciente_nome', '').strip(), # Alterado
-        'profissional_id': request.args.get('profissional_id', '').strip(), # Alterado
+        'paciente_nome': request.args.get('paciente_nome', '').strip(),
+        'profissional_id': request.args.get('profissional_id', '').strip(),
         'status': request.args.get('status', '').strip(),
         'data_inicio': request.args.get('data_inicio', '').strip(),
         'data_fim': request.args.get('data_fim', '').strip(),
     }
 
-    # LÓGICA ATUALIZADA: Define o filtro padrão para o mês atual se nenhuma data for fornecida
     if not filtros_atuais['data_inicio'] and not filtros_atuais['data_fim']:
         hoje = datetime.datetime.now(SAO_PAULO_TZ)
         inicio_mes = hoje.replace(day=1)
@@ -1550,10 +1449,10 @@ def listar_agendamentos():
 
     query = agendamentos_ref
 
-    if filtros_atuais['paciente_nome']: # Alterado
-        query = query.where(filter=FieldFilter('paciente_nome', '>=', filtros_atuais['paciente_nome'])).where(filter=FieldFilter('paciente_nome', '<=', filtros_atuais['paciente_nome'] + '\uf8ff')) # Alterado
-    if filtros_atuais['profissional_id']: # Alterado
-        query = query.where(filter=FieldFilter('profissional_id', '==', filtros_atuais['profissional_id'])) # Alterado
+    if filtros_atuais['paciente_nome']:
+        query = query.where(filter=FieldFilter('paciente_nome', '>=', filtros_atuais['paciente_nome'])).where(filter=FieldFilter('paciente_nome', '<=', filtros_atuais['paciente_nome'] + '\uf8ff'))
+    if filtros_atuais['profissional_id']:
+        query = query.where(filter=FieldFilter('profissional_id', '==', filtros_atuais['profissional_id']))
     if filtros_atuais['status']:
         query = query.where(filter=FieldFilter('status', '==', filtros_atuais['status']))
     if filtros_atuais['data_inicio']:
@@ -1581,8 +1480,7 @@ def listar_agendamentos():
                     except: ag['data_agendamento_fmt'] = ag['data_agendamento']
                 else: ag['data_agendamento_fmt'] = "N/A"
                 
-                # Ajusta o nome do campo para preço
-                ag['preco_servico_fmt'] = "R$ {:.2f}".format(float(ag.get('servico_procedimento_preco', 0))).replace('.', ',') # Alterado
+                ag['preco_servico_fmt'] = "R$ {:.2f}".format(float(ag.get('servico_procedimento_preco', 0))).replace('.', ',')
                 data_criacao_ts = ag.get('data_criacao')
                 if isinstance(data_criacao_ts, datetime.datetime):
                     ag['data_criacao_fmt'] = data_criacao_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
@@ -1601,7 +1499,7 @@ def listar_agendamentos():
     }
     for agendamento in agendamentos_lista:
         status = agendamento.get('status', 'pendente').lower()
-        preco = float(agendamento.get('servico_procedimento_preco', 0)) # Alterado
+        preco = float(agendamento.get('servico_procedimento_preco', 0))
         if status in stats_cards:
             stats_cards[status]['count'] += 1
             stats_cards[status]['total_valor'] += preco
@@ -1609,9 +1507,9 @@ def listar_agendamentos():
     return render_template('agendamentos.html', 
                            agendamentos=agendamentos_lista,
                            stats_cards=stats_cards,
-                           profissionais_para_filtro=profissionais_para_filtro, # Alterado
-                           servicos_ativos=servicos_procedimentos_ativos, # Alterado
-                           pacientes_para_filtro=pacientes_para_filtro, # Novo
+                           profissionais_para_filtro=profissionais_para_filtro,
+                           servicos_ativos=servicos_procedimentos_ativos,
+                           pacientes_para_filtro=pacientes_para_filtro,
                            filtros_atuais=filtros_atuais,
                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
@@ -1620,10 +1518,10 @@ def listar_agendamentos():
 def registrar_atendimento_manual():
     clinica_id = session['clinica_id']
     try:
-        paciente_nome = request.form.get('cliente_nome_manual') # Alterado
-        paciente_telefone = request.form.get('cliente_telefone_manual') # Alterado
-        profissional_id_manual = request.form.get('barbeiro_id_manual') # Alterado
-        servico_procedimento_id_manual = request.form.get('servico_id_manual') # Alterado
+        paciente_nome = request.form.get('cliente_nome_manual')
+        paciente_telefone = request.form.get('cliente_telefone_manual')
+        profissional_id_manual = request.form.get('barbeiro_id_manual')
+        servico_procedimento_id_manual = request.form.get('servico_id_manual')
         data_agendamento_str = request.form.get('data_agendamento_manual')
         hora_agendamento_str = request.form.get('hora_agendamento_manual')
         preco_str = request.form.get('preco_manual')
@@ -1635,7 +1533,6 @@ def registrar_atendimento_manual():
 
         preco_servico = float(preco_str.replace(',', '.'))
 
-        # Procura pelo ID do paciente pelo nome, ou cria um novo paciente se não existir
         paciente_ref_query = db.collection('clinicas').document(clinica_id).collection('pacientes')\
                                .where(filter=FieldFilter('nome', '==', paciente_nome)).limit(1).get()
         
@@ -1646,36 +1543,35 @@ def registrar_atendimento_manual():
                 break
         
         if not paciente_doc_id:
-            # Cria um novo paciente se não encontrado
             novo_paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').add({
                 'nome': paciente_nome,
                 'contato_telefone': paciente_telefone if paciente_telefone else None,
                 'data_cadastro': firestore.SERVER_TIMESTAMP
             })
-            paciente_doc_id = novo_paciente_ref[1].id # Obtém o ID do documento recém-criado
+            paciente_doc_id = novo_paciente_ref[1].id
 
-        profissional_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get() # Alterado
-        servico_procedimento_doc = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get() # Alterado
+        profissional_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get()
+        servico_procedimento_doc = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get()
 
-        profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A' # Alterado
-        servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A' # Alterado
+        profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
+        servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A'
         
         dt_agendamento_naive = datetime.datetime.strptime(f"{data_agendamento_str} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
         dt_agendamento_sp = SAO_PAULO_TZ.localize(dt_agendamento_naive)
         data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
 
         novo_agendamento_dados = {
-            'paciente_id': paciente_doc_id, # Novo campo
-            'paciente_nome': paciente_nome, # Alterado
-            'paciente_numero': paciente_telefone if paciente_telefone else None, # Alterado
-            'profissional_id': profissional_id_manual, # Alterado
-            'profissional_nome': profissional_nome, # Alterado
-            'servico_procedimento_id': servico_procedimento_id_manual, # Alterado
-            'servico_procedimento_nome': servico_procedimento_nome, # Alterado
+            'paciente_id': paciente_doc_id,
+            'paciente_nome': paciente_nome,
+            'paciente_numero': paciente_telefone if paciente_telefone else None,
+            'profissional_id': profissional_id_manual,
+            'profissional_nome': profissional_nome,
+            'servico_procedimento_id': servico_procedimento_id_manual,
+            'servico_procedimento_nome': servico_procedimento_nome,
             'data_agendamento': data_agendamento_str,
             'hora_agendamento': hora_agendamento_str,
             'data_agendamento_ts': data_agendamento_ts_utc,
-            'servico_procedimento_preco': preco_servico, # Alterado para refletir o preço no agendamento
+            'servico_procedimento_preco': preco_servico,
             'status': status_manual,
             'tipo_agendamento': 'manual_dashboard',
             'data_criacao': firestore.SERVER_TIMESTAMP,
@@ -1710,7 +1606,6 @@ def alterar_status_agendamento(agendamento_doc_id):
         flash(f'Erro ao alterar o status do agendamento: {e}', 'danger')
     return redirect(url_for('listar_agendamentos'))
 
-# --- INÍCIO DAS NOVAS ROTAS ---
 @app.route('/agendamentos/editar', methods=['POST'])
 @login_required
 def editar_agendamento():
@@ -1724,7 +1619,6 @@ def editar_agendamento():
     try:
         agendamento_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_id)
         
-        # Coleta todos os dados do formulário
         paciente_nome = request.form.get('cliente_nome_manual')
         profissional_id_manual = request.form.get('barbeiro_id_manual')
         servico_procedimento_id_manual = request.form.get('servico_id_manual')
@@ -1737,7 +1631,6 @@ def editar_agendamento():
             flash('Todos os campos obrigatórios devem ser preenchidos para editar.', 'danger')
             return redirect(url_for('listar_agendamentos'))
         
-        # Reutiliza a lógica de obter nomes e formatar datas
         profissional_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get()
         servico_procedimento_doc = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get()
 
@@ -1771,12 +1664,11 @@ def editar_agendamento():
         
     return redirect(url_for('listar_agendamentos'))
 
-# ROTA CORRIGIDA PARA APAGAR AGENDAMENTO
-@app.route('/agendamentos/apagar', methods=['POST']) # <--- ROTA ALTERADA AQUI
+@app.route('/agendamentos/apagar', methods=['POST'])
 @login_required
-def apagar_agendamento(): # <--- agendamento_id não é mais um parâmetro da URL
+def apagar_agendamento():
     clinica_id = session['clinica_id']
-    agendamento_id = request.form.get('agendamento_id') # <--- Obtém o ID do formulário
+    agendamento_id = request.form.get('agendamento_id')
     if not agendamento_id:
         flash('ID do agendamento não fornecido para exclusão.', 'danger')
         return redirect(url_for('listar_agendamentos'))
@@ -1788,31 +1680,24 @@ def apagar_agendamento(): # <--- agendamento_id não é mais um parâmetro da UR
         flash(f'Erro ao apagar agendamento: {e}', 'danger')
         print(f"Erro delete_appointment: {e}")
     return redirect(url_for('listar_agendamentos'))
-# --- FIM DAS NOVAS ROTAS ---
 
-
-# --- ROTAS DE PRONTUÁRIOS DE PACIENTES (NOVO) ---
 @app.route('/prontuarios')
 @login_required
 def buscar_prontuario():
     clinica_id = session['clinica_id']
     pacientes_para_busca = []
-    search_query = request.args.get('search_query', '').strip() # Captura o termo de busca
+    search_query = request.args.get('search_query', '').strip()
 
     try:
         pacientes_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
-        query = pacientes_ref.order_by('nome') # Consulta base ordenada por nome
+        query = pacientes_ref.order_by('nome')
 
         if search_query:
-            # Implementa a busca por nome ou CPF (se o CPF estiver disponível)
-            # Para nome:
             query_nome = pacientes_ref.where(filter=FieldFilter('nome', '>=', search_query))\
                                      .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
             
-            # Para CPF: (adicionar apenas se o campo 'cpf' existir nos documentos do paciente)
-            query_cpf = pacientes_ref.where(filter=FieldFilter('cpf', '==', search_query)) # CPF deve ser exato
+            query_cpf = pacientes_ref.where(filter=FieldFilter('cpf', '==', search_query))
 
-            # Coleta os resultados e remove duplicatas
             pacientes_set = set()
             for doc in query_nome.stream():
                 paciente_data = doc.to_dict()
@@ -1820,7 +1705,6 @@ def buscar_prontuario():
                     paciente_data['id'] = doc.id
                     pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
             
-            # Adiciona resultados do CPF
             for doc in query_cpf.stream():
                 paciente_data = doc.to_dict()
                 if paciente_data:
@@ -1828,10 +1712,9 @@ def buscar_prontuario():
                     pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
             
             pacientes_para_busca = [json.loads(p) for p in pacientes_set]
-            pacientes_para_busca.sort(key=lambda x: x.get('nome', '')) # Reordena por nome após a junção
+            pacientes_para_busca.sort(key=lambda x: x.get('nome', ''))
 
         else:
-            # Se não houver termo de busca, lista todos os pacientes
             docs = query.stream()
             for doc in docs:
                 paciente_data = doc.to_dict()
@@ -1842,7 +1725,6 @@ def buscar_prontuario():
         flash(f'Erro ao carregar lista de pacientes para busca: {e}. Verifique seus índices do Firestore.', 'danger')
         print(f"Erro search_patient_record: {e}")
 
-    # Passa o termo de busca de volta para o template para manter o valor no campo de busca
     return render_template('prontuario_busca.html', pacientes_para_busca=pacientes_para_busca, search_query=search_query)
 
 @app.route('/prontuarios/<string:paciente_doc_id>')
@@ -1861,13 +1743,11 @@ def ver_prontuario(paciente_doc_id):
             paciente_data = paciente_doc.to_dict()
             paciente_data['id'] = paciente_doc.id
 
-            # Adiciona informações do convênio, se existirem
             if paciente_data.get('convenio_id'):
                 convenio_doc = db.collection('clinicas').document(clinica_id).collection('convenios').document(paciente_data['convenio_id']).get()
                 if convenio_doc.exists:
                     paciente_data['convenio_nome'] = convenio_doc.to_dict().get('nome', 'N/A')
             
-            # Busca todas as entradas de prontuário do paciente
             docs_stream = prontuarios_ref.order_by('data_registro', direction=firestore.Query.DESCENDING).stream()
             for doc in docs_stream:
                 registro = doc.to_dict()
@@ -1878,7 +1758,6 @@ def ver_prontuario(paciente_doc_id):
                     else:
                         registro['data_registro_fmt'] = "N/A"
                     
-                    # Carrega o nome do profissional que criou o registro
                     profissional_doc_id = registro.get('profissional_id')
                     if profissional_doc_id:
                         prof_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
@@ -1901,10 +1780,8 @@ def ver_prontuario(paciente_doc_id):
 @login_required
 def adicionar_anamnese(paciente_doc_id):
     clinica_id = session['clinica_id']
-    # O user_uid na sessão é o UID do usuário logado do Firebase Auth
     profissional_logado_uid = session.get('user_uid') 
 
-    # Procura pelo ID do profissional associado ao user_uid logado
     profissional_doc_id = None
     profissional_nome = "Profissional Desconhecido"
     try:
@@ -1935,27 +1812,25 @@ def adicionar_anamnese(paciente_doc_id):
     try:
         modelos_docs = db.collection('clinicas').document(clinica_id).collection('modelos_anamnese').order_by('identificacao').stream()
         for doc in modelos_docs:
-            modelo = convert_doc_to_dict(doc) # Usa o novo conversor
+            modelo = convert_doc_to_dict(doc)
             modelos_anamnese.append(modelo)
     except Exception as e:
         flash('Erro ao carregar modelos de anamnese.', 'warning')
         print(f"Erro ao carregar modelos de anamnese: {e}")
 
     if request.method == 'POST':
-        # Prioriza o conteúdo vindo do campo de formulário HTML
         conteudo = request.form.get('conteudo', '').strip() 
         modelo_base_id = request.form.get('modelo_base_id')
         
-        # Logs para depuração
         print(f"DEBUG (adicionar_anamnese - POST): Conteúdo recebido (primeiros 100 caracteres): {conteudo[:100]}...") 
         print(f"DEBUG (adicionar_anamnese - POST): Todos os dados do formulário: {request.form}") 
         
         try:
             db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
-                'profissional_id': profissional_doc_id, # Salva o ID do profissional que o criou
+                'profissional_id': profissional_doc_id,
                 'data_registro': firestore.SERVER_TIMESTAMP,
                 'tipo_registro': 'anamnese',
-                'conteudo': conteudo, # Salva o conteúdo obtido do formulário
+                'conteudo': conteudo,
                 'modelo_base_id': modelo_base_id if modelo_base_id else None
             })
             flash('Anamnese adicionada com sucesso!', 'success')
@@ -1989,24 +1864,22 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
     try:
         modelos_docs = db.collection('clinicas').document(clinica_id).collection('modelos_anamnese').order_by('identificacao').stream()
         for doc in modelos_docs:
-            modelo = convert_doc_to_dict(doc) # Usa o novo conversor
+            modelo = convert_doc_to_dict(doc)
             modelos_anamnese.append(modelo)
     except Exception as e:
         flash('Erro ao carregar modelos de anamnese.', 'warning')
         print(f"Erro ao carregar modelos de anamnese (edit): {e}")
 
     if request.method == 'POST':
-        # Prioriza o conteúdo vindo do campo de formulário HTML
         conteudo = request.form.get('conteudo', '').strip()
         modelo_base_id = request.form.get('modelo_base_id')
         
-        # Logs para depuração
         print(f"DEBUG (editar_anamnese - POST): Conteúdo recebido (primeiros 100 caracteres): {conteudo[:100]}...") 
         print(f"DEBUG (editar_anamnese - POST): Todos os dados do formulário: {request.form}")
         
         try:
             anamnese_ref.update({
-                'conteudo': conteudo, # Atualiza o conteúdo obtido do formulário
+                'conteudo': conteudo,
                 'modelo_base_id': modelo_base_id if modelo_base_id else None,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             })
@@ -2036,14 +1909,12 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         print(f"Erro edit_anamnesis (GET): {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
-# Rota para registrar um novo registro genérico (Laudo, Orientação, Procedimento)
 @app.route('/prontuarios/<string:paciente_doc_id>/registrar_registro_generico', methods=['POST'])
 @login_required
 def registrar_registro_generico(paciente_doc_id):
     clinica_id = session['clinica_id']
     profissional_logado_uid = session.get('user_uid')
 
-    # Busca o ID e nome do profissional associado ao user_uid logado
     profissional_doc_id = None
     profissional_nome = "Profissional Desconhecido"
     try:
@@ -2087,7 +1958,6 @@ def registrar_registro_generico(paciente_doc_id):
         print(f"Erro registrar_registro_generico: {e}")
     return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
-# Rota para editar um registro genérico (Laudo, Orientação, Procedimento)
 @app.route('/prontuarios/<string:paciente_doc_id>/editar_registro_generico/<string:registro_doc_id>', methods=['POST'])
 @login_required
 def editar_registro_generico(paciente_doc_id, registro_doc_id):
@@ -2098,7 +1968,7 @@ def editar_registro_generico(paciente_doc_id, registro_doc_id):
         titulo = request.form.get('titulo', '').strip()
         conteudo = request.form.get('conteudo', '').strip()
         agendamento_id_referencia = request.form.get('agendamento_id_referencia', '').strip()
-        tipo_registro = request.form.get('tipo_registro') # Pega o tipo para a mensagem flash
+        tipo_registro = request.form.get('tipo_registro')
 
         if not all([titulo, conteudo]):
             flash(f'Por favor, preencha o título e o conteúdo para o registro de {tipo_registro}.', 'danger')
@@ -2116,7 +1986,6 @@ def editar_registro_generico(paciente_doc_id, registro_doc_id):
         print(f"Erro editar_registro_generico: {e}")
     return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
-# Rota para apagar um registro genérico (Laudo, Orientação, Procedimento, Anamnese)
 @app.route('/prontuarios/<string:paciente_doc_id>/apagar_registro_generico', methods=['POST'])
 @login_required
 def apagar_registro_generico(paciente_doc_id):
@@ -2135,7 +2004,6 @@ def apagar_registro_generico(paciente_doc_id):
         print(f"Erro apagar_registro_generico: {e}")
     return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
-# --- ROTAS DE MODELOS DE ANAMNESE (NOVO) ---
 @app.route('/modelos_anamnese')
 @login_required
 @admin_required
@@ -2145,7 +2013,7 @@ def listar_modelos_anamnese():
     try:
         docs = db.collection('clinicas').document(clinica_id).collection('modelos_anamnese').order_by('identificacao').stream()
         for doc in docs:
-            modelo = convert_doc_to_dict(doc) # Usa o novo conversor
+            modelo = convert_doc_to_dict(doc)
             modelos_lista.append(modelo)
     except Exception as e:
         flash(f'Erro ao listar modelos de anamnese: {e}.', 'danger')
@@ -2206,7 +2074,7 @@ def editar_modelo_anamnese(modelo_doc_id):
     try:
         modelo_doc = modelo_ref.get()
         if modelo_doc.exists:
-            modelo = convert_doc_to_dict(modelo_doc) # Usa o novo conversor
+            modelo = convert_doc_to_dict(modelo_doc)
             return render_template('modelo_anamnese_form.html', modelo=modelo, action_url=url_for('editar_modelo_anamnese', modelo_doc_id=modelo_doc_id))
         else:
             flash('Modelo de anamnese não encontrado.', 'danger')
@@ -2222,8 +2090,6 @@ def editar_modelo_anamnese(modelo_doc_id):
 def excluir_modelo_anamnese(modelo_doc_id):
     clinica_id = session['clinica_id']
     try:
-        # TODO: Se houver registros referenciando este modelo, pode ser necessário verificar antes de excluir.
-        # Por simplicidade, por enquanto, a exclusão é direta.
         db.collection('clinicas').document(clinica_id).collection('modelos_anamnese').document(modelo_doc_id).delete()
         flash('Modelo de anamnese excluído com sucesso!', 'success')
     except Exception as e:
@@ -2231,7 +2097,5 @@ def excluir_modelo_anamnese(modelo_doc_id):
         print(f"Erro delete_anamnesis_template: {e}")
     return redirect(url_for('listar_modelos_anamnese'))
 
-# --- EXECUÇÃO DO APP ---
 if __name__ == '__main__':
-    # Para execução local, use um .env para GOOGLE_SERVICE_ACCOUNT_KEY_JSON e PORT
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
