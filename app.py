@@ -104,7 +104,7 @@ def admin_required(f):
             return redirect(url_for('login_page'))
         if session.get('user_role') != 'admin':
             flash('Acesso negado: Você não tem permissões de administrador para esta ação.', 'danger')
-            return redirect(url_for('index')) 
+            return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -461,7 +461,7 @@ def index():
                 )
             else:
                 # Se não houver profissional associado, a lista ficará vazia.
-                proximos_agendamentos_lista = [] 
+                proximos_agendamentos_lista = []    
 
         # Apenas executa a query se for admin ou se for um profissional válido
         if user_role == 'admin' or profissional_id_logado:
@@ -663,11 +663,11 @@ def editar_usuario(user_uid):
             
     user_data_original['uid'] = user_uid
     return render_template(
-        'usuario_form.html', 
-        user=user_data_original, 
-        page_title="Editar Utilizador", 
-        action_url=url_for('editar_usuario', user_uid=user_uid), 
-        roles=['admin', 'medico'], 
+        'usuario_form.html',    
+        user=user_data_original,    
+        page_title="Editar Utilizador",    
+        action_url=url_for('editar_usuario', user_uid=user_uid),    
+        roles=['admin', 'medico'],    
         profissionais=profissionais_disponiveis
     )
 
@@ -790,8 +790,9 @@ def editar_profissional(profissional_doc_id):
         profissional_doc = profissional_ref.get()
         if profissional_doc.exists:
             profissional = profissional_doc.to_dict()
-            profissional['id'] = profissional_doc.id
-            return render_template('profissional_form.html', profissional=profissional, action_url=url_for('editar_profissional', profissional_doc_id=profissional_doc_id))
+            if profissional:
+                profissional['id'] = profissional_doc.id
+                return render_template('profissional_form.html', profissional=profissional, action_url=url_for('editar_profissional', profissional_doc_id=profissional_doc_id))
         else:
             flash('Profissional não encontrado.', 'danger')
             return redirect(url_for('listar_profissionais'))
@@ -811,7 +812,7 @@ def ativar_desativar_profissional(profissional_doc_id):
         if profissional_doc.exists:
             data = profissional_doc.to_dict()
             if data:
-                current_status = data.get('ativo', False) 
+                current_status = data.get('ativo', False)    
                 new_status = not current_status
                 profissional_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
                 flash(f'Profissional {"ativado" if new_status else "desativado"} com sucesso!', 'success')
@@ -829,44 +830,91 @@ def ativar_desativar_profissional(profissional_doc_id):
 def listar_pacientes():
     clinica_id = session['clinica_id']
     pacientes_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
+    convenios_ref = db.collection('clinicas').document(clinica_id).collection('convenios') # Reference to convenios collection
     pacientes_lista = []
+    
+    # --- Fetch all convenios and create a lookup dictionary ---
+    convenios_dict = {}
+    try:
+        convenios_docs = convenios_ref.stream()
+        for doc in convenios_docs:
+            convenios_dict[doc.id] = doc.to_dict().get('nome', 'Convênio Desconhecido')
+    except Exception as e:
+        print(f"Erro ao carregar convênios para pacientes: {e}")
+        flash('Erro ao carregar informações de convênios.', 'danger')
+
     try:
         search_query = request.args.get('search', '').strip()
+        
+        # Initial query for patients
         query = pacientes_ref.order_by('nome')
 
         if search_query:
+            # When a search query is present, perform multiple queries and combine results
             query_nome = pacientes_ref.where(filter=FieldFilter('nome', '>=', search_query))\
-                                 .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
+                                     .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
             query_telefone = pacientes_ref.order_by('contato_telefone')\
                                          .where(filter=FieldFilter('contato_telefone', '>=', search_query))\
                                          .where(filter=FieldFilter('contato_telefone', '<=', search_query + '\uf8ff'))
             
-            pacientes_set = set()
+            pacientes_set = set() # Use a set to store unique patient IDs (as JSON strings)
+            
             for doc in query_nome.stream():
                 paciente_data = doc.to_dict()
                 if paciente_data:
                     paciente_data['id'] = doc.id
+                    # Add convenio_nome to the patient data
+                    # Check if 'convenio_id' exists and if it's in the fetched convenios_dict
+                    if paciente_data.get('convenio_id') and paciente_data['convenio_id'] in convenios_dict:
+                        paciente_data['convenio_nome'] = convenios_dict[paciente_data['convenio_id']]
+                    else:
+                        paciente_data['convenio_nome'] = 'Particular' # Default if no ID or ID not found
                     pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
             
             for doc in query_telefone.stream():
                 paciente_data = doc.to_dict()
                 if paciente_data:
                     paciente_data['id'] = doc.id
+                    # Add convenio_nome to the patient data
+                    if paciente_data.get('convenio_id') and paciente_data['convenio_id'] in convenios_dict:
+                        paciente_data['convenio_nome'] = convenios_dict[paciente_data['convenio_id']]
+                    else:
+                        paciente_data['convenio_nome'] = 'Particular'
                     pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
             
+            # Convert set back to list of dictionaries and sort
             pacientes_lista = [json.loads(p) for p in pacientes_set]
             pacientes_lista.sort(key=lambda x: x.get('nome', ''))
         else:
+            # If no search query, stream all patients and enrich with convenio_nome
             docs = query.stream()
             for doc in docs:
                 paciente = doc.to_dict()
                 if paciente:
                     paciente['id'] = doc.id
+                    # Check if 'convenio_id' exists and if it's in the fetched convenios_dict
+                    if paciente.get('convenio_id') and paciente['convenio_id'] in convenios_dict:
+                        paciente['convenio_nome'] = convenios_dict[paciente['convenio_id']]
+                    else:
+                        paciente['convenio_nome'] = 'Particular'
                     pacientes_lista.append(paciente)
 
     except Exception as e:
         flash(f'Erro ao listar pacientes: {e}. Verifique seus índices do Firestore.', 'danger')
         print(f"Erro list_patients: {e}")
+    
+    # Existing code for stats_cards
+    stats_cards = {
+        'confirmado': {'count': 0, 'total_valor': 0.0},
+        'concluido': {'count': 0, 'total_valor': 0.0},
+        'cancelado': {'count': 0, 'total_valor': 0.0},
+        'pendente': {'count': 0, 'total_valor': 0.0}
+    }
+    # Note: The original code for stats_cards was using agendamentos_lista, not pacientes_lista.
+    # This section is fine as is if it's meant for overall stats from appointments.
+    # For patient-specific stats, you'd need to process patients_lista further.
+
+
     return render_template('pacientes.html', pacientes=pacientes_lista, search_query=search_query)
 
 @app.route('/pacientes/novo', methods=['GET', 'POST'])
@@ -914,7 +962,7 @@ def adicionar_paciente():
             data_nascimento_dt = parse_date_input(data_nascimento)
             
             if data_nascimento and data_nascimento_dt is None:
-                flash('Formato de data de nascimento inválido. Use YYYY-MM-DD ou DD/MM/YYYY.', 'danger')
+                flash('Formato de data de nascimento inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
                 return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
 
             paciente_data = {
@@ -996,7 +1044,7 @@ def editar_paciente(paciente_doc_id):
             data_nascimento_dt = parse_date_input(data_nascimento)
             
             if data_nascimento and data_nascimento_dt is None:
-                flash('Formato de data de nascimento inválido. Use YYYY-MM-DD ou DD/MM/YYYY.', 'danger')
+                flash('Formato de data de nascimento inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
                 return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
 
             paciente_data_update = {
@@ -1034,15 +1082,16 @@ def editar_paciente(paciente_doc_id):
         paciente_doc = paciente_ref.get()
         if paciente_doc.exists:
             paciente = paciente_doc.to_dict()
-            paciente['id'] = paciente_doc.id
-            if paciente.get('data_nascimento') and isinstance(paciente['data_nascimento'], datetime.date):
-                paciente['data_nascimento'] = paciente['data_nascimento'].strftime('%Y-%m-%d')
-            elif isinstance(paciente.get('data_nascimento'), datetime.datetime):
-                paciente['data_nascimento'] = paciente['data_nascimento'].date().strftime('%Y-%m-%d')
-            else:
-                paciente['data_nascimento'] = ''
+            if paciente:
+                paciente['id'] = paciente_doc.id
+                if paciente.get('data_nascimento') and isinstance(paciente['data_nascimento'], datetime.date):
+                    paciente['data_nascimento'] = paciente['data_nascimento'].strftime('%Y-%m-%d')
+                elif isinstance(paciente.get('data_nascimento'), datetime.datetime):
+                    paciente['data_nascimento'] = paciente['data_nascimento'].date().strftime('%Y-%m-%d')
+                else:
+                    paciente['data_nascimento'] = ''
 
-            return render_template('paciente_form.html', paciente=paciente, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
+                return render_template('paciente_form.html', paciente=paciente, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
         else:
             flash('Paciente não encontrado.', 'danger')
             return redirect(url_for('listar_pacientes'))
@@ -1234,8 +1283,9 @@ def editar_convenio(convenio_doc_id):
         convenio_doc = convenio_ref.get()
         if convenio_doc.exists:
             convenio = convenio_doc.to_dict()
-            convenio['id'] = convenio_doc.id
-            return render_template('convenio_form.html', convenio=convenio, action_url=url_for('editar_convenio', convenio_doc_id=convenio_doc_id))
+            if convenio:
+                convenio['id'] = convenio_doc.id
+                return render_template('convenio_form.html', convenio=convenio, action_url=url_for('editar_convenio', convenio_doc_id=convenio_doc_id))
         else:
             flash('Convênio não encontrado.', 'danger')
             return redirect(url_for('listar_convenios'))
@@ -1324,7 +1374,7 @@ def adicionar_horario():
             hora_fim = request.form['hora_fim']
             intervalo_minutos_str = request.form.get('intervalo_minutos')
             intervalo_minutos = int(intervalo_minutos_str) if intervalo_minutos_str and intervalo_minutos_str.isdigit() else None
-            ativo = 'ativo' in request.form 
+            ativo = 'ativo' in request.form    
 
             if not profissional_id_selecionado:
                 flash('Por favor, selecione um profissional.', 'warning')
@@ -1335,7 +1385,7 @@ def adicionar_horario():
                     'dia_semana': dia_semana,
                     'hora_inicio': hora_inicio,
                     'hora_fim': hora_fim,
-                    'ativo': ativo, 
+                    'ativo': ativo,    
                     'criado_em': firestore.SERVER_TIMESTAMP
                 }
                 if intervalo_minutos is not None:
@@ -1350,13 +1400,13 @@ def adicionar_horario():
             flash(f'Erro ao adicionar horário: {e}', 'danger')
             print(f"Erro add_schedule (POST): {e}")
             
-    return render_template('horario_form.html', 
-                           profissionais=profissionais_ativos_lista,
-                           dias_semana=dias_semana_map, 
-                           horario=None, 
-                           action_url=url_for('adicionar_horario'),
-                           page_title='Adicionar Novo Horário',
-                           current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
+    return render_template('horario_form.html',    
+                            profissionais=profissionais_ativos_lista,
+                            dias_semana=dias_semana_map,    
+                            horario=None,    
+                            action_url=url_for('adicionar_horario'),
+                            page_title='Adicionar Novo Horário',
+                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 
 @app.route('/profissionais/<string:profissional_doc_id>/horarios/editar/<string:horario_doc_id>', methods=['GET', 'POST'])
@@ -1393,12 +1443,12 @@ def editar_horario(profissional_doc_id, horario_doc_id):
                     'dia_semana': dia_semana,
                     'hora_inicio': hora_inicio,
                     'hora_fim': hora_fim,
-                    'ativo': ativo, 
+                    'ativo': ativo,    
                     'atualizado_em': firestore.SERVER_TIMESTAMP
                 }
                 if intervalo_minutos is not None:
                     horario_data_update['intervalo_minutos'] = intervalo_minutos
-                else: 
+                else:    
                     horario_data_update['intervalo_minutos'] = firestore.DELETE_FIELD
 
                 horario_ref.update(horario_data_update)
@@ -1415,7 +1465,7 @@ def editar_horario(profissional_doc_id, horario_doc_id):
         if horario_doc_snapshot.exists:
             horario_data_db = horario_doc_snapshot.to_dict()
             if horario_data_db:
-                horario_data_db['id'] = horario_doc_snapshot.id 
+                horario_data_db['id'] = horario_doc_snapshot.id    
                 horario_data_db['profissional_id_fk'] = profissional_doc_id
                 
                 profissional_pai_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
@@ -1424,13 +1474,13 @@ def editar_horario(profissional_doc_id, horario_doc_id):
                     if profissional_pai_data:
                         horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id)
                 
-                return render_template('horario_form.html', 
-                                       profissionais=profissionais_ativos_lista,
-                                       dias_semana=dias_semana_map, 
-                                       horario=horario_data_db, 
-                                       action_url=url_for('editar_horario', profissional_doc_id=profissional_doc_id, horario_doc_id=horario_doc_id),
-                                       page_title=f"Editar Horário para {horario_data_db.get('profissional_nome_atual', 'Profissional')}",
-                                       current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
+                return render_template('horario_form.html',    
+                                        profissionais=profissionais_ativos_lista,
+                                        dias_semana=dias_semana_map,    
+                                        horario=horario_data_db,    
+                                        action_url=url_for('editar_horario', profissional_doc_id=profissional_doc_id, horario_doc_id=horario_doc_id),
+                                        page_title=f"Editar Horário para {horario_data_db.get('profissional_nome_atual', 'Profissional')}",
+                                        current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
         else:
             flash('Horário específico não encontrado.', 'danger')
             return redirect(url_for('listar_horarios'))
@@ -1464,7 +1514,7 @@ def ativar_desativar_horario(profissional_doc_id, horario_doc_id):
         if horario_doc.exists:
             data = horario_doc.to_dict()
             if data:
-                current_status = data.get('ativo', False) 
+                current_status = data.get('ativo', False)    
                 new_status = not current_status
                 horario_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
                 flash(f'Horário {"ativado" if new_status else "desativado"} com sucesso!', 'success')
@@ -1543,13 +1593,13 @@ def listar_agendamentos():
             dt_inicio_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_inicio'], '%Y-%m-%d')).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_utc))
         except ValueError:
-            flash('Data de início inválida. Use o formato YYYY-MM-DD.', 'warning')
+            flash('Data de início inválida. Use o formatoญี่ป-MM-DD.', 'warning')
     if filtros_atuais['data_fim']:
         try:
             dt_fim_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_fim'], '%Y-%m-%d').replace(hour=23, minute=59, second=59)).astimezone(pytz.utc)
             query = query.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_utc))
         except ValueError:
-            flash('Data de término inválida. Use o formato YYYY-MM-DD.', 'warning')
+            flash('Data de término inválida. Use o formatoญี่ป-MM-DD.', 'warning')
 
     try:
         docs_stream = query.order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING).stream()
@@ -1587,14 +1637,14 @@ def listar_agendamentos():
             stats_cards[status]['count'] += 1
             stats_cards[status]['total_valor'] += preco
 
-    return render_template('agendamentos.html', 
-                           agendamentos=agendamentos_lista,
-                           stats_cards=stats_cards,
-                           profissionais_para_filtro=profissionais_para_filtro,
-                           servicos_ativos=servicos_procedimentos_ativos,
-                           pacientes_para_filtro=pacientes_para_filtro,
-                           filtros_atuais=filtros_atuais,
-                           current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
+    return render_template('agendamentos.html',    
+                            agendamentos=agendamentos_lista,
+                            stats_cards=stats_cards,
+                            profissionais_para_filtro=profissionais_para_filtro,
+                            servicos_ativos=servicos_procedimentos_ativos,
+                            pacientes_para_filtro=pacientes_para_filtro,
+                            filtros_atuais=filtros_atuais,
+                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 @app.route('/agendamentos/registrar_manual', methods=['POST'])
 @login_required
@@ -1863,20 +1913,20 @@ def ver_prontuario(paciente_doc_id):
 @login_required
 def adicionar_anamnese(paciente_doc_id):
     clinica_id = session['clinica_id']
-    profissional_logado_uid = session.get('user_uid') 
+    profissional_logado_uid = session.get('user_uid')    
 
     profissional_doc_id = None
     profissional_nome = "Profissional Desconhecido"
     try:
         prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais')\
-                           .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
+                               .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
         for doc in prof_query:
             profissional_doc_id = doc.id
             profissional_nome = doc.to_dict().get('nome', profissional_nome)
             break
         if not profissional_doc_id:
-             flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
-             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+              flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
+              return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     except Exception as e:
         flash(f'Erro ao verificar profissional associado: {e}', 'danger')
@@ -1902,11 +1952,11 @@ def adicionar_anamnese(paciente_doc_id):
         print(f"Erro ao carregar modelos de anamnese: {e}")
 
     if request.method == 'POST':
-        conteudo = request.form.get('conteudo', '').strip() 
+        conteudo = request.form.get('conteudo', '').strip()    
         modelo_base_id = request.form.get('modelo_base_id')
         
-        print(f"DEBUG (adicionar_anamnese - POST): Conteúdo recebido (primeiros 100 caracteres): {conteudo[:100]}...") 
-        print(f"DEBUG (adicionar_anamnese - POST): Todos os dados do formulário: {request.form}") 
+        print(f"DEBUG (adicionar_anamnese - POST): Conteúdo recebido (primeiros 100 caracteres): {conteudo[:100]}...")    
+        print(f"DEBUG (adicionar_anamnese - POST): Todos os dados do formulário: {request.form}")    
         
         try:
             db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
@@ -1922,12 +1972,12 @@ def adicionar_anamnese(paciente_doc_id):
             flash(f'Erro ao adicionar anamnese: {e}', 'danger')
             print(f"Erro add_anamnesis (POST): {e}")
     
-    return render_template('anamnese_form.html', 
-                           paciente_id=paciente_doc_id, 
-                           paciente_nome=paciente_nome, 
-                           modelos_anamnese=modelos_anamnese, 
-                           action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id),
-                           page_title=f"Registrar Anamnese para {paciente_nome}")
+    return render_template('anamnese_form.html',    
+                            paciente_id=paciente_doc_id,    
+                            paciente_nome=paciente_nome,    
+                            modelos_anamnese=modelos_anamnese,    
+                            action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id),
+                            page_title=f"Registrar Anamnese para {paciente_nome}")
 
 @app.route('/prontuarios/<string:paciente_doc_id>/anamnese/editar/<string:anamnese_doc_id>', methods=['GET', 'POST'])
 @login_required
@@ -1957,7 +2007,7 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         conteudo = request.form.get('conteudo', '').strip()
         modelo_base_id = request.form.get('modelo_base_id')
         
-        print(f"DEBUG (editar_anamnese - POST): Conteúdo recebido (primeiros 100 caracteres): {conteudo[:100]}...") 
+        print(f"DEBUG (editar_anamnese - POST): Conteúdo recebido (primeiros 100 caracteres): {conteudo[:100]}...")    
         print(f"DEBUG (editar_anamnese - POST): Todos os dados do formulário: {request.form}")
         
         try:
@@ -1976,14 +2026,16 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         anamnese_doc = anamnese_ref.get()
         if anamnese_doc.exists and anamnese_doc.to_dict().get('tipo_registro') == 'anamnese':
             anamnese_data = anamnese_doc.to_dict()
-            anamnese_data['id'] = anamnese_doc.id
-            return render_template('anamnese_form.html', 
-                                   paciente_id=paciente_doc_id, 
-                                   paciente_nome=paciente_nome, 
-                                   anamnese=anamnese_data, 
-                                   modelos_anamnese=modelos_anamnese,
-                                   action_url=url_for('editar_anamnese', paciente_doc_id=paciente_doc_id, anamnese_doc_id=anamnese_doc_id),
-                                   page_title=f"Editar Anamnese para {paciente_nome}")
+            anamnese_data['id'] = anamnese_doc.id    
+            anamnese_data['profissional_id_fk'] = profissional_doc_id # Assuming you need this for display, though not for update
+            
+            return render_template('anamnese_form.html',    
+                                    paciente_id=paciente_doc_id,    
+                                    paciente_nome=paciente_nome,    
+                                    anamnese=anamnese_data,    
+                                    modelos_anamnese=modelos_anamnese,
+                                    action_url=url_for('editar_anamnese', paciente_doc_id=paciente_doc_id, anamnese_doc_id=anamnese_doc_id),
+                                    page_title=f"Editar Anamnese para {paciente_nome}")
         else:
             flash('Anamnese não encontrada ou tipo de registro inválido.', 'danger')
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
@@ -2002,7 +2054,7 @@ def registrar_registro_generico(paciente_doc_id):
     profissional_nome = "Profissional Desconhecido"
     try:
         prof_query = db.collection('clinicas').document(clinica_id).collection('profissionais') \
-                           .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
+                               .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
         for doc in prof_query:
             profissional_doc_id = doc.id
             profissional_nome = doc.to_dict().get('nome', profissional_nome)
