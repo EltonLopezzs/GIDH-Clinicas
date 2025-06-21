@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }} - Clínica On</title>
+    <title>Gerenciar PEIs - {{ session.clinica_nome_display or 'Clínica On' }}</title>
     
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     
@@ -22,6 +22,7 @@
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
             --success: #16a34a; /* Green-600 */
+            --warning: #f59e0b;
             --border-color: #e2e8f0;
             
             --dark-bg: #0f172a;
@@ -124,52 +125,13 @@
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
         main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
         
-        /* --- Flash Messages --- */
-        .flash-messages { margin-bottom: 1.5rem; }
-        .flash-message {
-            padding: 1rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent;
-            border-radius: 0.5rem; font-size: 0.95rem; font-weight: 500;
-        }
-        .flash-message.success { color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
-        .flash-message.danger, .flash-message.error { color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
-
-        /* --- Form Card & Elements --- */
-        .form-card {
-            background: var(--card); padding: 2rem; border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            max-width: 700px; margin: 0 auto;
-        }
-        .form-card h2.form-title {
-            text-align: center; font-size: 1.6rem; color: var(--text);
-            margin-bottom: 2rem; font-weight: 700;
-        }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group label {
-            display: block; font-size: 0.9rem; color: var(--muted);
-            font-weight: 500; margin-bottom: 0.5rem;
-        }
-        .form-group input, .form-group select {
-            font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%;
-            border: 1px solid var(--border-color); border-radius: 8px;
-            background-color: var(--bg); color: var(--text);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-group input:focus, .form-group select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none;
-        }
-        .form-actions {
-            margin-top: 2rem; display: flex; justify-content: flex-end;
-            gap: 0.75rem; flex-wrap: wrap;
-        }
-        .form-actions .btn-delete-container { margin-right: auto; }
-        
+        /* --- Buttons --- */
         .btn {
             padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
             font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
             gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
         }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
         .btn-primary { background-color: var(--primary); color: white; }
         .btn-primary:hover { background-color: var(--primary-dark); }
         .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
@@ -178,16 +140,61 @@
         [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
         .btn-danger { background-color: var(--danger); color: white; }
         .btn-danger:hover { background-color: #b91c1c; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn.loading i { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .btn-warning { background-color: var(--warning); color: #854d0e; }
+        [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
+        .btn-warning:hover { background-color: #fcd34d; }
+
+        /* --- Table --- */
+        .table-container {
+            width: 100%; overflow-x: auto; background: var(--card);
+            border-radius: 12px; padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 600px; }
+        th, td {
+            padding: 0.9rem 1rem; font-size: 0.9rem; text-align: left; vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+        }
+        thead th {
+            font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.8rem;
+            background-color: var(--bg); border-bottom-width: 2px;
+        }
+        thead th:first-child { border-top-left-radius: 8px; }
+        thead th:last-child { border-top-right-radius: 8px; }
+        tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+        tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+        .table-actions { display: flex; gap: 0.5rem; }
+        .no-results td { text-align: center; padding: 2rem; color: var(--muted); }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
+            z-index: 2000; opacity: 0; transition: opacity 0.25s ease;
+        }
+        .modal-overlay.active { opacity: 1; display: flex; }
+        .modal-content {
+            background-color: var(--card); color: var(--text); border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 450px;
+            transform: translateY(-20px); transition: transform 0.25s ease;
+            text-align: center; padding: 2rem;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-icon { font-size: 3rem; color: var(--danger); margin-bottom: 1rem; }
+        .modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+        .modal-text { font-size: 1rem; color: var(--muted); margin-bottom: 1.5rem; }
+        .modal-actions { display: flex; justify-content: center; gap: 0.75rem; }
 
         /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
+
         @media(min-width: 769px) {
             .toggle-btn-desktop { display: grid; }
             .menu-btn-mobile { display: none; }
+            span.btn-text-desktop { display: inline; }
         }
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
@@ -198,12 +205,37 @@
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
             .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
             main { padding: 1rem; }
-            .form-card { padding: 1.5rem; }
-            .form-card h2.form-title { font-size: 1.4rem; }
-            .form-actions { flex-direction: column-reverse; align-items: stretch; gap: 0.5rem; }
-            .form-actions .btn { justify-content: center; }
-            .form-actions .btn-delete-container { margin: 0; }
+            .topbar { padding: 0 1rem; }
+            .table-container { display: none; }
+            .mobile-cards-wrapper { display: block; }
         }
+
+        /* --- Mobile Cards --- */
+        .mobile-cards-wrapper { display: none; }
+        .pei-card-mobile {
+            background-color: var(--card); border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 1rem; overflow: hidden;
+        }
+        .card-header-pei {
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);
+        }
+        .card-header-pei h4 { font-weight: 600; font-size: 1.1rem; margin: 0; }
+        .card-details-body { padding: 0.5rem 0; }
+        .card-detail-item {
+            display: flex; justify-content: space-between; padding: 0.7rem 1.5rem; font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .card-detail-item:last-child { border-bottom: none; }
+        .card-detail-item-label { color: var(--muted); font-weight: 500; }
+        .card-detail-item-value { font-weight: 600; }
+        .card-actions-footer {
+            padding: 1rem 1.5rem; background-color: var(--bg); display: flex;
+            gap: 0.75rem;
+        }
+        .card-actions-footer .btn, .card-actions-footer form { flex-grow: 1; }
+        .card-actions-footer .btn { justify-content: center; }
+        .card-actions-footer .btn i { margin-right: 0.5rem; }
     </style>
 </head>
 <body>
@@ -221,14 +253,14 @@
                         <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
                         <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
                         <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
                         <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
                         <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
                         <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
                         <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                                <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li class="active"><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -246,8 +278,12 @@
                 <div class="topbar-left">
                     <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }}</h1>
+                    <h1 class="page-title">Gerenciar Planos Educacionais Individualizados (PEIs)</h1>
                 </div>
+                <a href="{{ url_for('adicionar_pei') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 
+                    <span class="btn-text-desktop">Adicionar PEI</span>
+                </a>
             </header>
 
             <main>
@@ -261,52 +297,97 @@
                   {% endif %}
                 {% endwith %}
 
-                <div class="form-card">
-                    <h2 class="form-title">{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }}</h2>
-                    <form id="servicoForm" method="POST" action="{{ action_url|default('') }}">
-                        <div class="form-group">
-                            <label for="nome">Nome do Serviço/Procedimento</label>
-                            <input type="text" id="nome" name="nome" value="{{ servico.nome if servico and servico.nome is not none else request.form.nome if request.form.nome is not none else '' }}" required>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Identificação do PEI</th>
+                                <th>Descrição</th>
+                                <th>Início</th>
+                                <th>Fim</th>
+                                <th style="width: 150px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pei in peis %}
+                            <tr>
+                                <td>{{ pei.identificacao_pei }}</td>
+                                <td>{{ pei.descricao_pei or 'N/A' }}</td>
+                                <td>{{ pei.data_inicio_fmt or 'N/A' }}</td>
+                                <td>{{ pei.data_fim_fmt or 'N/A' }}</td>
+                                <td class="table-actions">
+                                    <a href="{{ url_for('editar_pei', pei_doc_id=pei.id) }}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="{{ url_for('excluir_pei', pei_doc_id=pei.id) }}" method="post" class="form-confirm-action">
+                                        <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr class="no-results">
+                                <td colspan="5">Nenhum PEI cadastrado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                 <div class="mobile-cards-wrapper">
+                    {% for pei in peis %}
+                    <div class="pei-card-mobile">
+                        <div class="card-header-pei">
+                            <h4>{{ pei.identificacao_pei }}</h4>
                         </div>
-                        <div class="form-group">
-                            <label for="tipo">Tipo</label>
-                            <select id="tipo" name="tipo" required>
-                                <option value="Serviço" {% if (servico and servico.tipo == 'Serviço') or (request.form.tipo == 'Serviço') %}selected{% endif %}>Serviço</option>
-                                <option value="Procedimento" {% if (servico and servico.tipo == 'Procedimento') or (request.form.tipo == 'Procedimento') %}selected{% endif %}>Procedimento</option>
-                            </select>
+                        <div class="card-details-body">
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Descrição</span>
+                                <span class="card-detail-item-value">{{ pei.descricao_pei or 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Início</span>
+                                <span class="card-detail-item-value">{{ pei.data_inicio_fmt or 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Fim</span>
+                                <span class="card-detail-item-value">{{ pei.data_fim_fmt or 'N/A' }}</span>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="duracao_minutos">Duração (em minutos)</label>
-                            <input type="number" id="duracao_minutos" name="duracao_minutos" value="{{ servico.duracao_minutos if servico and servico.duracao_minutos is not none else request.form.duracao_minutos if request.form.duracao_minutos is not none else '' }}" min="1" step="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="preco">Preço Sugerido (R$)</label>
-                            <input type="text" id="preco" name="preco" value="{{ servico.get('preco_form', '') if servico else '' }}" placeholder="Ex: 150,00" pattern="^\d+([,.]\d{1,2})?$" title="Use vírgula ou ponto para centavos (ex: 150,00 ou 150.00)" required>
-                        </div>
-                    </form>
-                    
-                    <div class="form-actions">
-                        {% if servico and servico.id %} 
-                        <div class="btn-delete-container">
-                            <form id="deleteForm" action="{{ url_for('excluir_servico_procedimento', servico_doc_id=servico.id) }}" method="post" style="margin: 0;">
-                                <button type="button" id="deleteButton" class="btn btn-danger">
-                                    <i class="fas fa-trash"></i>&nbsp;Excluir
+                        <div class="card-actions-footer">
+                            <a href="{{ url_for('editar_pei', pei_doc_id=pei.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <form action="{{ url_for('excluir_pei', pei_doc_id=pei.id) }}" method="post" class="form-confirm-action">
+                                <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger">
+                                    <i class="fas fa-trash"></i> Excluir
                                 </button>
                             </form>
                         </div>
-                        {% endif %}
-                        <a href="{{ url_for('listar_servicos_procedimentos') }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
-                        <button type="submit" class="btn btn-primary" form="servicoForm">
-                            <i class="fas fa-save"></i>&nbsp;Salvar
-                        </button>
                     </div>
+                    {% else %}
+                        <div class="table-container" style="text-align: center; padding: 2rem;">Nenhum PEI cadastrado.</div>
+                    {% endfor %}
                 </div>
             </main>
         </div>
     </div>
+    
+    <div class="modal-overlay" id="customConfirmModal">
+        <div class="modal-content">
+            <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="modal-title">Confirmar Exclusão</h3>
+            <p class="modal-text">Tem certeza que deseja excluir este PEI? Esta ação não pode ser desfeita.</p>
+            <div class="modal-actions">
+                <button id="customConfirmCancel" class="btn btn-secondary">Cancelar</button>
+                <button id="customConfirmOk" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
-        // Placeholder for Firebase - adjust with your actual config
+        // Placeholder for Firebase
         const FAKE_FIREBASE = {
             initializeApp: () => ({}),
             getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
@@ -396,37 +477,40 @@
                 });
             }
 
-            // --- Form Logic ---
-            function setupForm() {
-                const servicoForm = document.getElementById('servicoForm');
-                if (servicoForm) {
-                    servicoForm.addEventListener('submit', (e) => {
-                        const submitButton = document.querySelector('button[type="submit"][form="servicoForm"]');
-                        if (submitButton) {
-                            submitButton.disabled = true;
-                            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Salvando...';
-                        }
-                    });
-                }
+            // --- Confirmation Modal Logic ---
+            function setupConfirmationModal() {
+                const modal = document.getElementById('customConfirmModal');
+                if (!modal) return;
+                
+                const okBtn = document.getElementById('customConfirmOk');
+                const cancelBtn = document.getElementById('customConfirmCancel');
+                let formToSubmit = null;
 
-                const deleteButton = document.getElementById('deleteButton');
-                if (deleteButton) {
-                    deleteButton.addEventListener('click', () => {
-                        if (confirm('Tem certeza que deseja excluir este serviço/procedimento? Esta ação não pode ser desfeita.')) {
-                            const deleteForm = document.getElementById('deleteForm');
-                            if (deleteForm) {
-                                deleteForm.submit();
-                            }
-                        }
+                document.querySelectorAll('.btn-confirm-trigger').forEach(button => {
+                    button.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        formToSubmit = this.closest('form.form-confirm-action');
+                        modal.classList.add('active');
                     });
-                }
+                });
+
+                okBtn.addEventListener('click', () => {
+                    if (formToSubmit) {
+                        formToSubmit.submit();
+                    }
+                });
+
+                cancelBtn.addEventListener('click', () => modal.classList.remove('active'));
+                modal.addEventListener('click', (e) => {
+                    if(e.target === modal) modal.classList.remove('active');
+                });
             }
 
             // --- Initialization ---
             setupSidebar();
             setupTheme();
             setupLogout();
-            setupForm();
+            setupConfirmationModal();
         });
     </script>
 </body>
