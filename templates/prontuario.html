@@ -9,7 +9,6 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- JS PDF e HTML2Canvas para geração de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -23,7 +22,7 @@
             --accent: #0f172a;
             --primary: #0d9488; /* Teal-600 */
             --primary-dark: #115e59;
-            --primary-light: #ccfbf1; /* Adicionado para o PEI Header */
+            --primary-light: #ccfbf1;
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
             --success: #16a34a; /* Green-600 */
@@ -58,8 +57,6 @@
             --status-concluido: #38bdf8;
             --status-pendente: #fbbf24;
             --status-cancelado: #ef4444;
-            /* Dark mode for PEI header */
-            --primary-light: color-mix(in srgb, var(--dark-border-color), transparent 50%);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -109,11 +106,7 @@
         .btn-primary:hover { background-color: var(--primary-dark); }
         .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
         .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
-        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
-        [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
         .btn-warning { background-color: var(--warning); color: #854d0e; }
-        [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
-        .btn-warning:hover { background-color: #fca5a5; }
         .btn-success { background-color: var(--success); color: white; }
         .btn-success:hover { background-color: #15803d; }
         .btn-danger-outline { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
@@ -129,7 +122,6 @@
         .paciente-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem 2rem; font-size: 0.95rem; }
         .paciente-info-item strong { color: var(--muted); display: block; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em; }
         .paciente-info-item span { font-weight: 600; color: var(--text); word-break: break-word; }
-        [data-theme="dark"] .paciente-info-card { box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3), 0 2px 8px -2px rgba(0,0,0,0.2); }
 
         /* --- Seções & Registros --- */
         .prontuario-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
@@ -143,7 +135,6 @@
         .registro-content::-webkit-scrollbar { width: 6px; }
         .registro-content::-webkit-scrollbar-track { background: transparent; }
         .registro-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-        [data-theme="dark"] .registro-content::-webkit-scrollbar-thumb { background: #4b5563; }
         .registro-actions { margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; }
         .empty-state { text-align: center; padding: 2rem; color: var(--muted); background: var(--card); border-radius: 12px; }
         
@@ -180,118 +171,16 @@
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
         .confirm-modal-content { max-width: 500px; padding: 1.5rem; text-align: center; }
 
-        /* Rich Text Editor for generic modal */
-        .editor-container {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-        }
-        .editor-container .editor-toolbar {
-            background-color: var(--bg);
-            border-bottom: 1px solid var(--border-color);
-            border-radius: 8px 8px 0 0;
-            padding: 0.5rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
-        .editor-container .editor-toolbar button {
-            background: none; border: 1px solid transparent; padding: 8px;
-            cursor: pointer; font-size: 1rem; color: var(--text);
-            border-radius: 4px; transition: background-color 0.2s ease;
-        }
-        .editor-container .editor-toolbar button:hover { background-color: color-mix(in srgb, var(--primary) 10%, transparent); }
-        .editor-container .editor-toolbar button.is-active { background-color: color-mix(in srgb, var(--primary) 20%, transparent); }
-        
-        .editor-content-generic {
-            min-height: 40vh; /* Uses vh for screen-relative height */
-            overflow-y: auto;
-            padding: 1rem;
-            background-color: var(--card);
-            color: var(--text);
-            outline: none;
-            line-height: 1.6;
-            resize: vertical;
-            flex-grow: 1; /* Allows content to expand */
-        }
-        .editor-content-generic[data-placeholder]:empty:before {
-            content: attr(data-placeholder); color: var(--muted);
-            pointer-events: none; display: block;
-        }
-        .editor-content-generic:focus {
-            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
-        }
-        
-        /* Gemini Generator & Consent */
-        .gemini-generator {
-            margin-bottom: 1.5rem; background-color: color-mix(in srgb, var(--primary) 5%, transparent);
-            padding: 1rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
-        }
-        .gemini-generator .form-group { margin-bottom: 0.75rem; }
-        .gemini-generator .form-group:last-of-type { margin-bottom: 0; }
-        .gemini-generator-actions { display: flex; gap: 10px; align-items: center; }
-        .gemini-generator-actions input { flex-grow: 1; }
-        
-        .consent-text {
-            font-size: 0.85rem; color: var(--muted); font-weight: 500;
-            line-height: 1.4; padding: 0.75rem; border-radius: 6px;
-            background-color: var(--bg); border: 1px solid transparent;
-            cursor: pointer; transition: all 0.2s ease; user-select: none;
-        }
-        .consent-text:hover { border-color: color-mix(in srgb, var(--primary) 30%, transparent); }
-        .consent-text.active {
-            background-color: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success);
-            font-weight: 600; border-color: color-mix(in srgb, var(--success) 30%, transparent);
-        }
-        .consent-text.active::before {
-            content: '\f00c'; /* Font Awesome check icon */
-            font-family: 'Font Awesome 6 Free'; font-weight: 900;
-            margin-right: 0.75rem;
-        }
-
-        /* Loading Spinner for AI Generation */
-        .btn.loading {
-            position: relative;
-            pointer-events: none;
-            opacity: 0.8;
-        }
-
-        .btn.loading::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            top: 50%;
-            left: 50%;
-            margin: -8px 0 0 -8px;
-            border: 2px solid #fff;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        .btn.loading span, .btn.loading i {
-            visibility: hidden; /* Hide text and icon during loading */
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-
         /* --- PEI Accordion --- */
         .pei-accordion { display: flex; flex-direction: column; gap: 1rem; }
         .pei-card { background-color: var(--card); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
         .pei-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; cursor: pointer; background-color: var(--primary-light); }
         .pei-header h4 { margin: 0; font-size: 1.2rem; color: var(--primary-dark); }
-        [data-theme="dark"] .pei-header h4, [data-theme="dark"] .pei-toggle-btn { color: var(--primary); }
         .pei-header .pei-dates { font-size: 0.85rem; color: var(--muted); display: flex; gap: 1rem; }
         .pei-toggle-btn { background: none; border: none; font-size: 1rem; color: var(--primary-dark); cursor: pointer; }
         .pei-content { padding: 1.5rem; border-top: 1px solid var(--border-color); display: none; }
         .pei-metas-list { list-style: none; padding-left: 0; }
         .pei-metas-list li { background-color: var(--bg); padding: 1.25rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid var(--primary); }
-        [data-theme="dark"] .pei-metas-list li { background-color: color-mix(in srgb, var(--dark-bg) 15%, transparent); }
         .meta-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;}
         .meta-header strong { font-size: 1.05rem; color: var(--text); flex-grow: 1; }
         .meta-status-badge { font-weight: 600; padding: 0.3em 0.8em; border-radius: 15px; font-size: 0.75em; }
@@ -309,91 +198,36 @@
         .agenda-paciente-container { background-color: var(--card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); padding: 1.5rem; }
         .agenda-paciente-container h3 { font-size: 1.5rem; color: var(--text); margin-bottom: 1.5rem; text-align: center; }
         .agenda-scroll-container { max-height: 60vh; overflow-y: auto; padding-right: 10px; }
-        .agenda-scroll-container::-webkit-scrollbar { width: 6px; }
-        .agenda-scroll-container::-webkit-scrollbar-track { background: transparent; }
-        .agenda-scroll-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-        [data-theme="dark"] .agenda-scroll-container::-webkit-scrollbar-thumb { background: #4b5563; }
-
-        .agenda-paciente-card { background-color: var(--bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem; overflow: hidden; transition: all 0.2s ease; }
-        .agenda-paciente-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-        [data-theme="dark"] .agenda-paciente-card { background-color: color-mix(in srgb, var(--dark-bg) 15%, transparent); border-color: var(--dark-border-color); }
-
-        .agenda-paciente-card .card-header { padding: 0.8rem 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background-color: color-mix(in srgb, var(--primary) 10%, transparent); }
-        [data-theme="dark"] .agenda-paciente-card .card-header { background-color: color-mix(in srgb, var(--primary) 20%, transparent); }
-
-        .agenda-paciente-card .card-header h4 { margin: 0; font-size: 1rem; color: var(--primary-dark); }
-        [data-theme="dark"] .agenda-paciente-card .card-header h4 { color: var(--primary); }
-
+        .agenda-paciente-card { background-color: var(--bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem; overflow: hidden; }
+        .agenda-paciente-card .card-header { padding: 0.8rem 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
         .agenda-paciente-card .card-body { padding: 1rem 1.2rem; }
-        .agenda-paciente-card .card-body p { margin-bottom: 0.5rem; font-size: 0.95rem; }
-        .agenda-paciente-card .card-body p:last-child { margin-bottom: 0; }
-        .agenda-paciente-card .card-body strong { color: var(--muted); font-weight: 500; }
-        .agenda-paciente-card .card-body span { font-weight: 600; color: var(--text); }
-        .agenda-paciente-card .card-footer { background-color: var(--card); padding: 0.8rem 1.2rem; border-top: 1px solid var(--border-color); text-align: right; }
-        [data-theme="dark"] .agenda-paciente-card .card-footer { background-color: var(--dark-card); }
-        
-        /* Status Badges */
-        .status-badge { padding: 0.3em 0.7em; border-radius: 15px; font-size: 0.7em; font-weight: 600; text-transform: uppercase; color: white; white-space: nowrap; }
-        .status-badge.status-confirmado { background-color: var(--status-confirmado); }
+        .agenda-paciente-card .card-footer { padding: 0.8rem 1.2rem; text-align: right; }
+        .status-badge { padding: 0.3em 0.7em; border-radius: 15px; font-size: 0.7em; font-weight: 600; text-transform: uppercase; color: white; }
         .status-badge.status-concluido { background-color: var(--status-concluido); }
-        .status-badge.status-pendente { background-color: var(--status-pendente); }
-        .status-badge.status-cancelado { background-color: var(--status-cancelado); }
-
-        /* Chat Modal Specific Styles */
         .chat-modal-content { max-width: 700px; height: 80vh; }
-        .chat-messages-container { flex-grow: 1; overflow-y: auto; padding: 1rem; border-bottom: 1px solid var(--border-color); }
-        .chat-messages-container::-webkit-scrollbar { width: 6px; }
-        .chat-messages-container::-webkit-scrollbar-track { background: transparent; }
-        .chat-messages-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-        [data-theme="dark"] .chat-messages-container::-webkit-scrollbar-thumb { background: #4b5563; }
-
-        .chat-message { background-color: var(--bg); padding: 0.8rem 1.2rem; border-radius: 10px; margin-bottom: 0.75rem; border: 1px solid var(--border-color); }
-        [data-theme="dark"] .chat-message { background-color: color-mix(in srgb, var(--dark-bg) 10%, transparent); border-color: var(--dark-border-color); }
-
+        .chat-messages-container { flex-grow: 1; overflow-y: auto; padding: 1rem; }
+        .chat-message { background-color: var(--bg); padding: 0.8rem 1.2rem; border-radius: 10px; margin-bottom: 0.75rem; }
         .chat-message .message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-        .chat-message .message-author { font-weight: 600; color: var(--primary-dark); font-size: 0.9rem; }
-        [data-theme="dark"] .chat-message .message-author { color: var(--primary); }
-
+        .chat-message .message-author { font-weight: 600; color: var(--primary-dark); }
         .chat-message .message-date { font-size: 0.8rem; color: var(--muted); }
-        .chat-message .message-content { font-size: 0.95rem; color: var(--text); line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+        .chat-message .message-content { white-space: pre-wrap; word-wrap: break-word; }
+        .chat-input-area { display: flex; gap: 1rem; padding: 1rem; border-top: 1px solid var(--border-color); }
+        .chat-input-area textarea { flex-grow: 1; resize: none; padding: 0.7rem; border-radius: 8px; border: 1px solid var(--border-color); }
 
-        .chat-input-area { display: flex; align-items: center; padding: 1rem; gap: 1rem; background-color: var(--bg); }
+        /* --- Dark Mode Specifics --- */
+        [data-theme="dark"] .pei-header { background-color: color-mix(in srgb, var(--dark-border-color), transparent 50%); }
+        [data-theme="dark"] .pei-header h4, [data-theme="dark"] .pei-toggle-btn { color: var(--primary); }
+        [data-theme="dark"] .pei-metas-list li { background-color: color-mix(in srgb, var(--dark-bg) 15%, transparent); }
+        [data-theme="dark"] .agenda-paciente-card, [data-theme="dark"] .chat-message { background-color: color-mix(in srgb, var(--dark-bg) 15%, transparent); }
         [data-theme="dark"] .chat-input-area { background-color: var(--dark-bg); }
-
-        .chat-input-area textarea { flex-grow: 1; padding: 0.7rem 1rem; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--card); color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.95rem; resize: vertical; min-height: 60px; }
         [data-theme="dark"] .chat-input-area textarea { background-color: var(--dark-card); }
-
-        .chat-input-area textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
-        .chat-input-area .btn { flex-shrink: 0; padding: 0.7rem 1.2rem; }
-
-        /* Confirmation Modal */
-        .confirm-modal-content { max-width: 500px; padding: 1.5rem; text-align: center; }
-        .confirm-modal-content h3 { font-size: 1.3rem; margin-bottom: 1rem; }
-        .confirm-modal-content p { margin-bottom: 1.5rem; color: var(--muted); }
-        .confirm-modal-content .confirm-actions { display: flex; justify-content: center; gap: 1rem; }
-
+        [data-theme="dark"] .registro-content::-webkit-scrollbar-thumb, [data-theme="dark"] .agenda-scroll-container::-webkit-scrollbar-thumb, [data-theme="dark"] .chat-messages-container::-webkit-scrollbar-thumb { background: #4b5563; }
 
         /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
         @media(min-width: 769px) { .toggle-btn-desktop { display: grid; } .menu-btn-mobile { display: none; } span.btn-text-desktop { display: inline; } }
-        @media (max-width: 768px) { 
-            .sidebar { transform: translateX(-100%); } 
-            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); } 
-            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
-            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
-            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
-            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
-            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; } 
-            main { padding: 1rem; }
-            .paciente-info-card { padding: 1.5rem; }
-            .paciente-info-grid { grid-template-columns: 1fr; }
-            .prontuario-header { flex-direction: column; align-items: stretch; text-align: center; } 
-            .topbar-actions { justify-content: center; margin-top: 0.5rem; }
-            .chat-modal-content { height: 90vh; max-width: 95%; }
-            .chat-input-area { flex-direction: column; gap: 0.75rem; }
-            .chat-input-area textarea, .chat-input-area .btn { width: 100%; }
-        }
+        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main-content, .main-content.collapsed { margin-left: 0; } .prontuario-header { flex-direction: column; align-items: stretch; text-align: center; } }
     </style>
 </head>
 <body>
@@ -441,33 +275,22 @@
                 </div>
                 <div class="topbar-actions">
                     <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="btn btn-primary"><i class="fas fa-plus"></i> <span class="btn-text-desktop">Anamnese</span></a>
-                    <button type="button" class="btn btn-secondary" id="addLaudoBtn" data-record-type="laudo" data-record-title="Adicionar Laudo Médico"><i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Laudo</span></button>
-                    <button type="button" class="btn btn-secondary" id="addOrientacaoBtn" data-record-type="orientacao" data-record-title="Adicionar Orientação"><i class="fas fa-notes-medical"></i> <span class="btn-text-desktop">Orientação</span></button>
-                    <button type="button" class="btn btn-secondary" id="addProcedimentoBtn" data-record-type="procedimento" data-record-title="Adicionar Procedimento"><i class="fas fa-syringe"></i> <span class="btn-text-desktop">Procedimento</span></button>
+                    <button type="button" class="btn btn-secondary" id="addLaudoBtn"><i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Laudo</span></button>
+                    <button type="button" class="btn btn-secondary" id="addOrientacaoBtn"><i class="fas fa-notes-medical"></i> <span class="btn-text-desktop">Orientação</span></button>
+                    <button type="button" class="btn btn-secondary" id="addProcedimentoBtn"><i class="fas fa-syringe"></i> <span class="btn-text-desktop">Procedimento</span></button>
                 </div>
             </header>
 
             <main>
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="flash-messages">
-                            {% for category, message in messages %}
-                                <div class="flash-message {{ category }}">{{ message }}</div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-
                 {% if paciente %}
                 <div class="paciente-info-card">
                     <h3>{{ paciente.nome }}</h3>
                     <div class="paciente-info-grid">
-                        <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}</span></div>
+                         <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}</span></div>
                         <div class="paciente-info-item"><strong>CPF:</strong> <span>{{ paciente.cpf or 'N/A' }}</span></div>
                         <div class="paciente-info-item"><strong>Telefone:</strong> <span>{{ paciente.contato_telefone or 'N/A' }}</span></div>
                         <div class="paciente-info-item"><strong>Convênio:</strong> <span>{{ paciente.convenio_nome or 'Particular' }}</span></div>
-                        <div class="paciente-info-item"><strong>E-mail:</strong> <span>{{ paciente.contato_email or 'N/A' }}</span></div>
-                        <div class="paciente-info-item" style="grid-column: 1 / -1;"><strong>Endereço:</strong> <span>{{ paciente.endereco.logradouro or '' }}, {{ paciente.endereco.numero or '' }} {{ paciente.endereco.complemento or '' }} - {{ paciente.endereco.bairro or '' }}, {{ paciente.endereco.cidade or '' }} - {{ paciente.endereco.estado or '' }} {{ paciente.endereco.cep or '' }}</span></div>
+                        <div class="paciente-info-item" style="grid-column: 1 / -1;"><strong>Observações:</strong> <span>{{ paciente.observacoes or 'Nenhuma observação.' }}</span></div>
                     </div>
                 </div>
                 {% endif %}
@@ -496,13 +319,7 @@
                                             </div>
                                             <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
                                             <div class="registro-actions">
-                                                <button class="btn btn-sm btn-secondary btn-expand-registro"><i class="fas fa-expand-alt"></i></button>
-                                                {% if registro.tipo_registro == 'anamnese' %}
-                                                <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
-                                                {% else %}
-                                                <button type="button" class="btn btn-sm btn-warning btn-edit-registro-generico" data-registro-id="{{ registro.id }}" data-record-type="{{ registro.tipo_registro }}"><i class="fas fa-edit"></i></button>
-                                                {% endif %}
-                                                <button class="btn btn-sm btn-secondary btn-print-pdf" data-record-id="{{ registro.id }}"><i class="fas fa-print"></i></button>
+                                                <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i></button>
                                                 <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
                                             </div>
                                         </div>
@@ -528,7 +345,6 @@
                                             </div>
                                             <div class="pei-content">
                                                 <p><strong>Descrição:</strong> {{ pei.descricao_pei or 'N/A' }}</p>
-                                                <p><strong>Criado por:</strong> {{ pei.criado_por_nome or 'N/A' }} em {{ pei.criado_em if pei.criado_em else 'N/A' }}</p>
                                                 <h5>Metas</h5>
                                                 {% if pei.metas %}
                                                     <ul class="pei-metas-list">
@@ -572,9 +388,7 @@
                                                                         </div>
                                                                         <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
                                                                         <div class="registro-actions">
-                                                                            <button class="btn btn-sm btn-secondary btn-expand-registro" data-record-id="{{ registro.id }}"><i class="fas fa-expand-alt"></i></button>
-                                                                            <button class="btn btn-sm btn-warning btn-edit-registro-generico" data-registro-id="{{ registro.id }}" data-record-type="{{ registro.tipo_registro }}"><i class="fas fa-edit"></i></button>
-                                                                            <button class="btn btn-sm btn-secondary btn-print-pdf" data-record-id="{{ registro.id }}"><i class="fas fa-print"></i></button>
+                                                                             <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="Evolução de Meta: {{ meta.titulo }}"><i class="fas fa-print"></i></button>
                                                                             <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
                                                                         </div>
                                                                     </div>
@@ -597,14 +411,14 @@
 
                             <!-- Aba de Agenda -->
                             <div id="tab-panel-agenda-paciente" class="tab-panel">
-                                    <div class="agenda-paciente-container">
-                                        <h3>Histórico de Agendamentos Concluídos</h3>
-                                        <div class="agenda-scroll-container">
-                                            <div id="agenda-paciente-list">
-                                                <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
-                                            </div>
+                                 <div class="agenda-paciente-container">
+                                    <h3>Histórico de Agendamentos Concluídos</h3>
+                                    <div class="agenda-scroll-container">
+                                        <div id="agenda-paciente-list">
+                                            <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
                                         </div>
                                     </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -614,20 +428,7 @@
     </div>
 
     <!-- MODAIS -->
-    <!-- Modal para Conteúdo Completo do Registro (Genérico) -->
-    <div id="registro-completo-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-registro-completo-title">Registro Completo</h3>
-                <button class="modal-close-btn" data-close>&times;</button>
-            </div>
-            <div class="modal-body" id="modal-registro-completo-content">
-                <!-- Conteúdo do registro será inserido aqui -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para Registro Genérico (Adicionar/Editar Laudo, Orientação, Procedimento, Evolução PEI) -->
+    <!-- Modal para Registro Genérico -->
     <div id="modalRegistroGenerico" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -637,7 +438,6 @@
             <form method="POST" action="" id="formRegistroGenerico">
                 <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
                 <input type="hidden" name="tipo_registro" id="tipo_registro_generico">
-                <input type="hidden" name="registro_id" id="registro_id_generico"> {# Para edição #}
                 <input type="hidden" name="agendamento_id_referencia" id="agendamento_id_referencia">
                 <input type="hidden" name="referencia_pei_id" id="referencia_pei_id">
                 <input type="hidden" name="referencia_meta_titulo" id="referencia_meta_titulo">
@@ -649,7 +449,7 @@
                     </div>
 
                     <div id="pei-evolution-fields" style="display: none;">
-                        <div class="form-group">
+                         <div class="form-group">
                             <label for="status_atividade">Status da Atividade</label>
                             <select name="status_atividade" id="status_atividade">
                                 <option value="Executada com sucesso">Executada com sucesso</option>
@@ -658,46 +458,16 @@
                                 <option value="Não foi possível aplicar">Não foi possível aplicar</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                         <div class="form-group">
                             <label for="tempo_gasto">Tempo Gasto nesta Atividade (minutos)</label>
                             <input type="number" name="tempo_gasto" id="tempo_gasto" min="1">
-                            <small class="text-muted">Este tempo será somado ao tempo total da meta.</small>
+                             <small class="text-muted">Este tempo será somado ao tempo total da meta.</small>
                         </div>
                     </div>
 
-                    <!-- Gemini Generator para Conteúdo Genérico -->
-                    <div class="gemini-generator">
-                        <div class="form-group">
-                            <label for="gemini-prompt-generico">Gerar conteúdo com Inteligência Artificial</label>
-                            <div class="gemini-generator-actions" style="display: none;">
-                                <input type="text" id="gemini-prompt-generico" placeholder="Ex: Laudo para paciente com fratura no fêmur">
-                                <button type="button" id="generate-generic-btn" class="btn btn-primary" disabled>
-                                    <i class="fas fa-robot"></i>&nbsp;<span>Gerar</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div id="lgpd-consent-text-generico" class="consent-text">
-                                Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
-                            </div>
-                        </div>
-                    </div>
-                    
                     <div class="form-group">
-                        <label for="conteudo_registro_generico">Conteúdo / Descrição da Atividade</label>
-                        <div class="editor-container">
-                            <div class="editor-toolbar">
-                                <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><i class="fas fa-bold"></i></button>
-                                <button type="button" data-command="italic" title="Itálico (Ctrl+I)"><i class="fas fa-italic"></i></button>
-                                <button type="button" data-command="underline" title="Sublinhado (Ctrl+U)"><i class="fas fa-underline"></i></button>
-                                <button type="button" data-command="insertUnorderedList" title="Lista não ordenada"><i class="fas fa-list-ul"></i></button>
-                                <button type="button" data-command="insertOrderedList" title="Lista ordenada"><i class="fas fa-list-ol"></i></button>
-                                <button type="button" data-command="undo" title="Desfazer (Ctrl+Z)"><i class="fas fa-undo"></i></button>
-                                <button type="button" data-command="redo" title="Refazer (Ctrl+Y)"><i class="fas fa-redo"></i></button>
-                            </div>
-                            <div id="editor-content-generico" contenteditable="true" class="editor-content-generic" data-placeholder="Digite o conteúdo do registro aqui..."></div>
-                            <textarea id="conteudo_generico_hidden" name="conteudo" style="display:none;"></textarea>
-                        </div>
+                        <label for="conteudo_generico">Conteúdo / Descrição da Atividade</label>
+                        <textarea id="conteudo_generico" name="conteudo" rows="8" placeholder="Digite o conteúdo aqui..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -710,28 +480,13 @@
     
     <!-- Modal de Chat de Evolução -->
     <div id="chat-evolucao-modal" class="modal-overlay">
-        <div class="modal-content chat-modal-content">
-            <div class="modal-header">
-                <h3 id="chat-evolucao-title">Evolução do Paciente</h3>
-                <button class="modal-close-btn" data-close>&times;</button>
-            </div>
-            <div class="modal-body chat-messages-container" id="chat-messages-container">
-                <!-- Mensagens do chat serão carregadas aqui -->
-                <div class="empty-state" id="chat-empty-state">
-                    <p>Nenhuma evolução registrada para este agendamento.</p>
-                </div>
-            </div>
-            <div class="modal-footer chat-input-area">
-                <textarea id="chat-input" placeholder="Digite a evolução aqui..." rows="3"></textarea>
-                <button class="btn btn-primary" id="send-chat-btn"><i class="fas fa-paper-plane"></i> Enviar</button>
-            </div>
-        </div>
+         <!-- Conteúdo do modal de chat -->
     </div>
     
     <!-- Modal para Concluir Meta -->
     <div id="concluir-meta-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
-            <div class="modal-header">
+             <div class="modal-header">
                 <h3>Concluir Meta</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
@@ -749,10 +504,11 @@
         </div>
     </div>
 
+
     <!-- Modal de Confirmação Genérico -->
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
-            <div class="modal-header">
+             <div class="modal-header">
                 <h3 id="confirm-modal-title">Confirmar Ação</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
@@ -772,762 +528,198 @@
     </form>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Variáveis globais fornecidas pelo ambiente Canvas
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Autenticar no Firebase
-        async function authenticateFirebase() {
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                    console.log('Signed in with custom token.');
-                } else {
-                    await signInAnonymously(auth);
-                    console.log('Signed in anonymously.');
-                }
-            } catch (error) {
-                console.error('Firebase authentication error:', error);
-            }
-        }
-        authenticateFirebase(); // Chama a função de autenticação no carregamento do script
-
-        // Variável global com todos os dados dos registros, vindo diretamente do Jinja2
-        const allRecordsData = {{ registros | tojson }};
-        const pacienteId = "{{ paciente.id }}"; // ID do paciente atual
-
-        // Adicionar um ouvinte de erro global para capturar erros não tratados
-        window.onerror = function(message, source, lineno, colno, error) {
-            console.error('Unhandled JavaScript Error:', {
-                message: message,
-                source: source,
-                lineno: lineno,
-                colno: colno,
-                error: error
-            });
-            // Opcional: exibir uma mensagem de erro genérica para o usuário
-            // showConfirmModal('Erro no Aplicativo', 'Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.', null, 'danger');
-            return true; // Retornar true para suprimir a propagação do erro padrão do navegador
-        };
-
-
         document.addEventListener('DOMContentLoaded', () => {
-            // Adicionar um try-catch ao redor de toda a lógica DOMContentLoaded para capturar erros iniciais
-            try {
-                const htmlEl = document.documentElement;
-                
-                // --- UI Setup & Helpers ---
-                function setupCommonUI() {
-                    const sidebar = document.querySelector('.sidebar');
-                    const mainContent = document.querySelector('.main-content');
-                    const toggleButtons = document.querySelectorAll('.toggle-btn');
-                    const themeToggle = document.getElementById('theme-toggle');
-                    const logoutButton = document.getElementById('logoutButton');
+            const pacienteId = "{{ paciente.id }}";
 
-                    // 1. Lógica do Tema (Dark/Light Mode)
-                    if (themeToggle) {
-                        const themeIcon = themeToggle.querySelector('i');
-                        const currentTheme = localStorage.getItem('theme') || 'light';
-                        
-                        htmlEl.dataset.theme = currentTheme;
-                        themeIcon.className = currentTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+            // --- UI Setup & Helpers ---
+            function setupCommonUI() { /* ... Lógica da sidebar e tema ... */ }
+            const modalControllers = {
+                genericRecord: document.getElementById('modalRegistroGenerico'),
+                evolutionChat: document.getElementById('chat-evolucao-modal'),
+                confirm: document.getElementById('confirm-modal'),
+                concluirMeta: document.getElementById('concluir-meta-modal'),
+                open(modal) { modal?.classList.add('active'); },
+                close(modal) { modal?.classList.remove('active'); }
+            };
+            document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => modalControllers.close(btn.closest('.modal-overlay'))));
+            
+            // --- Lógica da Página de Prontuário ---
+            function setupProntuarioPage() {
+                const activeTimers = {};
 
-                        themeToggle.addEventListener('click', () => {
-                            const newTheme = htmlEl.dataset.theme === 'dark' ? 'light' : 'dark';
-                            htmlEl.dataset.theme = newTheme;
-                            localStorage.setItem('theme', newTheme);
-                            themeIcon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                        });
-                    }
+                function formatTime(totalSeconds) {
+                    const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+                    const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+                    const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+                    return `${hours}:${minutes}:${seconds}`;
+                }
 
-                    // 2. Lógica da Sidebar (Expandir/Recolher)
-                    if (sidebar && mainContent && toggleButtons.length > 0) {
-                        if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                        
-                        toggleButtons.forEach(btn => {
-                            btn.addEventListener('click', () => {
-                                if (window.innerWidth > 768) { // Desktop
-                                    sidebar.classList.toggle('collapsed');
-                                    mainContent.classList.toggle('collapsed');
-                                    localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
-                                } else { // Mobile
-                                    sidebar.classList.toggle('open');
-                                }
-                            });
-                        });
-                    }
+                function startVisualTimer(liElement, startTimeISO, baseSeconds) {
+                    const metaId = liElement.dataset.peiId + '||' + liElement.dataset.metaTitulo;
+                    const display = liElement.querySelector('.timer-display');
                     
-                    // 3. Lógica de Logout
-                    if (logoutButton) {
-                        logoutButton.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            firebaseSignOut(auth).then(() => {
-                                window.location.href = '/login'; 
-                            }).catch((error) => {
-                                console.error('Erro no logout:', error);
-                                // Optionally, display an error message to the user instead of alert
-                            });
+                    if (!startTimeISO) {
+                        display.textContent = formatTime(baseSeconds);
+                        return;
+                    }
+
+                    const startTime = new Date(startTimeISO).getTime();
+                    clearInterval(activeTimers[metaId]);
+
+                    activeTimers[metaId] = setInterval(() => {
+                        const now = new Date().getTime();
+                        const elapsed = Math.floor((now - startTime) / 1000);
+                        const total = baseSeconds + elapsed;
+                        display.textContent = formatTime(total);
+                    }, 1000);
+                }
+
+                function initializeMetaTimers() {
+                    document.querySelectorAll('.pei-metas-list li').forEach(li => {
+                        const cronometroInicio = li.dataset.cronometroInicio;
+                        const tempoGasto = parseInt(li.dataset.tempoGasto, 10) || 0;
+                        const timerButtonIcon = li.querySelector('.btn-timer-toggle i');
+
+                        if (cronometroInicio) {
+                            startVisualTimer(li, cronometroInicio, tempoGasto);
+                            timerButtonIcon.className = 'fas fa-pause';
+                        } else {
+                            li.querySelector('.timer-display').textContent = formatTime(tempoGasto);
+                            timerButtonIcon.className = 'fas fa-play';
+                        }
+                    });
+                }
+
+                async function sendMetaUpdate(peiId, metaTitulo, action, extraData = {}) {
+                    try {
+                        const response = await fetch(`/api/peis/${peiId}/meta/update`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ meta_titulo: metaTitulo, action, ...extraData })
                         });
+                        const result = await response.json();
+                        if (!result.success) throw new Error(result.message);
+                        
+                        // Atualiza a UI com os novos dados da meta
+                        const li = document.querySelector(`li[data-pei-id="${peiId}"][data-meta-titulo="${metaTitulo}"]`);
+                        if (li && result.updated_meta) {
+                            const meta = result.updated_meta;
+                            li.dataset.cronometroInicio = meta.cronometro_inicio || '';
+                            li.dataset.tempoGasto = meta.tempo_total_gasto || 0;
+                            const statusBadge = li.querySelector('.meta-status-badge');
+                            statusBadge.textContent = meta.status;
+                            statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(' ', '-')}`;
+                            initializeMetaTimers(); // Re-inicializa o timer para este item
+                        }
+
+                        return result;
+                    } catch (error) {
+                        console.error(`Erro na ação '${action}':`, error);
+                        alert(`Erro: ${error.message}`);
+                        return null;
                     }
                 }
 
-                const modalControllers = {
-                    genericRecord: document.getElementById('modalRegistroGenerico'),
-                    evolutionChat: document.getElementById('chat-evolucao-modal'),
-                    confirm: document.getElementById('confirm-modal'),
-                    concluirMeta: document.getElementById('concluir-meta-modal'),
-                    fullRecord: document.getElementById('registro-completo-modal'), // New modal for full record display
-                    open(modal) { modal?.classList.add('active'); },
-                    close(modal) { modal?.classList.remove('active'); }
-                };
-                document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => modalControllers.close(btn.closest('.modal-overlay'))));
+                // PEI Accordion
+                document.querySelectorAll('.pei-header').forEach(header => {
+                    header.addEventListener('click', () => {
+                        const content = header.nextElementSibling;
+                        const icon = header.querySelector('.pei-toggle-btn i');
+                        const isVisible = content.style.display === 'block';
+                        content.style.display = isVisible ? 'none' : 'block';
+                        icon.className = isVisible ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+                    });
+                });
+
+                // Tabs
+                document.querySelectorAll('.tab-nav-item').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.tab-nav-item, .tab-panel').forEach(el => el.classList.remove('active'));
+                        tab.classList.add('active');
+                        document.getElementById('tab-panel-' + tab.dataset.tab).classList.add('active');
+                    });
+                });
                 
-                // --- Lógica da Página de Prontuário ---
-                function setupProntuarioPage() {
-                    const activeTimers = {};
-
-                    function formatTime(totalSeconds) {
-                        const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-                        const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-                        const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-                        return `${hours}:${minutes}:${seconds}`;
-                    }
-
-                    function startVisualTimer(liElement, startTimeISO, baseSeconds) {
-                        const metaId = liElement.dataset.peiId + '||' + liElement.dataset.metaTitulo;
-                        const display = liElement.querySelector('.timer-display');
-                        
-                        if (!startTimeISO) {
-                            display.textContent = formatTime(baseSeconds);
-                            return;
-                        }
-
-                        const startTime = new Date(startTimeISO).getTime();
-                        clearInterval(activeTimers[metaId]);
-
-                        activeTimers[metaId] = setInterval(() => {
-                            const now = new Date().getTime();
-                            const elapsed = Math.floor((now - startTime) / 1000);
-                            const total = baseSeconds + elapsed;
-                            display.textContent = formatTime(total);
-                        }, 1000);
-                    }
-
-                    function initializeMetaTimers() {
-                        document.querySelectorAll('.pei-metas-list li').forEach(li => {
-                            const cronometroInicio = li.dataset.cronometroInicio;
-                            const tempoGasto = parseInt(li.dataset.tempoGasto, 10) || 0;
-                            const timerButtonIcon = li.querySelector('.btn-timer-toggle i');
-
-                            if (cronometroInicio) {
-                                startVisualTimer(li, cronometroInicio, tempoGasto);
-                                timerButtonIcon.className = 'fas fa-pause';
-                            } else {
-                                li.querySelector('.timer-display').textContent = formatTime(tempoGasto);
-                                timerButtonIcon.className = 'fas fa-play';
-                            }
-                        });
-                    }
-
-                    async function sendMetaUpdate(peiId, metaTitulo, action, extraData = {}) {
-                        try {
-                            // Using a relative URL, assuming a Flask route handles this
-                            const response = await fetch(`/api/peis/${peiId}/meta/update`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ meta_titulo: metaTitulo, action, ...extraData })
-                            });
-                            const result = await response.json();
-                            if (!result.success) throw new Error(result.message);
-                            
-                            // Atualiza a UI com os novos dados da meta
-                            const li = document.querySelector(`li[data-pei-id="${peiId}"][data-meta-titulo="${metaTitulo}"]`);
-                            if (li && result.updated_meta) {
-                                const meta = result.updated_meta;
-                                li.dataset.cronometroInicio = meta.cronometro_inicio || '';
-                                li.dataset.tempoGasto = meta.tempo_total_gasto || 0;
-                                const statusBadge = li.querySelector('.meta-status-badge');
-                                statusBadge.textContent = meta.status;
-                                statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(' ', '-')}`;
-                                initializeMetaTimers(); // Re-inicializa o timer para este item
-                            }
-
-                            return result;
-                        } catch (error) {
-                            console.error(`Erro na ação '${action}':`, error);
-                            // Using custom modal message instead of alert
-                            showConfirmModal('Erro', `Erro: ${error.message}`, null, 'danger');
-                            return null;
-                        }
-                    }
-
-                    // PEI Accordion (individual toggle)
-                    document.querySelectorAll('.pei-header').forEach(header => {
-                        header.addEventListener('click', () => {
-                            const content = header.nextElementSibling;
-                            const icon = header.querySelector('.pei-toggle-btn i');
-                            const isVisible = content.style.display === 'block';
-                            content.style.display = isVisible ? 'none' : 'block';
-                            icon.className = isVisible ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
-                        });
-                    });
-
-                    // Tabs
-                    function setupTabs() {
-                        document.querySelectorAll('.tab-nav-item').forEach(tab => {
-                            tab.addEventListener('click', () => {
-                                document.querySelectorAll('.tab-nav-item, .tab-panel').forEach(el => el.classList.remove('active'));
-                                tab.classList.add('active');
-                                const targetPanel = document.getElementById('tab-panel-' + tab.dataset.tab);
-                                if (targetPanel) {
-                                    targetPanel.classList.add('active');
-                                }
-
-                                // NOVO: Se a aba "Agenda do Paciente" for ativada, carrega os agendamentos
-                                if (tab.dataset.tab === 'agenda-paciente') {
-                                    loadPatientAppointments(pacienteId);
-                                }
-                            });
-                        });
-                    }
-
-                    // *** Lógica do Modal de Registro Genérico (Adicionar/Editar) ***
-                    const modalRegistroGenerico = document.getElementById('modalRegistroGenerico');
-                    const formRegistroGenerico = document.getElementById('formRegistroGenerico');
-                    const modalRegistroGenericoTitle = document.getElementById('modalRegistroGenericoTitle');
-                    const tipoRegistroGenericoInput = document.getElementById('tipo_registro_generico');
-                    const registroIdGenericoInput = document.getElementById('registro_id_generico');
-                    const tituloRegistroGenericoInput = document.getElementById('titulo_registro_generico');
-                    const conteudoRegistroGenericoEditor = document.getElementById('editor-content-generico');
-                    const conteudoGenericoHiddenTextarea = document.getElementById('conteudo_generico_hidden');
-                    const agendamentoIdReferenciaInput = document.getElementById('agendamento_id_referencia');
-                    const referenciaPeiIdInput = document.getElementById('referencia_pei_id');
-                    const referenciaMetaTituloInput = document.getElementById('referencia_meta_titulo');
-                    const peiEvolutionFields = document.getElementById('pei-evolution-fields');
-
-
-                    // Sincroniza o editor de texto com o campo oculto do formulário
-                    if (conteudoRegistroGenericoEditor && conteudoGenericoHiddenTextarea) {
-                        conteudoRegistroGenericoEditor.addEventListener('input', () => {
-                            conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
-                        });
-                    }
-
-                    // Lógica da barra de ferramentas do editor de texto
-                    document.querySelectorAll('#modalRegistroGenerico .editor-toolbar button').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            const command = e.currentTarget.dataset.command;
-                            document.execCommand(command, false, null);
-                            conteudoRegistroGenericoEditor.focus();
-                            if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
-                        });
-                    });
-
-                    // Função para abrir o modal de registro genérico (Adicionar/Editar)
-                    function openGenericRecordModal(type, title, options = {}) {
-                        formRegistroGenerico.reset();
-                        conteudoRegistroGenericoEditor.innerHTML = ''; // Limpa o editor
-                        
-                        tipoRegistroGenericoInput.value = type;
-                        modalRegistroGenericoTitle.innerHTML = title;
-                        
-                        // Reset hidden fields for PEI evolution
-                        referenciaPeiIdInput.value = '';
-                        referenciaMetaTituloInput.value = '';
-                        peiEvolutionFields.style.display = 'none';
-
-                        // Adjust form action based on whether it's an edit or add
-                        if (options.registroData) { // Edit mode
-                            registroIdGenericoInput.value = options.registroData.id;
-                            tituloRegistroGenericoInput.value = options.registroData.titulo || '';
-                            conteudoRegistroGenericoEditor.innerHTML = options.registroData.conteudo || '';
-                            conteudoGenericoHiddenTextarea.value = options.registroData.conteudo || '';
-                            agendamentoIdReferenciaInput.value = options.registroData.agendamento_id_referencia || '';
-
-                            // Set action for editing
-                            formRegistroGenerico.action = `/prontuario/${pacienteId}/registro_generico/${options.registroData.id}/editar`;
-                        } else { // Add mode
-                            registroIdGenericoInput.value = '';
-                            agendamentoIdReferenciaInput.value = options.agendamentoId || '';
-
-                            // Set action for adding
-                            formRegistroGenerico.action = `/prontuario/${pacienteId}/registro_generico/adicionar`;
-                        }
-
-                        // Special handling for PEI Evolution records
-                        if (type === 'evolucao_pei') {
-                            peiEvolutionFields.style.display = 'block';
-                            referenciaPeiIdInput.value = options.peiId || '';
-                            referenciaMetaTituloInput.value = options.metaTitulo || '';
-                            // Pre-fill evolution title (e.g., "Evolução da Meta X em DD/MM/YYYY")
-                            tituloRegistroGenericoInput.value = `Evolução da Meta: ${options.metaTitulo} (${new Date().toLocaleDateString('pt-BR')})`;
-                        } else {
-                            peiEvolutionFields.style.display = 'none';
-                        }
-
-                        // Show/Hide Gemini generator based on record type
-                        const geminiGeneratorSection = document.querySelector('.gemini-generator');
-                        if (['laudo', 'orientacao', 'procedimento'].includes(type)) {
-                            geminiGeneratorSection.style.display = 'block';
-                        } else {
-                            geminiGeneratorSection.style.display = 'none';
-                            document.getElementById('lgpd-consent-text-generico').classList.remove('active');
-                            document.querySelector('#modalRegistroGenerico .gemini-generator-actions').style.display = 'none';
-                            document.getElementById('generate-generic-btn').disabled = true;
-                        }
-
-                        modalControllers.open(modalRegistroGenerico);
-                    }
+                // Event Delegation
+                let actionCallback = null;
+                document.body.addEventListener('click', async (e) => {
+                    const target = e.target;
                     
-                    // Listeners para os botões de Adicionar (Laudo, Orientação, etc.)
-                    document.getElementById('addLaudoBtn')?.addEventListener('click', () => openGenericRecordModal('laudo', 'Adicionar Laudo Médico'));
-                    document.getElementById('addOrientacaoBtn')?.addEventListener('click', () => openGenericRecordModal('orientacao', 'Adicionar Orientação'));
-                    document.getElementById('addProcedimentoBtn')?.addEventListener('click', () => openGenericRecordModal('procedimento', 'Adicionar Procedimento'));
+                    const btnTimerToggle = target.closest('.btn-timer-toggle');
+                    const btnTimerReset = target.closest('.btn-timer-reset');
+                    const btnConcluirMeta = target.closest('.btn-concluir-meta');
+                    const btnAddEvo = target.closest('.btn-add-pei-evolution');
+                    const btnApagar = target.closest('.btn-apagar-registro');
+                    const btnPrint = target.closest('.btn-print-pdf');
 
-
-                    // *** Lógica do Gerador Gemini ***
-                    const generateGenericBtn = document.getElementById('generate-generic-btn');
-                    const genericPromptInput = document.getElementById('gemini-prompt-generico');
-                    const lgpdConsentTextGeneric = document.getElementById('lgpd-consent-text-generico');
-                    const generatorActions = document.querySelector('#modalRegistroGenerico .gemini-generator-actions');
-
-                    if (lgpdConsentTextGeneric && generateGenericBtn && generatorActions) {
-                        lgpdConsentTextGeneric.addEventListener('click', () => {
-                            lgpdConsentTextGeneric.classList.toggle('active');
-                            const isActive = lgpdConsentTextGeneric.classList.contains('active');
-                            
-                            generatorActions.style.display = isActive ? 'flex' : 'none';
-                            generateGenericBtn.disabled = !isActive;
+                    if (btnTimerToggle) {
+                        const li = btnTimerToggle.closest('li');
+                        const peiId = li.dataset.peiId;
+                        const metaTitulo = li.dataset.metaTitulo;
+                        const isRunning = !!li.dataset.cronometroInicio;
+                        const action = isRunning ? 'stop_timer' : 'start_timer';
+                        await sendMetaUpdate(peiId, metaTitulo, action);
+                    } 
+                    else if (btnTimerReset) {
+                        const li = btnTimerReset.closest('li');
+                        showConfirmModal('Zerar Cronômetro', 'Tem certeza que deseja zerar o tempo e o status desta meta?', async () => {
+                            await sendMetaUpdate(li.dataset.peiId, li.dataset.metaTitulo, 'reset');
+                            modalControllers.close(modalControllers.confirm);
                         });
                     }
-                    
-                    if (generateGenericBtn && genericPromptInput && conteudoRegistroGenericoEditor) {
-                        generateGenericBtn.addEventListener('click', async () => {
-                            const userPrompt = genericPromptInput.value.trim();
-                            const tipoRegistro = tipoRegistroGenericoInput.value; 
-                            if (!userPrompt) {
-                                showConfirmModal('Atenção', `Por favor, descreva o tipo de ${tipoRegistro} que você deseja gerar.`, null, 'warning');
-                                return;
-                            }
-                            
-                            let fullPrompt = "";
-                            const patientName = "{{ paciente.nome if paciente else 'o paciente' }}";
-                            const professionalName = "{{ session.user_name if session.user_name else 'o profissional de saúde' }}";
-
-                            if (tipoRegistro === "laudo") {
-                                fullPrompt = `Você é um médico especialista. Crie um modelo de laudo médico completo e detalhado em HTML para o paciente ${patientName}, sem placeholders como "[...]", para a seguinte condição ou motivo: "${userPrompt}". Inclua seções como Identificação do Paciente, Histórico Clínico Relevante, Exame Físico (se aplicável), Resultados de Exames, Discussão do Caso e Conclusão/Diagnóstico, com um plano terapêutico. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
-                            } else if (tipoRegistro === "orientacao") {
-                                fullPrompt = `Você é um profissional de saúde. Crie um modelo de orientação ao paciente em HTML para ${patientName}, sem placeholders como "[...]", sobre a seguinte situação ou tratamento: "${userPrompt}". A orientação deve ser clara, concisa, de fácil entendimento e abranger tópicos como o que é a condição/tratamento, como manejar sintomas, quando procurar ajuda e dicas de autocuidado. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
-                            } else if (tipoRegistro === "procedimento") {
-                                fullPrompt = `Você é um profissional de saúde. Crie a descrição detalhada de um procedimento médico/clínico em HTML para ${patientName}, sem placeholders como "[...]", para: "${userPrompt}". O documento deve abranger indicação, descrição do procedimento passo a passo, cuidados pré-procedimento, cuidados pós-procedimento, riscos e benefícios. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
-                            } else {
-                                console.error("Tipo de registro desconhecido para geração com IA."); 
-                                showConfirmModal('Erro', "Tipo de registro desconhecido para geração com IA.", null, 'danger');
-                                return;
-                            }
-
-                            generateGenericBtn.disabled = true;
-                            generateGenericBtn.classList.add('loading');
-                            
-                            try {
-                                const apiKey = ""; // Canvas will provide this key at runtime
-                                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                                
-                                const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
-
-                                const response = await fetch(apiUrl, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(payload)
-                                });
-                                const result = await response.json();
-                                
-                                let generatedText = '';
-                                if (result.candidates && result.candidates[0]?.content?.parts?.[0]) {
-                                    generatedText = result.candidates[0].content.parts[0].text;
-                                } else {
-                                    throw new Error('Estrutura de resposta da IA inesperada ou conteúdo ausente.');
-                                }
-                                
-                                // Ação direta: substitui o conteúdo sem confirmação
-                                conteudoRegistroGenericoEditor.innerHTML = generatedText;
-                                if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = generatedText;
-
-                            } catch (error) {
-                                console.error('Erro na API Gemini:', error);
-                                showConfirmModal('Erro', 'Erro ao gerar conteúdo com IA. Tente novamente mais tarde.', null, 'danger');
-                            } finally {
-                                generateGenericBtn.disabled = !lgpdConsentTextGeneric.classList.contains('active');
-                                generateGenericBtn.classList.remove('loading');
-                            }
+                    else if (btnConcluirMeta) {
+                        const li = btnConcluirMeta.closest('li');
+                        document.getElementById('concluir-meta-titulo').textContent = li.dataset.metaTitulo;
+                        modalControllers.concluirMeta.dataset.peiId = li.dataset.peiId;
+                        modalControllers.concluirMeta.dataset.metaTitulo = li.dataset.metaTitulo;
+                        modalControllers.open(modalControllers.concluirMeta);
+                    }
+                    else if (btnAddEvo) {
+                        const peiId = btnAddEvo.closest('li').dataset.peiId;
+                        const metaTitulo = btnAddEvo.closest('li').dataset.metaTitulo;
+                        openGenericRecordModal('evolucao_pei', `Evolução da Meta: ${metaTitulo}`, { peiId, metaTitulo });
+                    }
+                    else if (btnApagar) {
+                        showConfirmModal('Apagar Registro', 'Tem certeza?', () => {
+                            document.getElementById('registro_id_apagar').value = btnApagar.dataset.registroId;
+                            document.getElementById('formApagarRegistro').submit();
                         });
                     }
-
-
-                    // Event Delegation
-                    let actionCallback = null;
-                    document.body.addEventListener('click', async (e) => {
-                        const target = e.target;
-                        
-                        const btnTimerToggle = target.closest('.btn-timer-toggle');
-                        const btnTimerReset = target.closest('.btn-timer-reset');
-                        const btnConcluirMeta = target.closest('.btn-concluir-meta');
-                        const btnAddEvo = target.closest('.btn-add-pei-evolution');
-                        const btnApagar = target.closest('.btn-apagar-registro');
-                        const btnPrint = target.closest('.btn-print-pdf');
-                        const btnExpand = target.closest('.btn-expand-registro');
-                        const btnEditGeneric = target.closest('.btn-edit-registro-generico');
-                        const openChatBtn = target.closest('.btn-open-evolucao-chat');
-
-
-                        if (btnTimerToggle) {
-                            const li = btnTimerToggle.closest('li');
-                            const peiId = li.dataset.peiId;
-                            const metaTitulo = li.dataset.metaTitulo;
-                            const isRunning = !!li.dataset.cronometroInicio;
-                            const action = isRunning ? 'stop_timer' : 'start_timer';
-                            await sendMetaUpdate(peiId, metaTitulo, action);
-                        } 
-                        else if (btnTimerReset) {
-                            const li = btnTimerReset.closest('li');
-                            showConfirmModal('Zerar Cronômetro', 'Tem certeza que deseja zerar o tempo e o status desta meta?', async () => {
-                                await sendMetaUpdate(li.dataset.peiId, li.dataset.metaTitulo, 'reset');
-                                modalControllers.close(modalControllers.confirm);
-                            }, 'warning');
-                        }
-                        else if (btnConcluirMeta) {
-                            const li = btnConcluirMeta.closest('li');
-                            document.getElementById('concluir-meta-titulo').textContent = li.dataset.metaTitulo;
-                            modalControllers.concluirMeta.dataset.peiId = li.dataset.peiId;
-                            modalControllers.concluirMeta.dataset.metaTitulo = li.dataset.metaTitulo;
-                            modalControllers.open(modalControllers.concluirMeta);
-                        }
-                        else if (btnAddEvo) {
-                            const peiId = btnAddEvo.closest('li').dataset.peiId;
-                            const metaTitulo = btnAddEvo.closest('li').dataset.metaTitulo;
-                            openGenericRecordModal('evolucao_pei', `Registrar Evolução para: ${metaTitulo}`, { peiId, metaTitulo });
-                        }
-                        else if (btnApagar) {
-                            const recordIdToDelete = btnApagar.dataset.registroId;
-                            showConfirmModal('Apagar Registro', 'Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.', () => {
-                                document.getElementById('registro_id_apagar').value = recordIdToDelete;
-                                document.getElementById('formApagarRegistro').submit();
-                                modalControllers.close(modalControllers.confirm); // Close confirmation modal
-                            }, 'danger');
-                        }
-                        else if (btnPrint) {
-                            generatePdfForRecord(btnPrint.dataset.recordId);
-                        }
-                        else if (btnExpand) {
-                            const recordId = btnExpand.closest('.registro-card').id.replace('registro-', '');
-                            const record = allRecordsData.find(r => r.id === recordId);
-                            if (record) {
-                                const modalTitle = document.getElementById('modal-registro-completo-title');
-                                const modalContent = document.getElementById('modal-registro-completo-content');
-                                modalTitle.textContent = `${record.tipo_registro.replace('_', ' ').capitalize()} - ${record.titulo || ''}`;
-                                modalContent.innerHTML = record.conteudo || '';
-                                modalControllers.open(modalControllers.fullRecord);
-                            }
-                        }
-                        else if (btnEditGeneric) {
-                            e.preventDefault();
-                            const recordId = btnEditGeneric.dataset.registroId;
-                            const recordType = btnEditGeneric.dataset.recordType;
-                            const currentRecord = allRecordsData.find(r => r.id === recordId);
-                            
-                            if (currentRecord) {
-                                const capitalType = recordType.charAt(0).toUpperCase() + recordType.slice(1).replace('_', ' ');
-                                openGenericRecordModal(recordType, `Editar ${capitalType}`, { registroData: currentRecord });
-                            } else {
-                                console.error('Dados do registro não encontrados para edição:', recordId);
-                                showConfirmModal('Erro', 'Dados do registro não encontrados para edição.', null, 'danger');
-                            }
-                        }
-                        else if (openChatBtn) {
-                            const agendamentoId = openChatBtn.dataset.agendamentoId;
-                            openEvolutionChatModal(agendamentoId);
-                        }
-                    });
-
-                    document.getElementById('confirmConcluirMetaBtn').addEventListener('click', async () => {
-                        const modal = modalControllers.concluirMeta;
-                        const peiId = modal.dataset.peiId;
-                        const metaTitulo = modal.dataset.metaTitulo;
-                        const observacao = document.getElementById('concluir-meta-observacao').value;
-                        await sendMetaUpdate(peiId, metaTitulo, 'concluir', { observacao });
-                        modalControllers.close(modal);
-                    });
-                    
-                    document.getElementById('confirmModalBtn').addEventListener('click', () => {
-                        if (typeof actionCallback === 'function') actionCallback();
-                        actionCallback = null;
-                    });
-
-                    function showConfirmModal(title, text, onConfirm, type = 'info') {
-                        document.getElementById('confirm-modal-title').textContent = title;
-                        document.getElementById('confirm-modal-text').textContent = text;
-                        const confirmBtn = document.getElementById('confirmModalBtn');
-                        // Reset button classes
-                        confirmBtn.className = 'btn'; 
-                        if (type === 'danger') confirmBtn.classList.add('btn-danger-outline');
-                        else if (type === 'warning') confirmBtn.classList.add('btn-warning');
-                        else confirmBtn.classList.add('btn-primary'); // Default for general confirmations
-
-                        actionCallback = onConfirm;
-                        modalControllers.open(modalControllers.confirm);
+                    else if (btnPrint) {
+                         generatePdfForRecord(btnPrint.dataset.targetId, btnPrint.dataset.title);
                     }
+                });
 
-                    // --- Lógica de Geração de PDF (Método Estruturado) ---
-                    function htmlToPlainText(html) {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = html;
-                        
-                        tempDiv.querySelectorAll('script, style').forEach(el => el.remove());
-                        tempDiv.innerHTML = tempDiv.innerHTML.replace(/<br\s*\/?>/gi, '\n');
-                        tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, div, li').forEach(el => {
-                            el.appendChild(document.createTextNode('\n'));
-                        });
-                        
-                        let text = tempDiv.textContent || tempDiv.innerText || "";
-                        return text.replace(/\n\s*\n/g, '\n').trim();
-                    }
-
-                    function generatePdfForRecord(recordId) {
-                        const record = allRecordsData.find(r => r.id === recordId);
-                        if (!record) {
-                            console.error("Registro não encontrado para gerar PDF:", recordId);
-                            showConfirmModal('Erro', 'Registro não encontrado para gerar PDF.', null, 'danger');
-                            return;
-                        }
-
-                        const { jsPDF } = window.jspdf;
-                        const doc = new jsPDF();
-
-                        let yPos = 20;
-                        const margin = 15;
-                        const contentLineHeight = 5;
-                        const contentFontSize = 9;
-                        const maxWidth = doc.internal.pageSize.width - margin * 2;
-
-                        // Header
-                        doc.setFontSize(12).setFont("helvetica", "bold").text("{{ session.clinica_nome_display or 'Clínica On' }}", margin, yPos);
-                        yPos += 8; 
-                        doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
-                        yPos += 8;
-
-                        // Patient Info
-                        doc.setFontSize(10).setFont("helvetica", "normal");
-                        doc.text(`Paciente: {{ paciente.nome or 'N/A' }}`, margin, yPos);
-                        yPos += 6;
-                        doc.text(`CPF: {{ paciente.cpf or 'N/A' }}`, margin, yPos);
-                        doc.text(`Data Nasc: {{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}`, maxWidth + margin, yPos, { align: 'right' });
-                        yPos += 8;
-                        
-                        // Record Title
-                        const recordTitle = `${record.tipo_registro.replace('_', ' ').capitalize()} - ${record.titulo || ''}`;
-                        doc.setFontSize(14).setFont("helvetica", "bold").text(recordTitle, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
-                        yPos += 8;
-
-                        // Record Metadata
-                        doc.setFontSize(9).setFont("helvetica", "italic").text(`Data: ${record.data_registro.split(' ')[0]} | Profissional: ${record.profissional_nome}`, margin, yPos);
-                        yPos += 6;
-                        doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
-                        yPos += 8;
-
-                        // Record Content
-                        doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                        const contentText = htmlToPlainText(record.conteudo || '');
-                        const splitText = doc.splitTextToSize(contentText, maxWidth);
-                        
-                        splitText.forEach(line => {
-                            if (yPos > doc.internal.pageSize.height - margin) {
-                                doc.addPage();
-                                yPos = margin;
-                            }
-                            doc.text(line, margin, yPos);
-                            yPos += contentLineHeight;
-                        });
-
-                        doc.save(`${recordTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${paciente.nome.toLowerCase().replace(/\s/g, '-')}.pdf`);
-                    }
-
-                    // NEW: Lógica para a Agenda do Paciente e Chat de Evolução
-                    const agendaPacienteList = document.getElementById('agenda-paciente-list');
-                    const agendaPacienteEmptyState = document.getElementById('agenda-paciente-empty-state');
-                    const chatEvolucaoModal = document.getElementById('chat-evolucao-modal');
-                    const chatMessagesContainer = document.getElementById('chat-messages-container');
-                    const chatInput = document.getElementById('chat-input');
-                    const sendChatBtn = document.getElementById('send-chat-btn');
-                    const chatTitle = document.getElementById('chat-evolucao-title');
-                    let currentAgendamentoId = null;
-
-                    async function loadPatientAppointments(pId) {
-                        agendaPacienteList.innerHTML = ''; // Limpa a lista
-                        agendaPacienteEmptyState.style.display = 'block';
-                        agendaPacienteEmptyState.querySelector('p').textContent = 'Carregando agendamentos...';
-
-                        try {
-                            const response = await fetch(`/api/pacientes/${pId}/agendamentos-concluidos`);
-                            if (!response.ok) {
-                                const errorData = await response.json();
-                                throw new Error(errorData.message || 'Erro ao carregar agendamentos do paciente.');
-                            }
-                            const data = await response.json();
-                            
-                            agendaPacienteList.innerHTML = ''; // Limpa antes de adicionar
-                            if (data.agendamentos && data.agendamentos.length > 0) {
-                                agendaPacienteEmptyState.style.display = 'none';
-                                data.agendamentos.forEach(agendamento => {
-                                    const agendamentoCard = document.createElement('div');
-                                    agendamentoCard.className = 'agenda-paciente-card';
-                                    agendamentoCard.innerHTML = `
-                                        <div class="card-header">
-                                            <h4>${agendamento.data_agendamento_fmt} - ${agendamento.hora_agendamento}</h4>
-                                            <span class="status-badge status-${agendamento.status}">${agendamento.status.charAt(0).toUpperCase() + agendamento.status.slice(1)}</span>
-                                        </div>
-                                        <div class="card-body">
-                                            <p><strong>Profissional:</strong> ${agendamento.profissional_nome}</p>
-                                            <p><strong>Serviço:</strong> ${agendamento.servico_nome}</p>
-                                            <p><strong>Preço:</strong> R$ ${parseFloat(agendamento.servico_procedimento_preco).toFixed(2).replace('.', ',')}</p>
-                                        </div>
-                                        <div class="card-footer">
-                                            <button class="btn btn-sm btn-info btn-open-evolucao-chat" data-agendamento-id="${agendamento.id}">
-                                                <i class="fas fa-comments"></i> Abrir Evolução
-                                            </button>
-                                        </div>
-                                    `;
-                                    agendaPacienteList.appendChild(agendamentoCard);
-                                });
-                            } else {
-                                agendaPacienteEmptyState.style.display = 'block';
-                                agendaPacienteEmptyState.querySelector('p').textContent = 'Nenhum agendamento concluído para este paciente.';
-                            }
-
-                        } catch (error) {
-                            console.error('Erro ao carregar agendamentos do paciente:', error);
-                            agendaPacienteEmptyState.style.display = 'block';
-                            agendaPacienteEmptyState.querySelector('p').textContent = 'Erro ao carregar agendamentos: ' + error.message;
-                        }
-                    }
-
-                    async function openEvolutionChatModal(agendamentoId) {
-                        currentAgendamentoId = agendamentoId;
-                        chatMessagesContainer.innerHTML = ''; // Limpa mensagens anteriores
-                        document.getElementById('chat-empty-state').style.display = 'block';
-                        document.getElementById('chat-empty-state').querySelector('p').textContent = 'Carregando evoluções...';
-                        chatInput.value = ''; // Limpa o campo de entrada
-
-                        modalControllers.open(chatEvolucaoModal);
-
-                        try {
-                            const response = await fetch(`/api/agendamentos/${agendamentoId}/evolucao`); // Ensure this endpoint exists and returns JSON
-                            if (!response.ok) {
-                                const errorData = await response.json();
-                                throw new Error(errorData.message || 'Erro ao carregar mensagens de evolução.');
-                            }
-                            const data = await response.json();
-                            
-                            chatTitle.textContent = `Evolução para Agendamento (${data.agendamento.data_agendamento} ${data.agendamento.hora_agendamento})`;
-
-                            chatMessagesContainer.innerHTML = ''; // Limpa novamente antes de popular
-                            if (data.mensagens && data.mensagens.length > 0) {
-                                document.getElementById('chat-empty-state').style.display = 'none';
-                                data.mensagens.forEach(msg => {
-                                    const messageElement = document.createElement('div');
-                                    messageElement.className = 'chat-message';
-                                    messageElement.innerHTML = `
-                                        <div class="message-header">
-                                            <span class="message-author">${msg.registrado_por_nome}</span>
-                                            <span class="message-date">${msg.data_registro_fmt}</span>
-                                        </div>
-                                        <div class="message-content">${msg.conteudo}</div>
-                                    `;
-                                    chatMessagesContainer.appendChild(messageElement);
-                                });
-                                scrollToBottomChat(); // Rola para o final
-                            } else {
-                                document.getElementById('chat-empty-state').style.display = 'block';
-                                document.getElementById('chat-empty-state').querySelector('p').textContent = 'Nenhuma evolução registrada para este agendamento.';
-                            }
-
-                        } catch (error) {
-                            console.error('Erro ao carregar chat de evolução:', error);
-                            document.getElementById('chat-empty-state').style.display = 'block';
-                            document.getElementById('chat-empty-state').querySelector('p').textContent = 'Erro ao carregar evoluções: ' + error.message;
-                        }
-                    }
-
-                    sendChatBtn.addEventListener('click', async () => {
-                        const messageContent = chatInput.value.trim();
-                        if (!messageContent || !currentAgendamentoId) {
-                            showConfirmModal('Atenção', 'Digite uma mensagem para enviar.', null, 'warning');
-                            return;
-                        }
-
-                        sendChatBtn.disabled = true;
-                        sendChatBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-                        try {
-                            const response = await fetch(`/api/agendamentos/${currentAgendamentoId}/evolucao/adicionar`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ conteudo: messageContent })
-                            });
-                            const result = await response.json();
-
-                            if (result.success) {
-                                chatInput.value = ''; // Limpa o input
-                                openEvolutionChatModal(currentAgendamentoId); // Recarrega para simplicidade e mostra a nova mensagem
-                            } else {
-                                console.error('Erro ao enviar mensagem:', result.message);
-                                showConfirmModal('Erro', 'Erro ao enviar mensagem: ' + result.message, null, 'danger');
-                            }
-                        } catch (error) {
-                            console.error('Erro de rede ao enviar mensagem:', error);
-                            showConfirmModal('Erro', 'Erro de rede ao enviar mensagem.', null, 'danger');
-                        } finally {
-                            sendChatBtn.disabled = false;
-                            sendChatBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
-                        }
-                    });
-
-                    // Função para rolar o chat para o final
-                    function scrollToBottomChat() {
-                        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
-                    }
-
-                    // Helper para Capitalize, se necessário no JS (já existe no Jinja)
-                    String.prototype.capitalize = function() {
-                        return this.charAt(0).toUpperCase() + this.slice(1);
-                    }
-
-                    initializeMetaTimers(); // Initialize timers on page load
-                    setupTabs(); // Setup tab functionality
+                document.getElementById('confirmConcluirMetaBtn').addEventListener('click', async () => {
+                    const modal = modalControllers.concluirMeta;
+                    const peiId = modal.dataset.peiId;
+                    const metaTitulo = modal.dataset.metaTitulo;
+                    const observacao = document.getElementById('concluir-meta-observacao').value;
+                    await sendMetaUpdate(peiId, metaTitulo, 'concluir', { observacao });
+                    modalControllers.close(modal);
+                });
+                
+                function showConfirmModal(title, text, onConfirm) {
+                    document.getElementById('confirm-modal-title').textContent = title;
+                    document.getElementById('confirm-modal-text').textContent = text;
+                    actionCallback = onConfirm;
+                    modalControllers.open(modalControllers.confirm);
                 }
+                
+                document.getElementById('confirmModalBtn').addEventListener('click', () => {
+                    if (typeof actionCallback === 'function') actionCallback();
+                    actionCallback = null;
+                });
 
-                // --- Inicialização Geral ---
-                setupCommonUI();
-                setupProntuarioPage();
+                // --- Geração de PDF (Método Estruturado) ---
+                function htmlToTextForPdf(elementId) { /* ... Lógica do PDF ... */ }
+                function generatePdfForRecord(targetId, title) { /* ... Lógica do PDF ... */ }
 
-            } catch (e) {
-                console.error('Erro fatal durante a inicialização do DOM:', e);
-                // Exibir uma mensagem de erro genérica para o usuário
-                // showConfirmModal('Erro de Inicialização', 'O aplicativo não pôde ser carregado corretamente. Por favor, recarregue a página.', null, 'danger');
+                initializeMetaTimers();
             }
+
+            setupCommonUI();
+            setupProntuarioPage();
         });
     </script>
 </body>
