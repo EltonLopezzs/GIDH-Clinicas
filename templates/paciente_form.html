@@ -239,6 +239,7 @@
                         {% if session.user_role == 'admin' %}
                         <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                                  <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -351,7 +352,23 @@
                             <label for="complemento">Complemento (Apto, Bloco)</label>
                             <input type="text" id="complemento" name="complemento" value="{{ request.form.complemento if 'complemento' in request.form else (paciente.endereco.complemento if paciente and paciente.endereco else '') }}" placeholder="Apto 401">
                         </div>
+                    <div class="form-card">
+                    <form method="POST" action="{{ action_url|default('') }}">
                         
+                        <h3 class="section-title">Planos Educacionais Individualizados (PEIs)</h3>
+                        <div class="form-group">
+                            <label for="peis_associados">Atrelar PEIs (Ctrl+clique para múltiplos)</label>
+                            <select id="peis_associados" name="peis_associados" multiple size="5">
+                                <option value="">Nenhum PEI atrelado</option>
+                                {% for pei_item in peis_disponiveis %}
+                                    <option value="{{ pei_item.id }}" 
+                                            {% if paciente and pei_item.id in paciente.peis_associados_ids %}selected{% endif %}>
+                                        {{ pei_item.identificacao }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted" style="color: var(--muted); font-size: 0.8em; display: block; margin-top: 0.5em;">Segure Ctrl/Cmd para selecionar múltiplos PEIs.</small>
+                        </div>
                         <h3 class="section-title">Outras Informações</h3>
                         <div class="form-group">
                             <label for="convenio_id">Convênio</label>

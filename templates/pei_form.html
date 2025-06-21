@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }} - Clínica On</title>
+    <title>{{ page_title|default(('Editar' if pei else 'Adicionar Novo') ~ ' PEI') }} - Clínica On</title>
     
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
     <style>
         :root {
@@ -101,7 +102,7 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar.collapsed .sidebar-footer span { display: none; }
         .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
-        
+
         /* --- Main Content & Topbar --- */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
@@ -122,6 +123,7 @@
             transition: background 0.2s ease, color 0.2s ease;
         }
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+        
         main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
         
         /* --- Flash Messages --- */
@@ -137,34 +139,43 @@
         .form-card {
             background: var(--card); padding: 2rem; border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            max-width: 700px; margin: 0 auto;
+            max-width: 960px; margin: 0 auto;
         }
         .form-card h2.form-title {
             text-align: center; font-size: 1.6rem; color: var(--text);
             margin-bottom: 2rem; font-weight: 700;
         }
+        .form-card h3.section-title {
+            font-size: 1.1rem; color: var(--primary); font-weight: 600;
+            margin-top: 2rem; margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);
+        }
+        .form-card h3.section-title:first-of-type { margin-top: 0; }
         .form-group { margin-bottom: 1.5rem; }
         .form-group label {
             display: block; font-size: 0.9rem; color: var(--muted);
             font-weight: 500; margin-bottom: 0.5rem;
         }
-        .form-group input, .form-group select {
+        .form-group input, .form-group select, .form-group textarea {
             font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%;
             border: 1px solid var(--border-color); border-radius: 8px;
             background-color: var(--bg); color: var(--text);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .form-group input:focus, .form-group select:focus {
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
             outline: none;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
         }
         .form-actions {
             margin-top: 2rem; display: flex; justify-content: flex-end;
             gap: 0.75rem; flex-wrap: wrap;
         }
-        .form-actions .btn-delete-container { margin-right: auto; }
-        
         .btn {
             padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
             font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
@@ -181,6 +192,55 @@
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn.loading i { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- Metas Section --- */
+        .metas-container {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+        .meta-item {
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            position: relative;
+        }
+        .meta-item .meta-actions {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .meta-item .meta-actions button {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--muted);
+            transition: color 0.2s ease;
+        }
+        .meta-item .meta-actions button:hover {
+            color: var(--danger);
+        }
+        .add-meta-button-container {
+            text-align: right;
+            margin-top: 1rem;
+        }
+        .meta-item .form-group {
+            margin-bottom: 0; /* Override default form-group margin */
+        }
+        .meta-item .form-group input,
+        .meta-item .form-group textarea {
+            background-color: var(--card); /* Make nested inputs lighter */
+        }
+
 
         /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
@@ -200,9 +260,7 @@
             main { padding: 1rem; }
             .form-card { padding: 1.5rem; }
             .form-card h2.form-title { font-size: 1.4rem; }
-            .form-actions { flex-direction: column-reverse; align-items: stretch; gap: 0.5rem; }
-            .form-actions .btn { justify-content: center; }
-            .form-actions .btn-delete-container { margin: 0; }
+            .form-row { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -221,14 +279,14 @@
                         <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
                         <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
                         <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
                         <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
                         <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
                         <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
                         <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                                <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li class="active"><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -246,7 +304,7 @@
                 <div class="topbar-left">
                     <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }}</h1>
+                    <h1 class="page-title">{{ page_title|default(('Editar' if pei else 'Adicionar Novo') ~ ' PEI') }}</h1>
                 </div>
             </header>
 
@@ -262,49 +320,72 @@
                 {% endwith %}
 
                 <div class="form-card">
-                    <h2 class="form-title">{{ page_title|default(('Editar' if servico else 'Adicionar Novo') ~ ' Serviço/Procedimento') }}</h2>
-                    <form id="servicoForm" method="POST" action="{{ action_url|default('') }}">
+                    <h2 class="form-title">{{ page_title|default(('Editar' if pei else 'Adicionar Novo') ~ ' Plano Educacional Individualizado (PEI)') }}</h2>
+                    <form id="peiForm" method="POST" action="{{ action_url|default('') }}">
+                        <h3 class="section-title">Dados Gerais do PEI</h3>
                         <div class="form-group">
-                            <label for="nome">Nome do Serviço/Procedimento</label>
-                            <input type="text" id="nome" name="nome" value="{{ servico.nome if servico and servico.nome is not none else request.form.nome if request.form.nome is not none else '' }}" required>
+                            <label for="identificacao_pei">Identificação do PEI</label>
+                            <input type="text" id="identificacao_pei" name="identificacao_pei" value="{{ pei.identificacao_pei if pei else '' }}" required placeholder="Ex: PEI para Atraso de Linguagem">
                         </div>
                         <div class="form-group">
-                            <label for="tipo">Tipo</label>
-                            <select id="tipo" name="tipo" required>
-                                <option value="Serviço" {% if (servico and servico.tipo == 'Serviço') or (request.form.tipo == 'Serviço') %}selected{% endif %}>Serviço</option>
-                                <option value="Procedimento" {% if (servico and servico.tipo == 'Procedimento') or (request.form.tipo == 'Procedimento') %}selected{% endif %}>Procedimento</option>
-                            </select>
+                            <label for="descricao_pei">Descrição / Observações Gerais</label>
+                            <textarea id="descricao_pei" name="descricao_pei" rows="3" placeholder="Descreva o propósito geral do PEI, ou observações importantes.">{{ pei.descricao_pei if pei else '' }}</textarea>
                         </div>
-                        <div class="form-group">
-                            <label for="duracao_minutos">Duração (em minutos)</label>
-                            <input type="number" id="duracao_minutos" name="duracao_minutos" value="{{ servico.duracao_minutos if servico and servico.duracao_minutos is not none else request.form.duracao_minutos if request.form.duracao_minutos is not none else '' }}" min="1" step="1" required>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="data_inicio">Data de Início</label>
+                                <input type="text" id="data_inicio" name="data_inicio" class="flatpickr-input" value="{{ pei.data_inicio_fmt if pei else '' }}" placeholder="DD/MM/AAAA">
+                            </div>
+                            <div class="form-group">
+                                <label for="data_fim">Data de Fim (Previsão)</label>
+                                <input type="text" id="data_fim" name="data_fim" class="flatpickr-input" value="{{ pei.data_fim_fmt if pei else '' }}" placeholder="DD/MM/AAAA">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="preco">Preço Sugerido (R$)</label>
-                            <input type="text" id="preco" name="preco" value="{{ servico.get('preco_form', '') if servico else '' }}" placeholder="Ex: 150,00" pattern="^\d+([,.]\d{1,2})?$" title="Use vírgula ou ponto para centavos (ex: 150,00 ou 150.00)" required>
+
+                        <h3 class="section-title">Metas do PEI</h3>
+                        <div class="metas-container" id="metas-container">
+                            {% if pei and pei.metas %}
+                                {% for meta in pei.metas %}
+                                    <div class="meta-item">
+                                        <div class="meta-actions">
+                                            <button type="button" class="btn-remove-meta" title="Remover Meta"><i class="fas fa-times-circle"></i></button>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Título da Meta</label>
+                                            <input type="text" class="meta-titulo" value="{{ meta.titulo }}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Descrição da Meta</label>
+                                            <textarea class="meta-descricao" rows="2">{{ meta.descricao }}</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Responsável</label>
+                                            <input type="text" class="meta-responsavel" value="{{ meta.responsavel }}">
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="add-meta-button-container">
+                            <button type="button" id="add-meta-btn" class="btn btn-secondary">
+                                <i class="fas fa-plus"></i> Adicionar Meta
+                            </button>
+                        </div>
+
+                        <input type="hidden" name="metas_json" id="metas_json_hidden" value="{{ pei.metas_json if pei else '[]' }}">
+
+                        <div class="form-actions">
+                            <a href="{{ url_for('listar_peis') }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>&nbsp;Salvar PEI</button>
                         </div>
                     </form>
-                    
-                    <div class="form-actions">
-                        {% if servico and servico.id %} 
-                        <div class="btn-delete-container">
-                            <form id="deleteForm" action="{{ url_for('excluir_servico_procedimento', servico_doc_id=servico.id) }}" method="post" style="margin: 0;">
-                                <button type="button" id="deleteButton" class="btn btn-danger">
-                                    <i class="fas fa-trash"></i>&nbsp;Excluir
-                                </button>
-                            </form>
-                        </div>
-                        {% endif %}
-                        <a href="{{ url_for('listar_servicos_procedimentos') }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
-                        <button type="submit" class="btn btn-primary" form="servicoForm">
-                            <i class="fas fa-save"></i>&nbsp;Salvar
-                        </button>
-                    </div>
                 </div>
             </main>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script> 
     <script type="module">
         // Placeholder for Firebase - adjust with your actual config
         const FAKE_FIREBASE = {
@@ -396,37 +477,106 @@
                 });
             }
 
-            // --- Form Logic ---
-            function setupForm() {
-                const servicoForm = document.getElementById('servicoForm');
-                if (servicoForm) {
-                    servicoForm.addEventListener('submit', (e) => {
-                        const submitButton = document.querySelector('button[type="submit"][form="servicoForm"]');
-                        if (submitButton) {
-                            submitButton.disabled = true;
-                            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Salvando...';
-                        }
+            // --- Page Specific Form Logic (PEI) ---
+            function setupPeiForm() {
+                // Initialize Flatpickr for date fields
+                flatpickr("#data_inicio", {
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    locale: "pt",
+                    disableMobile: true
+                });
+                flatpickr("#data_fim", {
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    locale: "pt",
+                    disableMobile: true
+                });
+
+                const metasContainer = document.getElementById('metas-container');
+                const addMetaBtn = document.getElementById('add-meta-btn');
+                const metasJsonHiddenInput = document.getElementById('metas_json_hidden');
+                const peiForm = document.getElementById('peiForm');
+
+                function createMetaItem(meta = {titulo: '', descricao: '', responsavel: ''}) {
+                    const div = document.createElement('div');
+                    div.className = 'meta-item';
+                    div.innerHTML = `
+                        <div class="meta-actions">
+                            <button type="button" class="btn-remove-meta" title="Remover Meta"><i class="fas fa-times-circle"></i></button>
+                        </div>
+                        <div class="form-group">
+                            <label>Título da Meta</label>
+                            <input type="text" class="meta-titulo" value="${meta.titulo}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Descrição da Meta</label>
+                            <textarea class="meta-descricao" rows="2">${meta.descricao}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Responsável</label>
+                            <input type="text" class="meta-responsavel" value="${meta.responsavel}">
+                        </div>
+                    `;
+                    metasContainer.appendChild(div);
+                    div.querySelector('.btn-remove-meta').addEventListener('click', () => {
+                        div.remove();
+                        updateMetasJson();
+                    });
+                    // Adicionar listeners para atualização imediata
+                    div.querySelectorAll('input, textarea').forEach(input => {
+                        input.addEventListener('input', updateMetasJson);
                     });
                 }
 
-                const deleteButton = document.getElementById('deleteButton');
-                if (deleteButton) {
-                    deleteButton.addEventListener('click', () => {
-                        if (confirm('Tem certeza que deseja excluir este serviço/procedimento? Esta ação não pode ser desfeita.')) {
-                            const deleteForm = document.getElementById('deleteForm');
-                            if (deleteForm) {
-                                deleteForm.submit();
-                            }
-                        }
-                    });
+                // Render existing metas on page load
+                let initialMetas = [];
+                try {
+                    initialMetas = JSON.parse(metasJsonHiddenInput.value || '[]');
+                } catch (e) {
+                    console.error("Erro ao parsear metas iniciais:", e);
                 }
+                initialMetas.forEach(createMetaItem);
+
+
+                addMetaBtn.addEventListener('click', () => {
+                    createMetaItem();
+                    updateMetasJson(); // Update after adding
+                });
+
+                function updateMetasJson() {
+                    const metas = [];
+                    metasContainer.querySelectorAll('.meta-item').forEach(item => {
+                        metas.push({
+                            titulo: item.querySelector('.meta-titulo').value.trim(),
+                            descricao: item.querySelector('.meta-descricao').value.trim(),
+                            responsavel: item.querySelector('.meta-responsavel').value.trim()
+                        });
+                    });
+                    metasJsonHiddenInput.value = JSON.stringify(metas);
+                }
+
+                // Call updateMetasJson on form submission to ensure final data is captured
+                peiForm.addEventListener('submit', () => {
+                    updateMetasJson();
+                    const submitButton = peiForm.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Salvando...';
+                    }
+                });
+
+                // Ensure initial JSON is correct on load
+                updateMetasJson();
             }
 
             // --- Initialization ---
             setupSidebar();
             setupTheme();
             setupLogout();
-            setupForm();
+            setupPeiForm();
         });
     </script>
 </body>

@@ -19,6 +19,7 @@
             --accent: #0f172a;
             --primary: #0d9488; /* Teal-600 */
             --primary-dark: #115e59;
+            --primary-light: #ccfbf1; /* Adicionado para o PEI Header */
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
             --success: #16a34a; /* Green-600 */
@@ -33,6 +34,12 @@
             --dark-border-color: #334155;
             
             color-scheme: light;
+
+            /* Cores para os status dos agendamentos */
+            --status-confirmado: #16a34a; /* Verde */
+            --status-concluido: #0ea5e9; /* Azul */
+            --status-pendente: #f59e0b; /* Laranja */
+            --status-cancelado: #dc2626; /* Vermelho */
         }
 
         [data-theme="dark"] {
@@ -42,6 +49,12 @@
             --muted: var(--dark-muted);
             --border-color: var(--dark-border-color);
             color-scheme: dark;
+
+            /* Cores para os status em tema escuro (opcionalmente ajustadas) */
+            --status-confirmado: #22c55e;
+            --status-concluido: #38bdf8;
+            --status-pendente: #fbbf24;
+            --status-cancelado: #ef4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -526,6 +539,7 @@
                         {% if session.user_role == 'admin' %}
                         <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -577,7 +591,7 @@
                 <div class="paciente-info-card">
                     <h3>{{ paciente.nome }}</h3>
                     <div class="paciente-info-grid">
-                        <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}</span></div>
+                        <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}</span></div>
                         <div class="paciente-info-item"><strong>CPF:</strong> <span>{{ paciente.cpf or 'N/A' }}</span></div>
                         <div class="paciente-info-item"><strong>Telefone:</strong> <span>{{ paciente.contato_telefone or 'N/A' }}</span></div>
                         <div class="paciente-info-item"><strong>E-mail:</strong> <span>{{ paciente.contato_email or 'N/A' }}</span></div>
@@ -586,7 +600,57 @@
                 </div>
                 {% endif %}
 
-                <!-- MACRO Definition for the record card -->
+                <!-- NOVO: Seção de PEIs Atrelados ao Paciente -->
+                <section class="pei-section" style="margin-bottom: 2rem;">
+                    <h2 class="prontuario-header">
+                        Planos Educacionais Individualizados (PEIs)
+                        <button type="button" class="btn btn-secondary btn-sm" id="toggle-peis-view">
+                            <i class="fas fa-eye"></i> Exibir Detalhes
+                        </button>
+                    </h2>
+                    <div class="pei-list-container">
+                        {% if peis_do_paciente %}
+                            <div class="pei-accordion" id="pei-accordion-container">
+                                {% for pei in peis_do_paciente %}
+                                <div class="pei-card">
+                                    <div class="pei-header">
+                                        <h4>{{ pei.identificacao_pei }}</h4>
+                                        <div class="pei-dates">
+                                            <span>Início: {{ pei.data_inicio_fmt or 'N/A' }}</span>
+                                            <span>Fim: {{ pei.data_fim_fmt or 'N/A' }}</span>
+                                        </div>
+                                        <button class="pei-toggle-btn"><i class="fas fa-chevron-down"></i></button>
+                                    </div>
+                                    <div class="pei-content">
+                                        <p><strong>Descrição:</strong> {{ pei.descricao_pei or 'N/A' }}</p>
+                                        <p><strong>Criado por:</strong> {{ pei.criado_por_nome or 'N/A' }} em {{ pei.criado_em if pei.criado_em else 'N/A' }}</p>
+                                        <h5>Metas:</h5>
+                                        {% if pei.metas %}
+                                            <ul class="pei-metas-list">
+                                                {% for meta in pei.metas %}
+                                                    <li>
+                                                        <strong>{{ meta.titulo }}</strong> (Responsável: {{ meta.responsavel or 'N/A' }})<br>
+                                                        {{ meta.descricao }}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <p>Nenhuma meta cadastrada para este PEI.</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>Nenhum PEI atrelado a este paciente.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+                <!-- FIM NOVO: Seção de PEIs -->
+
+                <!-- MACRO Definition for the record card (keep as is) -->
                 {% macro render_registro_card(registro) %}
                 <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
                     <div class="registro-header">
@@ -624,6 +688,8 @@
                             <button class="tab-nav-item" data-tab="laudo">Laudos</button>
                             <button class="tab-nav-item" data-tab="orientacao">Orientações</button>
                             <button class="tab-nav-item" data-tab="procedimento">Procedimentos</button>
+                            <!-- NOVO BOTÃO DA ABA DE AGENDA DO PACIENTE -->
+                            <button class="tab-nav-item" data-tab="agenda-paciente">Agenda do Paciente</button>
                         </div>
                         
                         <div class="tab-content">
@@ -686,6 +752,21 @@
                                 {% else %}
                                     <div class="empty-state"><p>Nenhum procedimento encontrado.</p></div>
                                 {% endif %}
+                            </div>
+
+                            <!-- NOVO PAINEL: Agenda do Paciente e Evoluções -->
+                            <div id="tab-panel-agenda-paciente" class="tab-panel">
+                                <div class="agenda-paciente-container">
+                                    <h3>Próximos Agendamentos e Evolução</h3>
+                                    <div class="agenda-scroll-container">
+                                        <div id="agenda-paciente-list">
+                                            <!-- Agendamentos do paciente serão carregados aqui via JS -->
+                                            <div class="empty-state" id="agenda-paciente-empty-state">
+                                                <p>Carregando agendamentos...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -792,6 +873,26 @@
         <input type="hidden" name="registro_id" id="registro_id_apagar">
         <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
     </form>
+
+    <!-- Modal de Chat de Evolução (NOVO) -->
+    <div id="chat-evolucao-modal" class="modal-overlay">
+        <div class="modal-content chat-modal-content">
+            <div class="modal-header">
+                <h3 id="chat-evolucao-title">Evolução do Paciente</h3>
+                <button class="modal-close-btn" data-close-modal="chat-evolucao-modal">&times;</button>
+            </div>
+            <div class="modal-body chat-messages-container" id="chat-messages-container">
+                <!-- Mensagens do chat serão carregadas aqui -->
+                <div class="empty-state" id="chat-empty-state">
+                    <p>Nenhuma evolução registrada para este agendamento.</p>
+                </div>
+            </div>
+            <div class="modal-footer chat-input-area">
+                <textarea id="chat-input" placeholder="Digite a evolução aqui..." rows="3"></textarea>
+                <button class="btn btn-primary" id="send-chat-btn"><i class="fas fa-paper-plane"></i> Enviar</button>
+            </div>
+        </div>
+    </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module">
@@ -815,6 +916,7 @@
 
         // Variável global com todos os dados dos registros, vindo diretamente do Jinja2
         const allRecordsData = {{ registros | tojson }}; 
+        const pacienteId = "{{ paciente.id }}"; // ID do paciente atual
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
@@ -898,6 +1000,11 @@
                             const targetPanel = document.getElementById(targetPanelId);
                             if(targetPanel) {
                                 targetPanel.classList.add('active');
+                            }
+
+                            // NOVO: Se a aba "Agenda do Paciente" for ativada, carrega os agendamentos
+                            if (tab.dataset.tab === 'agenda-paciente') {
+                                loadPatientAppointments(pacienteId);
                             }
                         });
                     });
@@ -1132,6 +1239,14 @@
                          generatePdfForRecord(printButton);
                          return;
                      }
+
+                    // NOVO: Botão de Abrir Chat de Evolução
+                    const openChatBtn = target.closest('.btn-open-evolucao-chat');
+                    if (openChatBtn) {
+                        const agendamentoId = openChatBtn.dataset.agendamentoId;
+                        openEvolutionChatModal(agendamentoId);
+                        return;
+                    }
                 });
 
                 // --- Lógica de Geração de PDF ---
@@ -1166,7 +1281,7 @@
 
                      const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
                      const patientCpf = "{{ paciente.cpf or 'N/A' }}";
-                     const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
+                     const patientDob = "{{ paciente.data_nascimento if paciente.data_nascimento else 'N/A' }}";
                      const clinicName = "{{ session.clinica_nome_display or 'Clinica On' }}";
 
                      const { jsPDF } = window.jspdf;
@@ -1220,7 +1335,201 @@
                      doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
 
+                // NEW: Lógica para o Accordion de PEIs
+                const togglePeisViewBtn = document.getElementById('toggle-peis-view');
+                const peiAccordionContainer = document.getElementById('pei-accordion-container');
+                let peiDetailsVisible = false; // Estado para controlar a visibilidade dos detalhes do PEI
 
+                // Se o botão existe, adiciona listener
+                if (togglePeisViewBtn) {
+                    togglePeisViewBtn.addEventListener('click', () => {
+                        peiDetailsVisible = !peiDetailsVisible; // Inverte o estado
+                        
+                        const allPeiContents = peiAccordionContainer.querySelectorAll('.pei-content');
+                        const allPeiToggleIcons = peiAccordionContainer.querySelectorAll('.pei-toggle-btn i');
+
+                        allPeiContents.forEach(content => {
+                            content.style.display = peiDetailsVisible ? 'block' : 'none';
+                        });
+
+                        allPeiToggleIcons.forEach(icon => {
+                            icon.classList.toggle('fa-chevron-up', peiDetailsVisible);
+                            icon.classList.toggle('fa-chevron-down', !peiDetailsVisible);
+                        });
+
+                        // Atualiza o texto e ícone do botão principal
+                        if (peiDetailsVisible) {
+                            togglePeisViewBtn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar Detalhes';
+                        } else {
+                            togglePeisViewBtn.innerHTML = '<i class="fas fa-eye"></i> Exibir Detalhes';
+                        }
+                    });
+                }
+
+                // Lógica de toggle individual para cada PEI (se os detalhes estiverem visíveis)
+                peiAccordionContainer.querySelectorAll('.pei-header').forEach(header => {
+                    header.addEventListener('click', () => {
+                        const peiCard = header.closest('.pei-card');
+                        const content = peiCard.querySelector('.pei-content');
+                        const icon = header.querySelector('.pei-toggle-btn i');
+
+                        if (content.style.display === 'block') {
+                            content.style.display = 'none';
+                            icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+                        } else {
+                            content.style.display = 'block';
+                            icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                        }
+                    });
+                });
+
+                // NOVO: Lógica da Agenda do Paciente e Chat de Evolução
+                const agendaPacienteList = document.getElementById('agenda-paciente-list');
+                const agendaPacienteEmptyState = document.getElementById('agenda-paciente-empty-state');
+                const chatEvolucaoModal = document.getElementById('chat-evolucao-modal');
+                const chatMessagesContainer = document.getElementById('chat-messages-container');
+                const chatInput = document.getElementById('chat-input');
+                const sendChatBtn = document.getElementById('send-chat-btn');
+                const chatTitle = document.getElementById('chat-evolucao-title');
+                let currentAgendamentoId = null;
+
+                async function loadPatientAppointments(pId) {
+                    agendaPacienteList.innerHTML = ''; // Limpa a lista
+                    agendaPacienteEmptyState.style.display = 'block';
+                    agendaPacienteEmptyState.querySelector('p').textContent = 'Carregando agendamentos...';
+
+                    try {
+                        const response = await fetch(`/api/pacientes/${pId}/agendamentos-concluidos`);
+                        if (!response.ok) {
+                            // Se a resposta não for OK, mostre a mensagem de erro da API
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Erro ao carregar agendamentos do paciente.');
+                        }
+                        const data = await response.json();
+                        
+                        agendaPacienteList.innerHTML = ''; // Limpa antes de adicionar
+                        if (data.agendamentos && data.agendamentos.length > 0) {
+                            agendaPacienteEmptyState.style.display = 'none';
+                            data.agendamentos.forEach(agendamento => {
+                                const agendamentoCard = document.createElement('div');
+                                agendamentoCard.className = 'agenda-paciente-card';
+                                agendamentoCard.innerHTML = `
+                                    <div class="card-header">
+                                        <h4>${agendamento.data_agendamento_fmt} - ${agendamento.hora_agendamento}</h4>
+                                        <span class="status-badge status-${agendamento.status}">${agendamento.status.charAt(0).toUpperCase() + agendamento.status.slice(1)}</span>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Profissional:</strong> ${agendamento.profissional_nome}</p>
+                                        <p><strong>Serviço:</strong> ${agendamento.servico_nome}</p>
+                                        <p><strong>Preço:</strong> R$ ${parseFloat(agendamento.servico_procedimento_preco).toFixed(2).replace('.', ',')}</p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <button class="btn btn-sm btn-info btn-open-evolucao-chat" data-agendamento-id="${agendamento.id}">
+                                            <i class="fas fa-comments"></i> Abrir Evolução
+                                        </button>
+                                    </div>
+                                `;
+                                agendaPacienteList.appendChild(agendamentoCard);
+                            });
+                        } else {
+                            agendaPacienteEmptyState.style.display = 'block';
+                            agendaPacienteEmptyState.querySelector('p').textContent = 'Nenhum agendamento concluído para este paciente.';
+                        }
+
+                    } catch (error) {
+                        console.error('Erro ao carregar agendamentos do paciente:', error);
+                        agendaPacienteEmptyState.style.display = 'block';
+                        agendaPacienteEmptyState.querySelector('p').textContent = 'Erro ao carregar agendamentos: ' + error.message;
+                    }
+                }
+
+                async function openEvolutionChatModal(agendamentoId) {
+                    currentAgendamentoId = agendamentoId;
+                    chatMessagesContainer.innerHTML = ''; // Limpa mensagens anteriores
+                    document.getElementById('chat-empty-state').style.display = 'block';
+                    document.getElementById('chat-empty-state').querySelector('p').textContent = 'Carregando evoluções...';
+                    chatInput.value = ''; // Limpa o campo de entrada
+
+                    chatEvolucaoModal.classList.add('active');
+
+                    try {
+                        const response = await fetch(`/agendamentos/${agendamentoId}/evolucao`);
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.message || 'Erro ao carregar mensagens de evolução.');
+                        }
+                        const data = await response.json();
+                        
+                        chatTitle.textContent = `Evolução para Agendamento (${data.agendamento.data_agendamento} ${data.agendamento.hora_agendamento})`;
+
+                        chatMessagesContainer.innerHTML = ''; // Limpa novamente antes de popular
+                        if (data.mensagens && data.mensagens.length > 0) {
+                            document.getElementById('chat-empty-state').style.display = 'none';
+                            data.mensagens.forEach(msg => {
+                                const messageElement = document.createElement('div');
+                                messageElement.className = 'chat-message';
+                                messageElement.innerHTML = `
+                                    <div class="message-header">
+                                        <span class="message-author">${msg.registrado_por_nome}</span>
+                                        <span class="message-date">${msg.data_registro_fmt}</span>
+                                    </div>
+                                    <div class="message-content">${msg.conteudo}</div>
+                                `;
+                                chatMessagesContainer.appendChild(messageElement);
+                            });
+                            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight; // Rola para o final
+                        } else {
+                            document.getElementById('chat-empty-state').style.display = 'block';
+                            document.getElementById('chat-empty-state').querySelector('p').textContent = 'Nenhuma evolução registrada para este agendamento.';
+                        }
+
+                    } catch (error) {
+                        console.error('Erro ao carregar chat de evolução:', error);
+                        document.getElementById('chat-empty-state').style.display = 'block';
+                        document.getElementById('chat-empty-state').querySelector('p').textContent = 'Erro ao carregar evoluções: ' + error.message;
+                    }
+                }
+
+                sendChatBtn.addEventListener('click', async () => {
+                    const messageContent = chatInput.value.trim();
+                    if (!messageContent || !currentAgendamentoId) return;
+
+                    sendChatBtn.disabled = true;
+                    sendChatBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    try {
+                        const response = await fetch(`/agendamentos/${currentAgendamentoId}/evolucao/adicionar`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ conteudo: messageContent })
+                        });
+                        const result = await response.json();
+
+                        if (result.success) {
+                            chatInput.value = ''; // Limpa o input
+                            // Recarrega as mensagens para incluir a nova (ou adiciona diretamente se o retorno for completo)
+                            openEvolutionChatModal(currentAgendamentoId); // Recarrega para simplicidade
+                        } else {
+                            console.error('Erro ao enviar mensagem:', result.message);
+                            alert('Erro ao enviar mensagem: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Erro de rede ao enviar mensagem:', error);
+                        alert('Erro de rede ao enviar mensagem.');
+                    } finally {
+                        sendChatBtn.disabled = false;
+                        sendChatBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+                    }
+                });
+
+                // Função para rolar o chat para o final
+                function scrollToBottomChat() {
+                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                }
+
+                // Chamar loadPatientAppointments quando a aba for ativada
+                // Isso já está sendo feito no `setupTabs`
+                
                 // --- Inicialização ---
                 setupTabs();
             }
@@ -1230,5 +1539,234 @@
             setupProntuarioPage();
         });
     </script>
+    
+    <!-- NEW Styles for Agenda do Paciente and Chat -->
+    <style>
+        .agenda-paciente-container {
+            background-color: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+        }
+
+        .agenda-paciente-container h3 {
+            font-size: 1.5rem;
+            color: var(--text);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .agenda-scroll-container {
+            max-height: 60vh; /* Ajuste conforme necessário */
+            overflow-y: auto;
+            padding-right: 10px; /* Espaço para a scrollbar */
+        }
+        .agenda-scroll-container::-webkit-scrollbar { width: 6px; }
+        .agenda-scroll-container::-webkit-scrollbar-track { background: transparent; }
+        .agenda-scroll-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        [data-theme="dark"] .agenda-scroll-container::-webkit-scrollbar-thumb { background: #4b5563; }
+
+        .agenda-paciente-card {
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        .agenda-paciente-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        [data-theme="dark"] .agenda-paciente-card {
+            background-color: color-mix(in srgb, var(--dark-bg) 15%, transparent);
+            border-color: var(--dark-border-color);
+        }
+
+
+        .agenda-paciente-card .card-header {
+            background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+            padding: 0.8rem 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        [data-theme="dark"] .agenda-paciente-card .card-header {
+            background-color: color-mix(in srgb, var(--primary) 20%, transparent);
+        }
+
+
+        .agenda-paciente-card .card-header h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--primary-dark);
+        }
+        [data-theme="dark"] .agenda-paciente-card .card-header h4 {
+            color: var(--primary);
+        }
+
+
+        .agenda-paciente-card .card-body {
+            padding: 1rem 1.2rem;
+        }
+
+        .agenda-paciente-card .card-body p {
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .agenda-paciente-card .card-body p:last-child {
+            margin-bottom: 0;
+        }
+        .agenda-paciente-card .card-body strong {
+            color: var(--muted);
+            font-weight: 500;
+        }
+        .agenda-paciente-card .card-body span {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .agenda-paciente-card .card-footer {
+            background-color: var(--card);
+            padding: 0.8rem 1.2rem;
+            border-top: 1px solid var(--border-color);
+            text-align: right;
+        }
+        [data-theme="dark"] .agenda-paciente-card .card-footer {
+            background-color: var(--dark-card);
+        }
+
+        /* Status Badges (reused from other templates, ensuring consistency) */
+        .status-badge {
+            padding: 0.3em 0.7em;
+            border-radius: 15px;
+            font-size: 0.7em;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: white;
+            white-space: nowrap;
+        }
+        .status-badge.status-confirmado { background-color: var(--status-confirmado); }
+        .status-badge.status-concluido { background-color: var(--status-concluido); }
+        .status-badge.status-pendente { background-color: var(--status-pendente); }
+        .status-badge.status-cancelado { background-color: var(--status-cancelado); }
+
+
+        /* Chat Modal Specific Styles */
+        .chat-modal-content {
+            max-width: 700px; /* Largura maior para o chat */
+            height: 80vh; /* Altura do modal de chat */
+        }
+
+        .chat-messages-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .chat-messages-container::-webkit-scrollbar { width: 6px; }
+        .chat-messages-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        [data-theme="dark"] .chat-messages-container::-webkit-scrollbar-thumb { background: #4b5563; }
+
+
+        .chat-message {
+            background-color: var(--bg);
+            padding: 0.8rem 1.2rem;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border-color);
+        }
+        [data-theme="dark"] .chat-message {
+            background-color: color-mix(in srgb, var(--dark-bg) 10%, transparent);
+            border-color: var(--dark-border-color);
+        }
+
+
+        .chat-message .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-message .message-author {
+            font-weight: 600;
+            color: var(--primary-dark);
+            font-size: 0.9rem;
+        }
+        [data-theme="dark"] .chat-message .message-author {
+            color: var(--primary);
+        }
+
+
+        .chat-message .message-date {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .chat-message .message-content {
+            font-size: 0.95rem;
+            color: var(--text);
+            line-height: 1.5;
+            white-space: pre-wrap; /* Preserves whitespace and line breaks */
+            word-wrap: break-word;
+        }
+
+        .chat-input-area {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            gap: 1rem;
+            background-color: var(--bg); /* Garante que o input fica no fundo claro */
+        }
+        [data-theme="dark"] .chat-input-area {
+            background-color: var(--dark-bg);
+        }
+
+        .chat-input-area textarea {
+            flex-grow: 1;
+            padding: 0.7rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--card); /* Fundo branco para input */
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            resize: vertical; /* Permite redimensionar verticalmente */
+            min-height: 60px; /* Altura mínima para o textarea */
+        }
+        [data-theme="dark"] .chat-input-area textarea {
+            background-color: var(--dark-card);
+        }
+
+
+        .chat-input-area textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+        }
+
+        .chat-input-area .btn {
+            flex-shrink: 0;
+            padding: 0.7rem 1.2rem;
+        }
+
+        /* Responsive adjustments for chat modal */
+        @media (max-width: 600px) {
+            .chat-modal-content {
+                height: 90vh; /* Maior em telas pequenas */
+                max-width: 95%;
+            }
+            .chat-input-area {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .chat-input-area textarea, .chat-input-area .btn {
+                width: 100%;
+            }
+        }
+    </style>
 </body>
 </html>
