@@ -171,6 +171,31 @@
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
         .confirm-modal-content { max-width: 500px; padding: 1.5rem; text-align: center; }
 
+        /* --- Gemini IA --- */
+        .btn.loading i { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .gemini-generator { margin-bottom: 1.5rem; background-color: color-mix(in srgb, var(--primary) 5%, transparent); padding: 1rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent); }
+        .gemini-generator .form-group { margin-bottom: 0.75rem; }
+        .gemini-generator-actions { display: flex; gap: 10px; align-items: center; }
+        .gemini-generator-actions input { flex-grow: 1; }
+        .consent-text {
+            font-size: 0.85rem; color: var(--muted); font-weight: 500;
+            line-height: 1.4; padding: 0.75rem; border-radius: 6px;
+            background-color: var(--bg); border: 1px solid transparent;
+            cursor: pointer; transition: all 0.2s ease; user-select: none;
+        }
+        .consent-text:hover { border-color: color-mix(in srgb, var(--primary) 30%, transparent); }
+        .consent-text.active {
+            background-color: color-mix(in srgb, var(--success) 15%, transparent);
+            color: var(--success); font-weight: 600;
+            border-color: color-mix(in srgb, var(--success) 30%, transparent);
+        }
+        .consent-text.active::before {
+            content: '\f00c'; /* Font Awesome check icon */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900; margin-right: 0.75rem;
+        }
+
         /* --- PEI Accordion --- */
         .pei-accordion { display: flex; flex-direction: column; gap: 1rem; }
         .pei-card { background-color: var(--card); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
@@ -275,9 +300,9 @@
                 </div>
                 <div class="topbar-actions">
                     <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="btn btn-primary"><i class="fas fa-plus"></i> <span class="btn-text-desktop">Anamnese</span></a>
-                    <button type="button" class="btn btn-secondary" id="addLaudoBtn"><i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Laudo</span></button>
-                    <button type="button" class="btn btn-secondary" id="addOrientacaoBtn"><i class="fas fa-notes-medical"></i> <span class="btn-text-desktop">Orientação</span></button>
-                    <button type="button" class="btn btn-secondary" id="addProcedimentoBtn"><i class="fas fa-syringe"></i> <span class="btn-text-desktop">Procedimento</span></button>
+                    <button type="button" class="btn btn-secondary btn-add-generic" data-tipo="laudo"><i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Laudo</span></button>
+                    <button type="button" class="btn btn-secondary btn-add-generic" data-tipo="orientacao"><i class="fas fa-notes-medical"></i> <span class="btn-text-desktop">Orientação</span></button>
+                    <button type="button" class="btn btn-secondary btn-add-generic" data-tipo="procedimento"><i class="fas fa-syringe"></i> <span class="btn-text-desktop">Procedimento</span></button>
                 </div>
             </header>
 
@@ -314,12 +339,13 @@
                                                 <h4>{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}</h4>
                                                 <div class="registro-meta">
                                                     <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
-                                                    <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
+                                                    <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome | default('N/A') }}</span>
                                                 </div>
                                             </div>
                                             <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
                                             <div class="registro-actions">
                                                 <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i></button>
+                                                <button class="btn btn-sm btn-warning btn-editar-registro" data-registro-id="{{ registro.id }}" data-tipo="{{ registro.tipo_registro }}" data-titulo="{{ registro.titulo }}" data-conteudo="{{ registro.conteudo | e }}"><i class="fas fa-edit"></i></button>
                                                 <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
                                             </div>
                                         </div>
@@ -428,7 +454,7 @@
     </div>
 
     <!-- MODAIS -->
-    <!-- Modal para Registro Genérico -->
+    <!-- Modal para Registro Genérico (Adicionar e Editar) -->
     <div id="modalRegistroGenerico" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -436,38 +462,32 @@
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
             <form method="POST" action="" id="formRegistroGenerico">
-                <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
                 <input type="hidden" name="tipo_registro" id="tipo_registro_generico">
-                <input type="hidden" name="agendamento_id_referencia" id="agendamento_id_referencia">
-                <input type="hidden" name="referencia_pei_id" id="referencia_pei_id">
-                <input type="hidden" name="referencia_meta_titulo" id="referencia_meta_titulo">
-
+                <input type="hidden" name="tipo_registro_feedback" id="tipo_registro_feedback">
                 <div class="modal-body">
+                    <div class="gemini-generator">
+                        <div class="form-group">
+                            <label for="gemini-prompt">Gerar conteúdo com Inteligência Artificial</label>
+                            <div class="gemini-generator-actions">
+                                <input type="text" id="gemini-prompt" placeholder="Ex: Laudo para exame de sangue com anemia">
+                                <button type="button" id="generate-content-btn" class="btn btn-primary" disabled>
+                                    <i class="fas fa-robot"></i>&nbsp;<span>Gerar</span>
+                                </button>
+                            </div>
+                        </div>
+                         <div class="form-group">
+                            <div id="lgpd-consent-text" class="consent-text">
+                                Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
+                            </div>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label for="titulo_registro_generico">Título</label>
                         <input type="text" id="titulo_registro_generico" name="titulo" required>
                     </div>
-
-                    <div id="pei-evolution-fields" style="display: none;">
-                         <div class="form-group">
-                            <label for="status_atividade">Status da Atividade</label>
-                            <select name="status_atividade" id="status_atividade">
-                                <option value="Executada com sucesso">Executada com sucesso</option>
-                                <option value="Executada com ajuda">Executada com ajuda</option>
-                                <option value="Recusou-se a fazer">Recusou-se a fazer</option>
-                                <option value="Não foi possível aplicar">Não foi possível aplicar</option>
-                            </select>
-                        </div>
-                         <div class="form-group">
-                            <label for="tempo_gasto">Tempo Gasto nesta Atividade (minutos)</label>
-                            <input type="number" name="tempo_gasto" id="tempo_gasto" min="1">
-                             <small class="text-muted">Este tempo será somado ao tempo total da meta.</small>
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label for="conteudo_generico">Conteúdo / Descrição da Atividade</label>
-                        <textarea id="conteudo_generico" name="conteudo" rows="8" placeholder="Digite o conteúdo aqui..."></textarea>
+                        <label for="conteudo_generico">Conteúdo</label>
+                        <textarea id="conteudo_generico" name="conteudo" rows="10" placeholder="Digite o conteúdo aqui..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -478,33 +498,6 @@
         </div>
     </div>
     
-    <!-- Modal de Chat de Evolução -->
-    <div id="chat-evolucao-modal" class="modal-overlay">
-         <!-- Conteúdo do modal de chat -->
-    </div>
-    
-    <!-- Modal para Concluir Meta -->
-    <div id="concluir-meta-modal" class="modal-overlay">
-        <div class="modal-content confirm-modal-content">
-             <div class="modal-header">
-                <h3>Concluir Meta</h3>
-                <button type="button" class="modal-close-btn" data-close>&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Você está prestes a marcar a meta "<strong id="concluir-meta-titulo"></strong>" como concluída.</p>
-                <div class="form-group" style="text-align: left;">
-                    <label for="concluir-meta-observacao">Observação de Conclusão (Opcional)</label>
-                    <textarea id="concluir-meta-observacao" rows="4"></textarea>
-                </div>
-            </div>
-            <div class="modal-footer" style="justify-content: center;">
-                <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
-                <button type="button" class="btn btn-success" id="confirmConcluirMetaBtn">Confirmar Conclusão</button>
-            </div>
-        </div>
-    </div>
-
-
     <!-- Modal de Confirmação Genérico -->
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
@@ -528,198 +521,238 @@
     </form>
 
     <script type="module">
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+        
         document.addEventListener('DOMContentLoaded', () => {
-            const pacienteId = "{{ paciente.id }}";
+            const pacienteId = "{{ paciente.id if paciente else '' }}";
 
-            // --- UI Setup & Helpers ---
-            function setupCommonUI() { /* ... Lógica da sidebar e tema ... */ }
-            const modalControllers = {
-                genericRecord: document.getElementById('modalRegistroGenerico'),
-                evolutionChat: document.getElementById('chat-evolucao-modal'),
+            // --- Lógica de UI Geral (Sidebar, Tema, Modals) ---
+            const modalController = {
+                registro: document.getElementById('modalRegistroGenerico'),
                 confirm: document.getElementById('confirm-modal'),
-                concluirMeta: document.getElementById('concluir-meta-modal'),
                 open(modal) { modal?.classList.add('active'); },
                 close(modal) { modal?.classList.remove('active'); }
             };
-            document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => modalControllers.close(btn.closest('.modal-overlay'))));
-            
-            // --- Lógica da Página de Prontuário ---
-            function setupProntuarioPage() {
-                const activeTimers = {};
 
-                function formatTime(totalSeconds) {
-                    const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-                    const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-                    const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-                    return `${hours}:${minutes}:${seconds}`;
-                }
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modalController.close(modal);
+                });
+            });
+            document.querySelectorAll('[data-close]').forEach(btn => 
+                btn.addEventListener('click', () => modalController.close(btn.closest('.modal-overlay')))
+            );
 
-                function startVisualTimer(liElement, startTimeISO, baseSeconds) {
-                    const metaId = liElement.dataset.peiId + '||' + liElement.dataset.metaTitulo;
-                    const display = liElement.querySelector('.timer-display');
-                    
-                    if (!startTimeISO) {
-                        display.textContent = formatTime(baseSeconds);
+            // --- Lógica de Geração com IA ---
+            const generateBtn = document.getElementById('generate-content-btn');
+            const promptInput = document.getElementById('gemini-prompt');
+            const consentCheck = document.getElementById('lgpd-consent-text');
+            const contentTextarea = document.getElementById('conteudo_generico');
+
+            if (consentCheck) {
+                consentCheck.addEventListener('click', () => {
+                    consentCheck.classList.toggle('active');
+                    generateBtn.disabled = !consentCheck.classList.contains('active');
+                });
+            }
+
+            if (generateBtn) {
+                generateBtn.addEventListener('click', async () => {
+                    const prompt = promptInput.value;
+                    const tipoRegistro = document.getElementById('tipo_registro_generico').value;
+                    if (!prompt) {
+                        alert('Por favor, descreva o que você deseja gerar.');
                         return;
                     }
 
-                    const startTime = new Date(startTimeISO).getTime();
-                    clearInterval(activeTimers[metaId]);
+                    const fullPrompt = `Você é um assistente da área da saúde. Crie um texto para um(a) "${tipoRegistro}" sobre o seguinte tópico: "${prompt}". O texto deve ser bem estruturado e profissional, sem placeholders como "[...]".`;
+                    
+                    generateBtn.disabled = true;
+                    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;<span>Gerando...</span>';
 
-                    activeTimers[metaId] = setInterval(() => {
-                        const now = new Date().getTime();
-                        const elapsed = Math.floor((now - startTime) / 1000);
-                        const total = baseSeconds + elapsed;
-                        display.textContent = formatTime(total);
-                    }, 1000);
-                }
-
-                function initializeMetaTimers() {
-                    document.querySelectorAll('.pei-metas-list li').forEach(li => {
-                        const cronometroInicio = li.dataset.cronometroInicio;
-                        const tempoGasto = parseInt(li.dataset.tempoGasto, 10) || 0;
-                        const timerButtonIcon = li.querySelector('.btn-timer-toggle i');
-
-                        if (cronometroInicio) {
-                            startVisualTimer(li, cronometroInicio, tempoGasto);
-                            timerButtonIcon.className = 'fas fa-pause';
-                        } else {
-                            li.querySelector('.timer-display').textContent = formatTime(tempoGasto);
-                            timerButtonIcon.className = 'fas fa-play';
-                        }
-                    });
-                }
-
-                async function sendMetaUpdate(peiId, metaTitulo, action, extraData = {}) {
                     try {
-                        const response = await fetch(`/api/peis/${peiId}/meta/update`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ meta_titulo: metaTitulo, action, ...extraData })
-                        });
-                        const result = await response.json();
-                        if (!result.success) throw new Error(result.message);
-                        
-                        // Atualiza a UI com os novos dados da meta
-                        const li = document.querySelector(`li[data-pei-id="${peiId}"][data-meta-titulo="${metaTitulo}"]`);
-                        if (li && result.updated_meta) {
-                            const meta = result.updated_meta;
-                            li.dataset.cronometroInicio = meta.cronometro_inicio || '';
-                            li.dataset.tempoGasto = meta.tempo_total_gasto || 0;
-                            const statusBadge = li.querySelector('.meta-status-badge');
-                            statusBadge.textContent = meta.status;
-                            statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(' ', '-')}`;
-                            initializeMetaTimers(); // Re-inicializa o timer para este item
+                        const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // SUBSTITUA PELA SUA CHAVE REAL
+                        if (apiKey === "SUA_CHAVE_API_AQUI") {
+                           alert("Por favor, insira sua chave da API do Gemini no código JS.");
+                           return;
                         }
-
-                        return result;
+                        const genAI = new GoogleGenerativeAI(apiKey);
+                        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                        const result = await model.generateContent(fullPrompt);
+                        const response = await result.response;
+                        const text = response.text();
+                        
+                        if (contentTextarea.value.trim() && !confirm('Deseja substituir o conteúdo atual pelo texto gerado?')) {
+                            return;
+                        }
+                        contentTextarea.value = text;
                     } catch (error) {
-                        console.error(`Erro na ação '${action}':`, error);
-                        alert(`Erro: ${error.message}`);
-                        return null;
+                        console.error("Erro na API Gemini:", error);
+                        alert("Erro ao gerar conteúdo. Verifique sua chave de API e o console.");
+                    } finally {
+                        generateBtn.disabled = !consentCheck.classList.contains('active');
+                        generateBtn.innerHTML = '<i class="fas fa-robot"></i>&nbsp;<span>Gerar</span>';
                     }
+                });
+            }
+
+            // --- Lógica do Modal para Adicionar/Editar Registros ---
+            const formGenerico = document.getElementById('formRegistroGenerico');
+            const modalTitle = document.getElementById('modalRegistroGenericoTitle');
+            const tituloInput = document.getElementById('titulo_registro_generico');
+            const tipoInput = document.getElementById('tipo_registro_generico');
+            const tipoFeedbackInput = document.getElementById('tipo_registro_feedback');
+
+            function openModalParaRegistro(tipo, dados = {}) {
+                formGenerico.reset();
+                consentCheck.classList.remove('active');
+                generateBtn.disabled = true;
+                
+                const isEdit = !!dados.id;
+                const tipoCapitalizado = tipo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                modalTitle.textContent = isEdit ? `Editar ${tipoCapitalizado}` : `Adicionar ${tipoCapitalizado}`;
+                tipoInput.value = tipo;
+                tipoFeedbackInput.value = tipoCapitalizado; 
+                tituloInput.value = dados.titulo || '';
+                contentTextarea.value = dados.conteudo || '';
+
+                if (isEdit) {
+                    formGenerico.action = `/prontuarios/${pacienteId}/editar_registro_generico/${dados.id}`;
+                } else {
+                    formGenerico.action = `/prontuarios/${pacienteId}/registrar_registro_generico`;
                 }
 
-                // PEI Accordion
+                modalController.open(modalController.registro);
+            }
+            
+            // --- Event Listeners para os botões ---
+            document.querySelectorAll('.btn-add-generic').forEach(btn => {
+                btn.addEventListener('click', () => openModalParaRegistro(btn.dataset.tipo));
+            });
+
+            document.querySelectorAll('.btn-editar-registro').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    openModalParaRegistro(btn.dataset.tipo, {
+                        id: btn.dataset.registroId,
+                        titulo: btn.dataset.titulo,
+                        conteudo: btn.dataset.conteudo
+                    });
+                });
+            });
+
+            let formParaApagar = null;
+            document.querySelectorAll('.btn-apagar-registro').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    formParaApagar = document.getElementById('formApagarRegistro');
+                    document.getElementById('registro_id_apagar').value = btn.dataset.registroId;
+                    
+                    document.getElementById('confirm-modal-title').textContent = "Confirmar Exclusão";
+                    document.getElementById('confirm-modal-text').textContent = "Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.";
+                    modalController.open(modalController.confirm);
+                });
+            });
+            
+            document.getElementById('confirmModalBtn').addEventListener('click', () => {
+                if(formParaApagar) {
+                    formParaApagar.submit();
+                }
+            });
+
+            // --- Lógica do Acordeão do PEI ---
+            function setupPeiAccordion() {
                 document.querySelectorAll('.pei-header').forEach(header => {
                     header.addEventListener('click', () => {
                         const content = header.nextElementSibling;
                         const icon = header.querySelector('.pei-toggle-btn i');
                         const isVisible = content.style.display === 'block';
+                        
+                        // Fecha todos os outros PEIs abertos
+                        document.querySelectorAll('.pei-content').forEach(otherContent => {
+                            if (otherContent !== content) {
+                                otherContent.style.display = 'none';
+                                otherContent.previousElementSibling.querySelector('.pei-toggle-btn i').className = 'fas fa-chevron-down';
+                            }
+                        });
+
+                        // Abre ou fecha o PEI atual
                         content.style.display = isVisible ? 'none' : 'block';
                         icon.className = isVisible ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
                     });
                 });
-
-                // Tabs
-                document.querySelectorAll('.tab-nav-item').forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        document.querySelectorAll('.tab-nav-item, .tab-panel').forEach(el => el.classList.remove('active'));
-                        tab.classList.add('active');
-                        document.getElementById('tab-panel-' + tab.dataset.tab).classList.add('active');
-                    });
-                });
-                
-                // Event Delegation
-                let actionCallback = null;
-                document.body.addEventListener('click', async (e) => {
-                    const target = e.target;
-                    
-                    const btnTimerToggle = target.closest('.btn-timer-toggle');
-                    const btnTimerReset = target.closest('.btn-timer-reset');
-                    const btnConcluirMeta = target.closest('.btn-concluir-meta');
-                    const btnAddEvo = target.closest('.btn-add-pei-evolution');
-                    const btnApagar = target.closest('.btn-apagar-registro');
-                    const btnPrint = target.closest('.btn-print-pdf');
-
-                    if (btnTimerToggle) {
-                        const li = btnTimerToggle.closest('li');
-                        const peiId = li.dataset.peiId;
-                        const metaTitulo = li.dataset.metaTitulo;
-                        const isRunning = !!li.dataset.cronometroInicio;
-                        const action = isRunning ? 'stop_timer' : 'start_timer';
-                        await sendMetaUpdate(peiId, metaTitulo, action);
-                    } 
-                    else if (btnTimerReset) {
-                        const li = btnTimerReset.closest('li');
-                        showConfirmModal('Zerar Cronômetro', 'Tem certeza que deseja zerar o tempo e o status desta meta?', async () => {
-                            await sendMetaUpdate(li.dataset.peiId, li.dataset.metaTitulo, 'reset');
-                            modalControllers.close(modalControllers.confirm);
-                        });
-                    }
-                    else if (btnConcluirMeta) {
-                        const li = btnConcluirMeta.closest('li');
-                        document.getElementById('concluir-meta-titulo').textContent = li.dataset.metaTitulo;
-                        modalControllers.concluirMeta.dataset.peiId = li.dataset.peiId;
-                        modalControllers.concluirMeta.dataset.metaTitulo = li.dataset.metaTitulo;
-                        modalControllers.open(modalControllers.concluirMeta);
-                    }
-                    else if (btnAddEvo) {
-                        const peiId = btnAddEvo.closest('li').dataset.peiId;
-                        const metaTitulo = btnAddEvo.closest('li').dataset.metaTitulo;
-                        openGenericRecordModal('evolucao_pei', `Evolução da Meta: ${metaTitulo}`, { peiId, metaTitulo });
-                    }
-                    else if (btnApagar) {
-                        showConfirmModal('Apagar Registro', 'Tem certeza?', () => {
-                            document.getElementById('registro_id_apagar').value = btnApagar.dataset.registroId;
-                            document.getElementById('formApagarRegistro').submit();
-                        });
-                    }
-                    else if (btnPrint) {
-                         generatePdfForRecord(btnPrint.dataset.targetId, btnPrint.dataset.title);
-                    }
-                });
-
-                document.getElementById('confirmConcluirMetaBtn').addEventListener('click', async () => {
-                    const modal = modalControllers.concluirMeta;
-                    const peiId = modal.dataset.peiId;
-                    const metaTitulo = modal.dataset.metaTitulo;
-                    const observacao = document.getElementById('concluir-meta-observacao').value;
-                    await sendMetaUpdate(peiId, metaTitulo, 'concluir', { observacao });
-                    modalControllers.close(modal);
-                });
-                
-                function showConfirmModal(title, text, onConfirm) {
-                    document.getElementById('confirm-modal-title').textContent = title;
-                    document.getElementById('confirm-modal-text').textContent = text;
-                    actionCallback = onConfirm;
-                    modalControllers.open(modalControllers.confirm);
-                }
-                
-                document.getElementById('confirmModalBtn').addEventListener('click', () => {
-                    if (typeof actionCallback === 'function') actionCallback();
-                    actionCallback = null;
-                });
-
-                // --- Geração de PDF (Método Estruturado) ---
-                function htmlToTextForPdf(elementId) { /* ... Lógica do PDF ... */ }
-                function generatePdfForRecord(targetId, title) { /* ... Lógica do PDF ... */ }
-
-                initializeMetaTimers();
             }
 
-            setupCommonUI();
-            setupProntuarioPage();
+            // --- Lógica das Abas ---
+            document.querySelectorAll('.tab-nav-item').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-nav-item, .tab-panel').forEach(el => el.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById('tab-panel-' + tab.dataset.tab).classList.add('active');
+                });
+            });
+
+            // --- Lógica de Geração de PDF ---
+            window.jsPDF = window.jspdf.jsPDF;
+            function generatePdfForRecord(targetId, title) {
+                const elementToPrint = document.getElementById(targetId);
+                if (!elementToPrint) {
+                    console.error("Elemento para imprimir não encontrado:", targetId);
+                    return;
+                }
+
+                html2canvas(elementToPrint, { scale: 2 }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF({
+                        orientation: 'portrait',
+                        unit: 'pt',
+                        format: 'a4'
+                    });
+                    
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    const margin = 40;
+                    
+                    pdf.setFontSize(18);
+                    pdf.text(title, margin, margin);
+                    
+                    const contentWidth = pdfWidth - (margin * 2);
+                    const canvasAspectRatio = canvas.height / canvas.width;
+                    const contentHeight = contentWidth * canvasAspectRatio;
+
+                    let yPosition = margin + 20;
+
+                    if (yPosition + contentHeight < pdfHeight) {
+                        pdf.addImage(imgData, 'PNG', margin, yPosition, contentWidth, contentHeight);
+                    } else {
+                        let y = 0;
+                        while (y < canvas.height) {
+                            let sliceHeight = (pdfHeight - yPosition) * (canvas.width / contentWidth);
+                            if (y > 0) {
+                                pdf.addPage();
+                                yPosition = margin;
+                                sliceHeight = (pdfHeight - yPosition) * (canvas.width / contentWidth);
+                            }
+                            const sliceCanvas = document.createElement('canvas');
+                            sliceCanvas.width = canvas.width;
+                            sliceCanvas.height = sliceHeight;
+                            const sliceCtx = sliceCanvas.getContext('2d');
+                            sliceCtx.drawImage(canvas, 0, y, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+                            
+                            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, yPosition, contentWidth, (pdfHeight - yPosition));
+                            y += sliceHeight;
+                        }
+                    }
+                    pdf.save(`${title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+                });
+            }
+             document.querySelectorAll('.btn-print-pdf').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    generatePdfForRecord(btn.dataset.targetId, btn.dataset.title);
+                });
+            });
+
+            // Inicialização
+            setupPeiAccordion();
         });
     </script>
 </body>
