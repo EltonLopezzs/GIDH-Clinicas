@@ -819,7 +819,7 @@ def listar_pacientes():
     convenios_dict = {}
     try:
         convenios_docs = convenios_ref.stream()
-        for doc in docs:
+        for doc in convenios_docs:
             convenios_dict[doc.id] = doc.to_dict().get('nome', 'Convênio Desconhecido')
     except Exception as e:
         print(f"Erro ao carregar convênios para pacientes: {e}")
@@ -2166,24 +2166,23 @@ def editar_registro_generico(paciente_doc_id, registro_doc_id):
     try:
         titulo = request.form.get('titulo', '').strip()
         conteudo = request.form.get('conteudo', '').strip()
-        agendamento_id_referencia = request.form.get('agendamento_id_referencia', '').strip()
-        tipo_registro = request.form.get('tipo_registro')
+        tipo_registro = request.form.get('tipo_registro_feedback', 'Registro') # Campo para feedback
 
         if not all([titulo, conteudo]):
-            flash(f'Por favor, preencha o título e o conteúdo para o registro de {tipo_registro}.', 'danger')
+            flash('Por favor, preencha o título e o conteúdo para o registro.', 'danger')
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
         registro_ref.update({
             'titulo': titulo,
             'conteudo': conteudo,
-            'agendamento_id_referencia': agendamento_id_referencia if agendamento_id_referencia else None,
             'atualizado_em': firestore.SERVER_TIMESTAMP
         })
-        flash(f'Registro de {tipo_registro} atualizado com sucesso!', 'success')
+        flash(f'{tipo_registro.capitalize()} atualizado com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao atualizar registro: {e}', 'danger')
         print(f"Erro editar_registro_generico: {e}")
     return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
 
 @app.route('/prontuarios/<string:paciente_doc_id>/apagar_registro_generico', methods=['POST'])
 @login_required
@@ -2558,7 +2557,7 @@ def update_pei_meta(pei_id):
 
         pei_ref.update({'metas': metas})
         
-        # Retorna a meta atualizada para a UI
+      
         return jsonify({'success': True, 'updated_meta': metas[target_meta_index]})
 
     except Exception as e:
