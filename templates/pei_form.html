@@ -334,11 +334,11 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="data_inicio">Data de Início</label>
-                                <input type="text" id="data_inicio" name="data_inicio" class="flatpickr-input" value="{{ pei.data_inicio_fmt if pei else '' }}" placeholder="DD/MM/AAAA">
+                                <input type="text" id="data_inicio" name="data_inicio" class="flatpickr-input" value="{{ pei.data_inicio if pei else '' }}" placeholder="DD/MM/AAAA">
                             </div>
                             <div class="form-group">
                                 <label for="data_fim">Data de Fim (Previsão)</label>
-                                <input type="text" id="data_fim" name="data_fim" class="flatpickr-input" value="{{ pei.data_fim_fmt if pei else '' }}" placeholder="DD/MM/AAAA">
+                                <input type="text" id="data_fim" name="data_fim" class="flatpickr-input" value="{{ pei.data_fim if pei else '' }}" placeholder="DD/MM/AAAA">
                             </div>
                         </div>
 
@@ -538,6 +538,10 @@
                 } catch (e) {
                     console.error("Erro ao parsear metas iniciais:", e);
                 }
+                
+                // IMPORTANT: Clear the container before re-rendering to prevent duplicates
+                metasContainer.innerHTML = ''; // [FIX] Ensure no old elements persist
+
                 initialMetas.forEach(createMetaItem);
 
 
