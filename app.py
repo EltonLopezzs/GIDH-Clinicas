@@ -819,7 +819,7 @@ def listar_pacientes():
     convenios_dict = {}
     try:
         convenios_docs = convenios_ref.stream()
-        for doc in convenios_docs:
+        for doc in docs:
             convenios_dict[doc.id] = doc.to_dict().get('nome', 'Convênio Desconhecido')
     except Exception as e:
         print(f"Erro ao carregar convênios para pacientes: {e}")
@@ -2417,10 +2417,16 @@ def editar_pei(pei_doc_id):
             pei = pei_doc.to_dict()
             if pei:
                 pei['id'] = pei_doc.id
+                # CORREÇÃO APLICADA AQUI
                 if pei.get('data_inicio') and isinstance(pei['data_inicio'], datetime.datetime):
                     pei['data_inicio'] = pei['data_inicio'].strftime('%Y-%m-%d')
+                else:
+                    pei['data_inicio'] = '' # Garante que o campo exista como string vazia
+
                 if pei.get('data_fim') and isinstance(pei['data_fim'], datetime.datetime):
                     pei['data_fim'] = pei['data_fim'].strftime('%Y-%m-%d')
+                else:
+                    pei['data_fim'] = '' # Garante que o campo exista como string vazia
                 
                 if 'metas' in pei and isinstance(pei['metas'], list):
                     pei['metas_json'] = json.dumps(pei['metas'], indent=2)
