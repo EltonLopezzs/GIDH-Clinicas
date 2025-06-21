@@ -1783,6 +1783,8 @@ def buscar_prontuario():
 
     return render_template('prontuario_busca.html', pacientes_para_busca=pacientes_para_busca, search_query=search_query)
 
+# Em app.py
+
 @app.route('/prontuarios/<string:paciente_doc_id>')
 @login_required
 def ver_prontuario(paciente_doc_id):
@@ -1807,8 +1809,10 @@ def ver_prontuario(paciente_doc_id):
             if convenio_doc.exists:
                 paciente_data['convenio_nome'] = convenio_doc.to_dict().get('nome', 'N/A')
 
+        # Lógica aprimorada para buscar PEIs
         raw_pei_ids = paciente_doc.to_dict().get('peis_associados', [])
         
+        # Garante que a lista contém apenas IDs de string válidos
         pei_ids_associados_limpos = [pid for pid in raw_pei_ids if pid and isinstance(pid, str)]
         
         if pei_ids_associados_limpos:
@@ -1817,6 +1821,7 @@ def ver_prontuario(paciente_doc_id):
                 try:
                     pei_doc = peis_ref.document(pei_id).get()
                     if pei_doc.exists:
+                        # Adiciona o PEI convertido para a lista
                         peis_do_paciente.append(convert_doc_to_dict(pei_doc))
                     else:
                         print(f"Aviso: PEI com ID '{pei_id}' não foi encontrado na coleção 'peis'.")
@@ -1824,6 +1829,7 @@ def ver_prontuario(paciente_doc_id):
                     print(f"!!! ERRO ao buscar PEI individual com ID '{pei_id}': {pei_e}")
                     flash(f"Não foi possível carregar o PEI com ID: {pei_id}. Causa: {pei_e}", 'warning')
 
+        # Busca o histórico de prontuários
         try:
             prontuarios_docs = paciente_ref.collection('prontuarios').order_by('data_registro', direction=firestore.Query.DESCENDING).stream()
             for doc in prontuarios_docs:
@@ -1852,18 +1858,21 @@ def api_agendamentos_concluidos(paciente_doc_id):
     
     try:
         profissional_id_logado = None
+        # Se não for admin, pega o ID do profissional associado ao usuário
         if user_role != 'admin':
             prof_doc = db.collection('User').document(user_uid).get()
             profissional_id_logado = prof_doc.to_dict().get('profissional_id') if prof_doc.exists else None
             if not profissional_id_logado:
                 return jsonify({'success': False, 'message': 'Usuário não associado a um profissional.'}), 403
 
+        # Constrói a query para buscar agendamentos concluídos do paciente
         query = db.collection('clinicas').document(clinica_id).collection('agendamentos') \
             .where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)) \
             .where(filter=FieldFilter('status', '==', 'concluido')) \
             .order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING) \
-            .limit(10)
+            .limit(10) # Limita aos últimos 10 para performance
 
+        # Se não for admin, filtra apenas os agendamentos do profissional logado
         if user_role != 'admin':
             query = query.where(filter=FieldFilter('profissional_id', '==', profissional_id_logado))
 
@@ -1896,6 +1905,7 @@ def ver_evolucao_agendamento(agendamento_id):
         if not agendamento_data:
             return jsonify({'success': False, 'message': 'Dados do agendamento ausentes.'}), 500
 
+        # Verifica permissão: admin pode ver tudo, profissional só pode ver os seus
         if session.get('user_role') != 'admin':
             user_uid = session.get('user_uid')
             prof_doc = db.collection('User').document(user_uid).get()
@@ -1904,6 +1914,7 @@ def ver_evolucao_agendamento(agendamento_id):
             if agendamento_data.get('profissional_id') != profissional_id_logado:
                 return jsonify({'success': False, 'message': 'Acesso negado.'}), 403
 
+        # Busca as mensagens de evolução na subcoleção
         evolucao_ref = agendamento_ref.collection('evolucao')
         evolucao_docs = evolucao_ref.order_by('data_registro').stream()
         
@@ -1943,9 +1954,11 @@ def adicionar_evolucao_agendamento(agendamento_id):
             profissional_id = user_doc.to_dict().get('profissional_id')
         
         if not profissional_id:
+            # Fallback caso o usuário não esteja linkado a um profissional (ex: um admin registrando)
             profissional_id = profissional_logado_uid
             print(f"Aviso: Usuário {profissional_logado_uid} não tem profissional_id associado. Usando UID para registro de evolução.")
 
+        # Validação de permissão
         agendamento_doc = agendamento_ref.get()
         if not agendamento_doc.exists:
             return jsonify({'success': False, 'message': 'Agendamento não encontrado.'}), 404
@@ -1966,7 +1979,7 @@ def adicionar_evolucao_agendamento(agendamento_id):
         
         update_time, new_doc_ref = evolucao_ref.add(nova_mensagem)
         
-        # We need to fetch the newly created doc to get the server-generated timestamp
+        # Precisamos buscar o documento recém-criado para obter o timestamp gerado pelo servidor
         new_doc = new_doc_ref.get()
         final_message = convert_doc_to_dict(new_doc)
 
@@ -2358,6 +2371,8 @@ def adicionar_pei():
     
     return render_template('pei_form.html', pei=None, action_url=url_for('adicionar_pei'), page_title='Adicionar Novo PEI')
 
+
+
 @app.route('/peis/editar/<string:pei_doc_id>', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -2455,6 +2470,100 @@ def excluir_pei(pei_doc_id):
         flash(f'Erro ao excluir PEI: {e}.', 'danger')
         print(f"Erro excluir_pei: {e}")
     return redirect(url_for('listar_peis'))
+
+# Adicione esta nova rota ao final do seu arquivo app.py
+
+@app.route('/api/peis/<string:pei_id>/meta/update', methods=['POST'])
+@login_required
+def update_pei_meta(pei_id):
+    clinica_id = session['clinica_id']
+    data = request.json
+    meta_titulo = data.get('meta_titulo')
+    action = data.get('action')
+
+    if not all([meta_titulo, action]):
+        return jsonify({'success': False, 'message': 'Dados incompletos para a atualização da meta.'}), 400
+
+    try:
+        pei_ref = db.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+        pei_doc = pei_ref.get()
+
+        if not pei_doc.exists:
+            return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
+
+        pei_data = pei_doc.to_dict()
+        metas = pei_data.get('metas', [])
+        meta_encontrada = False
+        target_meta_index = -1
+
+        for i, meta in enumerate(metas):
+            if meta.get('titulo') == meta_titulo:
+                meta_encontrada = True
+                target_meta_index = i
+                
+                # Inicializa campos se não existirem para evitar erros
+                if 'status' not in meta: meta['status'] = 'Não Iniciada'
+                if 'tempo_total_gasto' not in meta: meta['tempo_total_gasto'] = 0
+                if 'cronometro_inicio' not in meta: meta['cronometro_inicio'] = None
+
+                if action == 'start_timer':
+                    if meta['cronometro_inicio'] is None:
+                        meta['cronometro_inicio'] = datetime.datetime.now(pytz.utc)
+                        meta['status'] = 'Em Andamento'
+                
+                elif action == 'stop_timer':
+                    if meta.get('cronometro_inicio'):
+                        # Garante que o timestamp é um datetime antes de subtrair
+                        inicio_ts = meta['cronometro_inicio']
+                        if isinstance(inicio_ts, datetime.datetime):
+                            inicio = inicio_ts
+                        else: # Fallback para strings (embora o ideal seja sempre datetime)
+                            inicio = pytz.utc.localize(datetime.datetime.fromisoformat(inicio_ts.replace('Z', '+00:00')))
+
+                        fim = datetime.datetime.now(pytz.utc)
+                        segundos_decorridos = (fim - inicio).total_seconds()
+                        meta['tempo_total_gasto'] += round(segundos_decorridos)
+                        meta['cronometro_inicio'] = None
+
+                elif action == 'concluir':
+                    if meta.get('cronometro_inicio'):
+                        inicio_ts = meta['cronometro_inicio']
+                        if isinstance(inicio_ts, datetime.datetime):
+                           inicio = inicio_ts
+                        else:
+                           inicio = pytz.utc.localize(datetime.datetime.fromisoformat(inicio_ts.replace('Z', '+00:00')))
+                        
+                        fim = datetime.datetime.now(pytz.utc)
+                        segundos_decorridos = (fim - inicio).total_seconds()
+                        meta['tempo_total_gasto'] += round(segundos_decorridos)
+                        meta['cronometro_inicio'] = None
+                    
+                    meta['status'] = 'Concluída'
+                    if 'observacao' in data and data['observacao']:
+                        meta['observacao_conclusao'] = data['observacao']
+
+                elif action == 'reset':
+                     meta['status'] = 'Não Iniciada'
+                     meta['tempo_total_gasto'] = 0
+                     meta['cronometro_inicio'] = None
+                     if 'observacao_conclusao' in meta:
+                         del meta['observacao_conclusao']
+
+
+                metas[i] = meta
+                break
+
+        if not meta_encontrada:
+            return jsonify({'success': False, 'message': 'Meta não encontrada.'}), 404
+
+        pei_ref.update({'metas': metas})
+        
+        # Retorna a meta atualizada para a UI
+        return jsonify({'success': True, 'updated_meta': metas[target_meta_index]})
+
+    except Exception as e:
+        print(f"Erro em update_pei_meta: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)

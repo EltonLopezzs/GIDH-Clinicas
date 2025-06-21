@@ -9,6 +9,10 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- JS PDF e HTML2Canvas para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 
     <style>
         :root {
@@ -25,6 +29,7 @@
             --success: #16a34a; /* Green-600 */
             --warning: #f59e0b;
             --info: #0ea5e9;
+            --lilac: #8b5cf6; /* Lilás para PEI */
             --border-color: #e2e8f0;
             
             --dark-bg: #0f172a;
@@ -36,10 +41,10 @@
             color-scheme: light;
 
             /* Cores para os status dos agendamentos */
-            --status-confirmado: #16a34a; /* Verde */
-            --status-concluido: #0ea5e9; /* Azul */
-            --status-pendente: #f59e0b; /* Laranja */
-            --status-cancelado: #dc2626; /* Vermelho */
+            --status-confirmado: #16a34a;
+            --status-concluido: #0ea5e9;
+            --status-pendente: #f59e0b;
+            --status-cancelado: #dc2626;
         }
 
         [data-theme="dark"] {
@@ -49,12 +54,12 @@
             --muted: var(--dark-muted);
             --border-color: var(--dark-border-color);
             color-scheme: dark;
-
-            /* Cores para os status em tema escuro (opcionalmente ajustadas) */
             --status-confirmado: #22c55e;
             --status-concluido: #38bdf8;
             --status-pendente: #fbbf24;
             --status-cancelado: #ef4444;
+            /* Dark mode for PEI header */
+            --primary-light: color-mix(in srgb, var(--dark-border-color), transparent 50%);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -69,100 +74,36 @@
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* --- Sidebar --- */
-        .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, var(--primary), var(--accent));
-            color: white;
-            position: fixed;
-            top: 0; left: 0; height: 100vh;
-            transition: width 0.3s ease, transform 0.3s ease;
-            z-index: 1000; display: flex; flex-direction: column;
-        }
+        /* --- Sidebar & Topbar --- */
+        .sidebar { width: 260px; background: linear-gradient(180deg, var(--primary), var(--accent)); color: white; position: fixed; top: 0; left: 0; height: 100vh; transition: width 0.3s ease, transform 0.3s ease; z-index: 1000; display: flex; flex-direction: column; }
         .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
-        .sidebar-header {
-            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
-        }
-        .sidebar-header .logo {
-            font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
-            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
-        }
+        .sidebar-header { padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center; }
+        .sidebar-header .logo { font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none; display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden; }
         .sidebar-header .logo i { font-size: 1.8rem; }
         .sidebar.collapsed { width: 78px; }
-        .sidebar.collapsed .sidebar-header .logo span { display: none; }
-        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+        .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: none; }
         .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
         .sidebar nav ul { list-style: none; padding: 0; }
         .sidebar nav ul li { margin-bottom: 0.5rem; }
-        .sidebar nav ul li a {
-            color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
-            padding: 0.75rem 1rem;
-            gap: 1rem; border-radius: 8px; font-size: 0.95rem;
-            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
-        }
-        .sidebar nav ul li a i {
-            width: 24px;
-            height: 24px;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .sidebar.collapsed nav ul li a span { display: none; }
-        .sidebar.collapsed nav ul li a { 
-            justify-content: center; 
-            padding: 0.75rem;
-            gap: 0; 
-            align-items: center; 
-        }
-        /* CORREÇÃO FINAL: Garante que o ícone se centralize perfeitamente quando recolhido */
-        .sidebar.collapsed nav ul li a i {
-            margin: 0 auto;
-        }
+        .sidebar nav ul li a { color: #e2e8f0; text-decoration: none; display: flex; align-items: center; padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem; font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease; }
+        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
         .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
         .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
-        .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
-        .sidebar-footer button, .sidebar-footer a {
-            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
-            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
-            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
-            font-size: 0.95rem; text-decoration: none;
-        }
+        .sidebar-footer button, .sidebar-footer a { background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem; border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem; transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif; font-size: 0.95rem; text-decoration: none; }
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        .sidebar.collapsed .sidebar-footer span { display: none; }
-        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
-
-        /* --- Main Content & Topbar --- */
-        .main-content {
-            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 260px);
-        }
+        .main-content { flex: 1; margin-left: 260px; transition: margin-left 0.3s ease; display: flex; flex-direction: column; width: calc(100% - 260px); }
         .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
-        .topbar {
-            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
-            position: sticky; top: 0; z-index: 900;
-        }
+        .topbar { background-color: var(--card); color: var(--text); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0; position: sticky; top: 0; z-index: 900; }
         .topbar-left { display: flex; align-items: center; gap: 1rem; }
         .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
-        .toggle-btn {
-            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
-            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
+        .toggle-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; transition: background 0.2s ease, color 0.2s ease; }
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
         main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
         
-        /* --- Buttons --- */
-        .btn {
-            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
-            font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
-            gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
-        }
+        /* --- Buttons & Actions --- */
+        .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
         .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
         .btn-primary { background-color: var(--primary); color: white; }
         .btn-primary:hover { background-color: var(--primary-dark); }
@@ -170,208 +111,74 @@
         .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
         [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
         [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
-        .btn-warning { background-color: var(--warning); color: #854d0e; border-color: var(--warning); }
+        .btn-warning { background-color: var(--warning); color: #854d0e; }
         [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
         .btn-warning:hover { background-color: #fca5a5; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-success:hover { background-color: #15803d; }
         .btn-danger-outline { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
         .btn-danger-outline:hover { background-color: var(--danger); color: white; }
-
-        .topbar-actions {
-            display: flex;
-            gap: 0.75rem; /* Espaçamento entre os botões */
-            flex-wrap: wrap; /* Para quebrar a linha em telas menores */
-            justify-content: flex-end; /* Alinha à direita */
-        }
-        @media (max-width: 768px) {
-            .topbar-actions {
-                justify-content: center; /* Centraliza em telas menores */
-                margin-top: 0.5rem; /* Adiciona um pouco de margem superior */
-            }
-        }
-
-
-        /* --- Paciente Info Card --- (Aprimorado) */
-        .paciente-info-card {
-            background: var(--card);
-            padding: 1.5rem 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px -2px rgba(0,0,0,0.1), 0 2px 8px -2px rgba(0,0,0,0.06);
-            margin-bottom: 2rem;
-            border: 1px solid var(--border-color);
-            position: relative;
-            overflow: hidden;
-        }
-        .paciente-info-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 8px;
-            background: linear-gradient(to right, var(--primary), var(--primary-dark));
-            border-radius: 12px 12px 0 0;
-        }
-        .paciente-info-card h3 {
-            font-size: 1.75rem; /* Increased font size */
-            color: var(--text);
-            margin-bottom: 1.5rem;
-            font-weight: 700;
-            padding-top: 0.5rem; /* Space for the top bar */
-        }
-        .paciente-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.25rem 2rem; /* Adjusted gap */
-            font-size: 0.95rem;
-        }
-        .paciente-info-item strong {
-            color: var(--muted);
-            display: block;
-            font-weight: 600; /* Bolder labels */
-            font-size: 0.8rem; /* Smaller, more distinct labels */
-            margin-bottom: 0.3rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .paciente-info-item span {
-            font-weight: 600;
-            color: var(--text);
-            word-break: break-word; /* Ensure long words break */
-        }
-        [data-theme="dark"] .paciente-info-card {
-            box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3), 0 2px 8px -2px rgba(0,0,0,0.2);
-        }
-
-        /* --- Prontuário Section --- */
-        .prontuario-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
-        }
-        .prontuario-header h2 { font-size: 1.75rem; color: var(--text); margin: 0; font-weight: 700; }
+        .btn-info { background-color: var(--info); color: white; }
+        .btn-info:hover { background-color: #0369a1; }
+        .topbar-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end; }
         
-        .registro-card {
-            background: var(--card); padding: 1.5rem; border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            margin-bottom: 1.5rem; position: relative;
-            border-left: 8px solid transparent; /* Increased border width */
-        }
-        .registro-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;
-        }
+        /* --- Paciente Info --- */
+        .paciente-info-card { background: var(--card); padding: 1.5rem 2rem; border-radius: 12px; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.1), 0 2px 8px -2px rgba(0,0,0,0.06); margin-bottom: 2rem; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
+        .paciente-info-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: linear-gradient(to right, var(--primary), var(--primary-dark)); border-radius: 12px 12px 0 0; }
+        .paciente-info-card h3 { font-size: 1.75rem; color: var(--text); margin-bottom: 1.5rem; font-weight: 700; padding-top: 0.5rem; }
+        .paciente-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem 2rem; font-size: 0.95rem; }
+        .paciente-info-item strong { color: var(--muted); display: block; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .paciente-info-item span { font-weight: 600; color: var(--text); word-break: break-word; }
+        [data-theme="dark"] .paciente-info-card { box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3), 0 2px 8px -2px rgba(0,0,0,0.2); }
+
+        /* --- Seções & Registros --- */
+        .prontuario-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .prontuario-header h2 { font-size: 1.75rem; color: var(--text); margin: 0; font-weight: 700; }
+        .registro-card { background: var(--card); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); margin-bottom: 1.5rem; position: relative; border-left: 8px solid transparent; }
+        .registro-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem; }
         .registro-header h4 { font-size: 1.2rem; color: var(--primary); margin: 0; font-weight: 600; }
         .registro-meta { font-size: 0.85rem; color: var(--muted); text-align: right; }
         .registro-meta span { display: block; }
-        .registro-content {
-            font-size: 1rem; color: var(--text); line-height: 1.7;
-            white-space: pre-wrap; overflow-wrap: break-word;
-            max-height: 250px; overflow-y: auto; padding-right: 10px;
-        }
-        /* Custom scrollbar for content */
+        .registro-content { font-size: 1rem; color: var(--text); line-height: 1.7; white-space: pre-wrap; overflow-wrap: break-word; max-height: 250px; overflow-y: auto; padding-right: 10px; }
         .registro-content::-webkit-scrollbar { width: 6px; }
         .registro-content::-webkit-scrollbar-track { background: transparent; }
         .registro-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
         [data-theme="dark"] .registro-content::-webkit-scrollbar-thumb { background: #4b5563; }
-
-        .registro-actions {
-            margin-top: 1.5rem; border-top: 1px solid var(--border-color);
-            padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;
-        }
-        .empty-state {
-            text-align: center; padding: 2rem; color: var(--muted);
-            background: var(--card); border-radius: 12px;
-        }
-
-        /* --- Custom Record Card Colors --- */
-        .registro-card--anamnese { border-left-color: #0d9488; } /* Teal-600 */
-        .registro-card--laudo { border-left-color: #0ea5e9; } /* Sky-500 (info) */
-        .registro-card--orientacao { border-left-color: #f59e0b; } /* Amber-500 (secondary) */
-        .registro-card--procedimento { border-left-color: #16a34a; } /* Green-600 (success) */
+        .registro-actions { margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; }
+        .empty-state { text-align: center; padding: 2rem; color: var(--muted); background: var(--card); border-radius: 12px; }
         
-        /* --- Tabs --- */
-        .tabs-container {
-            margin-bottom: 1.5rem;
-        }
-        .tab-nav {
-            display: flex;
-            gap: 4px;
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-        .tab-nav-item {
-            padding: 0.75rem 1.25rem;
-            cursor: pointer;
-            font-weight: 600;
-            color: var(--muted);
-            background: none;
-            border: none;
-            border-bottom: 3px solid transparent;
-            transform: translateY(2px);
-            transition: color 0.2s ease, border-color 0.2s ease;
-            font-size: 0.95rem;
-        }
-        .tab-nav-item:hover {
-            color: var(--text);
-        }
-        .tab-nav-item.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-        .tab-panel {
-            display: none;
-        }
-        .tab-panel.active {
-            display: block;
-        }
+        .registro-card--anamnese { border-left-color: #0d9488; }
+        .registro-card--laudo { border-left-color: #0ea5e9; }
+        .registro-card--orientacao { border-left-color: #f59e0b; }
+        .registro-card--procedimento { border-left-color: #16a34a; }
+        .registro-card--evolucao_pei { border-left-color: var(--lilac); } /* Cor para PEI */
 
-        /* --- Modal --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.6); 
-            display: none; 
-            align-items: flex-start; /* Alinha no topo */
-            justify-content: center;
-            padding: 3vh 1rem; /* Espaçamento vertical e horizontal */
-            z-index: 2000; opacity: 0; transition: opacity 0.25s ease;
-            overflow-y: auto; /* Permite rolar a sobreposição se o modal for maior que a tela */
-        }
+        /* --- Tabs --- */
+        .tabs-container { margin-bottom: 1.5rem; }
+        .tab-nav { display: flex; gap: 4px; border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .tab-nav-item { padding: 0.75rem 1.25rem; cursor: pointer; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 3px solid transparent; transform: translateY(2px); transition: color 0.2s ease, border-color 0.2s ease; font-size: 0.95rem; }
+        .tab-nav-item:hover { color: var(--text); }
+        .tab-nav-item.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* --- Modals --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; align-items: flex-start; justify-content: center; padding: 3vh 1rem; z-index: 2000; opacity: 0; transition: opacity 0.25s ease; overflow-y: auto; }
         .modal-overlay.active { opacity: 1; display: flex; }
-        .modal-content {
-            background-color: var(--card); color: var(--text); border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-            width: 100%; /* Ocupa o espaço do padding da sobreposição */
-            max-width: 1200px; /* Aumenta a largura máxima */
-            height: auto; /* Altura automática baseada no conteúdo */
-            max-height: 94vh; /* Previne que seja maior que a tela */
-            transform: translateY(-20px); transition: transform 0.25s ease, opacity 0.25s ease;
-            display: flex; flex-direction: column;
-        }
+        .modal-content { background-color: var(--card); color: var(--text); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 800px; height: auto; max-height: 94vh; transform: translateY(-20px); transition: transform 0.25s ease, opacity 0.25s ease; display: flex; flex-direction: column; }
         .modal-overlay.active .modal-content { transform: translateY(0); }
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
-        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
         .modal-header h3 { font-size: 1.2rem; color: var(--text); margin: 0; font-weight: 600; }
         .modal-close-btn { background: none; border: none; font-size: 1.5rem; color: var(--muted); cursor: pointer; line-height: 1; transition: color 0.2s ease; }
         .modal-close-btn:hover { color: var(--danger); }
-        .modal-body { overflow-y: auto; padding: 1.5rem; line-height: 1.7; flex-grow: 1; }
+        .modal-body { overflow-y: auto; padding: 1.5rem; flex-grow: 1; }
+        .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.75rem; flex-shrink: 0; background-color: var(--bg); }
         .form-group { margin-bottom: 1.25rem; }
         .form-group:last-child { margin-bottom: 0; }
         .form-group label { display: block; font-size: 0.9rem; color: var(--muted); font-weight: 500; margin-bottom: 0.5rem; }
-        .form-group input[type="text"], .form-group textarea {
-            font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color);
-            border-radius: 8px; background-color: var(--bg); color: var(--text);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-group input[type="text"]:focus, .form-group textarea:focus {
-            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
-        }
-        .modal-footer {
-            padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);
-            display: flex; justify-content: flex-end; gap: 0.75rem; flex-shrink: 0;
-            background-color: var(--bg);
-        }
+        .form-group input, .form-group select, .form-group textarea { font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg); color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
+        .confirm-modal-content { max-width: 500px; padding: 1.5rem; text-align: center; }
 
         /* Rich Text Editor for generic modal */
         .editor-container {
@@ -472,54 +279,127 @@
             100% { transform: rotate(360deg); }
         }
 
+
+        /* --- PEI Accordion --- */
+        .pei-accordion { display: flex; flex-direction: column; gap: 1rem; }
+        .pei-card { background-color: var(--card); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
+        .pei-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; cursor: pointer; background-color: var(--primary-light); }
+        .pei-header h4 { margin: 0; font-size: 1.2rem; color: var(--primary-dark); }
+        [data-theme="dark"] .pei-header h4, [data-theme="dark"] .pei-toggle-btn { color: var(--primary); }
+        .pei-header .pei-dates { font-size: 0.85rem; color: var(--muted); display: flex; gap: 1rem; }
+        .pei-toggle-btn { background: none; border: none; font-size: 1rem; color: var(--primary-dark); cursor: pointer; }
+        .pei-content { padding: 1.5rem; border-top: 1px solid var(--border-color); display: none; }
+        .pei-metas-list { list-style: none; padding-left: 0; }
+        .pei-metas-list li { background-color: var(--bg); padding: 1.25rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid var(--primary); }
+        [data-theme="dark"] .pei-metas-list li { background-color: color-mix(in srgb, var(--dark-bg) 15%, transparent); }
+        .meta-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;}
+        .meta-header strong { font-size: 1.05rem; color: var(--text); flex-grow: 1; }
+        .meta-status-badge { font-weight: 600; padding: 0.3em 0.8em; border-radius: 15px; font-size: 0.75em; }
+        .meta-status-nao-iniciada { background-color: var(--muted); color: white; }
+        .meta-status-em-andamento { background-color: var(--info); color: white; }
+        .meta-status-concluida { background-color: var(--success); color: white; }
+        .meta-description { margin-bottom: 1rem; }
+        .meta-actions-bar { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; align-items: center; }
+        .meta-timer-controls { display: flex; align-items: center; gap: 0.5rem; background: var(--card); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); }
+        .meta-timer-controls .timer-display { font-family: monospace; font-size: 1rem; font-weight: 600; min-width: 70px; text-align: center;}
+        .meta-timer-controls .btn-timer-toggle, .meta-timer-controls .btn-timer-reset { padding: 0.3rem 0.5rem; font-size: 0.8rem; line-height: 1; }
+        .meta-evolutions { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border-color); }
+        
+        /* --- Agenda & Chat --- */
+        .agenda-paciente-container { background-color: var(--card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); padding: 1.5rem; }
+        .agenda-paciente-container h3 { font-size: 1.5rem; color: var(--text); margin-bottom: 1.5rem; text-align: center; }
+        .agenda-scroll-container { max-height: 60vh; overflow-y: auto; padding-right: 10px; }
+        .agenda-scroll-container::-webkit-scrollbar { width: 6px; }
+        .agenda-scroll-container::-webkit-scrollbar-track { background: transparent; }
+        .agenda-scroll-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        [data-theme="dark"] .agenda-scroll-container::-webkit-scrollbar-thumb { background: #4b5563; }
+
+        .agenda-paciente-card { background-color: var(--bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 1rem; overflow: hidden; transition: all 0.2s ease; }
+        .agenda-paciente-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        [data-theme="dark"] .agenda-paciente-card { background-color: color-mix(in srgb, var(--dark-bg) 15%, transparent); border-color: var(--dark-border-color); }
+
+        .agenda-paciente-card .card-header { padding: 0.8rem 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background-color: color-mix(in srgb, var(--primary) 10%, transparent); }
+        [data-theme="dark"] .agenda-paciente-card .card-header { background-color: color-mix(in srgb, var(--primary) 20%, transparent); }
+
+        .agenda-paciente-card .card-header h4 { margin: 0; font-size: 1rem; color: var(--primary-dark); }
+        [data-theme="dark"] .agenda-paciente-card .card-header h4 { color: var(--primary); }
+
+        .agenda-paciente-card .card-body { padding: 1rem 1.2rem; }
+        .agenda-paciente-card .card-body p { margin-bottom: 0.5rem; font-size: 0.95rem; }
+        .agenda-paciente-card .card-body p:last-child { margin-bottom: 0; }
+        .agenda-paciente-card .card-body strong { color: var(--muted); font-weight: 500; }
+        .agenda-paciente-card .card-body span { font-weight: 600; color: var(--text); }
+        .agenda-paciente-card .card-footer { background-color: var(--card); padding: 0.8rem 1.2rem; border-top: 1px solid var(--border-color); text-align: right; }
+        [data-theme="dark"] .agenda-paciente-card .card-footer { background-color: var(--dark-card); }
+        
+        /* Status Badges */
+        .status-badge { padding: 0.3em 0.7em; border-radius: 15px; font-size: 0.7em; font-weight: 600; text-transform: uppercase; color: white; white-space: nowrap; }
+        .status-badge.status-confirmado { background-color: var(--status-confirmado); }
+        .status-badge.status-concluido { background-color: var(--status-concluido); }
+        .status-badge.status-pendente { background-color: var(--status-pendente); }
+        .status-badge.status-cancelado { background-color: var(--status-cancelado); }
+
+        /* Chat Modal Specific Styles */
+        .chat-modal-content { max-width: 700px; height: 80vh; }
+        .chat-messages-container { flex-grow: 1; overflow-y: auto; padding: 1rem; border-bottom: 1px solid var(--border-color); }
+        .chat-messages-container::-webkit-scrollbar { width: 6px; }
+        .chat-messages-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        [data-theme="dark"] .chat-messages-container::-webkit-scrollbar-thumb { background: #4b5563; }
+
+        .chat-message { background-color: var(--bg); padding: 0.8rem 1.2rem; border-radius: 10px; margin-bottom: 0.75rem; border: 1px solid var(--border-color); }
+        [data-theme="dark"] .chat-message { background-color: color-mix(in srgb, var(--dark-bg) 10%, transparent); border-color: var(--dark-border-color); }
+
+        .chat-message .message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .chat-message .message-author { font-weight: 600; color: var(--primary-dark); font-size: 0.9rem; }
+        [data-theme="dark"] .chat-message .message-author { color: var(--primary); }
+
+        .chat-message .message-date { font-size: 0.8rem; color: var(--muted); }
+        .chat-message .message-content { font-size: 0.95rem; color: var(--text); line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+
+        .chat-input-area { display: flex; align-items: center; padding: 1rem; gap: 1rem; background-color: var(--bg); }
+        [data-theme="dark"] .chat-input-area { background-color: var(--dark-bg); }
+
+        .chat-input-area textarea { flex-grow: 1; padding: 0.7rem 1rem; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--card); color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.95rem; resize: vertical; min-height: 60px; }
+        [data-theme="dark"] .chat-input-area textarea { background-color: var(--dark-card); }
+
+        .chat-input-area textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
+        .chat-input-area .btn { flex-shrink: 0; padding: 0.7rem 1.2rem; }
+
         /* Confirmation Modal */
-        .confirm-modal-content {
-            max-width: 500px;
-            padding: 1.5rem;
-            text-align: center;
-        }
-        .confirm-modal-content h3 {
-            font-size: 1.3rem;
-            margin-bottom: 1rem;
-        }
-        .confirm-modal-content p {
-            margin-bottom: 1.5rem;
-            color: var(--muted);
-        }
-        .confirm-modal-content .confirm-actions {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-        }
+        .confirm-modal-content { max-width: 500px; padding: 1.5rem; text-align: center; }
+        .confirm-modal-content h3 { font-size: 1.3rem; margin-bottom: 1rem; }
+        .confirm-modal-content p { margin-bottom: 1.5rem; color: var(--muted); }
+        .confirm-modal-content .confirm-actions { display: flex; justify-content: center; gap: 1rem; }
 
 
         /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
-
-        @media(min-width: 769px) {
-            .toggle-btn-desktop { display: grid; }
-            .menu-btn-mobile { display: none; }
-            span.btn-text-desktop { display: inline; }
-        }
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        @media(min-width: 769px) { .toggle-btn-desktop { display: grid; } .menu-btn-mobile { display: none; } span.btn-text-desktop { display: inline; } }
+        @media (max-width: 768px) { 
+            .sidebar { transform: translateX(-100%); } 
+            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); } 
             .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
             .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
             .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
-            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
+            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; } 
             main { padding: 1rem; }
             .paciente-info-card { padding: 1.5rem; }
             .paciente-info-grid { grid-template-columns: 1fr; }
-            .prontuario-header { flex-direction: column; align-items: stretch; text-align: center; }
+            .prontuario-header { flex-direction: column; align-items: stretch; text-align: center; } 
+            .topbar-actions { justify-content: center; margin-top: 0.5rem; }
+            .chat-modal-content { height: 90vh; max-width: 95%; }
+            .chat-input-area { flex-direction: column; gap: 0.75rem; }
+            .chat-input-area textarea, .chat-input-area .btn { width: 100%; }
         }
     </style>
 </head>
 <body>
     <div class="layout">
         <aside class="sidebar">
+            <!-- Conteúdo da Sidebar -->
             <div class="sidebar-inner-content">
                 <div class="sidebar-header">
                     <a href="{{ url_for('index') }}" class="logo">
@@ -539,7 +419,7 @@
                         {% if session.user_role == 'admin' %}
                         <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -560,19 +440,10 @@
                     <h1 class="page-title">Prontuário de {{ paciente.nome if paciente else 'Paciente' }}</h1>
                 </div>
                 <div class="topbar-actions">
-                    <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Anamnese</span>
-                    </a>
-                    <!-- NOVOS BOTÕES PARA LAUDO, ORIENTAÇÃO E PROCEDIMENTO -->
-                    <button type="button" class="btn btn-secondary" id="addLaudoBtn" data-record-type="laudo" data-record-title="Adicionar Laudo Médico">
-                        <i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Adicionar Laudo</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="addOrientacaoBtn" data-record-type="orientacao" data-record-title="Adicionar Orientação">
-                        <i class="fas fa-notes-medical"></i> <span class="btn-text-desktop">Adicionar Orientação</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="addProcedimentoBtn" data-record-type="procedimento" data-record-title="Adicionar Procedimento">
-                        <i class="fas fa-syringe"></i> <span class="btn-text-desktop">Adicionar Procedimento</span>
-                    </button>
+                    <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="btn btn-primary"><i class="fas fa-plus"></i> <span class="btn-text-desktop">Anamnese</span></a>
+                    <button type="button" class="btn btn-secondary" id="addLaudoBtn" data-record-type="laudo" data-record-title="Adicionar Laudo Médico"><i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Laudo</span></button>
+                    <button type="button" class="btn btn-secondary" id="addOrientacaoBtn" data-record-type="orientacao" data-record-title="Adicionar Orientação"><i class="fas fa-notes-medical"></i> <span class="btn-text-desktop">Orientação</span></button>
+                    <button type="button" class="btn btn-secondary" id="addProcedimentoBtn" data-record-type="procedimento" data-record-title="Adicionar Procedimento"><i class="fas fa-syringe"></i> <span class="btn-text-desktop">Procedimento</span></button>
                 </div>
             </header>
 
@@ -594,180 +465,146 @@
                         <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}</span></div>
                         <div class="paciente-info-item"><strong>CPF:</strong> <span>{{ paciente.cpf or 'N/A' }}</span></div>
                         <div class="paciente-info-item"><strong>Telefone:</strong> <span>{{ paciente.contato_telefone or 'N/A' }}</span></div>
+                        <div class="paciente-info-item"><strong>Convênio:</strong> <span>{{ paciente.convenio_nome or 'Particular' }}</span></div>
                         <div class="paciente-info-item"><strong>E-mail:</strong> <span>{{ paciente.contato_email or 'N/A' }}</span></div>
                         <div class="paciente-info-item" style="grid-column: 1 / -1;"><strong>Endereço:</strong> <span>{{ paciente.endereco.logradouro or '' }}, {{ paciente.endereco.numero or '' }} {{ paciente.endereco.complemento or '' }} - {{ paciente.endereco.bairro or '' }}, {{ paciente.endereco.cidade or '' }} - {{ paciente.endereco.estado or '' }} {{ paciente.endereco.cep or '' }}</span></div>
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- NOVO: Seção de PEIs Atrelados ao Paciente -->
-                <section class="pei-section" style="margin-bottom: 2rem;">
-                    <h2 class="prontuario-header">
-                        Planos Educacionais Individualizados (PEIs)
-                        <button type="button" class="btn btn-secondary btn-sm" id="toggle-peis-view">
-                            <i class="fas fa-eye"></i> Exibir Detalhes
-                        </button>
-                    </h2>
-                    <div class="pei-list-container">
-                        {% if peis_do_paciente %}
-                            <div class="pei-accordion" id="pei-accordion-container">
-                                {% for pei in peis_do_paciente %}
-                                <div class="pei-card">
-                                    <div class="pei-header">
-                                        <h4>{{ pei.identificacao_pei }}</h4>
-                                        <div class="pei-dates">
-                                            <!-- FIXED: Changed to directly use pei.data_inicio and pei.data_fim -->
-                                            <span>Início: {{ pei.data_inicio or 'N/A' }}</span>
-                                            <span>Fim: {{ pei.data_fim or 'N/A' }}</span>
-                                        </div>
-                                        <button class="pei-toggle-btn"><i class="fas fa-chevron-down"></i></button>
-                                    </div>
-                                    <div class="pei-content">
-                                        <p><strong>Descrição:</strong> {{ pei.descricao_pei or 'N/A' }}</p>
-                                        <p><strong>Criado por:</strong> {{ pei.criado_por_nome or 'N/A' }} em {{ pei.criado_em if pei.criado_em else 'N/A' }}</p>
-                                        <h5>Metas:</h5>
-                                        {% if pei.metas %}
-                                            <ul class="pei-metas-list">
-                                                {% for meta in pei.metas %}
-                                                    <li>
-                                                        <strong>{{ meta.titulo }}</strong> (Responsável: {{ meta.responsavel or 'N/A' }})<br>
-                                                        {{ meta.descricao }}
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        {% else %}
-                                            <p>Nenhuma meta cadastrada para este PEI.</p>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="empty-state">
-                                <p>Nenhum PEI atrelado a este paciente.</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </section>
-                <!-- FIM NOVO: Seção de PEIs -->
-
-                <!-- MACRO Definition for the record card (keep as is) -->
-                {% macro render_registro_card(registro) %}
-                <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
-                    <div class="registro-header">
-                        <h4>{{ registro.tipo_registro | capitalize }} - {{ registro.titulo | default('') }}</h4>
-                        <div class="registro-meta">
-                            <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro_fmt }}</span>
-                            <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
-                        </div>
-                    </div>
-                    <div class="registro-content">
-                        {{ registro.conteudo | safe }}
-                    </div>
-                    <div class="registro-actions">
-                        <!-- Botão de expandir é o mesmo para todos -->
-                        <button class="btn btn-sm btn-secondary btn-expand-registro"><i class="fas fa-expand-alt"></i></button>
-
-                        {% if registro.tipo_registro == 'anamnese' %}
-                        <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
-                        {% else %}
-                        <button type="button" class="btn btn-sm btn-warning btn-edit-registro-generico" data-registro-id="{{ registro.id }}"><i class="fas fa-edit"></i></button>
-                        {% endif %}
-                        
-                        <button class="btn btn-sm btn-secondary btn-print-pdf" data-record-id="{{ registro.id }}" data-record-type="{{ registro.tipo_registro }}"><i class="fas fa-print"></i></button>
-                        <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-                {% endmacro %}
-
-
+                <!-- Container Principal com Abas -->
                 <section class="prontuario-section">
                     <div class="tabs-container">
                         <div class="tab-nav">
-                            <button class="tab-nav-item active" data-tab="todos">Todos</button>
-                            <button class="tab-nav-item" data-tab="anamnese">Anamneses</button>
-                            <button class="tab-nav-item" data-tab="laudo">Laudos</button>
-                            <button class="tab-nav-item" data-tab="orientacao">Orientações</button>
-                            <button class="tab-nav-item" data-tab="procedimento">Procedimentos</button>
-                            <!-- NOVO BOTÃO DA ABA DE AGENDA DO PACIENTE -->
+                            <button class="tab-nav-item active" data-tab="registros">Registros Clínicos</button>
+                            <button class="tab-nav-item" data-tab="peis">Planos Educacionais (PEIs)</button>
                             <button class="tab-nav-item" data-tab="agenda-paciente">Agenda do Paciente</button>
                         </div>
-                        
                         <div class="tab-content">
-                            <!-- Painel "Todos" -->
-                            <div id="tab-panel-todos" class="tab-panel active">
-                                {% if registros %}
-                                    {% for registro in registros %}
-                                        {{ render_registro_card(registro) }}
+                            <!-- Aba de Registros Clínicos -->
+                            <div id="tab-panel-registros" class="tab-panel active">
+                                {% set registros_clinicos = registros | rejectattr('tipo_registro', 'equalto', 'evolucao_pei') | list %}
+                                {% if registros_clinicos %}
+                                    {% for registro in registros_clinicos %}
+                                        <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
+                                            <div class="registro-header">
+                                                <h4>{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}</h4>
+                                                <div class="registro-meta">
+                                                    <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
+                                                    <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
+                                            <div class="registro-actions">
+                                                <button class="btn btn-sm btn-secondary btn-expand-registro"><i class="fas fa-expand-alt"></i></button>
+                                                {% if registro.tipo_registro == 'anamnese' %}
+                                                <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                                                {% else %}
+                                                <button type="button" class="btn btn-sm btn-warning btn-edit-registro-generico" data-registro-id="{{ registro.id }}" data-record-type="{{ registro.tipo_registro }}"><i class="fas fa-edit"></i></button>
+                                                {% endif %}
+                                                <button class="btn btn-sm btn-secondary btn-print-pdf" data-record-id="{{ registro.id }}"><i class="fas fa-print"></i></button>
+                                                <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </div>
                                     {% endfor %}
                                 {% else %}
-                                    <div class="empty-state">
-                                        <p>Nenhum registro encontrado para este paciente.</p>
+                                    <div class="empty-state"><p>Nenhum registro clínico encontrado.</p></div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Aba de PEIs -->
+                            <div id="tab-panel-peis" class="tab-panel">
+                                {% if peis_do_paciente %}
+                                    <div class="pei-accordion">
+                                        {% for pei in peis_do_paciente %}
+                                        <div class="pei-card">
+                                            <div class="pei-header">
+                                                <h4>{{ pei.identificacao_pei }}</h4>
+                                                <div class="pei-dates">
+                                                    <span>Início: {{ pei.data_inicio or 'N/A' }}</span>
+                                                    <span>Fim: {{ pei.data_fim or 'N/A' }}</span>
+                                                </div>
+                                                <button class="pei-toggle-btn"><i class="fas fa-chevron-down"></i></button>
+                                            </div>
+                                            <div class="pei-content">
+                                                <p><strong>Descrição:</strong> {{ pei.descricao_pei or 'N/A' }}</p>
+                                                <p><strong>Criado por:</strong> {{ pei.criado_por_nome or 'N/A' }} em {{ pei.criado_em if pei.criado_em else 'N/A' }}</p>
+                                                <h5>Metas</h5>
+                                                {% if pei.metas %}
+                                                    <ul class="pei-metas-list">
+                                                    {% for meta in pei.metas %}
+                                                        <li data-pei-id="{{ pei.id }}" data-meta-titulo="{{ meta.titulo }}" 
+                                                            data-cronometro-inicio="{{ meta.cronometro_inicio if meta.cronometro_inicio else '' }}"
+                                                            data-tempo-gasto="{{ meta.tempo_total_gasto | default(0) }}">
+                                                            <div class="meta-header">
+                                                                <strong>{{ meta.titulo }}</strong>
+                                                                <span class="meta-status-badge meta-status-{{ meta.status | default('nao-iniciada') | lower | replace(' ', '-') }}">{{ meta.status | default('Não Iniciada') }}</span>
+                                                            </div>
+                                                            <p class="meta-description"> (Responsável: {{ meta.responsavel or 'N/A' }})<br>{{ meta.descricao }}</p>
+                                                            
+                                                            <div class="meta-actions-bar">
+                                                                <div class="meta-timer-controls">
+                                                                    <button class="btn btn-sm btn-secondary btn-timer-toggle" title="Iniciar/Pausar Cronômetro">
+                                                                        <i class="fas fa-play"></i>
+                                                                    </button>
+                                                                    <span class="timer-display">00:00:00</span>
+                                                                    <button class="btn btn-sm btn-danger-outline btn-timer-reset" title="Zerar Cronômetro">
+                                                                        <i class="fas fa-history"></i>
+                                                                    </button>
+                                                                </div>
+                                                                <button class="btn btn-sm btn-success btn-concluir-meta">
+                                                                    <i class="fas fa-check"></i> Concluir Meta
+                                                                </button>
+                                                                <button class="btn btn-sm btn-primary btn-add-pei-evolution">
+                                                                    <i class="fas fa-plus"></i> Registrar Evolução
+                                                                </button>
+                                                            </div>
+
+                                                            <div class="meta-evolutions">
+                                                                {% for registro in registros if registro.tipo_registro == 'evolucao_pei' and registro.referencia_pei_id == pei.id and registro.referencia_meta_titulo == meta.titulo %}
+                                                                    <div class="registro-card registro-card--evolucao_pei" id="registro-{{ registro.id }}" style="margin-top:1rem; margin-bottom: 0;">
+                                                                        <div class="registro-header" style="padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                                                                            <h4 style="font-size: 1rem;">{{ registro.titulo }}</h4>
+                                                                            <div class="registro-meta" style="font-size: 0.8rem;">
+                                                                                <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
+                                                                                <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
+                                                                        <div class="registro-actions">
+                                                                            <button class="btn btn-sm btn-secondary btn-expand-registro" data-record-id="{{ registro.id }}"><i class="fas fa-expand-alt"></i></button>
+                                                                            <button class="btn btn-sm btn-warning btn-edit-registro-generico" data-registro-id="{{ registro.id }}" data-record-type="{{ registro.tipo_registro }}"><i class="fas fa-edit"></i></button>
+                                                                            <button class="btn btn-sm btn-secondary btn-print-pdf" data-record-id="{{ registro.id }}"><i class="fas fa-print"></i></button>
+                                                                            <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
+                                                                        </div>
+                                                                    </div>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </li>
+                                                    {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <p>Nenhuma meta cadastrada para este PEI.</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
                                     </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Painel "Anamneses" -->
-                            <div id="tab-panel-anamnese" class="tab-panel">
-                                {% set anamneses = registros | selectattr('tipo_registro', 'equalto', 'anamnese') | list %}
-                                {% if anamneses %}
-                                    {% for registro in anamneses %}
-                                        {{ render_registro_card(registro) }}
-                                    {% endfor %}
                                 {% else %}
-                                    <div class="empty-state"><p>Nenhuma anamnese encontrada.</p></div>
+                                    <div class="empty-state"><p>Nenhum PEI atrelado a este paciente.</p></div>
                                 {% endif %}
                             </div>
 
-                            <!-- Painel "Laudos" -->
-                            <div id="tab-panel-laudo" class="tab-panel">
-                                {% set laudos = registros | selectattr('tipo_registro', 'equalto', 'laudo') | list %}
-                                {% if laudos %}
-                                    {% for registro in laudos %}
-                                        {{ render_registro_card(registro) }}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state"><p>Nenhum laudo encontrado.</p></div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Painel "Orientações" -->
-                            <div id="tab-panel-orientacao" class="tab-panel">
-                                {% set orientacoes = registros | selectattr('tipo_registro', 'equalto', 'orientacao') | list %}
-                                {% if orientacoes %}
-                                    {% for registro in orientacoes %}
-                                        {{ render_registro_card(registro) }}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state"><p>Nenhuma orientação encontrada.</p></div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Painel "Procedimentos" -->
-                            <div id="tab-panel-procedimento" class="tab-panel">
-                                {% set procedimentos = registros | selectattr('tipo_registro', 'equalto', 'procedimento') | list %}
-                                {% if procedimentos %}
-                                    {% for registro in procedimentos %}
-                                        {{ render_registro_card(registro) }}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state"><p>Nenhum procedimento encontrado.</p></div>
-                                {% endif %}
-                            </div>
-
-                            <!-- NOVO PAINEL: Agenda do Paciente e Evoluções -->
+                            <!-- Aba de Agenda -->
                             <div id="tab-panel-agenda-paciente" class="tab-panel">
-                                <div class="agenda-paciente-container">
-                                    <h3>Próximos Agendamentos e Evolução</h3>
-                                    <div class="agenda-scroll-container">
-                                        <div id="agenda-paciente-list">
-                                            <!-- Agendamentos do paciente serão carregados aqui via JS -->
-                                            <div class="empty-state" id="agenda-paciente-empty-state">
-                                                <p>Carregando agendamentos...</p>
+                                    <div class="agenda-paciente-container">
+                                        <h3>Histórico de Agendamentos Concluídos</h3>
+                                        <div class="agenda-scroll-container">
+                                            <div id="agenda-paciente-list">
+                                                <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -776,12 +613,13 @@
         </div>
     </div>
 
+    <!-- MODAIS -->
     <!-- Modal para Conteúdo Completo do Registro (Genérico) -->
     <div id="registro-completo-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modal-registro-completo-title">Registro Completo</h3>
-                <button class="modal-close-btn" data-close-modal="registro-completo-modal">&times;</button>
+                <button class="modal-close-btn" data-close>&times;</button>
             </div>
             <div class="modal-body" id="modal-registro-completo-content">
                 <!-- Conteúdo do registro será inserido aqui -->
@@ -789,24 +627,42 @@
         </div>
     </div>
 
-    <!-- Modal para Registro Genérico (Adicionar/Editar Laudo, Orientação, Procedimento) -->
+    <!-- Modal para Registro Genérico (Adicionar/Editar Laudo, Orientação, Procedimento, Evolução PEI) -->
     <div id="modalRegistroGenerico" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalRegistroGenericoTitle">Adicionar Novo Registro</h3>
-                <button type="button" class="modal-close-btn" data-close-modal="modalRegistroGenerico">&times;</button>
+                <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
             <form method="POST" action="" id="formRegistroGenerico">
                 <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
                 <input type="hidden" name="tipo_registro" id="tipo_registro_generico">
                 <input type="hidden" name="registro_id" id="registro_id_generico"> {# Para edição #}
-                <!-- FIX: Adicionado o campo oculto que estava faltando e causando o erro -->
                 <input type="hidden" name="agendamento_id_referencia" id="agendamento_id_referencia">
+                <input type="hidden" name="referencia_pei_id" id="referencia_pei_id">
+                <input type="hidden" name="referencia_meta_titulo" id="referencia_meta_titulo">
 
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="titulo_registro_generico">Título</label>
                         <input type="text" id="titulo_registro_generico" name="titulo" required>
+                    </div>
+
+                    <div id="pei-evolution-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="status_atividade">Status da Atividade</label>
+                            <select name="status_atividade" id="status_atividade">
+                                <option value="Executada com sucesso">Executada com sucesso</option>
+                                <option value="Executada com ajuda">Executada com ajuda</option>
+                                <option value="Recusou-se a fazer">Recusou-se a fazer</option>
+                                <option value="Não foi possível aplicar">Não foi possível aplicar</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tempo_gasto">Tempo Gasto nesta Atividade (minutos)</label>
+                            <input type="number" name="tempo_gasto" id="tempo_gasto" min="1">
+                            <small class="text-muted">Este tempo será somado ao tempo total da meta.</small>
+                        </div>
                     </div>
 
                     <!-- Gemini Generator para Conteúdo Genérico -->
@@ -828,7 +684,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="conteudo_registro_generico">Conteúdo</label>
+                        <label for="conteudo_registro_generico">Conteúdo / Descrição da Atividade</label>
                         <div class="editor-container">
                             <div class="editor-toolbar">
                                 <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><i class="fas fa-bold"></i></button>
@@ -845,42 +701,19 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal="modalRegistroGenerico">Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Registro</button>
+                    <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
                 </div>
             </form>
         </div>
     </div>
-
-    <!-- Confirmation Modal for Deletion -->
-    <div id="confirm-delete-modal" class="modal-overlay">
-        <div class="modal-content confirm-modal-content">
-            <div class="modal-header">
-                <h3>Confirmar Exclusão</h3>
-                <button type="button" class="modal-close-btn" data-close-modal="confirm-delete-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.</p>
-            </div>
-            <div class="modal-footer confirm-actions">
-                <button type="button" class="btn btn-secondary" data-close-modal="confirm-delete-modal">Cancelar</button>
-                <button type="button" class="btn btn-danger-outline" id="confirmDeleteBtn">Apagar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Formulário para Apagar Registro (escondido) -->
-    <form id="formApagarRegistro" method="POST" action="" style="display: none;">
-        <input type="hidden" name="registro_id" id="registro_id_apagar">
-        <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
-    </form>
-
-    <!-- Modal de Chat de Evolução (NOVO) -->
+    
+    <!-- Modal de Chat de Evolução -->
     <div id="chat-evolucao-modal" class="modal-overlay">
         <div class="modal-content chat-modal-content">
             <div class="modal-header">
                 <h3 id="chat-evolucao-title">Evolução do Paciente</h3>
-                <button class="modal-close-btn" data-close-modal="chat-evolucao-modal">&times;</button>
+                <button class="modal-close-btn" data-close>&times;</button>
             </div>
             <div class="modal-body chat-messages-container" id="chat-messages-container">
                 <!-- Mensagens do chat serão carregadas aqui -->
@@ -895,879 +728,807 @@
         </div>
     </div>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
-        import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
-        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+    <!-- Modal para Concluir Meta -->
+    <div id="concluir-meta-modal" class="modal-overlay">
+        <div class="modal-content confirm-modal-content">
+            <div class="modal-header">
+                <h3>Concluir Meta</h3>
+                <button type="button" class="modal-close-btn" data-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Você está prestes a marcar a meta "<strong id="concluir-meta-titulo"></strong>" como concluída.</p>
+                <div class="form-group" style="text-align: left;">
+                    <label for="concluir-meta-observacao">Observação de Conclusão (Opcional)</label>
+                    <textarea id="concluir-meta-observacao" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
+                <button type="button" class="btn btn-success" id="confirmConcluirMetaBtn">Confirmar Conclusão</button>
+            </div>
+        </div>
+    </div>
 
-        // IMPORTANTE: Cole a configuração do seu projeto Firebase aqui
-        const firebaseConfig = {
-            apiKey: "SUA_API_KEY",
-            authDomain: "SEU_AUTH_DOMAIN",
-            projectId: "SEU_PROJECT_ID",
-            storageBucket: "SEU_STORAGE_BUCKET",
-            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-            appId: "SEU_APP_ID"
-        };
+    <!-- Modal de Confirmação Genérico -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content confirm-modal-content">
+            <div class="modal-header">
+                <h3 id="confirm-modal-title">Confirmar Ação</h3>
+                <button type="button" class="modal-close-btn" data-close>&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-modal-text">Tem certeza?</p>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
+                <button type="button" class="btn btn-danger-outline" id="confirmModalBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulários ocultos para ações -->
+    <form id="formApagarRegistro" method="POST" action="{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}" style="display: none;">
+        <input type="hidden" name="registro_id" id="registro_id_apagar">
+    </form>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais fornecidas pelo ambiente Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Autenticar no Firebase
+        async function authenticateFirebase() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    console.log('Signed in with custom token.');
+                } else {
+                    await signInAnonymously(auth);
+                    console.log('Signed in anonymously.');
+                }
+            } catch (error) {
+                console.error('Firebase authentication error:', error);
+            }
+        }
+        authenticateFirebase(); // Chama a função de autenticação no carregamento do script
 
         // Variável global com todos os dados dos registros, vindo diretamente do Jinja2
-        const allRecordsData = {{ registros | tojson }}; 
+        const allRecordsData = {{ registros | tojson }};
         const pacienteId = "{{ paciente.id }}"; // ID do paciente atual
 
+        // Adicionar um ouvinte de erro global para capturar erros não tratados
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('Unhandled JavaScript Error:', {
+                message: message,
+                source: source,
+                lineno: lineno,
+                colno: colno,
+                error: error
+            });
+            // Opcional: exibir uma mensagem de erro genérica para o usuário
+            // showConfirmModal('Erro no Aplicativo', 'Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.', null, 'danger');
+            return true; // Retornar true para suprimir a propagação do erro padrão do navegador
+        };
+
+
         document.addEventListener('DOMContentLoaded', () => {
-            const htmlEl = document.documentElement;
-            
-            // --- Lógica de UI Geral (Sidebar, Tema, Logout) ---
-            function setupCommonUI() {
-                const sidebar = document.querySelector('.sidebar');
-                const mainContent = document.querySelector('.main-content');
-                const toggleButtons = document.querySelectorAll('.toggle-btn');
-                const themeToggle = document.getElementById('theme-toggle');
-                const logoutButton = document.getElementById('logoutButton');
-
-                // 1. Lógica do Tema (Dark/Light Mode)
-                if (themeToggle) {
-                    const themeIcon = themeToggle.querySelector('i');
-                    const currentTheme = localStorage.getItem('theme') || 'light';
-                    
-                    htmlEl.dataset.theme = currentTheme;
-                    themeIcon.className = currentTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-
-                    themeToggle.addEventListener('click', () => {
-                        const newTheme = htmlEl.dataset.theme === 'dark' ? 'light' : 'dark';
-                        htmlEl.dataset.theme = newTheme;
-                        localStorage.setItem('theme', newTheme);
-                        themeIcon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                    });
-                }
-
-                // 2. Lógica da Sidebar (Expandir/Recolher)
-                if (sidebar && mainContent && toggleButtons.length > 0) {
-                    if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
-                        sidebar.classList.add('collapsed');
-                        mainContent.classList.add('collapsed');
-                    }
-                    
-                    toggleButtons.forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            if (window.innerWidth > 768) { // Desktop
-                                sidebar.classList.toggle('collapsed');
-                                mainContent.classList.toggle('collapsed');
-                                localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
-                            } else { // Mobile
-                                sidebar.classList.toggle('open');
-                            }
-                        });
-                    });
-                }
+            // Adicionar um try-catch ao redor de toda a lógica DOMContentLoaded para capturar erros iniciais
+            try {
+                const htmlEl = document.documentElement;
                 
-                // 3. Lógica de Logout
-                if (logoutButton) {
-                    logoutButton.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        firebaseSignOut(auth).then(() => {
-                            window.location.href = '/login'; 
-                        }).catch((error) => {
-                            console.error('Erro no logout:', error);
+                // --- UI Setup & Helpers ---
+                function setupCommonUI() {
+                    const sidebar = document.querySelector('.sidebar');
+                    const mainContent = document.querySelector('.main-content');
+                    const toggleButtons = document.querySelectorAll('.toggle-btn');
+                    const themeToggle = document.getElementById('theme-toggle');
+                    const logoutButton = document.getElementById('logoutButton');
+
+                    // 1. Lógica do Tema (Dark/Light Mode)
+                    if (themeToggle) {
+                        const themeIcon = themeToggle.querySelector('i');
+                        const currentTheme = localStorage.getItem('theme') || 'light';
+                        
+                        htmlEl.dataset.theme = currentTheme;
+                        themeIcon.className = currentTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+
+                        themeToggle.addEventListener('click', () => {
+                            const newTheme = htmlEl.dataset.theme === 'dark' ? 'light' : 'dark';
+                            htmlEl.dataset.theme = newTheme;
+                            localStorage.setItem('theme', newTheme);
+                            themeIcon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
                         });
-                    });
-                }
-            }
-            
-            // --- Lógica Específica da Página de Prontuário ---
-            function setupProntuarioPage() {
-                
-                // *** Lógica das Abas (Tabs) ***
-                function setupTabs() {
-                    const tabContainer = document.querySelector('.tabs-container');
-                    if (!tabContainer) return;
-
-                    const tabNavItems = tabContainer.querySelectorAll('.tab-nav-item');
-                    const tabPanels = tabContainer.querySelectorAll('.tab-panel');
-
-                    tabNavItems.forEach(tab => {
-                        tab.addEventListener('click', () => {
-                            tabNavItems.forEach(item => item.classList.remove('active'));
-                            tabPanels.forEach(panel => panel.classList.remove('active'));
-
-                            tab.classList.add('active');
-                            
-                            const targetPanelId = 'tab-panel-' + tab.dataset.tab;
-                            const targetPanel = document.getElementById(targetPanelId);
-                            if(targetPanel) {
-                                targetPanel.classList.add('active');
-                            }
-
-                            // NOVO: Se a aba "Agenda do Paciente" for ativada, carrega os agendamentos
-                            if (tab.dataset.tab === 'agenda-paciente') {
-                                loadPatientAppointments(pacienteId);
-                            }
-                        });
-                    });
-                }
-
-                // *** Lógica do Modal de Registro Genérico (Adicionar/Editar) ***
-                const modalRegistroGenerico = document.getElementById('modalRegistroGenerico');
-                const formRegistroGenerico = document.getElementById('formRegistroGenerico');
-                const modalRegistroGenericoTitle = document.getElementById('modalRegistroGenericoTitle');
-                const tipoRegistroGenericoInput = document.getElementById('tipo_registro_generico');
-                const registroIdGenericoInput = document.getElementById('registro_id_generico');
-                const tituloRegistroGenericoInput = document.getElementById('titulo_registro_generico');
-                const conteudoRegistroGenericoEditor = document.getElementById('editor-content-generico');
-                const conteudoGenericoHiddenTextarea = document.getElementById('conteudo_generico_hidden');
-                const agendamentoIdReferenciaInput = document.getElementById('agendamento_id_referencia'); 
-
-                // Sincroniza o editor de texto com o campo oculto do formulário
-                if (conteudoRegistroGenericoEditor && conteudoGenericoHiddenTextarea) {
-                    conteudoRegistroGenericoEditor.addEventListener('input', () => {
-                        conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
-                    });
-                }
-
-                // Lógica da barra de ferramentas do editor de texto
-                document.querySelectorAll('#modalRegistroGenerico .editor-toolbar button').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const command = e.currentTarget.dataset.command;
-                        document.execCommand(command, false, null);
-                        conteudoRegistroGenericoEditor.focus();
-                        if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
-                    });
-                });
-
-                // Função para abrir o modal de registro genérico (Adicionar/Editar)
-                function openRegistroGenericoModal(type, title, registroData = null) {
-                    formRegistroGenerico.reset(); 
-                    conteudoRegistroGenericoEditor.innerHTML = ''; // Limpa o editor
-                    
-                    tipoRegistroGenericoInput.value = type;
-                    modalRegistroGenericoTitle.innerHTML = title;
-                    
-                    formRegistroGenerico.action = `{{ url_for('registrar_registro_generico', paciente_doc_id=paciente.id) }}`;
-                    
-                    if (registroData) { // Modo de Edição
-                        registroIdGenericoInput.value = registroData.id;
-                        tituloRegistroGenericoInput.value = registroData.titulo || '';
-                        conteudoRegistroGenericoEditor.innerHTML = registroData.conteudo || ''; 
-                        conteudoGenericoHiddenTextarea.value = registroData.conteudo || '';
-                        if (agendamentoIdReferenciaInput) {
-                           agendamentoIdReferenciaInput.value = registroData.agendamento_id_referencia || '';
-                        }
-                        formRegistroGenerico.action = `{{ url_for('editar_registro_generico', paciente_doc_id=paciente.id, registro_doc_id='DUMMY_ID') }}`.replace('DUMMY_ID', registroData.id);
-                    } else { // Modo de Adição
-                        registroIdGenericoInput.value = '';
                     }
 
-                    modalRegistroGenerico.classList.add('active');
-                }
-                
-                // Listeners para os botões de Adicionar (Laudo, Orientação, etc.)
-                document.getElementById('addLaudoBtn')?.addEventListener('click', () => openRegistroGenericoModal('laudo', 'Adicionar Laudo Médico'));
-                document.getElementById('addOrientacaoBtn')?.addEventListener('click', () => openRegistroGenericoModal('orientacao', 'Adicionar Orientação'));
-                document.getElementById('addProcedimentoBtn')?.addEventListener('click', () => openRegistroGenericoModal('procedimento', 'Adicionar Procedimento'));
-
-
-                // *** Lógica do Gerador Gemini ***
-                const generateGenericBtn = document.getElementById('generate-generic-btn');
-                const genericPromptInput = document.getElementById('gemini-prompt-generico');
-                const lgpdConsentTextGeneric = document.getElementById('lgpd-consent-text-generico');
-                const generatorActions = document.querySelector('#modalRegistroGenerico .gemini-generator-actions');
-
-                if (lgpdConsentTextGeneric && generateGenericBtn && generatorActions) {
-                    lgpdConsentTextGeneric.addEventListener('click', () => {
-                        lgpdConsentTextGeneric.classList.toggle('active');
-                        const isActive = lgpdConsentTextGeneric.classList.contains('active');
-                        
-                        generatorActions.style.display = isActive ? 'flex' : 'none';
-                        generateGenericBtn.disabled = !isActive;
-                    });
-                }
-                
-                if (generateGenericBtn && genericPromptInput && conteudoRegistroGenericoEditor) {
-                    generateGenericBtn.addEventListener('click', async () => {
-                        const userPrompt = genericPromptInput.value.trim();
-                        const tipoRegistro = tipoRegistroGenericoInput.value; 
-                        if (!userPrompt) {
-                            console.warn(`Por favor, descreva o tipo de ${tipoRegistro} que você deseja gerar.`); 
-                            return;
+                    // 2. Lógica da Sidebar (Expandir/Recolher)
+                    if (sidebar && mainContent && toggleButtons.length > 0) {
+                        if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
+                            sidebar.classList.add('collapsed');
+                            mainContent.classList.add('collapsed');
                         }
                         
-                        let fullPrompt = "";
-                        const patientName = "{{ paciente.nome if paciente else 'o paciente' }}";
-                        const professionalName = "{{ session.user_name if session.user_name else 'o profissional de saúde' }}";
+                        toggleButtons.forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                if (window.innerWidth > 768) { // Desktop
+                                    sidebar.classList.toggle('collapsed');
+                                    mainContent.classList.toggle('collapsed');
+                                    localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+                                } else { // Mobile
+                                    sidebar.classList.toggle('open');
+                                }
+                            });
+                        });
+                    }
+                    
+                    // 3. Lógica de Logout
+                    if (logoutButton) {
+                        logoutButton.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            firebaseSignOut(auth).then(() => {
+                                window.location.href = '/login'; 
+                            }).catch((error) => {
+                                console.error('Erro no logout:', error);
+                                // Optionally, display an error message to the user instead of alert
+                            });
+                        });
+                    }
+                }
 
-                        if (tipoRegistro === "laudo") {
-                            fullPrompt = `Você é um médico especialista. Crie um modelo de laudo médico completo e detalhado em HTML para o paciente ${patientName}, sem placeholders como "[...]", para a seguinte condição ou motivo: "${userPrompt}". Inclua seções como Identificação do Paciente, Histórico Clínico Relevante, Exame Físico (se aplicável), Resultados de Exames, Discussão do Caso e Conclusão/Diagnóstico, com um plano terapêutico. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
-                        } else if (tipoRegistro === "orientacao") {
-                            fullPrompt = `Você é um profissional de saúde. Crie um modelo de orientação ao paciente em HTML para ${patientName}, sem placeholders como "[...]", sobre a seguinte situação ou tratamento: "${userPrompt}". A orientação deve ser clara, concisa, de fácil entendimento e abranger tópicos como o que é a condição/tratamento, como manejar sintomas, quando procurar ajuda e dicas de autocuidado. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
-                        } else if (tipoRegistro === "procedimento") {
-                            fullPrompt = `Você é um profissional de saúde. Crie a descrição detalhada de um procedimento médico/clínico em HTML para ${patientName}, sem placeholders como "[...]", para: "${userPrompt}". O documento deve abranger indicação, descrição do procedimento passo a passo, cuidados pré-procedimento, cuidados pós-procedimento, riscos e benefícios. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
-                        } else {
-                            console.error("Tipo de registro desconhecido para geração com IA."); 
+                const modalControllers = {
+                    genericRecord: document.getElementById('modalRegistroGenerico'),
+                    evolutionChat: document.getElementById('chat-evolucao-modal'),
+                    confirm: document.getElementById('confirm-modal'),
+                    concluirMeta: document.getElementById('concluir-meta-modal'),
+                    fullRecord: document.getElementById('registro-completo-modal'), // New modal for full record display
+                    open(modal) { modal?.classList.add('active'); },
+                    close(modal) { modal?.classList.remove('active'); }
+                };
+                document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => modalControllers.close(btn.closest('.modal-overlay'))));
+                
+                // --- Lógica da Página de Prontuário ---
+                function setupProntuarioPage() {
+                    const activeTimers = {};
+
+                    function formatTime(totalSeconds) {
+                        const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+                        const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+                        const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+                        return `${hours}:${minutes}:${seconds}`;
+                    }
+
+                    function startVisualTimer(liElement, startTimeISO, baseSeconds) {
+                        const metaId = liElement.dataset.peiId + '||' + liElement.dataset.metaTitulo;
+                        const display = liElement.querySelector('.timer-display');
+                        
+                        if (!startTimeISO) {
+                            display.textContent = formatTime(baseSeconds);
                             return;
                         }
 
-                        generateGenericBtn.disabled = true;
-                        generateGenericBtn.classList.add('loading');
-                        
+                        const startTime = new Date(startTimeISO).getTime();
+                        clearInterval(activeTimers[metaId]);
+
+                        activeTimers[metaId] = setInterval(() => {
+                            const now = new Date().getTime();
+                            const elapsed = Math.floor((now - startTime) / 1000);
+                            const total = baseSeconds + elapsed;
+                            display.textContent = formatTime(total);
+                        }, 1000);
+                    }
+
+                    function initializeMetaTimers() {
+                        document.querySelectorAll('.pei-metas-list li').forEach(li => {
+                            const cronometroInicio = li.dataset.cronometroInicio;
+                            const tempoGasto = parseInt(li.dataset.tempoGasto, 10) || 0;
+                            const timerButtonIcon = li.querySelector('.btn-timer-toggle i');
+
+                            if (cronometroInicio) {
+                                startVisualTimer(li, cronometroInicio, tempoGasto);
+                                timerButtonIcon.className = 'fas fa-pause';
+                            } else {
+                                li.querySelector('.timer-display').textContent = formatTime(tempoGasto);
+                                timerButtonIcon.className = 'fas fa-play';
+                            }
+                        });
+                    }
+
+                    async function sendMetaUpdate(peiId, metaTitulo, action, extraData = {}) {
                         try {
-                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; 
-                            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                            
-                            const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
-
-                            const response = await fetch(apiUrl, {
+                            // Using a relative URL, assuming a Flask route handles this
+                            const response = await fetch(`/api/peis/${peiId}/meta/update`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload)
+                                body: JSON.stringify({ meta_titulo: metaTitulo, action, ...extraData })
                             });
                             const result = await response.json();
+                            if (!result.success) throw new Error(result.message);
                             
-                            let generatedText = '';
-                            if (result.candidates && result.candidates[0]?.content?.parts?.[0]) {
-                                generatedText = result.candidates[0].content.parts[0].text;
-                            } else {
-                                throw new Error('Estrutura de resposta da IA inesperada ou conteúdo ausente.');
+                            // Atualiza a UI com os novos dados da meta
+                            const li = document.querySelector(`li[data-pei-id="${peiId}"][data-meta-titulo="${metaTitulo}"]`);
+                            if (li && result.updated_meta) {
+                                const meta = result.updated_meta;
+                                li.dataset.cronometroInicio = meta.cronometro_inicio || '';
+                                li.dataset.tempoGasto = meta.tempo_total_gasto || 0;
+                                const statusBadge = li.querySelector('.meta-status-badge');
+                                statusBadge.textContent = meta.status;
+                                statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(' ', '-')}`;
+                                initializeMetaTimers(); // Re-inicializa o timer para este item
+                            }
+
+                            return result;
+                        } catch (error) {
+                            console.error(`Erro na ação '${action}':`, error);
+                            // Using custom modal message instead of alert
+                            showConfirmModal('Erro', `Erro: ${error.message}`, null, 'danger');
+                            return null;
+                        }
+                    }
+
+                    // PEI Accordion (individual toggle)
+                    document.querySelectorAll('.pei-header').forEach(header => {
+                        header.addEventListener('click', () => {
+                            const content = header.nextElementSibling;
+                            const icon = header.querySelector('.pei-toggle-btn i');
+                            const isVisible = content.style.display === 'block';
+                            content.style.display = isVisible ? 'none' : 'block';
+                            icon.className = isVisible ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+                        });
+                    });
+
+                    // Tabs
+                    function setupTabs() {
+                        document.querySelectorAll('.tab-nav-item').forEach(tab => {
+                            tab.addEventListener('click', () => {
+                                document.querySelectorAll('.tab-nav-item, .tab-panel').forEach(el => el.classList.remove('active'));
+                                tab.classList.add('active');
+                                const targetPanel = document.getElementById('tab-panel-' + tab.dataset.tab);
+                                if (targetPanel) {
+                                    targetPanel.classList.add('active');
+                                }
+
+                                // NOVO: Se a aba "Agenda do Paciente" for ativada, carrega os agendamentos
+                                if (tab.dataset.tab === 'agenda-paciente') {
+                                    loadPatientAppointments(pacienteId);
+                                }
+                            });
+                        });
+                    }
+
+                    // *** Lógica do Modal de Registro Genérico (Adicionar/Editar) ***
+                    const modalRegistroGenerico = document.getElementById('modalRegistroGenerico');
+                    const formRegistroGenerico = document.getElementById('formRegistroGenerico');
+                    const modalRegistroGenericoTitle = document.getElementById('modalRegistroGenericoTitle');
+                    const tipoRegistroGenericoInput = document.getElementById('tipo_registro_generico');
+                    const registroIdGenericoInput = document.getElementById('registro_id_generico');
+                    const tituloRegistroGenericoInput = document.getElementById('titulo_registro_generico');
+                    const conteudoRegistroGenericoEditor = document.getElementById('editor-content-generico');
+                    const conteudoGenericoHiddenTextarea = document.getElementById('conteudo_generico_hidden');
+                    const agendamentoIdReferenciaInput = document.getElementById('agendamento_id_referencia');
+                    const referenciaPeiIdInput = document.getElementById('referencia_pei_id');
+                    const referenciaMetaTituloInput = document.getElementById('referencia_meta_titulo');
+                    const peiEvolutionFields = document.getElementById('pei-evolution-fields');
+
+
+                    // Sincroniza o editor de texto com o campo oculto do formulário
+                    if (conteudoRegistroGenericoEditor && conteudoGenericoHiddenTextarea) {
+                        conteudoRegistroGenericoEditor.addEventListener('input', () => {
+                            conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
+                        });
+                    }
+
+                    // Lógica da barra de ferramentas do editor de texto
+                    document.querySelectorAll('#modalRegistroGenerico .editor-toolbar button').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const command = e.currentTarget.dataset.command;
+                            document.execCommand(command, false, null);
+                            conteudoRegistroGenericoEditor.focus();
+                            if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
+                        });
+                    });
+
+                    // Função para abrir o modal de registro genérico (Adicionar/Editar)
+                    function openGenericRecordModal(type, title, options = {}) {
+                        formRegistroGenerico.reset();
+                        conteudoRegistroGenericoEditor.innerHTML = ''; // Limpa o editor
+                        
+                        tipoRegistroGenericoInput.value = type;
+                        modalRegistroGenericoTitle.innerHTML = title;
+                        
+                        // Reset hidden fields for PEI evolution
+                        referenciaPeiIdInput.value = '';
+                        referenciaMetaTituloInput.value = '';
+                        peiEvolutionFields.style.display = 'none';
+
+                        // Adjust form action based on whether it's an edit or add
+                        if (options.registroData) { // Edit mode
+                            registroIdGenericoInput.value = options.registroData.id;
+                            tituloRegistroGenericoInput.value = options.registroData.titulo || '';
+                            conteudoRegistroGenericoEditor.innerHTML = options.registroData.conteudo || '';
+                            conteudoGenericoHiddenTextarea.value = options.registroData.conteudo || '';
+                            agendamentoIdReferenciaInput.value = options.registroData.agendamento_id_referencia || '';
+
+                            // Set action for editing
+                            formRegistroGenerico.action = `/prontuario/${pacienteId}/registro_generico/${options.registroData.id}/editar`;
+                        } else { // Add mode
+                            registroIdGenericoInput.value = '';
+                            agendamentoIdReferenciaInput.value = options.agendamentoId || '';
+
+                            // Set action for adding
+                            formRegistroGenerico.action = `/prontuario/${pacienteId}/registro_generico/adicionar`;
+                        }
+
+                        // Special handling for PEI Evolution records
+                        if (type === 'evolucao_pei') {
+                            peiEvolutionFields.style.display = 'block';
+                            referenciaPeiIdInput.value = options.peiId || '';
+                            referenciaMetaTituloInput.value = options.metaTitulo || '';
+                            // Pre-fill evolution title (e.g., "Evolução da Meta X em DD/MM/YYYY")
+                            tituloRegistroGenericoInput.value = `Evolução da Meta: ${options.metaTitulo} (${new Date().toLocaleDateString('pt-BR')})`;
+                        } else {
+                            peiEvolutionFields.style.display = 'none';
+                        }
+
+                        // Show/Hide Gemini generator based on record type
+                        const geminiGeneratorSection = document.querySelector('.gemini-generator');
+                        if (['laudo', 'orientacao', 'procedimento'].includes(type)) {
+                            geminiGeneratorSection.style.display = 'block';
+                        } else {
+                            geminiGeneratorSection.style.display = 'none';
+                            document.getElementById('lgpd-consent-text-generico').classList.remove('active');
+                            document.querySelector('#modalRegistroGenerico .gemini-generator-actions').style.display = 'none';
+                            document.getElementById('generate-generic-btn').disabled = true;
+                        }
+
+                        modalControllers.open(modalRegistroGenerico);
+                    }
+                    
+                    // Listeners para os botões de Adicionar (Laudo, Orientação, etc.)
+                    document.getElementById('addLaudoBtn')?.addEventListener('click', () => openGenericRecordModal('laudo', 'Adicionar Laudo Médico'));
+                    document.getElementById('addOrientacaoBtn')?.addEventListener('click', () => openGenericRecordModal('orientacao', 'Adicionar Orientação'));
+                    document.getElementById('addProcedimentoBtn')?.addEventListener('click', () => openGenericRecordModal('procedimento', 'Adicionar Procedimento'));
+
+
+                    // *** Lógica do Gerador Gemini ***
+                    const generateGenericBtn = document.getElementById('generate-generic-btn');
+                    const genericPromptInput = document.getElementById('gemini-prompt-generico');
+                    const lgpdConsentTextGeneric = document.getElementById('lgpd-consent-text-generico');
+                    const generatorActions = document.querySelector('#modalRegistroGenerico .gemini-generator-actions');
+
+                    if (lgpdConsentTextGeneric && generateGenericBtn && generatorActions) {
+                        lgpdConsentTextGeneric.addEventListener('click', () => {
+                            lgpdConsentTextGeneric.classList.toggle('active');
+                            const isActive = lgpdConsentTextGeneric.classList.contains('active');
+                            
+                            generatorActions.style.display = isActive ? 'flex' : 'none';
+                            generateGenericBtn.disabled = !isActive;
+                        });
+                    }
+                    
+                    if (generateGenericBtn && genericPromptInput && conteudoRegistroGenericoEditor) {
+                        generateGenericBtn.addEventListener('click', async () => {
+                            const userPrompt = genericPromptInput.value.trim();
+                            const tipoRegistro = tipoRegistroGenericoInput.value; 
+                            if (!userPrompt) {
+                                showConfirmModal('Atenção', `Por favor, descreva o tipo de ${tipoRegistro} que você deseja gerar.`, null, 'warning');
+                                return;
                             }
                             
-                            // Ação direta: substitui o conteúdo sem confirmação
-                            conteudoRegistroGenericoEditor.innerHTML = generatedText;
-                            if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = generatedText;
+                            let fullPrompt = "";
+                            const patientName = "{{ paciente.nome if paciente else 'o paciente' }}";
+                            const professionalName = "{{ session.user_name if session.user_name else 'o profissional de saúde' }}";
+
+                            if (tipoRegistro === "laudo") {
+                                fullPrompt = `Você é um médico especialista. Crie um modelo de laudo médico completo e detalhado em HTML para o paciente ${patientName}, sem placeholders como "[...]", para a seguinte condição ou motivo: "${userPrompt}". Inclua seções como Identificação do Paciente, Histórico Clínico Relevante, Exame Físico (se aplicável), Resultados de Exames, Discussão do Caso e Conclusão/Diagnóstico, com um plano terapêutico. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
+                            } else if (tipoRegistro === "orientacao") {
+                                fullPrompt = `Você é um profissional de saúde. Crie um modelo de orientação ao paciente em HTML para ${patientName}, sem placeholders como "[...]", sobre a seguinte situação ou tratamento: "${userPrompt}". A orientação deve ser clara, concisa, de fácil entendimento e abranger tópicos como o que é a condição/tratamento, como manejar sintomas, quando procurar ajuda e dicas de autocuidado. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
+                            } else if (tipoRegistro === "procedimento") {
+                                fullPrompt = `Você é um profissional de saúde. Crie a descrição detalhada de um procedimento médico/clínico em HTML para ${patientName}, sem placeholders como "[...]", para: "${userPrompt}". O documento deve abranger indicação, descrição do procedimento passo a passo, cuidados pré-procedimento, cuidados pós-procedimento, riscos e benefícios. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
+                            } else {
+                                console.error("Tipo de registro desconhecido para geração com IA."); 
+                                showConfirmModal('Erro', "Tipo de registro desconhecido para geração com IA.", null, 'danger');
+                                return;
+                            }
+
+                            generateGenericBtn.disabled = true;
+                            generateGenericBtn.classList.add('loading');
+                            
+                            try {
+                                const apiKey = ""; // Canvas will provide this key at runtime
+                                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                                
+                                const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
+
+                                const response = await fetch(apiUrl, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+                                const result = await response.json();
+                                
+                                let generatedText = '';
+                                if (result.candidates && result.candidates[0]?.content?.parts?.[0]) {
+                                    generatedText = result.candidates[0].content.parts[0].text;
+                                } else {
+                                    throw new Error('Estrutura de resposta da IA inesperada ou conteúdo ausente.');
+                                }
+                                
+                                // Ação direta: substitui o conteúdo sem confirmação
+                                conteudoRegistroGenericoEditor.innerHTML = generatedText;
+                                if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = generatedText;
+
+                            } catch (error) {
+                                console.error('Erro na API Gemini:', error);
+                                showConfirmModal('Erro', 'Erro ao gerar conteúdo com IA. Tente novamente mais tarde.', null, 'danger');
+                            } finally {
+                                generateGenericBtn.disabled = !lgpdConsentTextGeneric.classList.contains('active');
+                                generateGenericBtn.classList.remove('loading');
+                            }
+                        });
+                    }
+
+
+                    // Event Delegation
+                    let actionCallback = null;
+                    document.body.addEventListener('click', async (e) => {
+                        const target = e.target;
+                        
+                        const btnTimerToggle = target.closest('.btn-timer-toggle');
+                        const btnTimerReset = target.closest('.btn-timer-reset');
+                        const btnConcluirMeta = target.closest('.btn-concluir-meta');
+                        const btnAddEvo = target.closest('.btn-add-pei-evolution');
+                        const btnApagar = target.closest('.btn-apagar-registro');
+                        const btnPrint = target.closest('.btn-print-pdf');
+                        const btnExpand = target.closest('.btn-expand-registro');
+                        const btnEditGeneric = target.closest('.btn-edit-registro-generico');
+                        const openChatBtn = target.closest('.btn-open-evolucao-chat');
+
+
+                        if (btnTimerToggle) {
+                            const li = btnTimerToggle.closest('li');
+                            const peiId = li.dataset.peiId;
+                            const metaTitulo = li.dataset.metaTitulo;
+                            const isRunning = !!li.dataset.cronometroInicio;
+                            const action = isRunning ? 'stop_timer' : 'start_timer';
+                            await sendMetaUpdate(peiId, metaTitulo, action);
+                        } 
+                        else if (btnTimerReset) {
+                            const li = btnTimerReset.closest('li');
+                            showConfirmModal('Zerar Cronômetro', 'Tem certeza que deseja zerar o tempo e o status desta meta?', async () => {
+                                await sendMetaUpdate(li.dataset.peiId, li.dataset.metaTitulo, 'reset');
+                                modalControllers.close(modalControllers.confirm);
+                            }, 'warning');
+                        }
+                        else if (btnConcluirMeta) {
+                            const li = btnConcluirMeta.closest('li');
+                            document.getElementById('concluir-meta-titulo').textContent = li.dataset.metaTitulo;
+                            modalControllers.concluirMeta.dataset.peiId = li.dataset.peiId;
+                            modalControllers.concluirMeta.dataset.metaTitulo = li.dataset.metaTitulo;
+                            modalControllers.open(modalControllers.concluirMeta);
+                        }
+                        else if (btnAddEvo) {
+                            const peiId = btnAddEvo.closest('li').dataset.peiId;
+                            const metaTitulo = btnAddEvo.closest('li').dataset.metaTitulo;
+                            openGenericRecordModal('evolucao_pei', `Registrar Evolução para: ${metaTitulo}`, { peiId, metaTitulo });
+                        }
+                        else if (btnApagar) {
+                            const recordIdToDelete = btnApagar.dataset.registroId;
+                            showConfirmModal('Apagar Registro', 'Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.', () => {
+                                document.getElementById('registro_id_apagar').value = recordIdToDelete;
+                                document.getElementById('formApagarRegistro').submit();
+                                modalControllers.close(modalControllers.confirm); // Close confirmation modal
+                            }, 'danger');
+                        }
+                        else if (btnPrint) {
+                            generatePdfForRecord(btnPrint.dataset.recordId);
+                        }
+                        else if (btnExpand) {
+                            const recordId = btnExpand.closest('.registro-card').id.replace('registro-', '');
+                            const record = allRecordsData.find(r => r.id === recordId);
+                            if (record) {
+                                const modalTitle = document.getElementById('modal-registro-completo-title');
+                                const modalContent = document.getElementById('modal-registro-completo-content');
+                                modalTitle.textContent = `${record.tipo_registro.replace('_', ' ').capitalize()} - ${record.titulo || ''}`;
+                                modalContent.innerHTML = record.conteudo || '';
+                                modalControllers.open(modalControllers.fullRecord);
+                            }
+                        }
+                        else if (btnEditGeneric) {
+                            e.preventDefault();
+                            const recordId = btnEditGeneric.dataset.registroId;
+                            const recordType = btnEditGeneric.dataset.recordType;
+                            const currentRecord = allRecordsData.find(r => r.id === recordId);
+                            
+                            if (currentRecord) {
+                                const capitalType = recordType.charAt(0).toUpperCase() + recordType.slice(1).replace('_', ' ');
+                                openGenericRecordModal(recordType, `Editar ${capitalType}`, { registroData: currentRecord });
+                            } else {
+                                console.error('Dados do registro não encontrados para edição:', recordId);
+                                showConfirmModal('Erro', 'Dados do registro não encontrados para edição.', null, 'danger');
+                            }
+                        }
+                        else if (openChatBtn) {
+                            const agendamentoId = openChatBtn.dataset.agendamentoId;
+                            openEvolutionChatModal(agendamentoId);
+                        }
+                    });
+
+                    document.getElementById('confirmConcluirMetaBtn').addEventListener('click', async () => {
+                        const modal = modalControllers.concluirMeta;
+                        const peiId = modal.dataset.peiId;
+                        const metaTitulo = modal.dataset.metaTitulo;
+                        const observacao = document.getElementById('concluir-meta-observacao').value;
+                        await sendMetaUpdate(peiId, metaTitulo, 'concluir', { observacao });
+                        modalControllers.close(modal);
+                    });
+                    
+                    document.getElementById('confirmModalBtn').addEventListener('click', () => {
+                        if (typeof actionCallback === 'function') actionCallback();
+                        actionCallback = null;
+                    });
+
+                    function showConfirmModal(title, text, onConfirm, type = 'info') {
+                        document.getElementById('confirm-modal-title').textContent = title;
+                        document.getElementById('confirm-modal-text').textContent = text;
+                        const confirmBtn = document.getElementById('confirmModalBtn');
+                        // Reset button classes
+                        confirmBtn.className = 'btn'; 
+                        if (type === 'danger') confirmBtn.classList.add('btn-danger-outline');
+                        else if (type === 'warning') confirmBtn.classList.add('btn-warning');
+                        else confirmBtn.classList.add('btn-primary'); // Default for general confirmations
+
+                        actionCallback = onConfirm;
+                        modalControllers.open(modalControllers.confirm);
+                    }
+
+                    // --- Lógica de Geração de PDF (Método Estruturado) ---
+                    function htmlToPlainText(html) {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        
+                        tempDiv.querySelectorAll('script, style').forEach(el => el.remove());
+                        tempDiv.innerHTML = tempDiv.innerHTML.replace(/<br\s*\/?>/gi, '\n');
+                        tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, div, li').forEach(el => {
+                            el.appendChild(document.createTextNode('\n'));
+                        });
+                        
+                        let text = tempDiv.textContent || tempDiv.innerText || "";
+                        return text.replace(/\n\s*\n/g, '\n').trim();
+                    }
+
+                    function generatePdfForRecord(recordId) {
+                        const record = allRecordsData.find(r => r.id === recordId);
+                        if (!record) {
+                            console.error("Registro não encontrado para gerar PDF:", recordId);
+                            showConfirmModal('Erro', 'Registro não encontrado para gerar PDF.', null, 'danger');
+                            return;
+                        }
+
+                        const { jsPDF } = window.jspdf;
+                        const doc = new jsPDF();
+
+                        let yPos = 20;
+                        const margin = 15;
+                        const contentLineHeight = 5;
+                        const contentFontSize = 9;
+                        const maxWidth = doc.internal.pageSize.width - margin * 2;
+
+                        // Header
+                        doc.setFontSize(12).setFont("helvetica", "bold").text("{{ session.clinica_nome_display or 'Clínica On' }}", margin, yPos);
+                        yPos += 8; 
+                        doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
+                        yPos += 8;
+
+                        // Patient Info
+                        doc.setFontSize(10).setFont("helvetica", "normal");
+                        doc.text(`Paciente: {{ paciente.nome or 'N/A' }}`, margin, yPos);
+                        yPos += 6;
+                        doc.text(`CPF: {{ paciente.cpf or 'N/A' }}`, margin, yPos);
+                        doc.text(`Data Nasc: {{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}`, maxWidth + margin, yPos, { align: 'right' });
+                        yPos += 8;
+                        
+                        // Record Title
+                        const recordTitle = `${record.tipo_registro.replace('_', ' ').capitalize()} - ${record.titulo || ''}`;
+                        doc.setFontSize(14).setFont("helvetica", "bold").text(recordTitle, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                        yPos += 8;
+
+                        // Record Metadata
+                        doc.setFontSize(9).setFont("helvetica", "italic").text(`Data: ${record.data_registro.split(' ')[0]} | Profissional: ${record.profissional_nome}`, margin, yPos);
+                        yPos += 6;
+                        doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
+                        yPos += 8;
+
+                        // Record Content
+                        doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                        const contentText = htmlToPlainText(record.conteudo || '');
+                        const splitText = doc.splitTextToSize(contentText, maxWidth);
+                        
+                        splitText.forEach(line => {
+                            if (yPos > doc.internal.pageSize.height - margin) {
+                                doc.addPage();
+                                yPos = margin;
+                            }
+                            doc.text(line, margin, yPos);
+                            yPos += contentLineHeight;
+                        });
+
+                        doc.save(`${recordTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${paciente.nome.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                    }
+
+                    // NEW: Lógica para a Agenda do Paciente e Chat de Evolução
+                    const agendaPacienteList = document.getElementById('agenda-paciente-list');
+                    const agendaPacienteEmptyState = document.getElementById('agenda-paciente-empty-state');
+                    const chatEvolucaoModal = document.getElementById('chat-evolucao-modal');
+                    const chatMessagesContainer = document.getElementById('chat-messages-container');
+                    const chatInput = document.getElementById('chat-input');
+                    const sendChatBtn = document.getElementById('send-chat-btn');
+                    const chatTitle = document.getElementById('chat-evolucao-title');
+                    let currentAgendamentoId = null;
+
+                    async function loadPatientAppointments(pId) {
+                        agendaPacienteList.innerHTML = ''; // Limpa a lista
+                        agendaPacienteEmptyState.style.display = 'block';
+                        agendaPacienteEmptyState.querySelector('p').textContent = 'Carregando agendamentos...';
+
+                        try {
+                            const response = await fetch(`/api/pacientes/${pId}/agendamentos-concluidos`);
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.message || 'Erro ao carregar agendamentos do paciente.');
+                            }
+                            const data = await response.json();
+                            
+                            agendaPacienteList.innerHTML = ''; // Limpa antes de adicionar
+                            if (data.agendamentos && data.agendamentos.length > 0) {
+                                agendaPacienteEmptyState.style.display = 'none';
+                                data.agendamentos.forEach(agendamento => {
+                                    const agendamentoCard = document.createElement('div');
+                                    agendamentoCard.className = 'agenda-paciente-card';
+                                    agendamentoCard.innerHTML = `
+                                        <div class="card-header">
+                                            <h4>${agendamento.data_agendamento_fmt} - ${agendamento.hora_agendamento}</h4>
+                                            <span class="status-badge status-${agendamento.status}">${agendamento.status.charAt(0).toUpperCase() + agendamento.status.slice(1)}</span>
+                                        </div>
+                                        <div class="card-body">
+                                            <p><strong>Profissional:</strong> ${agendamento.profissional_nome}</p>
+                                            <p><strong>Serviço:</strong> ${agendamento.servico_nome}</p>
+                                            <p><strong>Preço:</strong> R$ ${parseFloat(agendamento.servico_procedimento_preco).toFixed(2).replace('.', ',')}</p>
+                                        </div>
+                                        <div class="card-footer">
+                                            <button class="btn btn-sm btn-info btn-open-evolucao-chat" data-agendamento-id="${agendamento.id}">
+                                                <i class="fas fa-comments"></i> Abrir Evolução
+                                            </button>
+                                        </div>
+                                    `;
+                                    agendaPacienteList.appendChild(agendamentoCard);
+                                });
+                            } else {
+                                agendaPacienteEmptyState.style.display = 'block';
+                                agendaPacienteEmptyState.querySelector('p').textContent = 'Nenhum agendamento concluído para este paciente.';
+                            }
 
                         } catch (error) {
-                            console.error('Erro na API Gemini:', error);
-                        } finally {
-                            generateGenericBtn.disabled = !lgpdConsentTextGeneric.classList.contains('active');
-                            generateGenericBtn.classList.remove('loading');
-                        }
-                    });
-                }
-
-
-                // *** Lógica de Exclusão e Modais ***
-                const confirmDeleteModal = document.getElementById('confirm-delete-modal');
-                const formApagarRegistro = document.getElementById('formApagarRegistro');
-                let recordToDeleteId = null;
-
-                // Função genérica para fechar modais pelo ID
-                function closeModalById(modalId) {
-                    const modal = document.getElementById(modalId);
-                    if (modal) modal.classList.remove('active');
-                }
-
-                // Event listener unificado para cliques no corpo do documento
-                document.body.addEventListener('click', function(e) {
-                    const target = e.target;
-                    
-                    // Lógica para fechar modais
-                    const closeBtn = target.closest('.modal-close-btn');
-                    if (closeBtn) {
-                        const modalId = closeBtn.dataset.closeModal || closeBtn.closest('.modal-overlay')?.id;
-                        if(modalId) closeModalById(modalId);
-                        return;
-                    }
-                    if(target.matches('.modal-overlay')) {
-                         closeModalById(target.id);
-                         return;
-                    }
-                    if(target.closest('[data-close-modal]')) {
-                        closeModalById(target.closest('[data-close-modal]').dataset.closeModal);
-                        return;
-                    }
-
-                    // Botão EXPANDIR registro
-                    const expandButton = target.closest('.btn-expand-registro');
-                    if (expandButton) {
-                        const card = expandButton.closest('.registro-card');
-                        const contentDiv = card.querySelector('.registro-content');
-                        const titleText = card.querySelector('.registro-header h4').textContent;
-                        
-                        const modal = document.getElementById('registro-completo-modal');
-                        const modalTitle = document.getElementById('modal-registro-completo-title');
-                        const modalContent = document.getElementById('modal-registro-completo-content');
-
-                        if (modal && modalTitle && modalContent) {
-                            modalTitle.textContent = titleText;
-                            modalContent.innerHTML = contentDiv.innerHTML;
-                            modal.classList.add('active');
-                        }
-                        return;
-                    }
-                    
-                    // Botão EDITAR registro genérico
-                    const editButton = target.closest('.btn-edit-registro-generico');
-                    if(editButton) {
-                        e.preventDefault(); 
-                        const registroId = editButton.dataset.registroId;
-                        const currentRegistro = allRecordsData.find(r => r.id === registroId);
-                        
-                        if (currentRegistro) {
-                            const capitalType = currentRegistro.tipo_registro.charAt(0).toUpperCase() + currentRegistro.tipo_registro.slice(1);
-                            openRegistroGenericoModal(currentRegistro.tipo_registro, `Editar ${capitalType}`, currentRegistro);
-                        } else {
-                            console.error('Dados do registro não encontrados para edição:', registroId);
-                        }
-                        return;
-                    }
-
-                    // Botão APAGAR registro
-                    const deleteButton = target.closest('.btn-apagar-registro');
-                    if (deleteButton) {
-                        recordToDeleteId = deleteButton.dataset.registroId;
-                        if(confirmDeleteModal) confirmDeleteModal.classList.add('active');
-                        return;
-                    }
-
-                    // Botão de CONFIRMAR exclusão
-                    if (target.id === 'confirmDeleteBtn') {
-                        if (recordToDeleteId && formApagarRegistro) {
-                            formApagarRegistro.querySelector('#registro_id_apagar').value = recordToDeleteId;
-                            formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}`;
-                            formApagarRegistro.submit();
-                        }
-                        closeModalById('confirm-delete-modal');
-                        return;
-                    }
-
-                    // Botão de IMPRIMIR PDF
-                    const printButton = target.closest('.btn-print-pdf');
-                     if (printButton) {
-                         generatePdfForRecord(printButton);
-                         return;
-                     }
-
-                    // NOVO: Botão de Abrir Chat de Evolução
-                    const openChatBtn = target.closest('.btn-open-evolucao-chat');
-                    if (openChatBtn) {
-                        const agendamentoId = openChatBtn.dataset.agendamentoId;
-                        openEvolutionChatModal(agendamentoId);
-                        return;
-                    }
-                });
-
-                // --- Lógica de Geração de PDF ---
-                // Função melhorada para converter HTML em texto plano para o PDF
-                function htmlToPlainText(html) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = html;
-                    
-                    // Remove tags de script e estilo para não aparecerem no PDF
-                    tempDiv.querySelectorAll('script, style').forEach(el => el.remove());
-
-                    // Substitui quebras de linha por espaços para evitar duplicação
-                    tempDiv.innerHTML = tempDiv.innerHTML.replace(/<br\s*\/?>/gi, '\n');
-
-                    // Adiciona quebras de linha após elementos de bloco para melhor formatação
-                    tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, div, li').forEach(el => {
-                        el.appendChild(document.createTextNode('\n'));
-                    });
-                    
-                    // Converte para texto plano, removendo espaços excessivos e quebras de linha
-                    let text = tempDiv.textContent || tempDiv.innerText || "";
-                    return text.replace(/\n\s*\n/g, '\n').trim();
-                }
-
-                function generatePdfForRecord(button) {
-                     const recordCard = button.closest('.registro-card');
-                     
-                     const title = recordCard.querySelector('.registro-header h4').textContent.trim();
-                     const date = recordCard.querySelector('.registro-meta span:first-child').textContent.trim().replace('📅 ', '');
-                     const professional = recordCard.querySelector('.registro-meta span:last-child').textContent.trim().replace('👩‍⚕️ ', '');
-                     const contentHtml = recordCard.querySelector('.registro-content').innerHTML;
-
-                     const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
-                     const patientCpf = "{{ paciente.cpf or 'N/A' }}";
-                     const patientDob = "{{ paciente.data_nascimento if paciente.data_nascimento else 'N/A' }}";
-                     const clinicName = "{{ session.clinica_nome_display or 'Clinica On' }}";
-
-                     const { jsPDF } = window.jspdf;
-                     const doc = new jsPDF();
-
-                     let yPos = 20;
-                     const margin = 15;
-                     // Ajustes de fonte e espaçamento
-                     const contentLineHeight = 5; // Altura da linha reduzida
-                     const contentFontSize = 9;   // Tamanho da fonte do conteúdo reduzido
-                     const maxWidth = doc.internal.pageSize.width - margin * 2;
-
-                     // Cabeçalho da Clínica
-                     doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, margin, yPos);
-                     yPos += 8; 
-                     doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
-                     yPos += 8;
-
-                     // Informações do Paciente
-                     doc.setFontSize(10).setFont("helvetica", "normal");
-                     doc.text(`Paciente: ${patientName}`, margin, yPos);
-                     yPos += 6;
-                     doc.text(`CPF: ${patientCpf}`, margin, yPos);
-                     doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
-                     yPos += 8;
-                     
-                     // Título do Registro
-                     doc.setFontSize(14).setFont("helvetica", "bold").text(title, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
-                     yPos += 8;
-
-                     // Metadados do Registro
-                     doc.setFontSize(9).setFont("helvetica", "italic").text(`Data: ${date} | Profissional: ${professional}`, margin, yPos);
-                     yPos += 6;
-                     doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
-                     yPos += 8;
-
-                     // Conteúdo do Registro
-                     doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                     const contentText = htmlToPlainText(contentHtml);
-                     const splitText = doc.splitTextToSize(contentText, maxWidth);
-                     
-                     splitText.forEach(line => {
-                         if (yPos > doc.internal.pageSize.height - margin) {
-                             doc.addPage();
-                             yPos = margin;
-                         }
-                         doc.text(line, margin, yPos);
-                         yPos += contentLineHeight;
-                     });
-
-                     doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
-                }
-
-                // NEW: Lógica para o Accordion de PEIs
-                const togglePeisViewBtn = document.getElementById('toggle-peis-view');
-                const peiAccordionContainer = document.getElementById('pei-accordion-container');
-                let peiDetailsVisible = false; // Estado para controlar a visibilidade dos detalhes do PEI
-
-                // Se o botão existe, adiciona listener
-                if (togglePeisViewBtn) {
-                    togglePeisViewBtn.addEventListener('click', () => {
-                        peiDetailsVisible = !peiDetailsVisible; // Inverte o estado
-                        
-                        const allPeiContents = peiAccordionContainer.querySelectorAll('.pei-content');
-                        const allPeiToggleIcons = peiAccordionContainer.querySelectorAll('.pei-toggle-btn i');
-
-                        allPeiContents.forEach(content => {
-                            content.style.display = peiDetailsVisible ? 'block' : 'none';
-                        });
-
-                        allPeiToggleIcons.forEach(icon => {
-                            icon.classList.toggle('fa-chevron-up', peiDetailsVisible);
-                            icon.classList.toggle('fa-chevron-down', !peiDetailsVisible);
-                        });
-
-                        // Atualiza o texto e ícone do botão principal
-                        if (peiDetailsVisible) {
-                            togglePeisViewBtn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar Detalhes';
-                        } else {
-                            togglePeisViewBtn.innerHTML = '<i class="fas fa-eye"></i> Exibir Detalhes';
-                        }
-                    });
-                }
-
-                // Lógica de toggle individual para cada PEI (se os detalhes estiverem visíveis)
-                peiAccordionContainer.querySelectorAll('.pei-header').forEach(header => {
-                    header.addEventListener('click', () => {
-                        const peiCard = header.closest('.pei-card');
-                        const content = peiCard.querySelector('.pei-content');
-                        const icon = header.querySelector('.pei-toggle-btn i');
-
-                        if (content.style.display === 'block') {
-                            content.style.display = 'none';
-                            icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-                        } else {
-                            content.style.display = 'block';
-                            icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-                        }
-                    });
-                });
-
-                // NOVO: Lógica da Agenda do Paciente e Chat de Evolução
-                const agendaPacienteList = document.getElementById('agenda-paciente-list');
-                const agendaPacienteEmptyState = document.getElementById('agenda-paciente-empty-state');
-                const chatEvolucaoModal = document.getElementById('chat-evolucao-modal');
-                const chatMessagesContainer = document.getElementById('chat-messages-container');
-                const chatInput = document.getElementById('chat-input');
-                const sendChatBtn = document.getElementById('send-chat-btn');
-                const chatTitle = document.getElementById('chat-evolucao-title');
-                let currentAgendamentoId = null;
-
-                async function loadPatientAppointments(pId) {
-                    agendaPacienteList.innerHTML = ''; // Limpa a lista
-                    agendaPacienteEmptyState.style.display = 'block';
-                    agendaPacienteEmptyState.querySelector('p').textContent = 'Carregando agendamentos...';
-
-                    try {
-                        const response = await fetch(`/api/pacientes/${pId}/agendamentos-concluidos`);
-                        if (!response.ok) {
-                            // Se a resposta não for OK, mostre a mensagem de erro da API
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Erro ao carregar agendamentos do paciente.');
-                        }
-                        const data = await response.json();
-                        
-                        agendaPacienteList.innerHTML = ''; // Limpa antes de adicionar
-                        if (data.agendamentos && data.agendamentos.length > 0) {
-                            agendaPacienteEmptyState.style.display = 'none';
-                            data.agendamentos.forEach(agendamento => {
-                                const agendamentoCard = document.createElement('div');
-                                agendamentoCard.className = 'agenda-paciente-card';
-                                agendamentoCard.innerHTML = `
-                                    <div class="card-header">
-                                        <h4>${agendamento.data_agendamento_fmt} - ${agendamento.hora_agendamento}</h4>
-                                        <span class="status-badge status-${agendamento.status}">${agendamento.status.charAt(0).toUpperCase() + agendamento.status.slice(1)}</span>
-                                    </div>
-                                    <div class="card-body">
-                                        <p><strong>Profissional:</strong> ${agendamento.profissional_nome}</p>
-                                        <p><strong>Serviço:</strong> ${agendamento.servico_nome}</p>
-                                        <p><strong>Preço:</strong> R$ ${parseFloat(agendamento.servico_procedimento_preco).toFixed(2).replace('.', ',')}</p>
-                                    </div>
-                                    <div class="card-footer">
-                                        <button class="btn btn-sm btn-info btn-open-evolucao-chat" data-agendamento-id="${agendamento.id}">
-                                            <i class="fas fa-comments"></i> Abrir Evolução
-                                        </button>
-                                    </div>
-                                `;
-                                agendaPacienteList.appendChild(agendamentoCard);
-                            });
-                        } else {
+                            console.error('Erro ao carregar agendamentos do paciente:', error);
                             agendaPacienteEmptyState.style.display = 'block';
-                            agendaPacienteEmptyState.querySelector('p').textContent = 'Nenhum agendamento concluído para este paciente.';
+                            agendaPacienteEmptyState.querySelector('p').textContent = 'Erro ao carregar agendamentos: ' + error.message;
                         }
-
-                    } catch (error) {
-                        console.error('Erro ao carregar agendamentos do paciente:', error);
-                        agendaPacienteEmptyState.style.display = 'block';
-                        agendaPacienteEmptyState.querySelector('p').textContent = 'Erro ao carregar agendamentos: ' + error.message;
                     }
-                }
 
-                async function openEvolutionChatModal(agendamentoId) {
-                    currentAgendamentoId = agendamentoId;
-                    chatMessagesContainer.innerHTML = ''; // Limpa mensagens anteriores
-                    document.getElementById('chat-empty-state').style.display = 'block';
-                    document.getElementById('chat-empty-state').querySelector('p').textContent = 'Carregando evoluções...';
-                    chatInput.value = ''; // Limpa o campo de entrada
-
-                    chatEvolucaoModal.classList.add('active');
-
-                    try {
-                        const response = await fetch(`/agendamentos/${agendamentoId}/evolucao`);
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.message || 'Erro ao carregar mensagens de evolução.');
-                        }
-                        const data = await response.json();
-                        
-                        chatTitle.textContent = `Evolução para Agendamento (${data.agendamento.data_agendamento} ${data.agendamento.hora_agendamento})`;
-
-                        chatMessagesContainer.innerHTML = ''; // Limpa novamente antes de popular
-                        if (data.mensagens && data.mensagens.length > 0) {
-                            document.getElementById('chat-empty-state').style.display = 'none';
-                            data.mensagens.forEach(msg => {
-                                const messageElement = document.createElement('div');
-                                messageElement.className = 'chat-message';
-                                messageElement.innerHTML = `
-                                    <div class="message-header">
-                                        <span class="message-author">${msg.registrado_por_nome}</span>
-                                        <span class="message-date">${msg.data_registro_fmt}</span>
-                                    </div>
-                                    <div class="message-content">${msg.conteudo}</div>
-                                `;
-                                chatMessagesContainer.appendChild(messageElement);
-                            });
-                            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight; // Rola para o final
-                        } else {
-                            document.getElementById('chat-empty-state').style.display = 'block';
-                            document.getElementById('chat-empty-state').querySelector('p').textContent = 'Nenhuma evolução registrada para este agendamento.';
-                        }
-
-                    } catch (error) {
-                        console.error('Erro ao carregar chat de evolução:', error);
+                    async function openEvolutionChatModal(agendamentoId) {
+                        currentAgendamentoId = agendamentoId;
+                        chatMessagesContainer.innerHTML = ''; // Limpa mensagens anteriores
                         document.getElementById('chat-empty-state').style.display = 'block';
-                        document.getElementById('chat-empty-state').querySelector('p').textContent = 'Erro ao carregar evoluções: ' + error.message;
-                    }
-                }
+                        document.getElementById('chat-empty-state').querySelector('p').textContent = 'Carregando evoluções...';
+                        chatInput.value = ''; // Limpa o campo de entrada
 
-                sendChatBtn.addEventListener('click', async () => {
-                    const messageContent = chatInput.value.trim();
-                    if (!messageContent || !currentAgendamentoId) return;
+                        modalControllers.open(chatEvolucaoModal);
 
-                    sendChatBtn.disabled = true;
-                    sendChatBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        try {
+                            const response = await fetch(`/api/agendamentos/${agendamentoId}/evolucao`); // Ensure this endpoint exists and returns JSON
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.message || 'Erro ao carregar mensagens de evolução.');
+                            }
+                            const data = await response.json();
+                            
+                            chatTitle.textContent = `Evolução para Agendamento (${data.agendamento.data_agendamento} ${data.agendamento.hora_agendamento})`;
 
-                    try {
-                        const response = await fetch(`/agendamentos/${currentAgendamentoId}/evolucao/adicionar`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ conteudo: messageContent })
-                        });
-                        const result = await response.json();
+                            chatMessagesContainer.innerHTML = ''; // Limpa novamente antes de popular
+                            if (data.mensagens && data.mensagens.length > 0) {
+                                document.getElementById('chat-empty-state').style.display = 'none';
+                                data.mensagens.forEach(msg => {
+                                    const messageElement = document.createElement('div');
+                                    messageElement.className = 'chat-message';
+                                    messageElement.innerHTML = `
+                                        <div class="message-header">
+                                            <span class="message-author">${msg.registrado_por_nome}</span>
+                                            <span class="message-date">${msg.data_registro_fmt}</span>
+                                        </div>
+                                        <div class="message-content">${msg.conteudo}</div>
+                                    `;
+                                    chatMessagesContainer.appendChild(messageElement);
+                                });
+                                scrollToBottomChat(); // Rola para o final
+                            } else {
+                                document.getElementById('chat-empty-state').style.display = 'block';
+                                document.getElementById('chat-empty-state').querySelector('p').textContent = 'Nenhuma evolução registrada para este agendamento.';
+                            }
 
-                        if (result.success) {
-                            chatInput.value = ''; // Limpa o input
-                            // Recarrega as mensagens para incluir a nova (ou adiciona diretamente se o retorno for completo)
-                            openEvolutionChatModal(currentAgendamentoId); // Recarrega para simplicidade
-                        } else {
-                            console.error('Erro ao enviar mensagem:', result.message);
-                            alert('Erro ao enviar mensagem: ' + result.message);
+                        } catch (error) {
+                            console.error('Erro ao carregar chat de evolução:', error);
+                            document.getElementById('chat-empty-state').style.display = 'block';
+                            document.getElementById('chat-empty-state').querySelector('p').textContent = 'Erro ao carregar evoluções: ' + error.message;
                         }
-                    } catch (error) {
-                        console.error('Erro de rede ao enviar mensagem:', error);
-                        alert('Erro de rede ao enviar mensagem.');
-                    } finally {
-                        sendChatBtn.disabled = false;
-                        sendChatBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
                     }
-                });
 
-                // Função para rolar o chat para o final
-                function scrollToBottomChat() {
-                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                    sendChatBtn.addEventListener('click', async () => {
+                        const messageContent = chatInput.value.trim();
+                        if (!messageContent || !currentAgendamentoId) {
+                            showConfirmModal('Atenção', 'Digite uma mensagem para enviar.', null, 'warning');
+                            return;
+                        }
+
+                        sendChatBtn.disabled = true;
+                        sendChatBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                        try {
+                            const response = await fetch(`/api/agendamentos/${currentAgendamentoId}/evolucao/adicionar`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ conteudo: messageContent })
+                            });
+                            const result = await response.json();
+
+                            if (result.success) {
+                                chatInput.value = ''; // Limpa o input
+                                openEvolutionChatModal(currentAgendamentoId); // Recarrega para simplicidade e mostra a nova mensagem
+                            } else {
+                                console.error('Erro ao enviar mensagem:', result.message);
+                                showConfirmModal('Erro', 'Erro ao enviar mensagem: ' + result.message, null, 'danger');
+                            }
+                        } catch (error) {
+                            console.error('Erro de rede ao enviar mensagem:', error);
+                            showConfirmModal('Erro', 'Erro de rede ao enviar mensagem.', null, 'danger');
+                        } finally {
+                            sendChatBtn.disabled = false;
+                            sendChatBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+                        }
+                    });
+
+                    // Função para rolar o chat para o final
+                    function scrollToBottomChat() {
+                        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                    }
+
+                    // Helper para Capitalize, se necessário no JS (já existe no Jinja)
+                    String.prototype.capitalize = function() {
+                        return this.charAt(0).toUpperCase() + this.slice(1);
+                    }
+
+                    initializeMetaTimers(); // Initialize timers on page load
+                    setupTabs(); // Setup tab functionality
                 }
 
-                // Chamar loadPatientAppointments quando a aba for ativada
-                // Isso já está sendo feito no `setupTabs`
-                
-                // --- Inicialização ---
-                setupTabs();
-            }
+                // --- Inicialização Geral ---
+                setupCommonUI();
+                setupProntuarioPage();
 
-            // --- Inicialização Geral ---
-            setupCommonUI();
-            setupProntuarioPage();
+            } catch (e) {
+                console.error('Erro fatal durante a inicialização do DOM:', e);
+                // Exibir uma mensagem de erro genérica para o usuário
+                // showConfirmModal('Erro de Inicialização', 'O aplicativo não pôde ser carregado corretamente. Por favor, recarregue a página.', null, 'danger');
+            }
         });
     </script>
-    
-    <!-- NEW Styles for Agenda do Paciente and Chat -->
-    <style>
-        .agenda-paciente-container {
-            background-color: var(--card);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            padding: 1.5rem;
-        }
-
-        .agenda-paciente-container h3 {
-            font-size: 1.5rem;
-            color: var(--text);
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .agenda-scroll-container {
-            max-height: 60vh; /* Ajuste conforme necessário */
-            overflow-y: auto;
-            padding-right: 10px; /* Espaço para a scrollbar */
-        }
-        .agenda-scroll-container::-webkit-scrollbar { width: 6px; }
-        .agenda-scroll-container::-webkit-scrollbar-track { background: transparent; }
-        .agenda-scroll-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-        [data-theme="dark"] .agenda-scroll-container::-webkit-scrollbar-thumb { background: #4b5563; }
-
-        .agenda-paciente-card {
-            background-color: var(--bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            margin-bottom: 1rem;
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-        .agenda-paciente-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-        }
-        [data-theme="dark"] .agenda-paciente-card {
-            background-color: color-mix(in srgb, var(--dark-bg) 15%, transparent);
-            border-color: var(--dark-border-color);
-        }
-
-
-        .agenda-paciente-card .card-header {
-            background-color: color-mix(in srgb, var(--primary) 10%, transparent);
-            padding: 0.8rem 1.2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-        }
-        [data-theme="dark"] .agenda-paciente-card .card-header {
-            background-color: color-mix(in srgb, var(--primary) 20%, transparent);
-        }
-
-
-        .agenda-paciente-card .card-header h4 {
-            margin: 0;
-            font-size: 1rem;
-            color: var(--primary-dark);
-        }
-        [data-theme="dark"] .agenda-paciente-card .card-header h4 {
-            color: var(--primary);
-        }
-
-
-        .agenda-paciente-card .card-body {
-            padding: 1rem 1.2rem;
-        }
-
-        .agenda-paciente-card .card-body p {
-            margin-bottom: 0.5rem;
-            font-size: 0.95rem;
-        }
-        .agenda-paciente-card .card-body p:last-child {
-            margin-bottom: 0;
-        }
-        .agenda-paciente-card .card-body strong {
-            color: var(--muted);
-            font-weight: 500;
-        }
-        .agenda-paciente-card .card-body span {
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .agenda-paciente-card .card-footer {
-            background-color: var(--card);
-            padding: 0.8rem 1.2rem;
-            border-top: 1px solid var(--border-color);
-            text-align: right;
-        }
-        [data-theme="dark"] .agenda-paciente-card .card-footer {
-            background-color: var(--dark-card);
-        }
-
-        /* Status Badges (reused from other templates, ensuring consistency) */
-        .status-badge {
-            padding: 0.3em 0.7em;
-            border-radius: 15px;
-            font-size: 0.7em;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: white;
-            white-space: nowrap;
-        }
-        .status-badge.status-confirmado { background-color: var(--status-confirmado); }
-        .status-badge.status-concluido { background-color: var(--status-concluido); }
-        .status-badge.status-pendente { background-color: var(--status-pendente); }
-        .status-badge.status-cancelado { background-color: var(--status-cancelado); }
-
-
-        /* Chat Modal Specific Styles */
-        .chat-modal-content {
-            max-width: 700px; /* Largura maior para o chat */
-            height: 80vh; /* Altura do modal de chat */
-        }
-
-        .chat-messages-container {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .chat-messages-container::-webkit-scrollbar { width: 6px; }
-        .chat-messages-container::-webkit-scrollbar-track { background: transparent; }
-        .chat-messages-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-        [data-theme="dark"] .chat-messages-container::-webkit-scrollbar-thumb { background: #4b5563; }
-
-
-        .chat-message {
-            background-color: var(--bg);
-            padding: 0.8rem 1.2rem;
-            border-radius: 10px;
-            margin-bottom: 0.75rem;
-            border: 1px solid var(--border-color);
-        }
-        [data-theme="dark"] .chat-message {
-            background-color: color-mix(in srgb, var(--dark-bg) 10%, transparent);
-            border-color: var(--dark-border-color);
-        }
-
-
-        .chat-message .message-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .chat-message .message-author {
-            font-weight: 600;
-            color: var(--primary-dark);
-            font-size: 0.9rem;
-        }
-        [data-theme="dark"] .chat-message .message-author {
-            color: var(--primary);
-        }
-
-
-        .chat-message .message-date {
-            font-size: 0.8rem;
-            color: var(--muted);
-        }
-
-        .chat-message .message-content {
-            font-size: 0.95rem;
-            color: var(--text);
-            line-height: 1.5;
-            white-space: pre-wrap; /* Preserves whitespace and line breaks */
-            word-wrap: break-word;
-        }
-
-        .chat-input-area {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            gap: 1rem;
-            background-color: var(--bg); /* Garante que o input fica no fundo claro */
-        }
-        [data-theme="dark"] .chat-input-area {
-            background-color: var(--dark-bg);
-        }
-
-        .chat-input-area textarea {
-            flex-grow: 1;
-            padding: 0.7rem 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--card); /* Fundo branco para input */
-            color: var(--text);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
-            resize: vertical; /* Permite redimensionar verticalmente */
-            min-height: 60px; /* Altura mínima para o textarea */
-        }
-        [data-theme="dark"] .chat-input-area textarea {
-            background-color: var(--dark-card);
-        }
-
-
-        .chat-input-area textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none;
-        }
-
-        .chat-input-area .btn {
-            flex-shrink: 0;
-            padding: 0.7rem 1.2rem;
-        }
-
-        /* Responsive adjustments for chat modal */
-        @media (max-width: 600px) {
-            .chat-modal-content {
-                height: 90vh; /* Maior em telas pequenas */
-                max-width: 95%;
-            }
-            .chat-input-area {
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-            .chat-input-area textarea, .chat-input-area .btn {
-                width: 100%;
-            }
-        }
-    </style>
 </body>
 </html>
