@@ -2121,8 +2121,9 @@ def registrar_registro_generico(paciente_doc_id):
     try:
         user_doc = db.collection('User').document(profissional_logado_uid).get()
         if user_doc.exists:
-            profissional_doc_id = user_doc.to_dict().get('profissional_id')
-            profissional_nome = user_doc.to_dict().get('nome_completo', profissional_nome)
+            user_data = user_doc.to_dict()
+            profissional_doc_id = user_data.get('profissional_id')
+            profissional_nome = user_data.get('nome_completo', profissional_nome)
 
         if not profissional_doc_id:
             flash('Seu usuário não está associado a um profissional. Não foi possível registrar.', 'danger')
@@ -2135,26 +2136,38 @@ def registrar_registro_generico(paciente_doc_id):
         tipo_registro = request.form.get('tipo_registro')
         titulo = request.form.get('titulo', '').strip()
         conteudo = request.form.get('conteudo', '').strip()
-        agendamento_id_referencia = request.form.get('agendamento_id_referencia', '').strip()
+        
+        # --- CORREÇÃO APLICADA AQUI ---
+        # Captura as referências do PEI do formulário
+        referencia_pei_id = request.form.get('referencia_pei_id')
+        referencia_meta_titulo = request.form.get('referencia_meta_titulo')
 
         if not all([tipo_registro, titulo, conteudo]):
-            flash(f'Por favor, preencha o título e o conteúdo para o registro de {tipo_registro}.', 'danger')
+            flash(f'Por favor, preencha o título e o conteúdo para o registro.', 'danger')
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
-        db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
+        novo_registro_data = {
             'profissional_id': profissional_doc_id,
             'profissional_nome': profissional_nome,
             'data_registro': firestore.SERVER_TIMESTAMP,
             'tipo_registro': tipo_registro,
             'titulo': titulo,
             'conteudo': conteudo,
-            'agendamento_id_referencia': agendamento_id_referencia if agendamento_id_referencia else None,
             'atualizado_em': firestore.SERVER_TIMESTAMP
-        })
-        flash(f'Registro de {tipo_registro} adicionado com sucesso!', 'success')
+        }
+
+        # Adiciona as referências do PEI ao documento se for uma evolução
+        if tipo_registro == 'evolucao_pei' and referencia_pei_id and referencia_meta_titulo:
+            novo_registro_data['referencia_pei_id'] = referencia_pei_id
+            novo_registro_data['referencia_meta_titulo'] = referencia_meta_titulo
+
+        db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add(novo_registro_data)
+        
+        flash(f'Registro de {tipo_registro.replace("_", " ")} adicionado com sucesso!', 'success')
     except Exception as e:
-        flash(f'Erro ao adicionar registro de {tipo_registro}: {e}', 'danger')
+        flash(f'Erro ao adicionar registro: {e}', 'danger')
         print(f"Erro registrar_registro_generico: {e}")
+    
     return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
 @app.route('/prontuarios/<string:paciente_doc_id>/editar_registro_generico/<string:registro_doc_id>', methods=['POST'])
