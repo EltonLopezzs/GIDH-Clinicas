@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prontuário de {{ paciente.nome if paciente else 'Paciente' }} - {{ session.clinica_nome_display or 'Clínica On' }}</title>
-    
+
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Removido o html2canvas, pois não será mais usado para o conteúdo principal do PDF -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script> -->
+    <!-- Adicionando SweetAlert2 para alertas e confirmações mais modernas -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 
     <style>
@@ -30,13 +33,13 @@
             --info: #0ea5e9;
             --lilac: #8b5cf6; /* Lilás para PEI */
             --border-color: #e2e8f0;
-            
+
             --dark-bg: #0f172a;
             --dark-card: #1e293b;
             --dark-text: #f1f5f9;
             --dark-muted: #94a3b8;
             --dark-border-color: #334155;
-            
+
             color-scheme: light;
 
             /* Cores para os status dos agendamentos */
@@ -98,7 +101,7 @@
         .toggle-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; transition: background 0.2s ease, color 0.2s ease; }
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
         main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
-        
+
         /* --- Buttons & Actions --- */
         .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
         .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
@@ -114,7 +117,7 @@
         .btn-info { background-color: var(--info); color: white; }
         .btn-info:hover { background-color: #0369a1; }
         .topbar-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end; }
-        
+
         /* --- Paciente Info --- */
         .paciente-info-card { background: var(--card); padding: 1.5rem 2rem; border-radius: 12px; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.1), 0 2px 8px -2px rgba(0,0,0,0.06); margin-bottom: 2rem; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
         .paciente-info-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: linear-gradient(to right, var(--primary), var(--primary-dark)); border-radius: 12px 12px 0 0; }
@@ -131,13 +134,14 @@
         .registro-header h4 { font-size: 1.2rem; color: var(--primary); margin: 0; font-weight: 600; }
         .registro-meta { font-size: 0.85rem; color: var(--muted); text-align: right; }
         .registro-meta span { display: block; }
+        /* Revertido CSS para o estado original, sem as alterações específicas para html2canvas */
         .registro-content { font-size: 1rem; color: var(--text); line-height: 1.7; white-space: pre-wrap; overflow-wrap: break-word; max-height: 250px; overflow-y: auto; padding-right: 10px; }
         .registro-content::-webkit-scrollbar { width: 6px; }
         .registro-content::-webkit-scrollbar-track { background: transparent; }
         .registro-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
         .registro-actions { margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; }
         .empty-state { text-align: center; padding: 2rem; color: var(--muted); background: var(--card); border-radius: 12px; }
-        
+
         .registro-card--anamnese { border-left-color: #0d9488; }
         .registro-card--laudo { border-left-color: #0ea5e9; }
         .registro-card--orientacao { border-left-color: #f59e0b; }
@@ -170,7 +174,7 @@
         .form-group input, .form-group select, .form-group textarea { font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg); color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus, .editor-content:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
         .confirm-modal-content { max-width: 500px; padding: 1.5rem; text-align: center; }
-        
+
         /* Rich Text Editor */
         .editor-toolbar { background-color: var(--bg); border: 1px solid var(--border-color); border-bottom: none; border-radius: 8px 8px 0 0; padding: 0.5rem; display: flex; flex-wrap: wrap; gap: 5px; }
         .editor-toolbar button { background: none; border: 1px solid transparent; padding: 8px; cursor: pointer; font-size: 1rem; color: var(--text); border-radius: 4px; transition: background-color 0.2s ease; }
@@ -226,7 +230,29 @@
         .meta-timer-controls .timer-display { font-family: monospace; font-size: 1rem; font-weight: 600; min-width: 70px; text-align: center;}
         .meta-timer-controls .btn-timer-toggle, .meta-timer-controls .btn-timer-reset { padding: 0.3rem 0.5rem; font-size: 0.8rem; line-height: 1; }
         .meta-evolutions { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border-color); display: none; }
-        
+
+        .metas-section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            padding: 0.5rem 0;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .collapsible-header .fa-chevron-down {
+            transition: transform 0.3s ease;
+        }
+        .collapsible-header.collapsed .fa-chevron-down {
+            transform: rotate(-90deg);
+        }
+
         /* --- Agenda & Chat --- */
         .agenda-paciente-container { background-color: var(--card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); padding: 1.5rem; }
         .agenda-paciente-container h3 { font-size: 1.5rem; color: var(--text); margin-bottom: 1.5rem; text-align: center; }
@@ -319,11 +345,11 @@
                 <div class="paciente-info-card">
                     <h3>{{ paciente.nome }}</h3>
                     <div class="paciente-info-grid">
-                         <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}</span></div>
-                        <div class="paciente-info-item"><strong>CPF:</strong> <span>{{ paciente.cpf or 'N/A' }}</span></div>
-                        <div class="paciente-info-item"><strong>Telefone:</strong> <span>{{ paciente.contato_telefone or 'N/A' }}</span></div>
-                        <div class="paciente-info-item"><strong>Convênio:</strong> <span>{{ paciente.convenio_nome or 'Particular' }}</span></div>
-                        <div class="paciente-info-item" style="grid-column: 1 / -1;"><strong>Observações:</strong> <span>{{ paciente.observacoes or 'Nenhuma observação.' }}</span></div>
+                           <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}</span></div>
+                         <div class="paciente-info-item"><strong>CPF:</strong> <span>{{ paciente.cpf or 'N/A' }}</span></div>
+                         <div class="paciente-info-item"><strong>Telefone:</strong> <span>{{ paciente.contato_telefone or 'N/A' }}</span></div>
+                         <div class="paciente-info-item"><strong>Convênio:</strong> <span>{{ paciente.convenio_nome or 'Particular' }}</span></div>
+                         <div class="paciente-info-item" style="grid-column: 1 / -1;"><strong>Observações:</strong> <span>{{ paciente.observacoes or 'Nenhuma observação.' }}</span></div>
                     </div>
                 </div>
                 {% endif %}
@@ -341,29 +367,29 @@
                             <div id="tab-panel-registros" class="tab-panel active">
                                 {% set registros_clinicos = registros | rejectattr('tipo_registro', 'equalto', 'evolucao_pei') | list %}
                                 {% if registros_clinicos %}
-                                    {% for registro in registros_clinicos %}
-                                        <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
-                                            <div class="registro-header">
-                                                <h4>{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}</h4>
-                                                <div class="registro-meta">
-                                                    <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
-                                                    <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome | default('N/A') }}</span>
+                                        {% for registro in registros_clinicos %}
+                                            <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
+                                                <div class="registro-header">
+                                                    <h4>{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}</h4>
+                                                    <div class="registro-meta">
+                                                        <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
+                                                        <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome | default('N/A') }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
+                                                <div class="registro-actions">
+                                                    <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i></button>
+
+                                                    {% if registro.tipo_registro == 'anamnese' %}
+                                                        <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                                                    {% else %}
+                                                        <button class="btn btn-sm btn-warning btn-editar-registro" data-registro-id="{{ registro.id }}" data-tipo="{{ registro.tipo_registro }}" data-titulo="{{ registro.titulo }}" data-conteudo="{{ registro.conteudo | e }}"><i class="fas fa-edit"></i></button>
+                                                    {% endif %}
+
+                                                    <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
                                                 </div>
                                             </div>
-                                            <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
-                                            <div class="registro-actions">
-                                                <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i></button>
-                                                
-                                                {% if registro.tipo_registro == 'anamnese' %}
-                                                    <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
-                                                {% else %}
-                                                    <button class="btn btn-sm btn-warning btn-editar-registro" data-registro-id="{{ registro.id }}" data-tipo="{{ registro.tipo_registro }}" data-titulo="{{ registro.titulo }}" data-conteudo="{{ registro.conteudo | e }}"><i class="fas fa-edit"></i></button>
-                                                {% endif %}
-
-                                                <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
+                                        {% endfor %}
                                 {% else %}
                                     <div class="empty-state"><p>Nenhum registro clínico encontrado.</p></div>
                                 {% endif %}
@@ -371,6 +397,59 @@
 
                             <!-- Aba de PEIs -->
                             <div id="tab-panel-peis" class="tab-panel">
+
+                                {% macro render_meta(meta, pei_id) %}
+                                    <li data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"
+                                        data-cronometro-inicio="{{ meta.cronometro_inicio if meta.cronometro_inicio else '' }}"
+                                        data-tempo-gasto="{{ meta.tempo_total_gasto | default(0) }}">
+                                        <div class="meta-header">
+                                            <strong>{{ meta.titulo }}</strong>
+                                            <span class="meta-status-badge meta-status-{{ meta.status | default('nao-iniciada') | lower | replace(' ', '-') }}">{{ meta.status | default('Não Iniciada') }}</span>
+                                        </div>
+                                        <p class="meta-description"> (Responsável: {{ meta.responsavel or 'N/A' }})<br>{{ meta.descricao }}</p>
+
+                                        <div class="meta-actions-bar">
+                                            <div class="meta-timer-controls">
+                                                <button class="btn btn-sm btn-secondary btn-timer-toggle" title="Iniciar/Pausar Cronômetro">
+                                                    <i class="fas fa-play"></i>
+                                                </button>
+                                                <span class="timer-display">00:00:00</span>
+                                                <button class="btn btn-sm btn-danger-outline btn-timer-reset" title="Zerar Cronômetro">
+                                                    <i class="fas fa-history"></i>
+                                                </button>
+                                            </div>
+                                            <button class="btn btn-sm btn-success btn-concluir-meta">
+                                                <i class="fas fa-check"></i> Concluir Meta
+                                            </button>
+                                            <button class="btn btn-sm btn-primary btn-add-pei-evolution">
+                                                <i class="fas fa-plus"></i> Registrar Evolução
+                                            </button>
+                                            <button class="btn btn-sm btn-info btn-toggle-evolutions" style="display: none;">
+                                                <i class="fas fa-eye"></i> Visualizar Evoluções (<span class="evolution-count">0</span>)
+                                            </button>
+                                        </div>
+
+                                        <div class="meta-evolutions">
+                                            {% for registro in registros if registro.tipo_registro == 'evolucao_pei' and registro.referencia_pei_id == pei_id and registro.referencia_meta_titulo == meta.titulo %}
+                                                <div class="registro-card registro-card--evolucao_pei" id="registro-{{ registro.id }}" style="margin-top:1rem; margin-bottom: 0;">
+                                                    <div class="registro-header" style="padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                                                        <h4 style="font-size: 1rem;">{{ registro.titulo }}</h4>
+                                                        <div class="registro-meta" style="font-size: 0.8rem;">
+                                                            <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
+                                                            <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
+                                                    <div class="registro-actions">
+                                                           <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="Evolução de Meta: {{ meta.titulo }}"><i class="fas fa-print"></i></button>
+                                                         <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </li>
+                                {% endmacro %}
+
                                 {% if peis_do_paciente %}
                                     <div class="pei-accordion">
                                         {% for pei in peis_do_paciente %}
@@ -386,63 +465,40 @@
                                             <div class="pei-content">
                                                 <p><strong>Descrição:</strong> {{ pei.descricao_pei or 'N/A' }}</p>
                                                 <p><strong>Responsável pelo Plano:</strong> {{ pei.profissional_responsavel_nome or 'Não definido' }}</p>
-                                                <h5>Metas</h5>
-                                                {% if pei.metas %}
-                                                    <ul class="pei-metas-list">
-                                                    {% for meta in pei.metas %}
-                                                        <li data-pei-id="{{ pei.id }}" data-meta-titulo="{{ meta.titulo }}" 
-                                                            data-cronometro-inicio="{{ meta.cronometro_inicio if meta.cronometro_inicio else '' }}"
-                                                            data-tempo-gasto="{{ meta.tempo_total_gasto | default(0) }}">
-                                                            <div class="meta-header">
-                                                                <strong>{{ meta.titulo }}</strong>
-                                                                <span class="meta-status-badge meta-status-{{ meta.status | default('nao-iniciada') | lower | replace(' ', '-') }}">{{ meta.status | default('Não Iniciada') }}</span>
-                                                            </div>
-                                                            <p class="meta-description"> (Responsável: {{ meta.responsavel or 'N/A' }})<br>{{ meta.descricao }}</p>
-                                                            
-                                                            <div class="meta-actions-bar">
-                                                                <div class="meta-timer-controls">
-                                                                    <button class="btn btn-sm btn-secondary btn-timer-toggle" title="Iniciar/Pausar Cronômetro">
-                                                                        <i class="fas fa-play"></i>
-                                                                    </button>
-                                                                    <span class="timer-display">00:00:00</span>
-                                                                    <button class="btn btn-sm btn-danger-outline btn-timer-reset" title="Zerar Cronômetro">
-                                                                        <i class="fas fa-history"></i>
-                                                                    </button>
-                                                                </div>
-                                                                <button class="btn btn-sm btn-success btn-concluir-meta">
-                                                                    <i class="fas fa-check"></i> Concluir Meta
-                                                                </button>
-                                                                <button class="btn btn-sm btn-primary btn-add-pei-evolution">
-                                                                    <i class="fas fa-plus"></i> Registrar Evolução
-                                                                </button>
-                                                                <button class="btn btn-sm btn-info btn-toggle-evolutions" style="display: none;">
-                                                                    <i class="fas fa-eye"></i> Visualizar Evoluções (<span class="evolution-count">0</span>)
-                                                                </button>
-                                                            </div>
 
-                                                            <div class="meta-evolutions">
-                                                                {% for registro in registros if registro.tipo_registro == 'evolucao_pei' and registro.referencia_pei_id == pei.id and registro.referencia_meta_titulo == meta.titulo %}
-                                                                    <div class="registro-card registro-card--evolucao_pei" id="registro-{{ registro.id }}" style="margin-top:1rem; margin-bottom: 0;">
-                                                                        <div class="registro-header" style="padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
-                                                                            <h4 style="font-size: 1rem;">{{ registro.titulo }}</h4>
-                                                                            <div class="registro-meta" style="font-size: 0.8rem;">
-                                                                                <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
-                                                                                <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
-                                                                        <div class="registro-actions">
-                                                                             <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="Evolução de Meta: {{ meta.titulo }}"><i class="fas fa-print"></i></button>
-                                                                            <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
-                                                                        </div>
-                                                                    </div>
+                                                {% if pei.metas %}
+                                                    <!-- Seção para Metas em Andamento -->
+                                                    <div class="metas-section">
+                                                        <h5 class="metas-section-header">Metas em Andamento</h5>
+                                                        <ul class="pei-metas-list">
+                                                            {% set metas_em_andamento = pei.metas | rejectattr('status', 'eq', 'Concluída') | list %}
+                                                            {% for meta in metas_em_andamento %}
+                                                                {{ render_meta(meta, pei.id) }}
+                                                            {% else %}
+                                                                <li class="empty-state" style="font-size: 0.9rem; padding: 1rem;">Nenhuma meta em andamento.</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    </div>
+
+                                                    <!-- Seção para Metas Concluídas -->
+                                                    <div class="metas-section">
+                                                        <h5 class="metas-section-header collapsible-header collapsed">
+                                                            <span>Metas Concluídas</span>
+                                                            <i class="fas fa-chevron-down"></i>
+                                                        </h5>
+                                                        <div class="collapsible-content" style="display: none;">
+                                                            <ul class="pei-metas-list">
+                                                                {% set metas_concluidas = pei.metas | selectattr('status', 'eq', 'Concluída') | list %}
+                                                                {% for meta in metas_concluidas %}
+                                                                    {{ render_meta(meta, pei.id) }}
+                                                                {% else %}
+                                                                    <li class="empty-state" style="font-size: 0.9rem; padding: 1rem;">Nenhuma meta concluída.</li>
                                                                 {% endfor %}
-                                                            </div>
-                                                        </li>
-                                                    {% endfor %}
-                                                    </ul>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
                                                 {% else %}
-                                                    <p>Nenhuma meta cadastrada para este PEI.</p>
+                                                        <div class="empty-state"><p>Nenhuma meta cadastrada para este PEI.</p></div>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -455,14 +511,14 @@
 
                             <!-- Aba de Agenda -->
                             <div id="tab-panel-agenda-paciente" class="tab-panel">
-                                 <div class="agenda-paciente-container">
-                                    <h3>Histórico de Agendamentos Concluídos</h3>
-                                    <div class="agenda-scroll-container">
-                                        <div id="agenda-paciente-list">
-                                            <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
+                                    <div class="agenda-paciente-container">
+                                        <h3>Histórico de Agendamentos Concluídos</h3>
+                                        <div class="agenda-scroll-container">
+                                            <div id="agenda-paciente-list">
+                                                <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -495,18 +551,18 @@
                                 </button>
                             </div>
                         </div>
-                         <div class="form-group">
-                            <div id="lgpd-consent-text" class="consent-text">
-                                Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
-                            </div>
-                        </div>
+                           <div class="form-group">
+                             <div id="lgpd-consent-text" class="consent-text">
+                                 Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
+                             </div>
+                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="titulo_registro_generico">Título</label>
                         <input type="text" id="titulo_registro_generico" name="titulo" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="conteudo_generico">Conteúdo</label>
                         <div class="editor-toolbar">
@@ -527,11 +583,11 @@
             </form>
         </div>
     </div>
-    
+
     <!-- Modal para Concluir Meta -->
     <div id="concluir-meta-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
-             <div class="modal-header">
+               <div class="modal-header">
                 <h3>Concluir Meta</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
@@ -552,7 +608,7 @@
     <!-- Modal de Confirmação Genérico -->
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
-             <div class="modal-header">
+               <div class="modal-header">
                 <h3 id="confirm-modal-title">Confirmar Ação</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
@@ -571,11 +627,11 @@
         <input type="hidden" name="registro_id" id="registro_id_apagar">
     </form>
 
-    <script type="module">
-        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-        
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
             const pacienteId = "{{ paciente.id if paciente else '' }}";
+            const pacienteNome = "{{ paciente.nome if paciente else 'Paciente' }}";
+            const clinicaNome = "{{ session.clinica_nome_display or 'Clínica On' }}";
 
             // --- Lógica de UI Geral (Sidebar, Tema, Modals) ---
             const modalController = {
@@ -633,19 +689,38 @@
                 });
                 window.addEventListener('resize', applySidebarState);
                 applySidebarState();
-                
+
                 // Lógica de Logout
-                logoutButton?.addEventListener('click', (e) => { e.preventDefault(); window.location.href = "{{ url_for('login_page') }}"; });
+                logoutButton?.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Tem certeza que deseja sair?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sim, sair',
+                        cancelButtonText: 'Cancelar',
+                        reverseButtons: true
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
+                            try {
+                                await fetch("{{ url_for('logout') }}", { method: 'POST' });
+                                window.location.href = "{{ url_for('login_page') }}";
+                            } catch (error) {
+                                console.error("Erro ao fazer logout:", error);
+                                window.location.href = "{{ url_for('login_page') }}"; // Fallback para redirecionar mesmo com erro
+                            }
+                        }
+                    });
+                });
             }
             setupCommonUI();
-
 
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) modalController.close(modal);
                 });
             });
-            document.querySelectorAll('[data-close]').forEach(btn => 
+            document.querySelectorAll('[data-close]').forEach(btn =>
                 btn.addEventListener('click', () => modalController.close(btn.closest('.modal-overlay')))
             );
 
@@ -654,7 +729,6 @@
             const promptInput = document.getElementById('gemini-prompt');
             const consentCheck = document.getElementById('lgpd-consent-text');
             const genericEditor = document.getElementById('editor-content-generico');
-            const contentTextarea = document.getElementById('conteudo_generico');
 
             if (consentCheck) {
                 consentCheck.addEventListener('click', () => {
@@ -665,37 +739,59 @@
 
             if (generateBtn) {
                 generateBtn.addEventListener('click', async () => {
-                    const prompt = promptInput.value;
+                    const promptText = promptInput.value;
                     const tipoRegistro = document.getElementById('tipo_registro_generico').value;
-                    if (!prompt) {
-                        alert('Por favor, descreva o que você deseja gerar.');
+                    if (!promptText) {
+                        Swal.fire('Atenção', 'Por favor, descreva o que você deseja gerar.', 'warning');
                         return;
                     }
 
-                    const fullPrompt = `Você é um assistente da área da saúde. Crie um texto para um(a) "${tipoRegistro}" sobre o seguinte tópico: "${prompt}". O texto deve ser bem estruturado e profissional, sem placeholders como "[...]". O resultado deve ser apenas o HTML, sem a marcação de blocos de código ou outras formatações.`;
-                    
+                    const fullPrompt = `Você é um assistente da área da saúde. Crie um texto para um(a) "${tipoRegistro}" sobre o seguinte tópico: "${promptText}". O texto deve ser bem estruturado e profissional, sem placeholders como "[...]". O resultado deve ser apenas o HTML, sem a tag html ou outras formatações.`;
+
                     generateBtn.disabled = true;
                     generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;<span>Gerando...</span>';
 
                     try {
-                        const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // SUBSTITUA PELA SUA CHAVE REAL
-                        if (apiKey.includes("SUA_CHAVE")) {
-                           alert("Por favor, insira sua chave da API do Gemini no código JS.");
-                           return;
+                        // Using the provided Gemini API call structure
+                        let chatHistory = [];
+                        chatHistory.push({ role: "user", parts: [{ text: fullPrompt }] });
+                        const payload = { contents: chatHistory };
+                        const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // Canvas will provide this at runtime
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await response.json();
+
+                        if (result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+
+                            const generatedText = result.candidates[0].content.parts[0].text;
+
+                            if (genericEditor.innerHTML.trim()) {
+                                const confirmReplace = await Swal.fire({
+                                    title: 'Conteúdo existente',
+                                    text: 'Deseja substituir o conteúdo atual pelo texto gerado pela IA?',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Sim, substituir',
+                                    cancelButtonText: 'Não, manter'
+                                });
+                                if (!confirmReplace.isConfirmed) {
+                                    return;
+                                }
+                            }
+                            genericEditor.innerHTML = generatedText;
+                        } else {
+                            throw new Error('Resposta da IA em formato inesperado ou vazia.');
                         }
-                        const genAI = new GoogleGenerativeAI(apiKey);
-                        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                        const result = await model.generateContent(fullPrompt);
-                        const response = await result.response;
-                        const text = response.text();
-                        
-                        if (genericEditor.innerHTML.trim() && !confirm('Deseja substituir o conteúdo atual pelo texto gerado?')) {
-                            return;
-                        }
-                        genericEditor.innerHTML = text;
                     } catch (error) {
-                        console.error("Erro na API Gemini:", error);
-                        alert("Erro ao gerar conteúdo. Verifique sua chave de API e o console.");
+                        console.error("Erro na chamada da API local:", error);
+                        Swal.fire('Erro', 'Erro ao gerar conteúdo: ' + error.message, 'error');
                     } finally {
                         generateBtn.disabled = !consentCheck.classList.contains('active');
                         generateBtn.innerHTML = '<i class="fas fa-robot"></i>&nbsp;<span>Gerar</span>';
@@ -711,6 +807,7 @@
             const tipoFeedbackInput = document.getElementById('tipo_registro_feedback');
             const peiIdInput = document.getElementById('referencia_pei_id');
             const metaTituloInput = document.getElementById('referencia_meta_titulo');
+            const hiddenContentTextarea = document.getElementById('conteudo_generico');
 
             function setupRichTextEditor(editorDiv, hiddenTextarea) {
                 const toolbar = editorDiv.previousElementSibling;
@@ -726,23 +823,23 @@
                     hiddenTextarea.value = editorDiv.innerHTML;
                 });
             }
-            setupRichTextEditor(genericEditor, contentTextarea);
+            setupRichTextEditor(genericEditor, hiddenContentTextarea);
 
 
             function openModalParaRegistro(tipo, dados = {}) {
                 formGenerico.reset();
                 consentCheck.classList.remove('active');
                 generateBtn.disabled = true;
-                
+
                 const isEdit = !!dados.id;
                 const tipoCapitalizado = tipo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
                 modalTitle.textContent = isEdit ? `Editar ${tipoCapitalizado}` : `Adicionar ${tipoCapitalizado}`;
                 tipoInput.value = tipo;
-                tipoFeedbackInput.value = tipoCapitalizado; 
+                tipoFeedbackInput.value = tipoCapitalizado;
                 tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo}` : '');
                 genericEditor.innerHTML = dados.conteudo || '';
-                
+
                 // Adiciona referências do PEI se for uma evolução
                 peiIdInput.value = dados.peiId || '';
                 metaTituloInput.value = dados.metaTitulo || '';
@@ -754,12 +851,12 @@
                 }
 
                 formGenerico.onsubmit = () => {
-                    contentTextarea.value = genericEditor.innerHTML;
+                    hiddenContentTextarea.value = genericEditor.innerHTML;
                 };
 
                 modalController.open(modalController.registro);
             }
-            
+
             // --- Lógica do Acordeão e Metas do PEI ---
             function setupPeiAccordion() {
                 const activeTimers = {};
@@ -774,7 +871,7 @@
                 function startVisualTimer(liElement, startTimeISO, baseSeconds) {
                     const metaId = liElement.dataset.peiId + '||' + liElement.dataset.metaTitulo;
                     const display = liElement.querySelector('.timer-display');
-                    
+
                     if (!startTimeISO) {
                         display.textContent = formatTime(baseSeconds);
                         return;
@@ -791,7 +888,7 @@
                 }
 
                 function initializeMetaTimers() {
-                    document.querySelectorAll('.pei-metas-list li').forEach(li => {
+                    document.querySelectorAll('.pei-metas-list li[data-pei-id]').forEach(li => {
                         const cronometroInicio = li.dataset.cronometroInicio;
                         const tempoGasto = parseInt(li.dataset.tempoGasto, 10) || 0;
                         const timerButtonIcon = li.querySelector('.btn-timer-toggle i');
@@ -805,10 +902,9 @@
                         }
                     });
                 }
-                
+
                 async function sendMetaUpdate(peiId, metaTitulo, action, extraData = {}) {
                     try {
-                        // Rota corrigida para apontar para o PEI individual do paciente
                         const response = await fetch(`/api/pacientes/${pacienteId}/peis/${peiId}/meta/update`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -816,21 +912,34 @@
                         });
                         const result = await response.json();
                         if (!response.ok) throw new Error(result.message || 'Erro no servidor');
-                        
-                        const li = document.querySelector(`li[data-pei-id="${peiId}"][data-meta-titulo="${metaTitulo}"]`);
-                        if (li && result.updated_meta) {
-                            const meta = result.updated_meta;
-                            li.dataset.cronometroInicio = meta.cronometro_inicio || '';
-                            li.dataset.tempoGasto = meta.tempo_total_gasto || 0;
-                            const statusBadge = li.querySelector('.meta-status-badge');
-                            statusBadge.textContent = meta.status;
-                            statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(/ /g, '-')}`;
-                            initializeMetaTimers(); // Re-initialize the specific timer
+
+                        // Recarregar a página para ver a mudança de categoria da meta
+                        if (action === 'concluir' || action === 'reset') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso!',
+                                text: `Meta ${metaTitulo} ${action === 'concluir' ? 'concluída' : 'resetada'} com sucesso!`,
+                                showConfirmButton: false,
+                                timer: 1500
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            const li = document.querySelector(`li[data-pei-id="${peiId}"][data-meta-titulo="${metaTitulo}"]`);
+                            if (li && result.updated_meta) {
+                                const meta = result.updated_meta;
+                                li.dataset.cronometroInicio = meta.cronometro_inicio || '';
+                                li.dataset.tempoGasto = meta.tempo_total_gasto || 0;
+                                const statusBadge = li.querySelector('.meta-status-badge');
+                                statusBadge.textContent = meta.status;
+                                statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(/ /g, '-')}`;
+                                initializeMetaTimers(); // Re-initialize timers to update all displays
+                            }
                         }
                         return result;
                     } catch (error) {
                         console.error(`Erro na ação '${action}':`, error);
-                        alert(`Erro: ${error.message}`);
+                        Swal.fire('Erro', `Erro: ${error.message}`, 'error');
                         return null;
                     }
                 }
@@ -843,11 +952,11 @@
                         icon.className = content.style.display === 'block' ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
                     });
                 });
-                
+
                 document.querySelectorAll('.pei-metas-list').forEach(list => {
                     list.addEventListener('click', async (e) => {
                         const li = e.target.closest('li');
-                        if (!li) return;
+                        if (!li || !li.dataset.peiId) return;
 
                         const peiId = li.dataset.peiId;
                         const metaTitulo = li.dataset.metaTitulo;
@@ -857,9 +966,18 @@
                             const action = isRunning ? 'stop_timer' : 'start_timer';
                             await sendMetaUpdate(peiId, metaTitulo, action);
                         } else if (e.target.closest('.btn-timer-reset')) {
-                            if (confirm('Tem certeza que deseja zerar o tempo e o status desta meta?')) {
-                                await sendMetaUpdate(peiId, metaTitulo, 'reset');
-                            }
+                            Swal.fire({
+                                title: 'Zerar Cronômetro',
+                                text: 'Tem certeza que deseja zerar o tempo e o status desta meta?',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Sim, zerar',
+                                cancelButtonText: 'Cancelar'
+                            }).then(async (result) => {
+                                if (result.isConfirmed) {
+                                    await sendMetaUpdate(peiId, metaTitulo, 'reset');
+                                }
+                            });
                         } else if (e.target.closest('.btn-concluir-meta')) {
                             document.getElementById('concluir-meta-titulo').textContent = metaTitulo;
                             modalController.concluirMeta.dataset.peiId = peiId;
@@ -881,11 +999,11 @@
                 });
 
                 function setupEvolutionVisibility() {
-                    document.querySelectorAll('.pei-metas-list li').forEach(metaLi => {
+                    document.querySelectorAll('.pei-metas-list li[data-pei-id]').forEach(metaLi => {
                         const evolutionsContainer = metaLi.querySelector('.meta-evolutions');
                         const toggleBtn = metaLi.querySelector('.btn-toggle-evolutions');
                         if (!evolutionsContainer || !toggleBtn) return;
-                        
+
                         const evolutionCards = evolutionsContainer.querySelectorAll('.registro-card');
                         const count = evolutionCards.length;
 
@@ -902,21 +1020,311 @@
                             const li = e.target.closest('li');
                             const evolutionsContainer = li.querySelector('.meta-evolutions');
                             const icon = button.querySelector('i');
-                            
+
                             const isVisible = evolutionsContainer.style.display === 'block';
                             evolutionsContainer.style.display = isVisible ? 'none' : 'block';
                             icon.className = isVisible ? 'fas fa-eye-slash' : 'fas fa-eye';
                         });
                     });
                 }
-                
+
+                document.querySelectorAll('.collapsible-header').forEach(header => {
+                    header.addEventListener('click', () => {
+                        header.classList.toggle('collapsed');
+                        const content = header.nextElementSibling;
+                        const icon = header.querySelector('i');
+                        if (content.style.display === 'none') {
+                            content.style.display = 'block';
+                            icon.style.transform = 'rotate(0deg)';
+                        } else {
+                            content.style.display = 'none';
+                            icon.style.transform = 'rotate(-90deg)';
+                        }
+                    });
+                });
+
                 initializeMetaTimers();
                 setupEvolutionVisibility();
             }
 
+            // --- Lógica para carregar agendamentos do paciente ---
+            async function loadPatientAppointments() {
+                const agendaListDiv = document.getElementById('agenda-paciente-list');
+                const emptyStateDiv = document.getElementById('agenda-paciente-empty-state');
+                agendaListDiv.innerHTML = '<div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>';
+
+                try {
+                    // Simulação de chamada de API para obter agendamentos
+                    // Em um ambiente real, você faria um fetch para seu backend:
+                    // const response = await fetch(`/api/pacientes/${pacienteId}/agendamentos`);
+                    // const appointments = await response.json();
+
+                    // Dados mockados para demonstração
+                    const mockAppointments = [
+                        {
+                            id: 'agendamento1',
+                            data: '2024-06-15',
+                            hora: '10:00',
+                            servico: 'Consulta Geral',
+                            profissional: 'Dr. João Silva',
+                            status: 'concluido'
+                        },
+                        {
+                            id: 'agendamento2',
+                            data: '2024-06-10',
+                            hora: '14:30',
+                            servico: 'Exame de Rotina',
+                            profissional: 'Dra. Maria Souza',
+                            status: 'concluido'
+                        },
+                        {
+                            id: 'agendamento3',
+                            data: '2024-05-20',
+                            hora: '09:00',
+                            servico: 'Sessão de Fisioterapia',
+                            profissional: 'Fisiot. Ana Paula',
+                            status: 'concluido'
+                        },
+                         {
+                            id: 'agendamento4',
+                            data: '2024-06-25',
+                            hora: '11:00',
+                            servico: 'Retorno Ortopédico',
+                            profissional: 'Dr. João Silva',
+                            status: 'confirmado' // Exemplo de um agendamento não concluído
+                        }
+                    ];
+
+                    // Filtrar apenas agendamentos "concluido"
+                    const concludedAppointments = mockAppointments.filter(app => app.status === 'concluido');
+
+
+                    if (concludedAppointments.length > 0) {
+                        agendaListDiv.innerHTML = ''; // Limpa o estado de carregamento
+                        concludedAppointments.forEach(app => {
+                            const card = `
+                                <div class="agenda-paciente-card">
+                                    <div class="card-header">
+                                        <h4>${app.servico}</h4>
+                                        <span class="status-badge status-${app.status}">${app.status.toUpperCase()}</span>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Data:</strong> ${app.data} às ${app.hora}</p>
+                                        <p><strong>Profissional:</strong> ${app.profissional}</p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <!-- Botões de ação para agendamentos podem ser adicionados aqui -->
+                                    </div>
+                                </div>
+                            `;
+                            agendaListDiv.insertAdjacentHTML('beforeend', card);
+                        });
+                    } else {
+                        agendaListDiv.innerHTML = '<div class="empty-state"><p>Nenhum agendamento concluído encontrado.</p></div>';
+                    }
+                } catch (error) {
+                    console.error("Erro ao carregar agendamentos:", error);
+                    agendaListDiv.innerHTML = '<div class="empty-state"><p>Erro ao carregar agendamentos.</p></div>';
+                    Swal.fire('Erro', 'Não foi possível carregar o histórico de agendamentos.', 'error');
+                }
+            }
+
+
+            // Geração de PDF
+            window.jsPDF = window.jspdf.jsPDF;
+            async function generatePdfForRecord(targetId, title) {
+                const element = document.getElementById(targetId);
+                if (!element) {
+                    Swal.fire('Erro', 'Elemento para impressão não encontrado.', 'error');
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Gerando PDF...',
+                    text: 'Isso pode levar alguns segundos.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                try {
+                    const pdf = new jsPDF('p', 'mm', 'a4'); // 'p' para retrato, 'mm' para milímetros, 'a4' tamanho
+                    const margin = 15; // Aumentei a margem para mais espaço nas laterais
+                    let y = margin;
+                    const pageWidth = pdf.internal.pageSize.getWidth() - (2 * margin);
+                    const defaultFontSize = 10; // Reduzido de 11 para 10
+                    const lineHeightMultiplier = 1.2; // Multiplicador para o espaçamento entre linhas
+
+
+                    // Função para adicionar uma nova página e o cabeçalho
+                    const addNewPage = () => {
+                        pdf.addPage();
+                        y = margin; // Resetar Y para o topo da nova página
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setFontSize(10);
+                        pdf.setTextColor(100);
+                        pdf.text(`${clinicaNome}`, margin, y); y += 5;
+                        pdf.text(`Paciente: ${pacienteNome}`, margin, y); y += 5;
+                        pdf.text(`Documento: ${title}`, margin, y); y += 5;
+                        pdf.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, margin, y); y += 15;
+                    };
+
+                    // Adicionar cabeçalho da primeira página
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(100);
+                    pdf.text(`${clinicaNome}`, margin, y); y += 5;
+                    pdf.text(`Paciente: ${pacienteNome}`, margin, y); y += 5;
+                    pdf.text(`Documento: ${title}`, margin, y); y += 5;
+                    pdf.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, margin, y); y += 15;
+
+                    // Processar o conteúdo HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = element.innerHTML;
+
+                    const processNode = (node, currentStyles = { font: 'helvetica', style: 'normal', size: defaultFontSize, isListItem: false, listType: '', listItemIndex: 0, listLevel: 0 }) => {
+                        // Ignorar scripts e estilos
+                        if (node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE') {
+                            return;
+                        }
+
+                        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0) {
+                            let text = node.textContent.trim();
+                            let combinedStyle = { ...currentStyles };
+
+                            let parent = node.parentNode;
+                            while (parent && parent !== tempDiv) {
+                                if (parent.nodeName === 'STRONG' || parent.nodeName === 'B') {
+                                    combinedStyle.style = combinedStyle.style.includes('bold') ? combinedStyle.style : (combinedStyle.style + 'bold');
+                                }
+                                if (parent.nodeName === 'EM' || parent.nodeName === 'I') {
+                                    combinedStyle.style = combinedStyle.style.includes('italic') ? combinedStyle.style : (combinedStyle.style + 'italic');
+                                }
+                                parent = parent.parentNode;
+                            }
+
+                            // Ajustar tamanho e estilo para cabeçalhos (reduzido proporcionalmente)
+                            if (node.parentNode.nodeName.match(/^H[1-6]$/)) {
+                                switch (node.parentNode.nodeName) {
+                                    case 'H1': combinedStyle.size = 20; combinedStyle.style = 'bold'; break; // Era 24
+                                    case 'H2': combinedStyle.size = 18; combinedStyle.style = 'bold'; break; // Era 20
+                                    case 'H3': combinedStyle.size = 16; combinedStyle.style = 'bold'; break; // Era 18
+                                    case 'H4': combinedStyle.size = 14; combinedStyle.style = 'bold'; break; // Era 16
+                                    case 'H5': combinedStyle.size = 12; combinedStyle.style = 'bold'; break; // Era 14
+                                    case 'H6': combinedStyle.size = 11; combinedStyle.style = 'bold'; break; // Era 13
+                                }
+                            } else if (!combinedStyle.isListItem) {
+                                combinedStyle.size = defaultFontSize; // Volta para o tamanho padrão
+                            }
+
+                            // Limpa estilos duplicados ou inconsistentes
+                            let finalStyle = combinedStyle.style.replace('normalbold', 'bold').replace('normalitalic', 'italic');
+                            if (finalStyle.includes('bold') && finalStyle.includes('italic')) {
+                                finalStyle = 'bolditalic';
+                            } else if (finalStyle.includes('bold')) {
+                                finalStyle = 'bold';
+                            } else if (finalStyle.includes('italic')) {
+                                finalStyle = 'italic';
+                            } else {
+                                finalStyle = 'normal';
+                            }
+
+                            pdf.setFont(combinedStyle.font, finalStyle);
+                            pdf.setFontSize(combinedStyle.size);
+
+                            // Ajusta a altura da linha com base no tamanho da fonte atual
+                            const currentLineHeightMm = combinedStyle.size * lineHeightMultiplier * (1 / pdf.internal.scaleFactor);
+
+                            const lines = pdf.splitTextToSize(text, pageWidth - (combinedStyle.listLevel * 7)); // Ajusta largura para listas aninhadas, com mais indentação
+
+                            lines.forEach((line, index) => {
+                                if (y + currentLineHeightMm > pdf.internal.pageSize.getHeight() - margin) {
+                                    addNewPage();
+                                    pdf.setFont(combinedStyle.font, finalStyle);
+                                    pdf.setFontSize(combinedStyle.size);
+                                }
+
+                                let prefix = '';
+                                let indent = 0;
+                                if (combinedStyle.isListItem && index === 0) {
+                                    if (combinedStyle.listType === 'ul') {
+                                        prefix = '• ';
+                                    } else if (combinedStyle.listType === 'ol') {
+                                        prefix = `${combinedStyle.listItemIndex}. `;
+                                    }
+                                    indent = combinedStyle.listLevel * 7; // Indentação para listas aninhadas
+                                }
+
+                                pdf.text(prefix + line, margin + indent, y);
+                                y += currentLineHeightMm;
+                            });
+                        } else if (node.nodeType === Node.ELEMENT_NODE) {
+                            let newStyles = { ...currentStyles };
+
+                            // Espaçamento antes de blocos
+                            const blockElements = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL'];
+                            if (blockElements.includes(node.nodeName)) {
+                                // Adiciona um espaçamento razoável antes de cada novo bloco
+                                if (node.textContent.trim().length > 0 && y > margin + 30) {
+                                    y += 4; // Espaçamento entre blocos
+                                }
+                            }
+
+                            // Detecção e nível de listas
+                            if (node.nodeName === 'UL' || node.nodeName === 'OL') {
+                                newStyles.listLevel++;
+                            }
+                            if (node.nodeName === 'LI') {
+                                newStyles.isListItem = true;
+                                const olParent = node.closest('ol');
+                                const ulParent = node.closest('ul');
+                                if (olParent) {
+                                    newStyles.listType = 'ol';
+                                    const siblings = Array.from(node.parentNode.children);
+                                    newStyles.listItemIndex = siblings.indexOf(node) + 1;
+                                } else if (ulParent) {
+                                    newStyles.listType = 'ul';
+                                }
+                            } else {
+                                newStyles.isListItem = false; // Resetar para sub-elementos que não são <li>
+                            }
+
+
+                            if (node.childNodes.length > 0) {
+                                Array.from(node.childNodes).forEach(child => processNode(child, newStyles));
+                            }
+
+                            // Espaçamento após blocos
+                            if (blockElements.includes(node.nodeName)) {
+                                if (node.textContent.trim().length > 0) {
+                                    y += 4; // Espaçamento após blocos
+                                }
+                            }
+
+                            // Decrementar nível da lista após processar todos os filhos da lista
+                            if (node.nodeName === 'UL' || node.nodeName === 'OL') {
+                                newStyles.listLevel--;
+                            }
+                        }
+                    };
+
+                    processNode(tempDiv);
+
+                    pdf.save(`${title.replace(/[^a-z0-9]/gi, '_')}.pdf`);
+                    Swal.close();
+                    Swal.fire('Sucesso!', 'PDF gerado com sucesso.', 'success');
+
+                } catch (error) {
+                    console.error("Erro ao gerar PDF:", error);
+                    Swal.fire('Erro', 'Não foi possível gerar o PDF. Detalhes: ' + error.message, 'error');
+                }
+            }
+
+
             // --- Lógica Geral de Eventos e Inicialização ---
             document.body.addEventListener('click', (e) => {
-                 // Botões de adicionar registro genérico
+                // Botões de adicionar registro genérico
                 if (e.target.closest('.btn-add-generic')) {
                     openModalParaRegistro(e.target.closest('.btn-add-generic').dataset.tipo);
                 }
@@ -932,13 +1340,22 @@
                 // Botões para apagar registros
                 if (e.target.closest('.btn-apagar-registro')) {
                     const btn = e.target.closest('.btn-apagar-registro');
-                    if(confirm("Tem certeza que deseja apagar este registro?")) {
-                        const form = document.getElementById('formApagarRegistro');
-                        document.getElementById('registro_id_apagar').value = btn.dataset.registroId;
-                        form.submit();
-                    }
+                    Swal.fire({
+                        title: 'Confirmar Exclusão',
+                        text: 'Tem certeza que deseja apagar este registro? Esta ação é irreversível.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sim, apagar',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const form = document.getElementById('formApagarRegistro');
+                            document.getElementById('registro_id_apagar').value = btn.dataset.registroId;
+                            form.submit();
+                        }
+                    });
                 }
-                 // Botão de imprimir PDF
+                // Botão de imprimir PDF
                 if (e.target.closest('.btn-print-pdf')) {
                     const btn = e.target.closest('.btn-print-pdf');
                     generatePdfForRecord(btn.dataset.targetId, btn.dataset.title);
@@ -950,18 +1367,21 @@
                 tab.addEventListener('click', () => {
                     document.querySelectorAll('.tab-nav-item, .tab-panel').forEach(el => el.classList.remove('active'));
                     tab.classList.add('active');
-                    document.getElementById('tab-panel-' + tab.dataset.tab).classList.add('active');
+                    const targetPanelId = 'tab-panel-' + tab.dataset.tab;
+                    document.getElementById(targetPanelId).classList.add('active');
+
+                    // Carregar agendamentos apenas quando a aba é ativada
+                    if (tab.dataset.tab === 'agenda-paciente') {
+                        loadPatientAppointments();
+                    }
                 });
             });
 
-            // Geração de PDF
-            window.jsPDF = window.jspdf.jsPDF;
-            function generatePdfForRecord(targetId, title) {
-                // Implementação da função de PDF
-            }
-
             // Inicialização de todas as funções
             setupPeiAccordion();
+            // Load appointments initially if the tab is active by default (it's not, but for completeness)
+            // If you want it to load immediately when the page loads, uncomment below:
+            // loadPatientAppointments();
         });
     </script>
 </body>
