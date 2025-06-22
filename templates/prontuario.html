@@ -1051,26 +1051,29 @@
                                             {% endif %}
                                             {# Botão "Atividade" que substitui "Registrar Evolução" e "Visualizar Evoluções" #}
                                             <button class="btn btn-sm btn-primary btn-toggle-evolutions"
-                                                         data-pei-id="{{ pei_id }}"
+                                                         data-pei-id="{{ pei.id }}" {# Corrected: Use pei.id here #}
                                                          data-meta-titulo="{{ meta.titulo }}"
-                                                         data-meta-index="{{ meta_index }}">
+                                                         data-meta-index="{{ loop.index0 }}">
                                                 <i class="fas fa-comments"></i> <span class="btn-text-desktop">Atividade</span> (<span class="evolution-count">0</span>)
                                             </button>
                                         </div>
 
                                         <div class="meta-evolutions">
-                                            <div class="chat-container" id="chat-meta-{{ pei_id }}-{{ meta_index }}">
+                                            <div class="chat-container" id="chat-meta-{{ pei.id }}-{{ meta.titulo | slugify }}"> {# Dynamic ID with slugify for safety #}
                                                 {% if registros %}
+                                                {# Filter evolutions specifically for this PEI and this meta #}
                                                 {% set evolucoes_meta = registros
                                                     | selectattr('tipo_registro', 'equalto', 'evolucao_pei')
-                                                    | selectattr('referencia_pei_id', 'equalto', pei_id)
+                                                    | selectattr('referencia_pei_id', 'equalto', pei.id)
                                                     | selectattr('referencia_meta_titulo', 'equalto', meta.titulo)
+                                                    | sort(attribute='data_registro')
                                                     | list %}
 
                                                     {% if evolucoes_meta %}
                                                         {% for evolucao in evolucoes_meta %}
                                                             <div class="chat-message-wrapper">
-                                                                <div class="chat-message self"> {# Assumindo que a evolução é do profissional logado #}
+                                                                {# Assume 'self' if registered by the current user, or 'other' if by another professional/system #}
+                                                                <div class="chat-message {{ 'self' if evolucao.registrado_por_uid == session.user_uid else 'other' }}">
                                                                     {{ evolucao.conteudo | safe }}
                                                                 </div>
                                                                 <div class="chat-message-meta" data-registro-id="{{ evolucao.id }}">
@@ -1088,8 +1091,8 @@
                                             </div>
                                             <div class="chat-input-area">
                                                 <textarea placeholder="Digite uma nova evolução..." rows="1"></textarea>
-                                                <button class="btn btn-primary btn-send-evolution" data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"><i class="fas fa-paper-plane"></i> <span class="btn-text-desktop">Enviar</span></button>
-                                                <button class="btn btn-sm btn-info btn-print-evolution" data-chat-id="chat-meta-{{ pei_id }}-{{ meta_index }}" data-title="Evoluções de {{ meta.titulo }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir Atividades</span></button>
+                                                <button class="btn btn-primary btn-send-evolution" data-pei-id="{{ pei.id }}" data-meta-titulo="{{ meta.titulo }}"><i class="fas fa-paper-plane"></i> <span class="btn-text-desktop">Enviar</span></button>
+                                                <button class="btn btn-sm btn-info btn-print-evolution" data-chat-id="chat-meta-{{ pei.id }}-{{ meta.titulo | slugify }}" data-title="Evoluções de {{ meta.titulo }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir Atividades</span></button>
                                             </div>
                                         </div>
                                     </li>
@@ -1174,7 +1177,7 @@
                 <h3 id="modalRegistroGenericoTitle">Adicionar Novo Registro</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
-            <form method="POST" action="" id="formRegistroGenerico">
+            <form id="formRegistroGenerico"> {# Removed method="POST" action="" here #}
                 <input type="hidden" name="tipo_registro" id="tipo_registro_generico">
                 <input type="hidden" name="tipo_registro_feedback" id="tipo_registro_feedback">
                 <input type="hidden" name="referencia_pei_id" id="referencia_pei_id">
@@ -1363,7 +1366,8 @@
                             try {
                                 await fetch("{{ url_for('logout') }}", { method: 'POST' });
                                 window.location.href = "{{ url_for('login_page') }}";
-                            } catch (error) {
+                            }
+                            catch (error) {
                                 console.error("Erro ao fazer logout:", error);
                                 window.location.href = "{{ url_for('login_page') }}"; // Fallback para redirecionar mesmo com erro
                             }
@@ -1485,7 +1489,7 @@
             setupRichTextEditor(genericEditor, hiddenContentTextarea);
 
 
-            function openModalParaRegistro(tipo, dados = {}) {
+            async function openModalParaRegistro(tipo, dados = {}) {
                 formGenerico.reset();
                 consentCheck.classList.remove('active');
                 generateBtn.disabled = true;
@@ -1506,14 +1510,73 @@
                 peiIdInput.value = dados.peiId || '';
                 metaTituloInput.value = dados.metaTitulo || '';
 
-                if (isEdit) {
-                    formGenerico.action = `/prontuarios/${pacienteId}/editar_registro_generico/${dados.id}`;
-                } else {
-                    formGenerico.action = `/prontuarios/${pacienteId}/registrar_registro_generico`;
-                }
+                // Set up the form submission for JSON
+                formGenerico.onsubmit = async (event) => {
+                    event.preventDefault(); // Prevent default form submission
 
-                formGenerico.onsubmit = () => {
-                    hiddenContentTextarea.value = genericEditor.innerHTML;
+                    hiddenContentTextarea.value = genericEditor.innerHTML; // Update hidden textarea
+
+                    const formData = {
+                        tipo_registro: tipoInput.value,
+                        titulo: tituloInput.value,
+                        conteudo: hiddenContentTextarea.value,
+                        referencia_pei_id: peiIdInput.value,
+                        referencia_meta_titulo: metaTituloInput.value
+                    };
+
+                    let url = '';
+                    let method = 'POST';
+
+                    if (isEdit) {
+                        url = `/prontuarios/${pacienteId}/editar_registro_generico/${dados.id}`;
+                        // For editing, Flask route expects form data, not JSON
+                        // So, we will use a FormData object for edit
+                        const formToSend = new FormData();
+                        for (const key in formData) {
+                            formToSend.append(key, formData[key]);
+                        }
+                        // Add feedback type for flash message on backend
+                        formToSend.append('tipo_registro_feedback', tipoFeedbackInput.value);
+
+                        try {
+                            const response = await fetch(url, {
+                                method: method,
+                                body: formToSend // Send as form data for edit
+                            });
+                            // Since Flask redirects, we don't need to parse JSON.
+                            // The redirect will handle success/failure messages via flash.
+                            window.location.reload(); // Reload page to see changes and flash messages
+                        } catch (error) {
+                            console.error('Erro ao enviar dados de edição:', error);
+                            Swal.fire('Erro!', 'Erro ao salvar o registro. Tente novamente.', 'error');
+                        }
+
+
+                    } else {
+                        url = `/prontuarios/${pacienteId}/registrar_registro_generico`;
+                        try {
+                            const response = await fetch(url, {
+                                method: method,
+                                headers: {
+                                    'Content-Type': 'application/json' // Send as JSON for new records
+                                },
+                                body: JSON.stringify(formData)
+                            });
+                            const result = await response.json();
+
+                            if (result.success) {
+                                Swal.fire('Sucesso!', result.message, 'success').then(() => {
+                                    modalController.close(modalController.registro);
+                                    window.location.reload(); // Reload the page to display the new record
+                                });
+                            } else {
+                                Swal.fire('Erro!', result.message, 'error');
+                            }
+                        } catch (error) {
+                            console.error('Erro ao enviar dados:', error);
+                            Swal.fire('Erro!', 'Erro ao salvar o registro. Tente novamente.', 'error');
+                        }
+                    }
                 };
 
                 modalController.open(modalController.registro);
@@ -1877,66 +1940,24 @@
                 agendaListDiv.innerHTML = '<div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>';
 
                 try {
-                    // Simulação de chamada de API para obter agendamentos
-                    // Em um ambiente real, você faria um fetch para seu backend:
-                    // const response = await fetch(`/api/pacientes/${pacienteId}/agendamentos`);
-                    // const appointments = await response.json();
+                    const response = await fetch(`/api/pacientes/${pacienteId}/agendamentos-concluidos`);
+                    const result = await response.json();
 
-                    // Dados mockados para demonstração
-                    const mockAppointments = [
-                        {
-                            id: 'agendamento1',
-                            data: '2024-06-15',
-                            hora: '10:00',
-                            servico: 'Consulta Geral',
-                            profissional: 'Dr. João Silva',
-                            status: 'concluido'
-                        },
-                        {
-                            id: 'agendamento2',
-                            data: '2024-06-10',
-                            hora: '14:30',
-                            servico: 'Exame de Rotina',
-                            profissional: 'Dra. Maria Souza',
-                            status: 'concluido'
-                        },
-                        {
-                            id: 'agendamento3',
-                            data: '2024-05-20',
-                            hora: '09:00',
-                            servico: 'Sessão de Fisioterapia',
-                            profissional: 'Fisiot. Ana Paula',
-                            status: 'concluido'
-                        },
-                           {
-                            id: 'agendamento4',
-                            data: '2024-06-25',
-                            hora: '11:00',
-                            servico: 'Retorno Ortopédico',
-                            profissional: 'Dr. João Silva',
-                            status: 'confirmado' // Exemplo de um agendamento não concluído
-                        }
-                    ];
-
-                    // Filtrar apenas agendamentos "concluido"
-                    const concludedAppointments = mockAppointments.filter(app => app.status === 'concluido');
-
-
-                    if (concludedAppointments.length > 0) {
-                        agendaListDiv.innerHTML = ''; // Limpa o estado de carregamento
-                        concludedAppointments.forEach(app => {
+                    if (result.success && result.agendamentos.length > 0) {
+                        agendaListDiv.innerHTML = ''; // Clear loading state
+                        result.agendamentos.forEach(app => {
                             const card = `
                                 <div class="agenda-paciente-card">
                                     <div class="card-header">
-                                        <h4>${app.servico}</h4>
+                                        <h4>${app.servico_procedimento_nome || 'N/A'}</h4>
                                         <span class="status-badge status-${app.status}">${app.status.toUpperCase()}</span>
                                     </div>
                                     <div class="card-body">
-                                        <p><strong>Data:</strong> ${app.data} às ${app.hora}</p>
-                                        <p><strong>Profissional:</strong> ${app.profissional}</p>
+                                        <p><strong>Data:</strong> ${app.data_agendamento_fmt || 'N/A'} às ${app.hora_agendamento || 'N/A'}</p>
+                                        <p><strong>Profissional:</strong> ${app.profissional_nome || 'N/A'}</p>
                                     </div>
                                     <div class="card-footer">
-                                        </div>
+                                    </div>
                                 </div>
                             `;
                             agendaListDiv.insertAdjacentHTML('beforeend', card);

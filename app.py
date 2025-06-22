@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import re
 from functools import wraps
 from flask_cors import CORS
 import firebase_admin
@@ -91,6 +92,22 @@ def parse_date_input(date_string):
         return SAO_PAULO_TZ.localize(datetime.datetime(parsed_date.year, parsed_date.month, parsed_date.day, 0, 0, 0))
     
     return None
+
+# Função slugify para Jinja2
+def slugify_filter(s):
+    """
+    Converte uma string em um slug URL-friendly.
+    Remove caracteres não alfanuméricos, converte para minúsculas e substitui espaços por hífens.
+    """
+    s = s.lower().strip()
+    s = re.sub(r'[^\w\s-]', '', s) # Remove caracteres não alfanuméricos, exceto espaços e hífens
+    s = re.sub(r'[\s_-]+', '-', s)  # Substitui espaços e múltiplos hífens/underscores por um único hífen
+    s = re.sub(r'^-+|-+$', '', s)  # Remove hífens do início e do fim
+    return s
+
+# Registra o filtro slugify no ambiente Jinja2 do Flask
+app.jinja_env.filters['slugify'] = slugify_filter
+
 
 def login_required(f):
     @wraps(f)
@@ -1082,7 +1099,7 @@ def editar_paciente(paciente_doc_id):
                     if pei_template_doc.exists:
                         pei_data = pei_template_doc.to_dict()
                         pei_data['pei_template_id'] = pei_template_id # Store reference to original template
-                        # Set initial status for metas if not already defined when creating individual PEI
+                        # Set initial status for metas if not already defined
                         if 'metas' in pei_data and isinstance(pei_data['metas'], list):
                             for meta in pei_data['metas']:
                                 if 'status' not in meta:
@@ -1525,7 +1542,7 @@ def editar_horario(profissional_doc_id, horario_doc_id):
                 if profissional_pai_doc.exists:
                     profissional_pai_data = profissional_pai_doc.to_dict()
                     if profissional_pai_data:
-                        horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id)
+                        horario_data_db['profissional_nome_atual'] = professional_pai_data.get('nome', profissional_doc_id)
                 
                 return render_template('horario_form.html',   
                                        profissionais=profissionais_ativos_lista,
@@ -2316,6 +2333,10 @@ def apagar_registro_generico(paciente_doc_id):
     try:
         db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(registro_id).delete()
         flash('Registro apagado com sucesso!', 'success')
+        
+        # Check if it was a PEI evolution message and update the evolution count on the frontend
+        # This part will require the frontend to re-fetch the PEI data or update locally if possible.
+        # For now, relying on the page reload from the flash message.
     except Exception as e:
         flash(f'Erro ao apagar registro: {e}', 'danger')
         print(f"Erro apagar_registro_generico: {e}")
