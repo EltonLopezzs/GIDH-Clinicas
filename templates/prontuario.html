@@ -353,9 +353,10 @@
 
         /* Styling for the new large viewer modal */
         #modalVisualizarRegistro .modal-content {
-            max-width: 950px; /* Mais largo para visualização */
+            max-width: 98vw; /* Mais largo para visualização */
             width: 95%;
             max-height: 95vh;
+            max-width: 1400px; /* Increased max-width */
         }
         #modalVisualizarRegistro .modal-body {
             font-size: 1.05rem; /* Fonte ligeiramente maior para leitura */
@@ -567,6 +568,7 @@
             display: flex;
             align-items: center;
             gap: 1.2rem; /* Space between dates and toggle button */
+            margin-left: auto; /* Push to the right */
         }
 
         .pei-header .pei-dates {
@@ -609,6 +611,17 @@
             box-shadow: inset 0 1px 5px rgba(0,0,0,0.07); /* Sombra interna mais presente */
             transition: all 0.2s ease;
             position: relative;
+            /* Explicitly left align text for content inside li */
+            text-align: left;
+        }
+        /* Ensure specific elements inside list items are left-aligned */
+        .pei-metas-list li strong,
+        .pei-metas-list li p,
+        .pei-metas-list li .empty-state {
+            text-align: left;
+        }
+        .pei-metas-list li .empty-state p {
+            text-align: left;
         }
         [data-theme="dark"] .pei-metas-list li { background-color: color-mix(in srgb, var(--dark-card) 10%, transparent); }
 
@@ -798,6 +811,7 @@
             word-wrap: break-word;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             position: relative;
+            text-align: left; /* Ensure chat messages are left-aligned */
         }
         .chat-message.self { /* Messages by the current user (e.g., professional) */
             background-color: var(--chat-bubble-bg-user);
@@ -841,6 +855,7 @@
             padding-top: 1rem;
             border-top: 1px solid var(--border-color);
             margin-top: 1rem;
+            flex-wrap: wrap; /* Allow buttons and textarea to wrap */
         }
         .chat-input-area textarea {
             flex-grow: 1;
@@ -853,6 +868,7 @@
             font-family: 'Inter', sans-serif;
             font-size: 0.95rem;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            min-width: 150px; /* Ensure textarea doesn't get too small */
         }
         .chat-input-area textarea:focus {
             border-color: var(--primary);
@@ -861,6 +877,13 @@
         }
         [data-theme="dark"] .chat-input-area textarea { background-color: var(--dark-bg); border-color: var(--dark-border-color); }
 
+        .btn-print-evolution {
+            background-color: var(--info);
+            color: white;
+        }
+        .btn-print-evolution:hover {
+            background-color: #0369a1;
+        }
 
         /* --- Responsive Adjustments (CONTINUED) --- */
         @media(max-width: 768px) {
@@ -873,6 +896,9 @@
         }
         @media(min-width: 769px) { /* Only show on desktop */
             .btn-text-desktop { display: inline; }
+        }
+        .toggle-btn-desktop {
+            margin-right: 1.0rem; /* Increased margin to the right */
         }
 
     </style>
@@ -1063,6 +1089,7 @@
                                             <div class="chat-input-area">
                                                 <textarea placeholder="Digite uma nova evolução..." rows="1"></textarea>
                                                 <button class="btn btn-primary btn-send-evolution" data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"><i class="fas fa-paper-plane"></i> <span class="btn-text-desktop">Enviar</span></button>
+                                                <button class="btn btn-sm btn-info btn-print-evolution" data-chat-id="chat-meta-{{ pei_id }}-{{ meta_index }}" data-title="Evoluções de {{ meta.titulo }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir Atividades</span></button>
                                             </div>
                                         </div>
                                     </li>
@@ -2208,6 +2235,13 @@
                         btn.dataset.professional
                     );
                 }
+                 // Botão de Imprimir Evolução (novo)
+                if (e.target.closest('.btn-print-evolution')) {
+                    const btn = e.target.closest('.btn-print-evolution');
+                    const chatId = btn.dataset.chatId;
+                    const title = btn.dataset.title;
+                    generatePdfForRecord(chatId, title);
+                }
             });
 
             // Nova função para abrir a modal de visualização
@@ -2234,6 +2268,13 @@
                     }
                 });
             });
+
+            // Lógica para esconder a aba PEI se não houver PEIs
+            const peisTabButton = document.querySelector('.tab-nav-item[data-tab="peis"]');
+            const peisExist = {{ 'true' if peis_do_paciente else 'false' }};
+            if (!peisExist && peisTabButton) {
+                peisTabButton.style.display = 'none';
+            }
 
             // Inicialização de todas as funções
             setupPeiAccordion();
