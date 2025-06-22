@@ -339,7 +339,7 @@
             border-radius: 16px; /* Mais arredondado */
             box-shadow: var(--shadow-medium);
             width: 95%; /* Responsivo */
-            max-width: 700px; /* Largura máxima padrão */
+            max-width: 1200px; /* Largura máxima padrão */
             max-height: 96vh; /* Altura máxima para caber na tela */
             transform: translateY(-30px); /* Começa um pouco acima */
             transition: transform 0.3s ease, opacity 0.3s ease;
@@ -450,7 +450,7 @@
         .editor-toolbar button.is-active { background-color: color-mix(in srgb, var(--primary) 25%, transparent); border-color: var(--primary); }
         .editor-content {
             min-height: 280px; /* Altura mínima aumentada */
-            max-height: 450px; /* Altura máxima aumentada */
+            max-height: 280px; /* Altura máxima aumentada */
             overflow-y: auto;
             padding: 1.2rem; /* Mais padding */
             border: 1px solid var(--border-color);
@@ -459,8 +459,8 @@
             background-color: var(--card);
             color: var(--text);
             outline: none;
+            /* Removed resize: vertical; */
             line-height: 1.7; /* Mais espaçamento entre linhas */
-            resize: vertical;
         }
         .editor-content[data-placeholder]:empty:before {
             content: attr(data-placeholder);
@@ -993,12 +993,12 @@
                                                 <div class="registro-actions">
                                                     <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir</span></button>
                                                     <button class="btn btn-sm btn-info btn-visualizar-registro"
-                                                                data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"
-                                                                data-content="{{ registro.conteudo | e }}"
-                                                                data-type="{{ registro.tipo_registro | replace('_', ' ') | capitalize }}"
-                                                                data-date="{{ registro.data_registro.split(' ')[0] }}"
-                                                                data-professional="{{ registro.profissional_nome | default('N/A') }}">
-                                                                <i class="fas fa-eye"></i> <span class="btn-text-desktop">Visualizar</span>
+                                                            data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"
+                                                            data-content="{{ registro.conteudo | e }}"
+                                                            data-type="{{ registro.tipo_registro | replace('_', ' ') | capitalize }}"
+                                                            data-date="{{ registro.data_registro.split(' ')[0] }}"
+                                                            data-professional="{{ registro.profissional_nome | default('N/A') }}">
+                                                            <i class="fas fa-eye"></i> <span class="btn-text-desktop">Visualizar</span>
                                                     </button>
 
                                                     {% if registro.tipo_registro == 'anamnese' %}
@@ -1051,9 +1051,9 @@
                                             {% endif %}
                                             {# Botão "Atividade" que substitui "Registrar Evolução" e "Visualizar Evoluções" #}
                                             <button class="btn btn-sm btn-primary btn-toggle-evolutions"
-                                                         data-pei-id="{{ pei_id }}"
-                                                         data-meta-titulo="{{ meta.titulo }}"
-                                                         data-meta-index="{{ meta_loop_index }}">
+                                                    data-pei-id="{{ pei_id }}"
+                                                    data-meta-titulo="{{ meta.titulo }}"
+                                                    data-meta-index="{{ meta_loop_index }}">
                                                 <i class="fas fa-comments"></i> <span class="btn-text-desktop">Atividade</span> (<span class="evolution-count">0</span>)
                                             </button>
                                         </div>
@@ -1072,7 +1072,7 @@
                                                     {% if evolucoes_meta %}
                                                         {% for evolucao in evolucoes_meta %}
                                                             <div class="chat-message-wrapper">
-                                                                {# Assume 'self' if registered by the current user, or 'other' if by another professional/system #}
+                                                                {# Added conditional class 'self' or 'other' based on user_uid #}
                                                                 <div class="chat-message {{ 'self' if evolucao.registrado_por_uid == session.user_uid else 'other' }}">
                                                                     {{ evolucao.conteudo | safe }}
                                                                 </div>
@@ -1177,12 +1177,19 @@
                 <h3 id="modalRegistroGenericoTitle">Adicionar Novo Registro</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
-            <form id="formRegistroGenerico"> {# Removed method="POST" action="" here #}
+
+            <form id="formRegistroGenerico">
+                
                 <input type="hidden" name="tipo_registro" id="tipo_registro_generico">
                 <input type="hidden" name="tipo_registro_feedback" id="tipo_registro_feedback">
                 <input type="hidden" name="referencia_pei_id" id="referencia_pei_id">
                 <input type="hidden" name="referencia_meta_titulo" id="referencia_meta_titulo">
                 <div class="modal-body">
+                                        <div class="form-group">
+                                <label for="titulo_registro_generico">Título</label>
+                                <input type="text" id="titulo_registro_generico" name="titulo" required>
+                            </div>
+
                     <div class="gemini-generator">
                         <div class="form-group">
                             <label for="gemini-prompt">Gerar conteúdo com Inteligência Artificial</label>
@@ -1193,18 +1200,12 @@
                                 </button>
                             </div>
                         </div>
-                           <div class="form-group">
-                             <div id="lgpd-consent-text" class="consent-text">
-                                 Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
-                             </div>
-                           </div>
+                               <div class="form-group">
+                                 <div id="lgpd-consent-text" class="consent-text">
+                                     Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
+                                 </div>
+                               </div>
                     </div>
-
-                    <div class="form-group">
-                        <label for="titulo_registro_generico">Título</label>
-                        <input type="text" id="titulo_registro_generico" name="titulo" required>
-                    </div>
-
                     <div class="form-group">
                         <label for="conteudo_generico">Conteúdo</label>
                         <div class="editor-toolbar">
@@ -1228,7 +1229,7 @@
 
     <div id="concluir-meta-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
-               <div class="modal-header">
+              <div class="modal-header">
                 <h3>Concluir Meta</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
@@ -1248,7 +1249,7 @@
 
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
-               <div class="modal-header">
+              <div class="modal-header">
                 <h3>Confirmar Ação</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
@@ -1498,33 +1499,50 @@
             async function openModalParaRegistro(tipo, dados = {}) {
                 console.log(`Opening modal for type: ${tipo}, Data:`, dados); // Diagnostic message
                 formGenerico.reset();
+                // Limpa o conteúdo do editor e re-aplica o placeholder se necessário
+                genericEditor.innerHTML = ''; 
+                hiddenContentTextarea.value = '';
+
+                // Reseta o estado do botão de IA
                 consentCheck.classList.remove('active');
                 generateBtn.disabled = true;
 
                 const isEdit = !!dados.id;
-                const tipoCapitalizado = tipo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const tipoCapitalizado = tipo.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
                 modalTitle.textContent = isEdit ? `Editar ${tipoCapitalizado}` : `Adicionar ${tipoCapitalizado}`;
                 tipoInput.value = tipo;
                 tipoFeedbackInput.value = tipoCapitalizado;
-                // --- MODIFICATION START ---
-                // Changed default title for PEI evolution from 'Sem Título' to 'Atividade'
-                tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo || 'Atividade'}` : '');
-                // --- MODIFICATION END ---
-                genericEditor.innerHTML = dados.conteudo || '';
 
-                // Adiciona referências do PEI se for uma evolução
+                tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo || 'Atividade'}` : '');
+                genericEditor.innerHTML = dados.conteudo || '';
+                hiddenContentTextarea.value = dados.conteudo || ''; // Sincroniza o textarea oculto
+
                 peiIdInput.value = dados.peiId || '';
                 metaTituloInput.value = dados.metaTitulo || '';
 
-                // Set up the form submission for JSON
+                // Garante que o botão de salvar está no estado inicial
+                const submitButton = formGenerico.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fas fa-save"></i> Salvar';
+                }
+
+                // --- CORREÇÃO APLICADA AQUI ---
                 formGenerico.onsubmit = async (event) => {
-                    event.preventDefault(); // Prevent default form submission
-                    console.log("Form submitted. Processing data..."); // Diagnostic message
+                    event.preventDefault();
+                    console.log("Form submitted. Processing data...");
 
-                    hiddenContentTextarea.value = genericEditor.innerHTML; // Update hidden textarea
+                    if (!submitButton) return;
 
-                    const formData = {
+                    // 1. Desativa o botão e mostra o estado de carregamento para evitar cliques duplos
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+                    // Atualiza o textarea oculto com o conteúdo do editor
+                    hiddenContentTextarea.value = genericEditor.innerHTML;
+
+                    const requestData = {
                         tipo_registro: tipoInput.value,
                         titulo: tituloInput.value,
                         conteudo: hiddenContentTextarea.value,
@@ -1533,62 +1551,54 @@
                     };
 
                     let url = '';
-                    let method = 'POST';
+                    let fetchOptions = {};
 
                     if (isEdit) {
                         url = `/prontuarios/${pacienteId}/editar_registro_generico/${dados.id}`;
-                        console.log("Editing record. URL:", url, "Data:", formData); // Diagnostic message
-                        // For editing, Flask route expects form data, not JSON
-                        // So, we will use a FormData object for edit
                         const formToSend = new FormData();
-                        for (const key in formData) {
-                            formToSend.append(key, formData[key]);
+                        for (const key in requestData) {
+                            formToSend.append(key, requestData[key]);
                         }
-                        // Add feedback type for flash message on backend
                         formToSend.append('tipo_registro_feedback', tipoFeedbackInput.value);
-
-                        try {
-                            const response = await fetch(url, {
-                                method: method,
-                                body: formToSend // Send as form data for edit
-                            });
-                            // Since Flask redirects, we don't need to parse JSON.
-                            // The redirect will handle success/failure messages via flash.
-                            window.location.reload(); // Reload page to see changes and flash messages
-                        } catch (error) {
-                            console.error('Erro ao enviar dados de edição:', error);
-                            Swal.fire('Erro!', 'Erro ao salvar o registro. Tente novamente.', 'error');
-                        }
-
-
+                        fetchOptions = { method: 'POST', body: formToSend };
                     } else {
                         url = `/prontuarios/${pacienteId}/registrar_registro_generico`;
-                        console.log("Registering new record. URL:", url, "Data:", formData); // Diagnostic message
-                        try {
-                            const response = await fetch(url, {
-                                method: method,
-                                headers: {
-                                    'Content-Type': 'application/json' // Send as JSON for new records
-                                },
-                                body: JSON.stringify(formData)
-                            });
-                            const result = await response.json();
+                        fetchOptions = {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestData)
+                        };
+                    }
 
-                            if (result.success) {
-                                Swal.fire('Sucesso!', result.message, 'success').then(() => {
-                                    modalController.close(modalController.registro);
-                                    window.location.reload(); // Reload the page to display the new record
-                                });
-                            } else {
-                                Swal.fire('Erro!', result.message, 'error');
-                            }
-                        } catch (error) {
-                            console.error('Erro ao enviar dados:', error);
-                            Swal.fire('Erro!', 'Erro ao salvar o registro. Tente novamente.', 'error');
+                    try {
+                        const response = await fetch(url, fetchOptions);
+
+                        // Se a requisição for para editar, o backend deve redirecionar,
+                        // e o reload da página mostrará a alteração e a mensagem de flash.
+                        if (isEdit) {
+                            window.location.reload();
+                            return;
                         }
+
+                        // Para um novo registro, verificamos a resposta JSON.
+                        const result = await response.json();
+                        if (result.success) {
+                            // 2. Em caso de sucesso, simplesmente recarregue a página.
+                            // O backend deve lidar com a exibição da mensagem de sucesso (flash).
+                            window.location.reload();
+                        } else {
+                            // Se o servidor retornar um erro, lança uma exceção para ser pega pelo catch.
+                            throw new Error(result.message || 'O servidor retornou um erro.');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao salvar registro:', error);
+                        Swal.fire('Erro!', `Não foi possível salvar o registro. ${error.message}`, 'error');
+                        // 3. Reativa o botão em caso de erro, para que o usuário possa tentar novamente.
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = '<i class="fas fa-save"></i> Salvar';
                     }
                 };
-
+                
                 modalController.open(modalController.registro);
             }
 
@@ -2270,7 +2280,7 @@
                         btn.dataset.professional
                     );
                 }
-                 // Botão de Imprimir Evolução (novo)
+                   // Botão de Imprimir Evolução (novo)
                 if (e.target.closest('.btn-print-evolution')) {
                     const btn = e.target.closest('.btn-print-evolution');
                     const chatId = btn.dataset.chatId;
@@ -2320,3 +2330,4 @@
     </script>
 </body>
 </html>
+ 
