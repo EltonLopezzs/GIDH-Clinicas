@@ -162,6 +162,21 @@
         .modal-overlay.active { opacity: 1; display: flex; }
         .modal-content { background-color: var(--card); color: var(--text); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 800px; height: auto; max-height: 94vh; transform: translateY(-20px); transition: transform 0.25s ease, opacity 0.25s ease; display: flex; flex-direction: column; }
         .modal-overlay.active .modal-content { transform: translateY(0); }
+
+        /* Styling for the new large viewer modal */
+        #modalVisualizarRegistro .modal-content {
+            max-width: 900px; /* Wider */
+            width: 90%; /* Responsive width */
+            max-height: 90vh; /* Taller */
+        }
+        #modalVisualizarRegistro .modal-body {
+            font-size: 1rem; /* Ensure good readability */
+            line-height: 1.6;
+            white-space: pre-wrap; /* Respect pre-formatted text */
+            overflow-wrap: break-word; /* Prevent overflow of long words */
+        }
+
+
         .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
         .modal-header h3 { font-size: 1.2rem; color: var(--text); margin: 0; font-weight: 600; }
         .modal-close-btn { background: none; border: none; font-size: 1.5rem; color: var(--muted); cursor: pointer; line-height: 1; transition: color 0.2s ease; }
@@ -379,6 +394,15 @@
                                                 <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
                                                 <div class="registro-actions">
                                                     <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i></button>
+                                                    <!-- Novo botão Visualizar -->
+                                                    <button class="btn btn-sm btn-info btn-visualizar-registro"
+                                                            data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"
+                                                            data-content="{{ registro.conteudo | e }}"
+                                                            data-type="{{ registro.tipo_registro | replace('_', ' ') | capitalize }}"
+                                                            data-date="{{ registro.data_registro.split(' ')[0] }}"
+                                                            data-professional="{{ registro.profissional_nome | default('N/A') }}">
+                                                        <i class="fas fa-eye"></i> Visualizar
+                                                    </button>
 
                                                     {% if registro.tipo_registro == 'anamnese' %}
                                                         <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
@@ -627,6 +651,27 @@
         <input type="hidden" name="registro_id" id="registro_id_apagar">
     </form>
 
+    <!-- Nova Modal de Visualização de Registro -->
+    <div id="modalVisualizarRegistro" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="visualizarRegistroTitle">Visualizar Registro</h3>
+                <button type="button" class="modal-close-btn" data-close-viewer-modal>&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Tipo:</strong> <span id="visualizarRegistroType"></span></p>
+                <p><strong>Data:</strong> <span id="visualizarRegistroDate"></span></p>
+                <p><strong>Profissional:</strong> <span id="visualizarRegistroProfessional"></span></p>
+                <hr style="margin: 1rem 0; border-color: var(--border-color);">
+                <div id="visualizarRegistroContent" class="registro-content" style="max-height: none; overflow-y: visible; padding-right: 0;"></div>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button type="button" class="btn btn-secondary" data-close-viewer-modal>Fechar</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const pacienteId = "{{ paciente.id if paciente else '' }}";
@@ -638,6 +683,7 @@
                 registro: document.getElementById('modalRegistroGenerico'),
                 confirm: document.getElementById('confirm-modal'),
                 concluirMeta: document.getElementById('concluir-meta-modal'),
+                visualizar: document.getElementById('modalVisualizarRegistro'), // Adicionada a modal de visualização
                 open(modal) { modal?.classList.add('active'); },
                 close(modal) { modal?.classList.remove('active'); }
             };
@@ -720,7 +766,8 @@
                     if (e.target === modal) modalController.close(modal);
                 });
             });
-            document.querySelectorAll('[data-close]').forEach(btn =>
+            // Adicionado seletor para o novo botão de fechar da modal de visualização
+            document.querySelectorAll('[data-close], [data-close-viewer-modal]').forEach(btn =>
                 btn.addEventListener('click', () => modalController.close(btn.closest('.modal-overlay')))
             );
 
@@ -1150,47 +1197,60 @@
 
                 try {
                     const pdf = new jsPDF('p', 'mm', 'a4'); // 'p' para retrato, 'mm' para milímetros, 'a4' tamanho
-                    const margin = 15; // Aumentei a margem para mais espaço nas laterais
+                    const margin = 15; // Increased margin for more side space
                     let y = margin;
                     const pageWidth = pdf.internal.pageSize.getWidth() - (2 * margin);
-                    const defaultFontSize = 10; // Reduzido de 11 para 10
-                    const lineHeightMultiplier = 1.2; // Multiplicador para o espaçamento entre linhas
+                    const defaultFontSize = 9; // Reduced from 10 to 9 for body text
+                    const lineHeightMultiplier = 1.3; // Slightly increased for better readability
 
 
-                    // Função para adicionar uma nova página e o cabeçalho
+                    // Function to add a new page and the header
                     const addNewPage = () => {
                         pdf.addPage();
-                        y = margin; // Resetar Y para o topo da nova página
+                        y = margin; // Reset Y to the top of the new page
                         pdf.setFont('helvetica', 'normal');
-                        pdf.setFontSize(10);
+                        pdf.setFontSize(9); // Header font size slightly smaller
                         pdf.setTextColor(100);
-                        pdf.text(`${clinicaNome}`, margin, y); y += 5;
-                        pdf.text(`Paciente: ${pacienteNome}`, margin, y); y += 5;
-                        pdf.text(`Documento: ${title}`, margin, y); y += 5;
-                        pdf.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, margin, y); y += 15;
+                        pdf.text(`${clinicaNome}`, margin, y); y += 4;
+                        pdf.text(`Paciente: ${pacienteNome}`, margin, y); y += 4;
+                        pdf.text(`Documento: ${title}`, margin, y); y += 4;
+                        pdf.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, margin, y); y += 12; // Adjusted spacing
                     };
 
-                    // Adicionar cabeçalho da primeira página
+                    // Add header for the first page
                     pdf.setFont('helvetica', 'normal');
-                    pdf.setFontSize(10);
+                    pdf.setFontSize(9); // Header font size slightly smaller
                     pdf.setTextColor(100);
-                    pdf.text(`${clinicaNome}`, margin, y); y += 5;
-                    pdf.text(`Paciente: ${pacienteNome}`, margin, y); y += 5;
-                    pdf.text(`Documento: ${title}`, margin, y); y += 5;
-                    pdf.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, margin, y); y += 15;
+                    pdf.text(`${clinicaNome}`, margin, y); y += 4;
+                    pdf.text(`Paciente: ${pacienteNome}`, margin, y); y += 4;
+                    pdf.text(`Documento: ${title}`, margin, y); y += 4;
+                    pdf.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, margin, y); y += 12; // Adjusted spacing
 
-                    // Processar o conteúdo HTML
+
+                    // Process HTML content
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = element.innerHTML;
 
                     const processNode = (node, currentStyles = { font: 'helvetica', style: 'normal', size: defaultFontSize, isListItem: false, listType: '', listItemIndex: 0, listLevel: 0 }) => {
-                        // Ignorar scripts e estilos
+                        // Ignore scripts and styles
                         if (node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE') {
                             return;
                         }
 
-                        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0) {
+                        // Remove empty text nodes or nodes with only whitespace
+                        if (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) {
+                            return;
+                        }
+                        if (node.nodeType === Node.ELEMENT_NODE && node.children.length === 0 && !node.textContent.trim()) {
+                             // Ignore empty elements that don't contain other elements or significant text
+                             return;
+                        }
+
+
+                        if (node.nodeType === Node.TEXT_NODE) {
                             let text = node.textContent.trim();
+                            if (!text) return; // Skip if text is just whitespace after trim
+
                             let combinedStyle = { ...currentStyles };
 
                             let parent = node.parentNode;
@@ -1204,21 +1264,21 @@
                                 parent = parent.parentNode;
                             }
 
-                            // Ajustar tamanho e estilo para cabeçalhos (reduzido proporcionalmente)
+                            // Adjust size and style for headings (proportionally reduced)
                             if (node.parentNode.nodeName.match(/^H[1-6]$/)) {
                                 switch (node.parentNode.nodeName) {
-                                    case 'H1': combinedStyle.size = 20; combinedStyle.style = 'bold'; break; // Era 24
-                                    case 'H2': combinedStyle.size = 18; combinedStyle.style = 'bold'; break; // Era 20
-                                    case 'H3': combinedStyle.size = 16; combinedStyle.style = 'bold'; break; // Era 18
-                                    case 'H4': combinedStyle.size = 14; combinedStyle.style = 'bold'; break; // Era 16
-                                    case 'H5': combinedStyle.size = 12; combinedStyle.style = 'bold'; break; // Era 14
-                                    case 'H6': combinedStyle.size = 11; combinedStyle.style = 'bold'; break; // Era 13
+                                    case 'H1': combinedStyle.size = 18; combinedStyle.style = 'bold'; break;
+                                    case 'H2': combinedStyle.size = 16; combinedStyle.style = 'bold'; break;
+                                    case 'H3': combinedStyle.size = 14; combinedStyle.style = 'bold'; break;
+                                    case 'H4': combinedStyle.size = 12; combinedStyle.style = 'bold'; break;
+                                    case 'H5': combinedStyle.size = 11; combinedStyle.style = 'bold'; break;
+                                    case 'H6': combinedStyle.size = 10; combinedStyle.style = 'bold'; break;
                                 }
                             } else if (!combinedStyle.isListItem) {
-                                combinedStyle.size = defaultFontSize; // Volta para o tamanho padrão
+                                combinedStyle.size = defaultFontSize; // Reverts to default size
                             }
 
-                            // Limpa estilos duplicados ou inconsistentes
+                            // Clean up duplicate or inconsistent styles
                             let finalStyle = combinedStyle.style.replace('normalbold', 'bold').replace('normalitalic', 'italic');
                             if (finalStyle.includes('bold') && finalStyle.includes('italic')) {
                                 finalStyle = 'bolditalic';
@@ -1233,10 +1293,13 @@
                             pdf.setFont(combinedStyle.font, finalStyle);
                             pdf.setFontSize(combinedStyle.size);
 
-                            // Ajusta a altura da linha com base no tamanho da fonte atual
+                            // Adjust line height based on current font size
                             const currentLineHeightMm = combinedStyle.size * lineHeightMultiplier * (1 / pdf.internal.scaleFactor);
 
-                            const lines = pdf.splitTextToSize(text, pageWidth - (combinedStyle.listLevel * 7)); // Ajusta largura para listas aninhadas, com mais indentação
+                            // Calculate available width for text, considering list indentation
+                            const textWidth = pageWidth - (combinedStyle.listLevel * 7); // Indentation for nested lists (7mm per level)
+
+                            const lines = pdf.splitTextToSize(text, textWidth);
 
                             lines.forEach((line, index) => {
                                 if (y + currentLineHeightMm > pdf.internal.pageSize.getHeight() - margin) {
@@ -1247,13 +1310,13 @@
 
                                 let prefix = '';
                                 let indent = 0;
-                                if (combinedStyle.isListItem && index === 0) {
+                                if (combinedStyle.isListItem && index === 0) { // Only for the first line of a list item
                                     if (combinedStyle.listType === 'ul') {
                                         prefix = '• ';
                                     } else if (combinedStyle.listType === 'ol') {
                                         prefix = `${combinedStyle.listItemIndex}. `;
                                     }
-                                    indent = combinedStyle.listLevel * 7; // Indentação para listas aninhadas
+                                    indent = combinedStyle.listLevel * 7; // Indentation for nested lists
                                 }
 
                                 pdf.text(prefix + line, margin + indent, y);
@@ -1262,16 +1325,18 @@
                         } else if (node.nodeType === Node.ELEMENT_NODE) {
                             let newStyles = { ...currentStyles };
 
-                            // Espaçamento antes de blocos
-                            const blockElements = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL'];
+                            // Spacing before blocks
+                            const blockElements = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI']; // Include LI as block for spacing purposes
                             if (blockElements.includes(node.nodeName)) {
-                                // Adiciona um espaçamento razoável antes de cada novo bloco
-                                if (node.textContent.trim().length > 0 && y > margin + 30) {
-                                    y += 4; // Espaçamento entre blocos
+                                if (node.textContent.trim().length > 0) { // Only add space if there's actual content
+                                    // Avoid adding extra space right at the top of a new page or after a header
+                                    if (y > margin + 20 || !node.parentNode || !blockElements.includes(node.parentNode.nodeName) ) { // Smarter spacing
+                                        y += 3; // Spacing between blocks (reduced from 4 to 3)
+                                    }
                                 }
                             }
 
-                            // Detecção e nível de listas
+                            // Detect and level lists
                             if (node.nodeName === 'UL' || node.nodeName === 'OL') {
                                 newStyles.listLevel++;
                             }
@@ -1287,7 +1352,9 @@
                                     newStyles.listType = 'ul';
                                 }
                             } else {
-                                newStyles.isListItem = false; // Resetar para sub-elementos que não são <li>
+                                newStyles.isListItem = false; // Reset for non-<li> sub-elements
+                                newStyles.listType = '';
+                                newStyles.listItemIndex = 0;
                             }
 
 
@@ -1295,14 +1362,14 @@
                                 Array.from(node.childNodes).forEach(child => processNode(child, newStyles));
                             }
 
-                            // Espaçamento após blocos
+                            // Spacing after blocks
                             if (blockElements.includes(node.nodeName)) {
                                 if (node.textContent.trim().length > 0) {
-                                    y += 4; // Espaçamento após blocos
+                                    y += 3; // Spacing after blocks (reduced from 4 to 3)
                                 }
                             }
 
-                            // Decrementar nível da lista após processar todos os filhos da lista
+                            // Decrement list level after processing all children of the list
                             if (node.nodeName === 'UL' || node.nodeName === 'OL') {
                                 newStyles.listLevel--;
                             }
@@ -1360,7 +1427,28 @@
                     const btn = e.target.closest('.btn-print-pdf');
                     generatePdfForRecord(btn.dataset.targetId, btn.dataset.title);
                 }
+                 // Botão de Visualizar Registro (novo)
+                if (e.target.closest('.btn-visualizar-registro')) {
+                    const btn = e.target.closest('.btn-visualizar-registro');
+                    openVisualizarRegistroModal(
+                        btn.dataset.title,
+                        btn.dataset.content,
+                        btn.dataset.type,
+                        btn.dataset.date,
+                        btn.dataset.professional
+                    );
+                }
             });
+
+            // Nova função para abrir a modal de visualização
+            function openVisualizarRegistroModal(title, content, type, date, professional) {
+                document.getElementById('visualizarRegistroTitle').textContent = title;
+                document.getElementById('visualizarRegistroType').textContent = type;
+                document.getElementById('visualizarRegistroDate').textContent = date;
+                document.getElementById('visualizarRegistroProfessional').textContent = professional;
+                document.getElementById('visualizarRegistroContent').innerHTML = content;
+                modalController.open(modalController.visualizar);
+            }
 
             // Lógica das Abas
             document.querySelectorAll('.tab-nav-item').forEach(tab => {
