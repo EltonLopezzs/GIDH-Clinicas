@@ -940,27 +940,41 @@ def editar_paciente(paciente_doc_id):
     clinica_id = session['clinica_id']
     paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
     
-    # ... (código para carregar convenios e peis_disponiveis permanece o mesmo) ...
     convenios_lista = []
     peis_disponiveis = []
     try:
         convenios_docs = db.collection('clinicas').document(clinica_id).collection('convenios').order_by('nome').stream()
         for doc in convenios_docs:
             conv_data = doc.to_dict()
-            if conv_data: convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome', doc.id)})
+            if conv_data:
+                convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome', doc.id)})
 
         peis_docs = db.collection('clinicas').document(clinica_id).collection('peis').order_by('identificacao_pei').stream()
         for doc in peis_docs:
             pei_data = doc.to_dict()
-            if pei_data: peis_disponiveis.append({'id': doc.id, 'identificacao': pei_data.get('identificacao_pei', doc.id)})
+            if pei_data:
+                peis_disponiveis.append({'id': doc.id, 'identificacao': pei_data.get('identificacao_pei', doc.id)})
+
     except Exception as e:
-        flash('Erro ao carregar dados de suporte.', 'danger')
+        flash('Erro ao carregar convênios ou PEIs.', 'danger')
+        print(f"Erro ao carregar convênios/PEIs (edit_patient GET): {e}")
 
     if request.method == 'POST':
-        # ... (código para obter dados do formulário permanece o mesmo) ...
         nome = request.form['nome'].strip()
         data_nascimento = request.form.get('data_nascimento', '').strip()
-        # (Restante dos campos do formulário)
+        cpf = request.form.get('cpf', '').strip()
+        rg = request.form.get('rg', '').strip()
+        genero = request.form.get('genero', '').strip()
+        estado_civil = request.form.get('estado_civil', '').strip()
+        telefone = request.form.get('telefone', '').strip()
+        email = request.form.get('email', '').strip()  
+        indicacao = request.form.get('indicacao', '').strip()
+        convenio_id = request.form.get('convenio_id', '').strip()
+        observacoes = request.form.get('observacoes', '').strip()
+        
+       
+        peis_associados_ids = request.form.getlist('peis_associados')
+
         cep = request.form.get('cep', '').strip()
         logradouro = request.form.get('logradouro', '').strip()
         numero = request.form.get('numero', '').strip()
@@ -968,86 +982,94 @@ def editar_paciente(paciente_doc_id):
         bairro = request.form.get('bairro', '').strip()
         cidade = request.form.get('cidade', '').strip()
         estado = request.form.get('estado', '').strip()
-        convenio_id = request.form.get('convenio_id', '').strip()
-        observacoes = request.form.get('observacoes', '').strip()
 
-        # IDs dos modelos de PEI selecionados no formulário
-        id_modelos_pei_selecionados = request.form.getlist('peis_associados')
+        if not nome:
+            flash('O nome do paciente é obrigatório.', 'danger')
+            return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista, peis_disponiveis=peis_disponiveis)
 
         try:
-            # --- NOVA LÓGICA DE ATRIBUIÇÃO DE PEI ---
-            paciente_doc_atual = paciente_ref.get()
-            dados_paciente_atuais = paciente_doc_atual.to_dict() if paciente_doc_atual.exists else {}
-            ids_peis_ja_atribuidos = dados_paciente_atuais.get('peis_associados', [])
-
-            # Para cada PEI selecionado, verifica se já foi instanciado para o paciente
-            for pei_template_id in id_modelos_pei_selecionados:
-                # Procura por um PEI individual que já tenha este ID de template
-                peis_individuais_ref = paciente_ref.collection('peis_individuais')
-                query = peis_individuais_ref.where(filter=FieldFilter('template_pei_id', '==', pei_template_id)).limit(1).stream()
-                
-                # Se não encontrar, cria uma nova instância
-                if not any(query):
-                    template_ref = db.collection('clinicas').document(clinica_id).collection('peis').document(pei_template_id)
-                    template_doc = template_ref.get()
-                    if template_doc.exists:
-                        template_data = template_doc.to_dict()
-                        
-                        # Inicializa o estado das metas
-                        metas_instancia = template_data.get('metas', [])
-                        for meta in metas_instancia:
-                            meta['status'] = 'Não Iniciada'
-                            meta['tempo_total_gasto'] = 0
-                            meta['cronometro_inicio'] = None
-
-                        # Cria a cópia individual para o paciente
-                        peis_individuais_ref.add({
-                            'template_pei_id': pei_template_id,
-                            'identificacao_pei': template_data.get('identificacao_pei'),
-                            'descricao_pei': template_data.get('descricao_pei'),
-                            'data_inicio': template_data.get('data_inicio'),
-                            'data_fim': template_data.get('data_fim'),
-                            'metas': metas_instancia,
-                            'criado_em': firestore.SERVER_TIMESTAMP
-                        })
-
-            # Atualiza os outros dados do paciente
             data_nascimento_dt = parse_date_input(data_nascimento)
+            
+            if data_nascimento and data_nascimento_dt is None:
+                flash('Formato de data de nascimento inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
+                return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista, peis_disponiveis=peis_disponiveis)
+
             paciente_data_update = {
                 'nome': nome,
                 'data_nascimento': data_nascimento_dt,
-                # (Restante dos campos para atualizar)
+                'cpf': cpf if cpf else None,
+                'rg': rg if rg else None,
+                'genero': genero if genero else None,
+                'estado_civil': estado_civil if estado_civil else None, 
+                'contato_telefone': telefone if telefone else None, 
+                'contato_email': email if email else None,  
+                'indicacao': indicacao if indicacao else None, 
                 'convenio_id': convenio_id if convenio_id else None,
                 'observacoes': observacoes if observacoes else None,
-                'endereco': { 'cep': cep, 'logradouro': logradouro, 'numero': numero, 'complemento': complemento, 'bairro': bairro, 'cidade': cidade, 'estado': estado },
-                'peis_associados': id_modelos_pei_selecionados, # Mantém a lista de IDs de referência
+                'endereco': {
+                    'cep': cep if cep else None,
+                    'logradouro': logradouro if logradouro else None,
+                    'numero': numero if numero else None,
+                    'complemento': complemento if complemento else None,
+                    'bairro': bairro if bairro else None,
+                    'cidade': cidade if cidade else None,
+                    'estado': estado if estado else None,
+                },
+                'peis_associados': peis_associados_ids if peis_associados_ids else [],
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             }
             
             paciente_ref.update(paciente_data_update)
-            flash('Paciente atualizado com sucesso! Os PEIs foram atribuídos.', 'success')
+            flash('Paciente atualizado com sucesso!', 'success')
             return redirect(url_for('listar_pacientes'))
-
         except Exception as e:
             flash(f'Erro ao atualizar paciente: {e}', 'danger')
+            print(f"Erro edit_patient (POST): {e}")  
 
-    # ... (código do GET para carregar o formulário permanece o mesmo) ...
+   
     try:
         paciente_doc = paciente_ref.get()
         if paciente_doc.exists:
             paciente = paciente_doc.to_dict()
-            paciente['id'] = paciente_doc.id
-            if paciente.get('data_nascimento') and isinstance(paciente.get('data_nascimento'), datetime.datetime):
-                paciente['data_nascimento'] = paciente['data_nascimento'].strftime('%Y-%m-%d')
-            else:
-                paciente['data_nascimento'] = ''
-            paciente['peis_associados_ids'] = paciente.get('peis_associados', [])
-            return render_template('paciente_form.html', paciente=paciente, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista, peis_disponiveis=peis_disponiveis)
+            if paciente:
+                paciente['id'] = paciente_doc.id
+                
+              
+                if paciente.get('data_nascimento') and isinstance(paciente.get('data_nascimento'), datetime.datetime):
+                    paciente['data_nascimento'] = paciente['data_nascimento'].strftime('%Y-%m-%d')
+                else:
+                    paciente['data_nascimento'] = ''
+ 
+                paciente['genero'] = paciente.get('genero', '')
+                paciente['cpf'] = paciente.get('cpf', '')
+                paciente['rg'] = paciente.get('rg', '')
+                paciente['contato_telefone'] = paciente.get('contato_telefone', '')  
+                paciente['contato_email'] = paciente.get('contato_email', '') 
+
+              
+                if 'endereco' not in paciente or not isinstance(paciente['endereco'], dict):
+                    paciente['endereco'] = {}
+                paciente['endereco']['cep'] = paciente['endereco'].get('cep', '')
+                paciente['endereco']['logradouro'] = paciente['endereco'].get('logradouro', '')
+                paciente['endereco']['numero'] = paciente['endereco'].get('numero', '')
+                paciente['endereco']['complemento'] = paciente['endereco'].get('complemento', '')
+                paciente['endereco']['bairro'] = paciente['endereco'].get('bairro', '')
+                paciente['endereco']['cidade'] = paciente['endereco'].get('cidade', '')
+                paciente['endereco']['estado'] = paciente['endereco'].get('estado', '')
+
+                paciente['peis_associados_ids'] = paciente.get('peis_associados', [])  
+
+              
+                print("Dados do paciente carregados para edição:", paciente)
+           
+
+                return render_template('paciente_form.html', paciente=paciente, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista, peis_disponiveis=peis_disponiveis)
         else:
             flash('Paciente não encontrado.', 'danger')
             return redirect(url_for('listar_pacientes'))
     except Exception as e:
         flash(f'Erro ao carregar paciente para edição: {e}', 'danger')
+        print(f"Erro edit_patient (GET): {e}")  
         return redirect(url_for('listar_pacientes'))
     
 @app.route('/servicos_procedimentos')
