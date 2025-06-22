@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -168,8 +168,16 @@
         .form-group:last-child { margin-bottom: 0; }
         .form-group label { display: block; font-size: 0.9rem; color: var(--muted); font-weight: 500; margin-bottom: 0.5rem; }
         .form-group input, .form-group select, .form-group textarea { font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg); color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus, .editor-content:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
         .confirm-modal-content { max-width: 500px; padding: 1.5rem; text-align: center; }
+        
+        /* Rich Text Editor */
+        .editor-toolbar { background-color: var(--bg); border: 1px solid var(--border-color); border-bottom: none; border-radius: 8px 8px 0 0; padding: 0.5rem; display: flex; flex-wrap: wrap; gap: 5px; }
+        .editor-toolbar button { background: none; border: 1px solid transparent; padding: 8px; cursor: pointer; font-size: 1rem; color: var(--text); border-radius: 4px; transition: background-color 0.2s ease; }
+        .editor-toolbar button:hover { background-color: color-mix(in srgb, var(--primary) 10%, transparent); }
+        .editor-toolbar button.is-active { background-color: color-mix(in srgb, var(--primary) 20%, transparent); }
+        .editor-content { min-height: 250px; max-height: 400px; overflow-y: auto; padding: 1rem; border: 1px solid var(--border-color); border-radius: 0 0 8px 8px; font-size: 1rem; background-color: var(--card); color: var(--text); outline: none; line-height: 1.6; resize: vertical; }
+        .editor-content[data-placeholder]:empty:before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; display: block; }
 
         /* --- Gemini IA --- */
         .btn.loading i { animation: spin 1s linear infinite; }
@@ -377,6 +385,7 @@
                                             </div>
                                             <div class="pei-content">
                                                 <p><strong>Descrição:</strong> {{ pei.descricao_pei or 'N/A' }}</p>
+                                                <p><strong>Responsável pelo Plano:</strong> {{ pei.profissional_responsavel_nome or 'Não definido' }}</p>
                                                 <h5>Metas</h5>
                                                 {% if pei.metas %}
                                                     <ul class="pei-metas-list">
@@ -492,13 +501,23 @@
                             </div>
                         </div>
                     </div>
+                    
                     <div class="form-group">
                         <label for="titulo_registro_generico">Título</label>
                         <input type="text" id="titulo_registro_generico" name="titulo" required>
                     </div>
+                    
                     <div class="form-group">
                         <label for="conteudo_generico">Conteúdo</label>
-                        <textarea id="conteudo_generico" name="conteudo" rows="10" placeholder="Digite o conteúdo aqui..."></textarea>
+                        <div class="editor-toolbar">
+                            <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><i class="fas fa-bold"></i></button>
+                            <button type="button" data-command="italic" title="Itálico (Ctrl+I)"><i class="fas fa-italic"></i></button>
+                            <button type="button" data-command="underline" title="Sublinhado (Ctrl+U)"><i class="fas fa-underline"></i></button>
+                            <button type="button" data-command="insertUnorderedList" title="Lista não ordenada"><i class="fas fa-list-ul"></i></button>
+                            <button type="button" data-command="insertOrderedList" title="Lista ordenada"><i class="fas fa-list-ol"></i></button>
+                        </div>
+                        <div id="editor-content-generico" contenteditable="true" class="editor-content" data-placeholder="Digite o conteúdo aqui..."></div>
+                        <textarea id="conteudo_generico" name="conteudo" style="display:none;"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -567,6 +586,60 @@
                 close(modal) { modal?.classList.remove('active'); }
             };
 
+            function setupCommonUI() {
+                const htmlEl = document.documentElement;
+                const sidebar = document.querySelector('.sidebar');
+                const mainContent = document.querySelector('.main-content');
+                const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+                const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+                const themeToggle = document.getElementById('theme-toggle');
+                const logoutButton = document.getElementById('logoutButton');
+
+                // Lógica do Tema
+                if (themeToggle) {
+                    const themeIcon = themeToggle.querySelector('i');
+                    const storedTheme = localStorage.getItem('theme') || 'light';
+                    htmlEl.setAttribute('data-theme', storedTheme);
+                    themeIcon.className = storedTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                    themeToggle.addEventListener('click', () => {
+                        const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                        htmlEl.setAttribute('data-theme', newTheme);
+                        localStorage.setItem('theme', newTheme);
+                        themeIcon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                    });
+                }
+
+                // Lógica da Sidebar
+                function applySidebarState() {
+                    if (window.innerWidth > 768) {
+                        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                        sidebar.classList.toggle('collapsed', isCollapsed);
+                        mainContent.classList.toggle('collapsed', isCollapsed);
+                    } else {
+                        sidebar.classList.remove('open', 'collapsed');
+                        mainContent.classList.remove('collapsed');
+                    }
+                }
+                toggleBtnDesktop?.addEventListener('click', () => {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                });
+                menuBtnMobile?.addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); });
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+                window.addEventListener('resize', applySidebarState);
+                applySidebarState();
+                
+                // Lógica de Logout
+                logoutButton?.addEventListener('click', (e) => { e.preventDefault(); window.location.href = "{{ url_for('login_page') }}"; });
+            }
+            setupCommonUI();
+
+
             document.querySelectorAll('.modal-overlay').forEach(modal => {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) modalController.close(modal);
@@ -580,6 +653,7 @@
             const generateBtn = document.getElementById('generate-content-btn');
             const promptInput = document.getElementById('gemini-prompt');
             const consentCheck = document.getElementById('lgpd-consent-text');
+            const genericEditor = document.getElementById('editor-content-generico');
             const contentTextarea = document.getElementById('conteudo_generico');
 
             if (consentCheck) {
@@ -598,7 +672,7 @@
                         return;
                     }
 
-                    const fullPrompt = `Você é um assistente da área da saúde. Crie um texto para um(a) "${tipoRegistro}" sobre o seguinte tópico: "${prompt}". O texto deve ser bem estruturado e profissional, sem placeholders como "[...]".`;
+                    const fullPrompt = `Você é um assistente da área da saúde. Crie um texto para um(a) "${tipoRegistro}" sobre o seguinte tópico: "${prompt}". O texto deve ser bem estruturado e profissional, sem placeholders como "[...]". O resultado deve ser apenas o HTML, sem a marcação de blocos de código ou outras formatações.`;
                     
                     generateBtn.disabled = true;
                     generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;<span>Gerando...</span>';
@@ -615,10 +689,10 @@
                         const response = await result.response;
                         const text = response.text();
                         
-                        if (contentTextarea.value.trim() && !confirm('Deseja substituir o conteúdo atual pelo texto gerado?')) {
+                        if (genericEditor.innerHTML.trim() && !confirm('Deseja substituir o conteúdo atual pelo texto gerado?')) {
                             return;
                         }
-                        contentTextarea.value = text;
+                        genericEditor.innerHTML = text;
                     } catch (error) {
                         console.error("Erro na API Gemini:", error);
                         alert("Erro ao gerar conteúdo. Verifique sua chave de API e o console.");
@@ -638,6 +712,23 @@
             const peiIdInput = document.getElementById('referencia_pei_id');
             const metaTituloInput = document.getElementById('referencia_meta_titulo');
 
+            function setupRichTextEditor(editorDiv, hiddenTextarea) {
+                const toolbar = editorDiv.previousElementSibling;
+                toolbar.querySelectorAll('button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const command = e.currentTarget.dataset.command;
+                        document.execCommand(command, false, null);
+                        editorDiv.focus();
+                    });
+                });
+                editorDiv.addEventListener('input', () => {
+                    hiddenTextarea.value = editorDiv.innerHTML;
+                });
+            }
+            setupRichTextEditor(genericEditor, contentTextarea);
+
+
             function openModalParaRegistro(tipo, dados = {}) {
                 formGenerico.reset();
                 consentCheck.classList.remove('active');
@@ -650,7 +741,7 @@
                 tipoInput.value = tipo;
                 tipoFeedbackInput.value = tipoCapitalizado; 
                 tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo}` : '');
-                contentTextarea.value = dados.conteudo || '';
+                genericEditor.innerHTML = dados.conteudo || '';
                 
                 // Adiciona referências do PEI se for uma evolução
                 peiIdInput.value = dados.peiId || '';
@@ -661,6 +752,10 @@
                 } else {
                     formGenerico.action = `/prontuarios/${pacienteId}/registrar_registro_generico`;
                 }
+
+                formGenerico.onsubmit = () => {
+                    contentTextarea.value = genericEditor.innerHTML;
+                };
 
                 modalController.open(modalController.registro);
             }
@@ -867,7 +962,6 @@
 
             // Inicialização de todas as funções
             setupPeiAccordion();
-            // ...chamar outras funções de setup como a da sidebar, etc.
         });
     </script>
 </body>

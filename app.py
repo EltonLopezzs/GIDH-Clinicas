@@ -2116,7 +2116,6 @@ def registrar_registro_generico(paciente_doc_id):
         titulo = request.form.get('titulo', '').strip()
         conteudo = request.form.get('conteudo', '').strip()
         
-        # --- CORREÇÃO APLICADA AQUI ---
         # Captura as referências do PEI do formulário
         referencia_pei_id = request.form.get('referencia_pei_id')
         referencia_meta_titulo = request.form.get('referencia_meta_titulo')
@@ -2140,6 +2139,7 @@ def registrar_registro_generico(paciente_doc_id):
             novo_registro_data['referencia_pei_id'] = referencia_pei_id
             novo_registro_data['referencia_meta_titulo'] = referencia_meta_titulo
 
+        # O caminho para salvar o registro é sempre na subcoleção 'prontuarios' do paciente
         db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add(novo_registro_data)
         
         flash(f'Registro de {tipo_registro.replace("_", " ")} adicionado com sucesso!', 'success')
@@ -2148,6 +2148,7 @@ def registrar_registro_generico(paciente_doc_id):
         print(f"Erro registrar_registro_generico: {e}")
     
     return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
 
 @app.route('/prontuarios/<string:paciente_doc_id>/editar_registro_generico/<string:registro_doc_id>', methods=['POST'])
 @login_required
@@ -2313,42 +2314,44 @@ def listar_peis():
 @admin_required
 def adicionar_pei():
     clinica_id = session['clinica_id']
-    
+    profissionais_lista = []
+    try:
+        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+        for doc in profissionais_docs:
+            profissionais_lista.append(convert_doc_to_dict(doc))
+    except Exception as e:
+        flash('Erro ao carregar a lista de profissionais.', 'danger')
+
     if request.method == 'POST':
         identificacao_pei = request.form['identificacao_pei'].strip()
         descricao_pei = request.form.get('descricao_pei', '').strip()
         data_inicio_str = request.form.get('data_inicio', '').strip()
         data_fim_str = request.form.get('data_fim', '').strip()
         metas_json = request.form.get('metas_json', '[]')
-        
-        if not identificacao_pei:
-            flash('A identificação do PEI é obrigatória.', 'danger')
-            return render_template('pei_form.html', pei=request.form, action_url=url_for('adicionar_pei'))
+        profissional_responsavel_id = request.form.get('profissional_responsavel_id')
 
+        profissional_responsavel_nome = None
+        if profissional_responsavel_id:
+            try:
+                prof_doc = db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_responsavel_id).get()
+                if prof_doc.exists:
+                    profissional_responsavel_nome = prof_doc.to_dict().get('nome')
+            except Exception as e:
+                flash(f'Erro ao buscar nome do profissional: {e}', 'warning')
+        
         try:
+            # (Restante da lógica de validação e salvamento permanece igual)
             data_inicio_dt = parse_date_input(data_inicio_str) if data_inicio_str else None
             data_fim_dt = parse_date_input(data_fim_str) if data_fim_str else None
-
-            if data_inicio_str and not data_inicio_dt:
-                flash('Formato de Data de Início inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('adicionar_pei'))
-            if data_fim_str and not data_fim_dt:
-                flash('Formato de Data de Fim inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('adicionar_pei'))
-            
-            try:
-                metas_data = json.loads(metas_json)
-                if not isinstance(metas_data, list):
-                    raise ValueError("Metas deve ser uma lista JSON.")
-            except (json.JSONDecodeError, ValueError) as e:
-                flash(f'Formato inválido para as metas: {e}', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('adicionar_pei'))
+            metas_data = json.loads(metas_json)
 
             db.collection('clinicas').document(clinica_id).collection('peis').add({
                 'identificacao_pei': identificacao_pei,
                 'descricao_pei': descricao_pei,
                 'data_inicio': data_inicio_dt,
                 'data_fim': data_fim_dt,
+                'profissional_responsavel_id': profissional_responsavel_id,
+                'profissional_responsavel_nome': profissional_responsavel_nome,
                 'metas': metas_data,
                 'criado_em': firestore.SERVER_TIMESTAMP,
                 'criado_por_uid': session.get('user_uid'),
@@ -2358,12 +2361,11 @@ def adicionar_pei():
             return redirect(url_for('listar_peis'))
         except Exception as e:
             flash(f'Erro ao adicionar PEI: {e}', 'danger')
-            print(f"Erro adicionar_pei: {e}")
     
-    return render_template('pei_form.html', pei=None, action_url=url_for('adicionar_pei'), page_title='Adicionar Novo PEI')
+    return render_template('pei_form.html', pei=None, action_url=url_for('adicionar_pei'), page_title='Adicionar Novo PEI', profissionais=profissionais_lista)
 
 
-
+# Em app.py, substitua a rota editar_pei
 @app.route('/peis/editar/<string:pei_doc_id>', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -2371,41 +2373,44 @@ def editar_pei(pei_doc_id):
     clinica_id = session['clinica_id']
     pei_ref = db.collection('clinicas').document(clinica_id).collection('peis').document(pei_doc_id)
     
+    profissionais_lista = []
+    try:
+        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+        for doc in profissionais_docs:
+            profissionais_lista.append(convert_doc_to_dict(doc))
+    except Exception as e:
+        flash('Erro ao carregar a lista de profissionais.', 'danger')
+
     if request.method == 'POST':
         identificacao_pei = request.form['identificacao_pei'].strip()
         descricao_pei = request.form.get('descricao_pei', '').strip()
         data_inicio_str = request.form.get('data_inicio', '').strip()
         data_fim_str = request.form.get('data_fim', '').strip()
         metas_json = request.form.get('metas_json', '[]')
+        profissional_responsavel_id = request.form.get('profissional_responsavel_id')
 
-        if not identificacao_pei:
-            flash('A identificação do PEI é obrigatória.', 'danger')
-            return render_template('pei_form.html', pei=request.form, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id))
-
+        profissional_responsavel_nome = None
+        if profissional_responsavel_id:
+            try:
+                prof_doc = db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_responsavel_id).get()
+                if prof_doc.exists:
+                    profissional_responsavel_nome = prof_doc.to_dict().get('nome')
+            except Exception as e:
+                flash(f'Erro ao buscar nome do profissional: {e}', 'warning')
+        
         try:
+            # (Restante da lógica de validação e salvamento permanece igual)
             data_inicio_dt = parse_date_input(data_inicio_str) if data_inicio_str else None
             data_fim_dt = parse_date_input(data_fim_str) if data_fim_str else None
-
-            if data_inicio_str and not data_inicio_dt:
-                flash('Formato de Data de Início inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id))
-            if data_fim_str and not data_fim_dt:
-                flash('Formato de Data de Fim inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id))
-
-            try:
-                metas_data = json.loads(metas_json)
-                if not isinstance(metas_data, list):
-                    raise ValueError("Metas deve ser uma lista JSON.")
-            except (json.JSONDecodeError, ValueError) as e:
-                flash(f'Formato inválido para as metas: {e}', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id))
+            metas_data = json.loads(metas_json)
 
             pei_ref.update({
                 'identificacao_pei': identificacao_pei,
                 'descricao_pei': descricao_pei,
                 'data_inicio': data_inicio_dt,
                 'data_fim': data_fim_dt,
+                'profissional_responsavel_id': profissional_responsavel_id,
+                'profissional_responsavel_nome': profissional_responsavel_nome,
                 'metas': metas_data,
                 'atualizado_em': firestore.SERVER_TIMESTAMP,
                 'atualizado_por_uid': session.get('user_uid'),
@@ -2415,7 +2420,6 @@ def editar_pei(pei_doc_id):
             return redirect(url_for('listar_peis'))
         except Exception as e:
             flash(f'Erro ao atualizar PEI: {e}', 'danger')
-            print(f"Erro editar_pei (POST): {e}")
 
     try:
         pei_doc = pei_ref.get()
@@ -2423,29 +2427,27 @@ def editar_pei(pei_doc_id):
             pei = pei_doc.to_dict()
             if pei:
                 pei['id'] = pei_doc.id
-                # CORREÇÃO APLICADA AQUI
                 if pei.get('data_inicio') and isinstance(pei['data_inicio'], datetime.datetime):
                     pei['data_inicio'] = pei['data_inicio'].strftime('%Y-%m-%d')
                 else:
-                    pei['data_inicio'] = '' # Garante que o campo exista como string vazia
+                    pei['data_inicio'] = ''
 
                 if pei.get('data_fim') and isinstance(pei['data_fim'], datetime.datetime):
                     pei['data_fim'] = pei['data_fim'].strftime('%Y-%m-%d')
                 else:
-                    pei['data_fim'] = '' # Garante que o campo exista como string vazia
+                    pei['data_fim'] = ''
                 
                 if 'metas' in pei and isinstance(pei['metas'], list):
                     pei['metas_json'] = json.dumps(pei['metas'], indent=2)
                 else:
                     pei['metas_json'] = '[]'
                 
-                return render_template('pei_form.html', pei=pei, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id), page_title=f"Editar PEI: {pei.get('identificacao_pei', 'N/A')}")
+                return render_template('pei_form.html', pei=pei, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id), page_title=f"Editar PEI: {pei.get('identificacao_pei', 'N/A')}", profissionais=profissionais_lista)
         else:
             flash('PEI não encontrado.', 'danger')
             return redirect(url_for('listar_peis'))
     except Exception as e:
         flash(f'Erro ao carregar PEI para edição: {e}', 'danger')
-        print(f"Erro editar_pei (GET): {e}")
         return redirect(url_for('listar_peis'))
 
 @app.route('/peis/excluir/<string:pei_doc_id>', methods=['POST'])

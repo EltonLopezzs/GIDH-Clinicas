@@ -302,7 +302,7 @@
                         <thead>
                             <tr>
                                 <th>Identificação do PEI</th>
-                                <th>Descrição</th>
+                                <th>Prof. Responsável</th>
                                 <th>Início</th>
                                 <th>Fim</th>
                                 <th style="width: 150px;">Ações</th>
@@ -312,8 +312,7 @@
                             {% for pei in peis %}
                             <tr>
                                 <td>{{ pei.identificacao_pei }}</td>
-                                <td>{{ pei.descricao_pei or 'N/A' }}</td>
-                                <!-- FIXED: Changed to directly use pei.data_inicio and pei.data_fim -->
+                                <td>{{ pei.profissional_responsavel_nome or 'N/A' }}</td>
                                 <td>{{ pei.data_inicio or 'N/A' }}</td>
                                 <td>{{ pei.data_fim or 'N/A' }}</td>
                                 <td class="table-actions">
@@ -344,17 +343,15 @@
                         </div>
                         <div class="card-details-body">
                             <div class="card-detail-item">
-                                <span class="card-detail-item-label">Descrição</span>
-                                <span class="card-detail-item-value">{{ pei.descricao_pei or 'N/A' }}</span>
+                                <span class="card-detail-item-label">Responsável</span>
+                                <span class="card-detail-item-value">{{ pei.profissional_responsavel_nome or 'N/A' }}</span>
                             </div>
                             <div class="card-detail-item">
                                 <span class="card-detail-item-label">Início</span>
-                                <!-- FIXED: Changed to directly use pei.data_inicio and pei.data_fim -->
                                 <span class="card-detail-item-value">{{ pei.data_inicio or 'N/A' }}</span>
                             </div>
                             <div class="card-detail-item">
                                 <span class="card-detail-item-label">Fim</span>
-                                <!-- FIXED: Changed to directly use pei.data_fim -->
                                 <span class="card-detail-item-value">{{ pei.data_fim or 'N/A' }}</span>
                             </div>
                         </div>
@@ -390,97 +387,7 @@
     </div>
 
     <script type="module">
-        // Placeholder for Firebase
-        const FAKE_FIREBASE = {
-            initializeApp: () => ({}),
-            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
-        };
-        const { initializeApp } = FAKE_FIREBASE;
-        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        let auth = getAuth(initializeApp(firebaseConfig));
-
         document.addEventListener('DOMContentLoaded', () => {
-            const htmlEl = document.documentElement;
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
-            const logoutButton = document.getElementById('logoutButton');
-
-            // --- Sidebar Logic ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
-                }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
-                });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
-            }
-
-            // --- Theme Logic ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
-
-            // --- Logout Logic ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
-
-            // --- Confirmation Modal Logic ---
             function setupConfirmationModal() {
                 const modal = document.getElementById('customConfirmModal');
                 if (!modal) return;
@@ -509,10 +416,6 @@
                 });
             }
 
-            // --- Initialization ---
-            setupSidebar();
-            setupTheme();
-            setupLogout();
             setupConfirmationModal();
         });
     </script>
