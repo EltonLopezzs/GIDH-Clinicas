@@ -483,7 +483,6 @@
             line-height: 1.5;
             padding: 0.8rem 1rem; /* Mais padding */
             border-radius: 8px;
-            background-color: var(--bg);
             border: 1px solid transparent;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -906,37 +905,37 @@
                             <div id="tab-panel-registros" class="tab-panel active">
                                 {% set registros_clinicos = registros | rejectattr('tipo_registro', 'equalto', 'evolucao_pei') | list %}
                                 {% if registros_clinicos %}
-                                        {% for registro in registros_clinicos %}
-                                            <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
-                                                <div class="registro-header">
-                                                    <h4>{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}</h4>
-                                                    <div class="registro-meta">
-                                                        <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
-                                                        <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome | default('N/A') }}</span>
-                                                    </div>
+                                    {% for registro in registros_clinicos %}
+                                        <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
+                                            <div class="registro-header">
+                                                <h4>{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}</h4>
+                                                <div class="registro-meta">
+                                                    <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
+                                                    <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome | default('N/A') }}</span>
                                                 </div>
-                                                <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
-                                                <div class="registro-actions">
-                                                    <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir</span></button>
-                                                    <button class="btn btn-sm btn-info btn-visualizar-registro"
+                                            </div>
+                                            <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
+                                            <div class="registro-actions">
+                                                <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir</span></button>
+                                                <button class="btn btn-sm btn-info btn-visualizar-registro"
                                                             data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"
                                                             data-content="{{ registro.conteudo | e }}"
                                                             data-type="{{ registro.tipo_registro | replace('_', ' ') | capitalize }}"
                                                             data-date="{{ registro.data_registro.split(' ')[0] }}"
                                                             data-professional="{{ registro.profissional_nome | default('N/A') }}">
-                                                        <i class="fas fa-eye"></i> <span class="btn-text-desktop">Visualizar</span>
-                                                    </button>
+                                                            <i class="fas fa-eye"></i> <span class="btn-text-desktop">Visualizar</span>
+                                                </button>
 
-                                                    {% if registro.tipo_registro == 'anamnese' %}
-                                                        <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></a>
-                                                    {% else %}
-                                                        <button class="btn btn-sm btn-warning btn-editar-registro" data-registro-id="{{ registro.id }}" data-tipo="{{ registro.tipo_registro }}" data-titulo="{{ registro.titulo }}" data-conteudo="{{ registro.conteudo | e }}"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></button>
-                                                    {% endif %}
+                                                {% if registro.tipo_registro == 'anamnese' %}
+                                                    <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></a>
+                                                {% else %}
+                                                    <button class="btn btn-sm btn-warning btn-editar-registro" data-registro-id="{{ registro.id }}" data-tipo="{{ registro.tipo_registro }}" data-titulo="{{ registro.titulo }}" data-conteudo="{{ registro.conteudo | e }}"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></button>
+                                                {% endif %}
 
-                                                    <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i> <span class="btn-text-desktop">Apagar</span></button>
-                                                </div>
+                                                <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i> <span class="btn-text-desktop">Apagar</span></button>
                                             </div>
-                                        {% endfor %}
+                                        </div>
+                                    {% endfor %}
                                 {% else %}
                                     <div class="empty-state"><p>Nenhum registro clínico encontrado.</p></div>
                                 {% endif %}
@@ -986,7 +985,12 @@
                                         <div class="meta-evolutions">
                                             <div class="chat-container" id="chat-meta-{{ pei_id }}-{{ meta_index }}">
                                                 {% if registros %}
-                                                    {% set evolucoes_meta = registros | selectattr('tipo_registro', 'equalto', 'evolucao_pei') | selectattr('referencia_pei_id', 'equalto', pei_id) | selectattr('referencia_meta_titulo', 'equalto', meta.titulo) | list %}
+                                                {% set evolucoes_meta = registros 
+    | selectattr('tipo_registro', 'equalto', 'evolucao_pei') 
+    | selectattr('referencia_pei_id', 'equalto', pei_id) 
+    | selectattr('referencia_meta_titulo', 'equalto', meta.titulo | default('Atividade')) 
+    | list %}
+
                                                     {% if evolucoes_meta %}
                                                         {% for evolucao in evolucoes_meta %}
                                                             <div class="chat-message-wrapper">
@@ -1072,14 +1076,14 @@
                             </div>
 
                             <div id="tab-panel-agenda-paciente" class="tab-panel">
-                                        <div class="agenda-paciente-container">
-                                            <h3>Histórico de Agendamentos Concluídos</h3>
-                                            <div class="agenda-scroll-container">
-                                                <div id="agenda-paciente-list">
-                                                    <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
-                                                </div>
+                                    <div class="agenda-paciente-container">
+                                        <h3>Histórico de Agendamentos Concluídos</h3>
+                                        <div class="agenda-scroll-container">
+                                            <div id="agenda-paciente-list">
+                                                <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
                                             </div>
                                         </div>
+                                    </div>
                             </div>
                         </div>
                     </div>
@@ -1416,7 +1420,10 @@
                 modalTitle.textContent = isEdit ? `Editar ${tipoCapitalizado}` : `Adicionar ${tipoCapitalizado}`;
                 tipoInput.value = tipo;
                 tipoFeedbackInput.value = tipoCapitalizado;
-                tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo || 'Sem Título'}` : ''); // Fallback mais robusto
+                // --- MODIFICATION START ---
+                // Changed default title for PEI evolution from 'Sem Título' to 'Atividade'
+                tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo || 'Atividade'}` : ''); 
+                // --- MODIFICATION END ---
                 genericEditor.innerHTML = dados.conteudo || '';
 
                 // Adiciona referências do PEI se for uma evolução
@@ -1606,48 +1613,53 @@
                         } else if (e.target.closest('.btn-send-evolution')) { // Novo: Enviar Evolução
                             const textArea = li.querySelector('.chat-input-area textarea');
                             const evolutionContent = textArea.value.trim();
-                            if (evolutionContent) {
-                                const response = await fetch(`/prontuarios/${pacienteId}/registrar_registro_generico`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        tipo_registro: 'evolucao_pei',
-                                        // Garante que o título não seja vazio
-                                        titulo: metaTitulo ? `Evolução de ${metaTitulo}` : 'Evolução Registrada',
-                                        conteudo: evolutionContent,
-                                        referencia_pei_id: peiId,
-                                        referencia_meta_titulo: metaTitulo
-                                    })
-                                });
-                                const result = await response.json();
-                                if (result.success) {
-                                    Swal.fire('Sucesso!', 'Evolução registrada.', 'success');
-                                    textArea.value = ''; // Limpa o textarea
-                                    // Adicionar a nova mensagem ao chat sem recarregar a página
-                                    const chatContainer = li.querySelector('.chat-container');
-                                    const newMessageHtml = `
-                                        <div class="chat-message-wrapper">
-                                            <div class="chat-message self">
-                                                ${evolutionContent}
-                                            </div>
-                                            <div class="chat-message-meta">
-                                                ${new Date().toLocaleDateString('pt-BR')} - ${usuarioNome}
-                                                <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="${result.registro_id}" title="Apagar Evolução"><i class="fas fa-trash"></i></button>
-                                            </div>
-                                        </div>
-                                    `;
-                                    chatContainer.insertAdjacentHTML('beforeend', newMessageHtml);
-                                    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll para o final
-                                    
-                                    // Atualiza a contagem de evoluções
-                                    const evolutionCountSpan = li.querySelector('.evolution-count');
-                                    evolutionCountSpan.textContent = parseInt(evolutionCountSpan.textContent) + 1;
-                                    li.querySelector('.btn-toggle-evolutions').style.display = 'inline-flex';
-                                } else {
-                                    Swal.fire('Erro!', `Falha ao registrar evolução: ${result.message}`, 'error');
-                                }
-                            } else {
+
+                            // Client-side validation for empty evolution content
+                            if (!evolutionContent) {
                                 Swal.fire('Atenção', 'Por favor, digite o conteúdo da evolução.', 'warning');
+                                return; // Stop the function if content is empty
+                            }
+
+                            const response = await fetch(`/prontuarios/${pacienteId}/registrar_registro_generico`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    tipo_registro: 'evolucao_pei',
+                                    // Garante que o título não seja vazio
+                                    titulo: metaTitulo ? `Evolução de ${metaTitulo}` : 'Evolução Registrada',
+                                    conteudo: evolutionContent,
+                                    referencia_pei_id: peiId,
+                                    referencia_meta_titulo: metaTitulo
+                                })
+                            });
+                            const result = await response.json();
+                            if (result.success) {
+                                Swal.fire('Sucesso!', 'Evolução registrada.', 'success');
+                                textArea.value = ''; // Limpa o textarea
+                                // Adicionar a nova mensagem ao chat sem recarregar a página
+                                const chatContainer = li.querySelector('.chat-container');
+                                const newMessageHtml = `
+                                    <div class="chat-message-wrapper">
+                                        <div class="chat-message self">
+                                            ${evolutionContent}
+                                        </div>
+                                        <div class="chat-message-meta">
+                                            ${new Date().toLocaleDateString('pt-BR')} - ${usuarioNome}
+                                            <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="${result.registro_id}" title="Apagar Evolução"><i class="fas fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                `;
+                                chatContainer.insertAdjacentHTML('beforeend', newMessageHtml);
+                                chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll para o final
+                                
+                                // Atualiza a contagem de evoluções
+                                const evolutionCountSpan = li.querySelector('.evolution-count');
+                                evolutionCountSpan.textContent = parseInt(evolutionCountSpan.textContent) + 1;
+                                toggleButton.style.display = 'inline-flex'; // Ensure button is visible
+
+                            } else {
+                                // Display specific backend error message if available
+                                Swal.fire('Erro!', `Falha ao registrar evolução: ${result.message || 'Erro desconhecido.'}`, 'error');
                             }
                         } else if (e.target.closest('.btn-toggle-evolutions')) { // Botão "Atividade"
                             const li = e.target.closest('li');
@@ -1922,6 +1934,13 @@
                                 if (parent.nodeName === 'EM' || parent.nodeName === 'I') {
                                     combinedStyle.style = combinedStyle.style.includes('italic') ? combinedStyle.style : (combinedStyle.style + 'italic');
                                 }
+                                if (parent.nodeName === 'U') {
+                                    // For underline, we might need a custom draw function or iterate char by char
+                                    // For simplicity in jsPDF, it's often omitted or handled manually if really needed.
+                                    // document.execCommand('underline') just toggles text-decoration.
+                                    // PDF rendering needs explicit underline command for each segment.
+                                    // This example does not implement underline drawing.
+                                }
                                 parent = parent.parentNode;
                             }
 
@@ -2088,7 +2107,7 @@
                     const btn = e.target.closest('.btn-print-pdf');
                     generatePdfForRecord(btn.dataset.targetId, btn.dataset.title);
                 }
-                   // Botão de Visualizar Registro (novo)
+                    // Botão de Visualizar Registro (novo)
                 if (e.target.closest('.btn-visualizar-registro')) {
                     const btn = e.target.closest('.btn-visualizar-registro');
                     openVisualizarRegistroModal(

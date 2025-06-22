@@ -652,11 +652,11 @@ def editar_usuario(user_uid):
             
     user_data_original['uid'] = user_uid
     return render_template(
-        'usuario_form.html',    
-        user=user_data_original,    
-        page_title="Editar Utilizador",    
-        action_url=url_for('editar_usuario', user_uid=user_uid),    
-        roles=['admin', 'medico'],    
+        'usuario_form.html',   
+        user=user_data_original,   
+        page_title="Editar Utilizador",   
+        action_url=url_for('editar_usuario', user_uid=user_uid),   
+        roles=['admin', 'medico'],   
         profissionais=profissionais_disponiveis
     )
 
@@ -797,7 +797,7 @@ def ativar_desativar_profissional(profissional_doc_id):
         if profissional_doc.exists:
             data = profissional_doc.to_dict()
             if data:
-                current_status = data.get('ativo', False)   
+                current_status = data.get('ativo', False)  
                 new_status = not current_status
                 profissional_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
                 flash(f'Profissional {"ativado" if new_status else "desativado"} com sucesso!', 'success')
@@ -1323,7 +1323,7 @@ def adicionar_horario():
             hora_fim = request.form['hora_fim']
             intervalo_minutos_str = request.form.get('intervalo_minutos')
             intervalo_minutos = int(intervalo_minutos_str) if intervalo_minutos_str and intervalo_minutos_str.isdigit() else None
-            ativo = 'ativo' in request.form    
+            ativo = 'ativo' in request.form   
 
             if not profissional_id_selecionado:
                 flash('Por favor, selecione um profissional.', 'warning')
@@ -1334,7 +1334,7 @@ def adicionar_horario():
                     'dia_semana': dia_semana,
                     'hora_inicio': hora_inicio,
                     'hora_fim': hora_fim,
-                    'ativo': ativo,    
+                    'ativo': ativo,   
                     'criado_em': firestore.SERVER_TIMESTAMP
                 }
                 if intervalo_minutos is not None:
@@ -1349,13 +1349,13 @@ def adicionar_horario():
             flash(f'Erro ao adicionar horário: {e}', 'danger')
             print(f"Erro add_schedule (POST): {e}")
             
-    return render_template('horario_form.html',    
-                           profissionais=profissionais_ativos_lista,
-                           dias_semana=dias_semana_map,    
-                           horario=None,    
-                           action_url=url_for('adicionar_horario'),
-                           page_title='Adicionar Novo Horário',
-                           current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
+    return render_template('horario_form.html',   
+                            profissionais=profissionais_ativos_lista,
+                            dias_semana=dias_semana_map,   
+                            horario=None,   
+                            action_url=url_for('adicionar_horario'),
+                            page_title='Adicionar Novo Horário',
+                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 
 @app.route('/profissionais/<string:profissional_doc_id>/horarios/editar/<string:horario_doc_id>', methods=['GET', 'POST'])
@@ -1392,12 +1392,12 @@ def editar_horario(profissional_doc_id, horario_doc_id):
                     'dia_semana': dia_semana,
                     'hora_inicio': hora_inicio,
                     'hora_fim': hora_fim,
-                    'ativo': ativo,    
+                    'ativo': ativo,   
                     'atualizado_em': firestore.SERVER_TIMESTAMP
                 }
                 if intervalo_minutos is not None:
                     horario_data_update['intervalo_minutos'] = intervalo_minutos
-                else:    
+                else:   
                     horario_data_update['intervalo_minutos'] = firestore.DELETE_FIELD
 
                 horario_ref.update(horario_data_update)
@@ -1414,7 +1414,7 @@ def editar_horario(profissional_doc_id, horario_doc_id):
         if horario_doc_snapshot.exists:
             horario_data_db = horario_doc_snapshot.to_dict()
             if horario_data_db:
-                horario_data_db['id'] = horario_doc_snapshot.id    
+                horario_data_db['id'] = horario_doc_snapshot.id   
                 horario_data_db['profissional_id_fk'] = profissional_doc_id
                 
                 profissional_pai_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
@@ -1423,10 +1423,10 @@ def editar_horario(profissional_doc_id, horario_doc_id):
                     if profissional_pai_data:
                         horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id)
                 
-                return render_template('horario_form.html',    
+                return render_template('horario_form.html',   
                                        profissionais=profissionais_ativos_lista,
-                                       dias_semana=dias_semana_map,    
-                                       horario=horario_data_db,    
+                                       dias_semana=dias_semana_map,   
+                                       horario=horario_data_db,   
                                        action_url=url_for('editar_horario', profissional_doc_id=profissional_doc_id, horario_doc_id=horario_doc_id),
                                        page_title=f"Editar Horário para {horario_data_db.get('profissional_nome_atual', 'Profissional')}",
                                        current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
@@ -1463,7 +1463,7 @@ def ativar_desativar_horario(profissional_doc_id, horario_doc_id):
         if horario_doc.exists:
             data = horario_doc.to_dict()
             if data:
-                current_status = data.get('ativo', False)    
+                current_status = data.get('ativo', False)   
                 new_status = not current_status
                 horario_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
                 flash(f'Horário {"ativado" if new_status else "desativado"} com sucesso!', 'success')
@@ -1585,14 +1585,14 @@ def listar_agendamentos():
             stats_cards[status]['count'] += 1
             stats_cards[status]['total_valor'] += preco
 
-    return render_template('agendamentos.html',    
-                           agendamentos=agendamentos_lista,
-                           stats_cards=stats_cards,
-                           profissionais_para_filtro=profissionais_para_filtro,
-                           servicos_ativos=servicos_procedimentos_ativos,
-                           pacientes_para_filtro=pacientes_para_filtro,
-                           filtros_atuais=filtros_atuais,
-                           current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
+    return render_template('agendamentos.html',   
+                            agendamentos=agendamentos_lista,
+                            stats_cards=stats_cards,
+                            profissionais_para_filtro=profissionais_para_filtro,
+                            servicos_ativos=servicos_procedimentos_ativos,
+                            pacientes_para_filtro=pacientes_para_filtro,
+                            filtros_atuais=filtros_atuais,
+                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 @app.route('/agendamentos/registrar_manual', methods=['POST'])
 @login_required
@@ -1822,9 +1822,9 @@ def ver_prontuario(paciente_doc_id):
         return redirect(url_for('buscar_prontuario'))
 
     return render_template('prontuario.html',
-                           paciente=paciente_data,
-                           registros=registros_prontuario,
-                           peis_do_paciente=peis_do_paciente)
+                            paciente=paciente_data,
+                            registros=registros_prontuario,
+                            peis_do_paciente=peis_do_paciente)
 
 @app.route('/api/pacientes/<string:paciente_doc_id>/agendamentos-concluidos', methods=['GET'])
 @login_required
@@ -1930,7 +1930,8 @@ def adicionar_evolucao_agendamento(agendamento_id):
     try:
         user_doc = db.collection('User').document(profissional_logado_uid).get()
         if user_doc.exists:
-            profissional_id = user_doc.to_dict().get('profissional_id')
+            user_data = user_doc.to_dict()
+            profissional_id = user_data.get('profissional_id')
         
         if not profissional_id:
             # Fallback caso o usuário não esteja linkado a um profissional (ex: um admin registrando)
@@ -2022,12 +2023,12 @@ def adicionar_anamnese(paciente_doc_id):
             flash(f'Erro ao adicionar anamnese: {e}', 'danger')
             print(f"Erro add_anamnesis (POST): {e}")
     
-    return render_template('anamnese_form.html',    
-                           paciente_id=paciente_doc_id,    
-                           paciente_nome=paciente_nome,    
-                           modelos_anamnese=modelos_anamnese,    
-                           action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id),
-                           page_title=f"Registrar Anamnese para {paciente_nome}")
+    return render_template('anamnese_form.html',   
+                            paciente_id=paciente_doc_id,   
+                            paciente_nome=paciente_nome,   
+                            modelos_anamnese=modelos_anamnese,   
+                            action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id),
+                            page_title=f"Registrar Anamnese para {paciente_nome}")
 
 @app.route('/prontuarios/<string:paciente_doc_id>/anamnese/editar/<string:anamnese_doc_id>', methods=['GET', 'POST'])
 @login_required
@@ -2074,10 +2075,10 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         if anamnese_doc.exists and anamnese_doc.to_dict().get('tipo_registro') == 'anamnese':
             anamnese_data = convert_doc_to_dict(anamnese_doc)
             
-            return render_template('anamnese_form.html',    
-                                   paciente_id=paciente_doc_id,    
-                                   paciente_nome=paciente_nome,    
-                                   anamnese=anamnese_data,    
+            return render_template('anamnese_form.html',   
+                                   paciente_id=paciente_doc_id,   
+                                   paciente_nome=paciente_nome,   
+                                   anamnese=anamnese_data,   
                                    modelos_anamnese=modelos_anamnese,
                                    action_url=url_for('editar_anamnese', paciente_doc_id=paciente_doc_id, anamnese_doc_id=anamnese_doc_id),
                                    page_title=f"Editar Anamnese para {paciente_nome}")
@@ -2112,17 +2113,23 @@ def registrar_registro_generico(paciente_doc_id):
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     try:
-        tipo_registro = request.form.get('tipo_registro')
-        titulo = request.form.get('titulo', '').strip()
-        conteudo = request.form.get('conteudo', '').strip()
+        # Get data from JSON body since Content-Type is application/json
+        request_data = request.json
+        tipo_registro = request_data.get('tipo_registro')
+        titulo = request_data.get('titulo', '').strip()
+        conteudo = request_data.get('conteudo', '').strip()
         
-        # Captura as referências do PEI do formulário
-        referencia_pei_id = request.form.get('referencia_pei_id')
-        referencia_meta_titulo = request.form.get('referencia_meta_titulo')
+        # Capture PEI references from JSON body
+        referencia_pei_id = request_data.get('referencia_pei_id')
+        referencia_meta_titulo = request_data.get('referencia_meta_titulo')
+
+        # If the record type is 'evolucao_pei' and the title is empty, set a default
+        if tipo_registro == 'evolucao_pei' and not titulo:
+            titulo = f"Evolução - {referencia_meta_titulo or 'Atividade'}"
 
         if not all([tipo_registro, titulo, conteudo]):
-            flash(f'Por favor, preencha o título e o conteúdo para o registro.', 'danger')
-            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            # Return JSON response for frontend to handle, instead of flash and redirect
+            return jsonify({'success': False, 'message': 'Por favor, preencha o título e o conteúdo para o registro.'}), 400
 
         novo_registro_data = {
             'profissional_id': profissional_doc_id,
@@ -2134,20 +2141,21 @@ def registrar_registro_generico(paciente_doc_id):
             'atualizado_em': firestore.SERVER_TIMESTAMP
         }
 
-        # Adiciona as referências do PEI ao documento se for uma evolução
+        # Add PEI references to the document if it's an evolution
         if tipo_registro == 'evolucao_pei' and referencia_pei_id and referencia_meta_titulo:
             novo_registro_data['referencia_pei_id'] = referencia_pei_id
             novo_registro_data['referencia_meta_titulo'] = referencia_meta_titulo
 
-        # O caminho para salvar o registro é sempre na subcoleção 'prontuarios' do paciente
-        db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add(novo_registro_data)
+        # The path to save the record is always in the patient's 'prontuarios' subcollection
+        _, new_doc_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add(novo_registro_data)
         
-        flash(f'Registro de {tipo_registro.replace("_", " ")} adicionado com sucesso!', 'success')
+        # To get the ID of the newly created document for the frontend
+        new_doc = new_doc_ref.get()
+        return jsonify({'success': True, 'message': f'Registro de {tipo_registro.replace("_", " ")} adicionado com sucesso!', 'registro_id': new_doc.id}), 201
+
     except Exception as e:
-        flash(f'Erro ao adicionar registro: {e}', 'danger')
         print(f"Erro registrar_registro_generico: {e}")
-    
-    return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+        return jsonify({'success': False, 'message': f'Erro ao adicionar registro: {e}'}), 500
 
 
 @app.route('/prontuarios/<string:paciente_doc_id>/editar_registro_generico/<string:registro_doc_id>', methods=['POST'])
@@ -2505,7 +2513,7 @@ def update_pei_meta(paciente_id, pei_individual_id):
                     if meta['cronometro_inicio'] is None:
                         meta['cronometro_inicio'] = datetime.datetime.now(pytz.utc)
                         if meta['status'] == 'Não Iniciada':
-                           meta['status'] = 'Em Andamento'
+                            meta['status'] = 'Em Andamento'
                 
                 elif action == 'stop_timer':
                     if meta.get('cronometro_inicio'):
@@ -2530,11 +2538,11 @@ def update_pei_meta(paciente_id, pei_individual_id):
                         meta['observacao_conclusao'] = data['observacao']
 
                 elif action == 'reset':
-                     meta['status'] = 'Não Iniciada'
-                     meta['tempo_total_gasto'] = 0
-                     meta['cronometro_inicio'] = None
-                     if 'observacao_conclusao' in meta:
-                         del meta['observacao_conclusao']
+                    meta['status'] = 'Não Iniciada'
+                    meta['tempo_total_gasto'] = 0
+                    meta['cronometro_inicio'] = None
+                    if 'observacao_conclusao' in meta:
+                        del meta['observacao_conclusao']
 
                 metas[i] = meta
                 break
