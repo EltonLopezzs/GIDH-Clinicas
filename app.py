@@ -2493,7 +2493,7 @@ def update_pei_meta(paciente_id, pei_individual_id):
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI individual não encontrado para este paciente.'}), 404
         
-        # O resto da lógica permanece a mesma, pois opera no documento encontrado
+         
         pei_data = pei_doc.to_dict()
         metas = pei_data.get('metas', [])
         meta_encontrada = False
@@ -2501,7 +2501,7 @@ def update_pei_meta(paciente_id, pei_individual_id):
 
         for i, meta in enumerate(metas):
             if meta.get('titulo') == meta_titulo:
-                # (A lógica interna de start/stop/conclude/reset permanece a mesma)
+               
                 meta_encontrada = True
                 target_meta_index = i
                 

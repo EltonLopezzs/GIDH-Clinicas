@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -28,7 +29,8 @@
             --success: #16a34a; /* Green-600 */
             --warning: #f59e0b;
             --info: #0ea5e9;
-            --lilac: #8b5cf6; /* Lilás para PEI */
+            --pei-color: #A0C4FF; /* Soft pastel blue for PEI */
+            --pei-color-dark: #3F51B5; /* Darker shade for text in light mode */
             --border-color: #e2e8f0;
             --shadow-light: 0 4px 12px -2px rgba(0,0,0,0.1), 0 2px 8px -2px rgba(0,0,0,0.06);
             --shadow-medium: 0 10px 25px rgba(0,0,0,0.2);
@@ -73,6 +75,9 @@
 
             --chat-bubble-bg-user: var(--dark-chat-bubble-bg-user);
             --chat-bubble-bg-other: var(--dark-chat-bubble-bg-other);
+
+            --pei-color: #3f51b5; /* Darker blue for PEI in dark mode */
+            --pei-color-dark: #A0C4FF; /* Lighter shade for text in dark mode */
         }
 
         /* Base Styles */
@@ -268,7 +273,7 @@
         .registro-card--laudo { border-left-color: var(--info); }
         .registro-card--orientacao { border-left-color: var(--warning); }
         .registro-card--procedimento { border-left-color: var(--success); }
-        .registro-card--evolucao_pei { border-left-color: var(--lilac); }
+        .registro-card--evolucao_pei { border-left-color: var(--pei-color-dark); } /* Use a darker shade for the border */
 
         /* --- Tabs --- */
         .tabs-container { margin-bottom: 2rem; }
@@ -517,39 +522,71 @@
             border: 1px solid var(--border-color);
             border-radius: 14px;
             overflow: hidden;
-            box-shadow: var(--shadow-light);
-            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Mais suave e presente */
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .pei-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px; /* Linha superior mais fina */
+            background: var(--pei-color); /* Solid color, no gradient */
+            border-radius: 14px 14px 0 0;
         }
         .pei-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            transform: translateY(-4px); /* Efeito de elevação mais perceptível */
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15); /* Sombra maior no hover */
         }
         .pei-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-between; /* To push title left and actions right */
             align-items: center;
             padding: 1.2rem 1.8rem;
             cursor: pointer;
-            background-color: var(--primary-light);
+            background-color: var(--pei-color); /* Fundo integrado */
             border-bottom: 1px solid var(--border-color);
+            border-radius: 0; /* Remove rounded top from here */
         }
         [data-theme="dark"] .pei-header {
-            background-color: color-mix(in srgb, var(--dark-bg) 20%, transparent);
+            background-color: var(--pei-color);
             border-bottom: 1px solid var(--dark-border-color);
         }
-        .pei-header h4 { font-size: 1.3rem; color: var(--primary-dark); margin: 0; font-weight: 600; }
-        [data-theme="dark"] .pei-header h4 { color: var(--primary); }
-        .pei-header .pei-dates { font-size: 0.88rem; color: var(--muted); display: flex; gap: 1.2rem; }
+        .pei-header h4 {
+            font-size: 1.3rem;
+            color: var(--pei-color-dark);
+            margin: 0;
+            font-weight: 600;
+            flex-grow: 1; /* Allow title to grow and push other elements */
+        }
+        [data-theme="dark"] .pei-header h4 { color: var(--pei-color-dark); }
+
+        .pei-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem; /* Space between dates and toggle button */
+        }
+
+        .pei-header .pei-dates {
+            font-size: 0.88rem;
+            color: var(--muted); /* Use muted for less prominence, or pei-color-dark */
+            display: flex;
+            flex-direction: column; /* Stack dates vertically */
+            gap: 0.2rem;
+            text-align: right; /* Align dates to the right within their container */
+        }
         .pei-toggle-btn {
             background: none;
             border: none;
             font-size: 1.1rem;
-            color: var(--primary-dark);
+            color: var(--pei-color-dark);
             cursor: pointer;
             transition: transform 0.3s ease;
             padding: 0.5rem; /* Aumenta a área de clique */
         }
-        [data-theme="dark"] .pei-toggle-btn { color: var(--primary); }
+        [data-theme="dark"] .pei-toggle-btn { color: var(--pei-color-dark); }
         .pei-content {
             padding: 0 1.8rem; /* Changed to 0 padding initially */
             border-top: 1px solid var(--border-color);
@@ -568,13 +605,21 @@
             padding: 1.4rem; /* Mais padding */
             border-radius: 10px;
             margin-bottom: 1.2rem; /* Mais espaçamento */
-            border-left: 5px solid var(--primary); /* Borda mais espessa */
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Sombra interna */
+            border-left: 6px solid var(--primary); /* Borda mais espessa */
+            box-shadow: inset 0 1px 5px rgba(0,0,0,0.07); /* Sombra interna mais presente */
+            transition: all 0.2s ease;
+            position: relative;
         }
-        [data-theme="dark"] .pei-metas-list li { background-color: color-mix(in srgb, var(--dark-card) 10%, transparent); border-left-color: var(--primary); }
+        [data-theme="dark"] .pei-metas-list li { background-color: color-mix(in srgb, var(--dark-card) 10%, transparent); }
+
+        /* Meta status specific left borders */
+        .pei-metas-list li[data-meta-status="nao-iniciada"] { border-left-color: var(--muted); }
+        .pei-metas-list li[data-meta-status="em-andamento"] { border-left-color: var(--info); }
+        .pei-metas-list li[data-meta-status="concluida"] { border-left-color: var(--success); }
+
 
         .meta-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.6rem;}
-        .meta-header strong { font-size: 1.1rem; color: var(--text); flex-grow: 1; }
+        .meta-header strong { font-size: 1.15rem; color: var(--text); flex-grow: 1; } /* Slightly larger and more prominent */
         .meta-status-badge {
             font-weight: 700; /* Mais bold */
             padding: 0.4em 0.9em; /* Maior padding */
@@ -583,11 +628,13 @@
             text-transform: uppercase;
             color: white;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-width: 100px; /* Ensure consistent width */
+            text-align: center;
         }
         .meta-status-nao-iniciada { background-color: var(--muted); }
         .meta-status-em-andamento { background-color: var(--info); }
         .meta-status-concluida { background-color: var(--success); }
-        .meta-description { margin-bottom: 1.2rem; font-size: 0.95rem; }
+        .meta-description { margin-bottom: 1.2rem; font-size: 0.95rem; color: var(--text); } /* Ensure good contrast */
         .meta-actions-bar { display: flex; gap: 0.8rem; margin-top: 1.2rem; flex-wrap: wrap; align-items: center; }
         .meta-timer-controls {
             display: flex;
@@ -658,7 +705,7 @@
             padding-bottom: 0;
         }
         .collapsible-content.expanded {
-            max-height: 2000px; /* Ajuste conforme o conteúdo máximo esperado */
+            max-height: 5000px; /* Adjusted to a large fixed height */
             padding-top: 1rem; /* Adiciona padding quando expandido */
             padding-bottom: 1rem;
         }
@@ -699,7 +746,7 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--border-color);
-            background-color: var(--primary-light); /* Fundo colorido no header */
+            background-color: color-mix(in srgb, var(--primary) 15%, transparent); /* Fundo colorido no header */
             color: var(--primary-dark);
         }
         [data-theme="dark"] .agenda-paciente-card .card-header { background-color: color-mix(in srgb, var(--dark-border-color), transparent 50%); color: var(--primary); }
@@ -898,49 +945,52 @@
                     <div class="tabs-container">
                         <div class="tab-nav">
                             <button class="tab-nav-item active" data-tab="registros">Registros Clínicos</button>
+                            {% if peis_do_paciente %}
                             <button class="tab-nav-item" data-tab="peis">Planos Educacionais (PEIs)</button>
+                            {% endif %}
                             <button class="tab-nav-item" data-tab="agenda-paciente">Agenda do Paciente</button>
                         </div>
                         <div class="tab-content">
                             <div id="tab-panel-registros" class="tab-panel active">
                                 {% set registros_clinicos = registros | rejectattr('tipo_registro', 'equalto', 'evolucao_pei') | list %}
                                 {% if registros_clinicos %}
-                                    {% for registro in registros_clinicos %}
-                                        <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
-                                            <div class="registro-header">
-                                                <h4>{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}</h4>
-                                                <div class="registro-meta">
-                                                    <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
-                                                    <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome | default('N/A') }}</span>
+                                        {% for registro in registros_clinicos %}
+                                            <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
+                                                <div class="registro-header">
+                                                    <h4>{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}</h4>
+                                                    <div class="registro-meta">
+                                                        <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
+                                                        <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome | default('N/A') }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
+                                                <div class="registro-actions">
+                                                    <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir</span></button>
+                                                    <button class="btn btn-sm btn-info btn-visualizar-registro"
+                                                                data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"
+                                                                data-content="{{ registro.conteudo | e }}"
+                                                                data-type="{{ registro.tipo_registro | replace('_', ' ') | capitalize }}"
+                                                                data-date="{{ registro.data_registro.split(' ')[0] }}"
+                                                                data-professional="{{ registro.profissional_nome | default('N/A') }}">
+                                                                <i class="fas fa-eye"></i> <span class="btn-text-desktop">Visualizar</span>
+                                                    </button>
+
+                                                    {% if registro.tipo_registro == 'anamnese' %}
+                                                        <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></a>
+                                                    {% else %}
+                                                        <button class="btn btn-sm btn-warning btn-editar-registro" data-registro-id="{{ registro.id }}" data-tipo="{{ registro.tipo_registro }}" data-titulo="{{ registro.titulo }}" data-conteudo="{{ registro.conteudo | e }}"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></button>
+                                                    {% endif %}
+
+                                                    <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i> <span class="btn-text-desktop">Apagar</span></button>
                                                 </div>
                                             </div>
-                                            <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
-                                            <div class="registro-actions">
-                                                <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir</span></button>
-                                                <button class="btn btn-sm btn-info btn-visualizar-registro"
-                                                            data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"
-                                                            data-content="{{ registro.conteudo | e }}"
-                                                            data-type="{{ registro.tipo_registro | replace('_', ' ') | capitalize }}"
-                                                            data-date="{{ registro.data_registro.split(' ')[0] }}"
-                                                            data-professional="{{ registro.profissional_nome | default('N/A') }}">
-                                                            <i class="fas fa-eye"></i> <span class="btn-text-desktop">Visualizar</span>
-                                                </button>
-
-                                                {% if registro.tipo_registro == 'anamnese' %}
-                                                    <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></a>
-                                                {% else %}
-                                                    <button class="btn btn-sm btn-warning btn-editar-registro" data-registro-id="{{ registro.id }}" data-tipo="{{ registro.tipo_registro }}" data-titulo="{{ registro.titulo }}" data-conteudo="{{ registro.conteudo | e }}"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></button>
-                                                {% endif %}
-
-                                                <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i> <span class="btn-text-desktop">Apagar</span></button>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
+                                        {% endfor %}
                                 {% else %}
                                     <div class="empty-state"><p>Nenhum registro clínico encontrado.</p></div>
                                 {% endif %}
                             </div>
 
+                            {% if peis_do_paciente %}
                             <div id="tab-panel-peis" class="tab-panel">
 
                                 {% macro render_meta(meta, pei_id, meta_index) %}
@@ -975,9 +1025,9 @@
                                             {% endif %}
                                             {# Botão "Atividade" que substitui "Registrar Evolução" e "Visualizar Evoluções" #}
                                             <button class="btn btn-sm btn-primary btn-toggle-evolutions"
-                                                    data-pei-id="{{ pei_id }}"
-                                                    data-meta-titulo="{{ meta.titulo }}"
-                                                    data-meta-index="{{ meta_index }}">
+                                                         data-pei-id="{{ pei_id }}"
+                                                         data-meta-titulo="{{ meta.titulo }}"
+                                                         data-meta-index="{{ meta_index }}">
                                                 <i class="fas fa-comments"></i> <span class="btn-text-desktop">Atividade</span> (<span class="evolution-count">0</span>)
                                             </button>
                                         </div>
@@ -985,11 +1035,11 @@
                                         <div class="meta-evolutions">
                                             <div class="chat-container" id="chat-meta-{{ pei_id }}-{{ meta_index }}">
                                                 {% if registros %}
-                                                {% set evolucoes_meta = registros 
-    | selectattr('tipo_registro', 'equalto', 'evolucao_pei') 
-    | selectattr('referencia_pei_id', 'equalto', pei_id) 
-    | selectattr('referencia_meta_titulo', 'equalto', meta.titulo | default('Atividade')) 
-    | list %}
+                                                {% set evolucoes_meta = registros
+                                                    | selectattr('tipo_registro', 'equalto', 'evolucao_pei')
+                                                    | selectattr('referencia_pei_id', 'equalto', pei_id)
+                                                    | selectattr('referencia_meta_titulo', 'equalto', meta.titulo)
+                                                    | list %}
 
                                                     {% if evolucoes_meta %}
                                                         {% for evolucao in evolucoes_meta %}
@@ -997,7 +1047,7 @@
                                                                 <div class="chat-message self"> {# Assumindo que a evolução é do profissional logado #}
                                                                     {{ evolucao.conteudo | safe }}
                                                                 </div>
-                                                                <div class="chat-message-meta">
+                                                                <div class="chat-message-meta" data-registro-id="{{ evolucao.id }}">
                                                                     {{ evolucao.data_registro.split(' ')[0] }} - {{ evolucao.profissional_nome }}
                                                                     <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ evolucao.id }}" title="Apagar Evolução"><i class="fas fa-trash"></i></button>
                                                                 </div>
@@ -1018,17 +1068,18 @@
                                     </li>
                                 {% endmacro %}
 
-                                {% if peis_do_paciente %}
                                     <div class="pei-accordion">
                                         {% for pei in peis_do_paciente %}
                                         <div class="pei-card">
                                             <div class="pei-header">
                                                 <h4>{{ pei.identificacao_pei }}</h4>
-                                                <div class="pei-dates">
-                                                    <span>Início: {{ pei.data_inicio or 'N/A' }}</span>
-                                                    <span>Fim: {{ pei.data_fim or 'N/A' }}</span>
+                                                <div class="pei-header-actions">
+                                                    <div class="pei-dates">
+                                                        <span>Início: {{ pei.data_inicio or 'N/A' }}</span>
+                                                        <span>Fim: {{ pei.data_fim or 'N/A' }}</span>
+                                                    </div>
+                                                    <button class="pei-toggle-btn"><i class="fas fa-chevron-down"></i></button>
                                                 </div>
-                                                <button class="pei-toggle-btn"><i class="fas fa-chevron-down"></i></button>
                                             </div>
                                             <div class="pei-content">
                                                 <p><strong>Descrição:</strong> {{ pei.descricao_pei or 'N/A' }}</p>
@@ -1064,26 +1115,24 @@
                                                         </div>
                                                     </div>
                                                 {% else %}
-                                                            <div class="empty-state"><p>Nenhuma meta cadastrada para este PEI.</p></div>
+                                                        <div class="empty-state"><p>Nenhuma meta cadastrada para este PEI.</p></div>
                                                 {% endif %}
                                             </div>
                                         </div>
                                         {% endfor %}
                                     </div>
-                                {% else %}
-                                    <div class="empty-state"><p>Nenhum PEI atrelado a este paciente.</p></div>
-                                {% endif %}
                             </div>
+                            {% endif %}
 
                             <div id="tab-panel-agenda-paciente" class="tab-panel">
-                                    <div class="agenda-paciente-container">
-                                        <h3>Histórico de Agendamentos Concluídos</h3>
-                                        <div class="agenda-scroll-container">
-                                            <div id="agenda-paciente-list">
-                                                <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
+                                        <div class="agenda-paciente-container">
+                                            <h3>Histórico de Agendamentos Concluídos</h3>
+                                            <div class="agenda-scroll-container">
+                                                <div id="agenda-paciente-list">
+                                                    <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
                             </div>
                         </div>
                     </div>
@@ -1339,7 +1388,7 @@
                         let chatHistory = [];
                         chatHistory.push({ role: "user", parts: [{ text: fullPrompt }] });
                         const payload = { contents: chatHistory };
-                        const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // Canvas will provide this at runtime
+                        const apiKey = ""; // Canvas will provide this at runtime
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                         const response = await fetch(apiUrl, {
@@ -1422,7 +1471,7 @@
                 tipoFeedbackInput.value = tipoCapitalizado;
                 // --- MODIFICATION START ---
                 // Changed default title for PEI evolution from 'Sem Título' to 'Atividade'
-                tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo || 'Atividade'}` : ''); 
+                tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo || 'Atividade'}` : '');
                 // --- MODIFICATION END ---
                 genericEditor.innerHTML = dados.conteudo || '';
 
@@ -1457,13 +1506,20 @@
                 function startVisualTimer(liElement, startTimeISO, baseSeconds) {
                     const metaId = liElement.dataset.peiId + '||' + liElement.dataset.metaTitulo;
                     const display = liElement.querySelector('.timer-display');
+                    const timerButtonToggle = liElement.querySelector('.btn-timer-toggle'); // Get the button element
+
+                    // Clear any existing timer for this meta
+                    clearInterval(activeTimers[metaId]);
 
                     if (!startTimeISO) {
                         display.textContent = formatTime(baseSeconds);
+                        if (timerButtonToggle) timerButtonToggle.querySelector('i').className = 'fas fa-play';
                         return;
                     }
-                    clearInterval(activeTimers[metaId]);
+
                     const startTime = new Date(startTimeISO).getTime();
+                    if (timerButtonToggle) timerButtonToggle.querySelector('i').className = 'fas fa-pause';
+
 
                     activeTimers[metaId] = setInterval(() => {
                         const now = new Date().getTime();
@@ -1482,12 +1538,15 @@
                         const concluirMetaButton = li.querySelector('.btn-concluir-meta');
                         const status = li.dataset.metaStatus;
 
+                        const metaId = li.dataset.peiId + '||' + li.dataset.metaTitulo;
+
+                        // Always clear existing timer for this meta before re-initializing
+                        clearInterval(activeTimers[metaId]);
 
                         if (status === 'concluida') {
                             if (timerButtonToggle) timerButtonToggle.style.display = 'none';
                             if (timerButtonReset) timerButtonReset.style.display = 'none';
                             if (concluirMetaButton) concluirMetaButton.disabled = true; // Desabilita o botão
-                            clearInterval(activeTimers[li.dataset.peiId + '||' + li.dataset.metaTitulo]); // Para o timer visual
                             li.querySelector('.timer-display').textContent = formatTime(tempoGasto); // Garante que o tempo final seja exibido
                             li.querySelector('.timer-display').style.fontWeight = 'bold'; // Opcional: destaque o tempo final
                             li.querySelector('.timer-display').style.color = 'var(--text)'; // Opcional: destaque a cor
@@ -1517,28 +1576,39 @@
                         const result = await response.json();
                         if (!response.ok) throw new Error(result.message || 'Erro no servidor');
 
-                        // Recarregar a página para ver a mudança de categoria da meta
-                        if (action === 'concluir' || action === 'reset') {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Sucesso!',
-                                text: `Meta ${metaTitulo} ${action === 'concluir' ? 'concluída' : 'resetada'} com sucesso!`,
-                                showConfirmButton: false,
-                                timer: 1500
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        } else {
-                            const li = document.querySelector(`li[data-pei-id="${peiId}"][data-meta-titulo="${metaTitulo}"]`);
-                            if (li && result.updated_meta) {
-                                const meta = result.updated_meta;
-                                li.dataset.cronometroInicio = meta.cronometro_inicio || '';
-                                li.dataset.tempoGasto = meta.tempo_total_gasto || 0;
-                                const statusBadge = li.querySelector('.meta-status-badge');
-                                statusBadge.textContent = meta.status;
-                                statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(/ /g, '-')}`;
-                                li.dataset.metaStatus = meta.status.toLowerCase().replace(' ', '-'); // Atualiza o status no dataset
-                                initializeMetaTimers(); // Re-initialize timers to update all displays
+                        const li = document.querySelector(`li[data-pei-id="${peiId}"][data-meta-titulo="${metaTitulo}"]`);
+                        if (li && result.updated_meta) {
+                            const meta = result.updated_meta;
+
+                            li.dataset.cronometroInicio = meta.cronometro_inicio || '';
+                            li.dataset.tempoGasto = meta.tempo_total_gasto || 0;
+
+                            const statusBadge = li.querySelector('.meta-status-badge');
+                            statusBadge.textContent = meta.status;
+                            statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(/ /g, '-')}`;
+                            li.dataset.metaStatus = meta.status.toLowerCase().replace(' ', '-'); // Atualiza o status no dataset
+
+                            // Explicitly clear and re-start/update timer based on new state
+                            const metaId = peiId + '||' + metaTitulo;
+                            clearInterval(activeTimers[metaId]); // Clear old interval
+                            if (meta.cronometro_inicio) {
+                                startVisualTimer(li, meta.cronometro_inicio, meta.tempo_total_gasto);
+                            } else {
+                                li.querySelector('.timer-display').textContent = formatTime(meta.tempo_total_gasto);
+                                li.querySelector('.btn-timer-toggle i').className = 'fas fa-play';
+                            }
+
+                            // If status changed to 'Concluída' or was reset, reload to move the meta to correct section
+                            if (action === 'concluir' || action === 'reset') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Sucesso!',
+                                    text: `Meta ${metaTitulo} ${action === 'concluir' ? 'concluída' : 'resetada'} com sucesso!`,
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                }).then(() => {
+                                    window.location.reload();
+                                });
                             }
                         }
                         return result;
@@ -1557,8 +1627,8 @@
                         // Toggle 'expanded' class for smooth transition
                         const isExpanded = content.classList.contains('expanded');
                         content.classList.toggle('expanded', !isExpanded);
-                        // Aumente a altura para garantir que o conteúdo completo seja visível
-                        content.style.maxHeight = !isExpanded ? '2000px' : '0'; // Fixed large height for PEI content
+                        // Set fixed large height for PEI content when expanded
+                        content.style.maxHeight = !isExpanded ? '2000px' : '0'; 
                         content.style.paddingTop = !isExpanded ? '1.8rem' : '0'; 
                         content.style.paddingBottom = !isExpanded ? '1.8rem' : '0'; 
 
@@ -1638,12 +1708,17 @@
                                 textArea.value = ''; // Limpa o textarea
                                 // Adicionar a nova mensagem ao chat sem recarregar a página
                                 const chatContainer = li.querySelector('.chat-container');
+                                // Check if the empty state exists and remove it if adding the first message
+                                const emptyState = chatContainer.querySelector('.empty-state');
+                                if (emptyState) {
+                                    emptyState.remove();
+                                }
                                 const newMessageHtml = `
                                     <div class="chat-message-wrapper">
                                         <div class="chat-message self">
                                             ${evolutionContent}
                                         </div>
-                                        <div class="chat-message-meta">
+                                        <div class="chat-message-meta" data-registro-id="${result.registro_id}">
                                             ${new Date().toLocaleDateString('pt-BR')} - ${usuarioNome}
                                             <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="${result.registro_id}" title="Apagar Evolução"><i class="fas fa-trash"></i></button>
                                         </div>
@@ -1655,7 +1730,8 @@
                                 // Atualiza a contagem de evoluções
                                 const evolutionCountSpan = li.querySelector('.evolution-count');
                                 evolutionCountSpan.textContent = parseInt(evolutionCountSpan.textContent) + 1;
-                                toggleButton.style.display = 'inline-flex'; // Ensure button is visible
+                                const toggleButton = li.querySelector('.btn-toggle-evolutions');
+                                if (toggleButton) toggleButton.style.display = 'inline-flex'; // Ensure button is visible
 
                             } else {
                                 // Display specific backend error message if available
@@ -1665,7 +1741,6 @@
                             const li = e.target.closest('li');
                             const evolutionsContainer = li.querySelector('.meta-evolutions');
                             const toggleButton = e.target.closest('.btn-toggle-evolutions');
-                            const icon = toggleButton.querySelector('i');
                             const chatContainer = li.querySelector('.chat-container');
 
                             // Garantir que o PEI card pai esteja aberto
@@ -1674,8 +1749,8 @@
                                 const peiContent = peiCard.querySelector('.pei-content');
                                 if (peiContent && !peiContent.classList.contains('expanded')) {
                                     peiContent.classList.add('expanded');
-                                    // Recalcula scrollHeight para transição suave
-                                    peiContent.style.maxHeight = (peiContent.scrollHeight + 50) + 'px'; // Added extra height for PEI content
+                                    // Set fixed large height for PEI content when expanded
+                                    peiContent.style.maxHeight = '2000px'; 
                                     peiContent.style.paddingTop = '1.8rem';
                                     peiContent.style.paddingBottom = '1.8rem';
 
@@ -1690,13 +1765,13 @@
                             // Agora, alternar a visibilidade do meta-evolutions (o chat)
                             const isVisible = evolutionsContainer.classList.contains('expanded');
                             evolutionsContainer.classList.toggle('expanded', !isVisible);
-                            // Aumente a altura para garantir que o conteúdo completo seja visível
-                            evolutionsContainer.style.maxHeight = !isVisible ? '2000px' : '0'; // Fixed large height for chat/evolutions
+                            // Set fixed large height for evolutions content when expanded
+                            evolutionsContainer.style.maxHeight = !isVisible ? '1000px' : '0'; 
                             evolutionsContainer.style.paddingTop = !isVisible ? '1.2rem' : '0';
                             evolutionsContainer.style.paddingBottom = !isVisible ? '1.2rem' : '0';
                             
                             // Always show comments icon for 'Atividade'
-                            icon.className = 'fas fa-comments';
+                            toggleButton.querySelector('i').className = 'fas fa-comments';
 
                             // Scroll para o final do chat ao abrir
                             if (!isVisible && chatContainer) {
@@ -1746,8 +1821,8 @@
                         const isCollapsed = header.classList.contains('collapsed');
                         header.classList.toggle('collapsed', !isCollapsed);
                         content.classList.toggle('expanded', isCollapsed);
-                        // Aumente a altura para garantir que o conteúdo completo seja visível
-                        content.style.maxHeight = isCollapsed ? '5000px' : '0'; // Fixed large height for collapsible content
+                        // Set fixed large height for collapsible content when expanded
+                        content.style.maxHeight = isCollapsed ? '5000px' : '0'; 
                         content.style.paddingTop = isCollapsed ? '1rem' : '0';
                         content.style.paddingBottom = isCollapsed ? '1rem' : '0';
                         icon.style.transform = isCollapsed ? 'rotate(0deg)' : 'rotate(-90deg)';
@@ -2084,9 +2159,11 @@
                         conteudo: btn.dataset.conteudo
                     });
                 }
-                // Botões para apagar registros
+                // Botões para apagar registros (geral e evoluções de chat)
                 if (e.target.closest('.btn-apagar-registro')) {
                     const btn = e.target.closest('.btn-apagar-registro');
+                    const registroIdToDelete = btn.dataset.registroId;
+
                     Swal.fire({
                         title: 'Confirmar Exclusão',
                         text: 'Tem certeza que deseja apagar este registro? Esta ação é irreversível.',
@@ -2096,9 +2173,22 @@
                         cancelButtonText: 'Cancelar'
                     }).then((result) => {
                         if (result.isConfirmed) {
+                            // If it's a chat message, remove it from the DOM directly before sending request
+                            const chatMessageWrapper = btn.closest('.chat-message-wrapper');
+                            if (chatMessageWrapper) {
+                                chatMessageWrapper.remove();
+                                // Decrement evolution count
+                                const metaLi = btn.closest('.pei-metas-list li');
+                                if (metaLi) {
+                                    const evolutionCountSpan = metaLi.querySelector('.evolution-count');
+                                    evolutionCountSpan.textContent = parseInt(evolutionCountSpan.textContent) - 1;
+                                }
+                            }
+
+                            // Send deletion request to the backend
                             const form = document.getElementById('formApagarRegistro');
-                            document.getElementById('registro_id_apagar').value = btn.dataset.registroId;
-                            form.submit();
+                            document.getElementById('registro_id_apagar').value = registroIdToDelete;
+                            form.submit(); // This will reload the page on success
                         }
                     });
                 }
