@@ -217,7 +217,7 @@
         .meta-timer-controls { display: flex; align-items: center; gap: 0.5rem; background: var(--card); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); }
         .meta-timer-controls .timer-display { font-family: monospace; font-size: 1rem; font-weight: 600; min-width: 70px; text-align: center;}
         .meta-timer-controls .btn-timer-toggle, .meta-timer-controls .btn-timer-reset { padding: 0.3rem 0.5rem; font-size: 0.8rem; line-height: 1; }
-        .meta-evolutions { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border-color); }
+        .meta-evolutions { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border-color); display: none; }
         
         /* --- Agenda & Chat --- */
         .agenda-paciente-container { background-color: var(--card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); padding: 1.5rem; }
@@ -405,6 +405,9 @@
                                                                 </button>
                                                                 <button class="btn btn-sm btn-primary btn-add-pei-evolution">
                                                                     <i class="fas fa-plus"></i> Registrar Evolução
+                                                                </button>
+                                                                <button class="btn btn-sm btn-info btn-toggle-evolutions" style="display: none;">
+                                                                    <i class="fas fa-eye"></i> Visualizar Evoluções (<span class="evolution-count">0</span>)
                                                                 </button>
                                                             </div>
 
@@ -780,8 +783,39 @@
                     await sendMetaUpdate(peiId, metaTitulo, 'concluir', { observacao });
                     modalController.close(modal);
                 });
+
+                function setupEvolutionVisibility() {
+                    document.querySelectorAll('.pei-metas-list li').forEach(metaLi => {
+                        const evolutionsContainer = metaLi.querySelector('.meta-evolutions');
+                        const toggleBtn = metaLi.querySelector('.btn-toggle-evolutions');
+                        if (!evolutionsContainer || !toggleBtn) return;
+                        
+                        const evolutionCards = evolutionsContainer.querySelectorAll('.registro-card');
+                        const count = evolutionCards.length;
+
+                        if (count > 0) {
+                            toggleBtn.style.display = 'inline-flex';
+                            toggleBtn.querySelector('.evolution-count').textContent = count;
+                        } else {
+                            toggleBtn.style.display = 'none';
+                        }
+                    });
+
+                    document.querySelectorAll('.btn-toggle-evolutions').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const li = e.target.closest('li');
+                            const evolutionsContainer = li.querySelector('.meta-evolutions');
+                            const icon = button.querySelector('i');
+                            
+                            const isVisible = evolutionsContainer.style.display === 'block';
+                            evolutionsContainer.style.display = isVisible ? 'none' : 'block';
+                            icon.className = isVisible ? 'fas fa-eye' : 'fas fa-eye-slash';
+                        });
+                    });
+                }
                 
                 initializeMetaTimers();
+                setupEvolutionVisibility();
             }
 
             // --- Lógica Geral de Eventos e Inicialização ---
