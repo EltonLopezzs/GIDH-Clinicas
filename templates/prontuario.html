@@ -573,7 +573,7 @@
 
         .pei-header .pei-dates {
             font-size: 0.88rem;
-            color: var(--muted); /* Use muted for less prominence, or pei-color-dark */
+            color: var(--muted);
             display: flex;
             flex-direction: column; /* Stack dates vertically */
             gap: 0.2rem;
@@ -1019,7 +1019,7 @@
                             {% if peis_do_paciente %}
                             <div id="tab-panel-peis" class="tab-panel">
 
-                                {% macro render_meta(meta, pei_id, meta_index) %}
+                                {% macro render_meta(meta, pei_id, meta_loop_index) %}
                                     <li data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"
                                         data-cronometro-inicio="{{ meta.cronometro_inicio if meta.cronometro_inicio else '' }}"
                                         data-tempo-gasto="{{ meta.tempo_total_gasto | default(0) }}"
@@ -1051,20 +1051,20 @@
                                             {% endif %}
                                             {# Botão "Atividade" que substitui "Registrar Evolução" e "Visualizar Evoluções" #}
                                             <button class="btn btn-sm btn-primary btn-toggle-evolutions"
-                                                         data-pei-id="{{ pei.id }}" {# Corrected: Use pei.id here #}
+                                                         data-pei-id="{{ pei_id }}"
                                                          data-meta-titulo="{{ meta.titulo }}"
-                                                         data-meta-index="{{ loop.index0 }}">
+                                                         data-meta-index="{{ meta_loop_index }}">
                                                 <i class="fas fa-comments"></i> <span class="btn-text-desktop">Atividade</span> (<span class="evolution-count">0</span>)
                                             </button>
                                         </div>
 
                                         <div class="meta-evolutions">
-                                            <div class="chat-container" id="chat-meta-{{ pei.id }}-{{ meta.titulo | slugify }}"> {# Dynamic ID with slugify for safety #}
+                                            <div class="chat-container" id="chat-meta-{{ pei_id }}-{{ meta_loop_index }}"> {# Changed to use meta_loop_index for ID #}
                                                 {% if registros %}
                                                 {# Filter evolutions specifically for this PEI and this meta #}
                                                 {% set evolucoes_meta = registros
                                                     | selectattr('tipo_registro', 'equalto', 'evolucao_pei')
-                                                    | selectattr('referencia_pei_id', 'equalto', pei.id)
+                                                    | selectattr('referencia_pei_id', 'equalto', pei_id)
                                                     | selectattr('referencia_meta_titulo', 'equalto', meta.titulo)
                                                     | sort(attribute='data_registro')
                                                     | list %}
@@ -1091,8 +1091,8 @@
                                             </div>
                                             <div class="chat-input-area">
                                                 <textarea placeholder="Digite uma nova evolução..." rows="1"></textarea>
-                                                <button class="btn btn-primary btn-send-evolution" data-pei-id="{{ pei.id }}" data-meta-titulo="{{ meta.titulo }}"><i class="fas fa-paper-plane"></i> <span class="btn-text-desktop">Enviar</span></button>
-                                                <button class="btn btn-sm btn-info btn-print-evolution" data-chat-id="chat-meta-{{ pei.id }}-{{ meta.titulo | slugify }}" data-title="Evoluções de {{ meta.titulo }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir Atividades</span></button>
+                                                <button class="btn btn-primary btn-send-evolution" data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"><i class="fas fa-paper-plane"></i> <span class="btn-text-desktop">Enviar</span></button>
+                                                <button class="btn btn-sm btn-info btn-print-evolution" data-chat-id="chat-meta-{{ pei_id }}-{{ meta_loop_index }}" data-title="Evoluções de {{ meta.titulo }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir Atividades</span></button>
                                             </div>
                                         </div>
                                     </li>
@@ -1287,7 +1287,12 @@
 
 
     <script>
+        console.log("Script prontuario.html loaded."); // Diagnostic message
+
         document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM fully loaded and parsed. Initializing prontuario.html script."); // Diagnostic message
+            // debugger; // Uncomment this line to pause execution in browser's developer tools
+
             const pacienteId = "{{ paciente.id if paciente else '' }}";
             const pacienteNome = "{{ paciente.nome if paciente else 'Paciente' }}";
             const clinicaNome = "{{ session.clinica_nome_display or 'Clínica On' }}";
@@ -1304,6 +1309,7 @@
             };
 
             function setupCommonUI() {
+                console.log("Setting up common UI elements."); // Diagnostic message
                 const htmlEl = document.documentElement;
                 const sidebar = document.querySelector('.sidebar');
                 const mainContent = document.querySelector('.main-content');
@@ -1490,6 +1496,7 @@
 
 
             async function openModalParaRegistro(tipo, dados = {}) {
+                console.log(`Opening modal for type: ${tipo}, Data:`, dados); // Diagnostic message
                 formGenerico.reset();
                 consentCheck.classList.remove('active');
                 generateBtn.disabled = true;
@@ -1513,6 +1520,7 @@
                 // Set up the form submission for JSON
                 formGenerico.onsubmit = async (event) => {
                     event.preventDefault(); // Prevent default form submission
+                    console.log("Form submitted. Processing data..."); // Diagnostic message
 
                     hiddenContentTextarea.value = genericEditor.innerHTML; // Update hidden textarea
 
@@ -1529,6 +1537,7 @@
 
                     if (isEdit) {
                         url = `/prontuarios/${pacienteId}/editar_registro_generico/${dados.id}`;
+                        console.log("Editing record. URL:", url, "Data:", formData); // Diagnostic message
                         // For editing, Flask route expects form data, not JSON
                         // So, we will use a FormData object for edit
                         const formToSend = new FormData();
@@ -1554,6 +1563,7 @@
 
                     } else {
                         url = `/prontuarios/${pacienteId}/registrar_registro_generico`;
+                        console.log("Registering new record. URL:", url, "Data:", formData); // Diagnostic message
                         try {
                             const response = await fetch(url, {
                                 method: method,
@@ -1584,6 +1594,7 @@
 
             // --- Lógica do Acordeão e Metas do PEI ---
             function setupPeiAccordion() {
+                console.log("Setting up PEI accordion and timers."); // Diagnostic message
                 const activeTimers = {};
 
                 function formatTime(totalSeconds) {
@@ -1657,6 +1668,7 @@
                 }
 
                 async function sendMetaUpdate(peiId, metaTitulo, action, extraData = {}) {
+                    console.log(`Sending meta update for PEI: ${peiId}, Meta: ${metaTitulo}, Action: ${action}`); // Diagnostic message
                     try {
                         const response = await fetch(`/api/pacientes/${pacienteId}/peis/${peiId}/meta/update`, {
                             method: 'POST',
@@ -1935,6 +1947,7 @@
 
             // --- Lógica para carregar agendamentos do paciente ---
             async function loadPatientAppointments() {
+                console.log("Loading patient appointments."); // Diagnostic message
                 const agendaListDiv = document.getElementById('agenda-paciente-list');
                 const emptyStateDiv = document.getElementById('agenda-paciente-empty-state');
                 agendaListDiv.innerHTML = '<div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>';
@@ -1976,6 +1989,7 @@
             // Geração de PDF
             window.jsPDF = window.jspdf.jsPDF;
             async function generatePdfForRecord(targetId, title) {
+                console.log(`Generating PDF for ID: ${targetId}, Title: ${title}`); // Diagnostic message
                 const element = document.getElementById(targetId);
                 if (!element) {
                     Swal.fire('Erro', 'Elemento para impressão não encontrado.', 'error');
