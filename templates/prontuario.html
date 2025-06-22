@@ -41,6 +41,12 @@
             --dark-shadow-light: 0 4px 12px -2px rgba(0,0,0,0.3), 0 2px 8px -2px rgba(0,0,0,0.2);
             --dark-shadow-medium: 0 10px 25px rgba(0,0,0,0.4);
 
+            /* Chat colors */
+            --chat-bubble-bg-user: #e2e8f0;
+            --chat-bubble-bg-other: #ccfbf1; /* Primary Light */
+            --dark-chat-bubble-bg-user: #334155;
+            --dark-chat-bubble-bg-other: #115e59; /* Primary Dark */
+
 
             color-scheme: light;
 
@@ -64,6 +70,9 @@
             --status-concluido: #38bdf8;
             --status-pendente: #fbbf24;
             --status-cancelado: #ef4444;
+
+            --chat-bubble-bg-user: var(--dark-chat-bubble-bg-user);
+            --chat-bubble-bg-other: var(--dark-chat-bubble-bg-other);
         }
 
         /* Base Styles */
@@ -105,8 +114,17 @@
         .topbar { background-color: var(--card); color: var(--text); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0; position: sticky; top: 0; z-index: 900; }
         .topbar-left { display: flex; align-items: center; gap: 1rem; }
         .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
-        .toggle-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; transition: background 0.2s ease, color 0.2s ease; }
-        .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+        /* Adjusted display for toggle buttons to ensure only one is visible */
+        .toggle-btn-desktop { display: none; } /* Hidden by default on small screens */
+        .menu-btn-mobile { display: block; } /* Visible by default on small screens */
+
+        @media(min-width: 769px) {
+            .toggle-btn-desktop { display: grid; } /* Visible on desktop */
+            .menu-btn-mobile { display: none; } /* Hidden on desktop */
+            span.btn-text-desktop { display: inline; }
+            .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: none; }
+        }
+
         main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
 
         /* --- Buttons & Actions --- */
@@ -128,6 +146,11 @@
         .btn:active {
             transform: translateY(1px); /* Efeito de clique */
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
         }
         .btn-sm { padding: 0.5rem 1rem; font-size: 0.88rem; }
         .btn-primary { background-color: var(--primary); color: white; }
@@ -476,7 +499,7 @@
             border-color: color-mix(in srgb, var(--success) 40%, transparent);
         }
         .consent-text.active::before {
-            content: '\f00c';
+            content: '\f00c'; /* Font Awesome check icon */
             font-family: 'Font Awesome 6 Free';
             font-weight: 900; margin-right: 0.8rem;
             animation: bounceIn 0.5s;
@@ -528,7 +551,18 @@
             padding: 0.5rem; /* Aumenta a área de clique */
         }
         [data-theme="dark"] .pei-toggle-btn { color: var(--primary); }
-        .pei-content { padding: 1.8rem; border-top: 1px solid var(--border-color); display: none; }
+        .pei-content {
+            padding: 0 1.8rem; /* Changed to 0 padding initially */
+            border-top: 1px solid var(--border-color);
+            max-height: 0; /* Collapsed by default */
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+        }
+        .pei-content.expanded {
+            max-height: 2000px; /* Ample height for content */
+            padding: 1.8rem; /* Padding when expanded */
+        }
+
         .pei-metas-list { list-style: none; padding-left: 0; }
         .pei-metas-list li {
             background-color: var(--bg);
@@ -575,7 +609,24 @@
             border-radius: 6px;
             box-shadow: none; /* Remove sombra extra dos botões internos */
         }
-        .meta-evolutions { margin-top: 1.8rem; padding-top: 1.2rem; border-top: 1px dashed var(--border-color); display: none; }
+        .meta-evolutions {
+            margin-top: 1.8rem;
+            padding-top: 0; /* Changed to 0 padding initially */
+            border-top: 1px dashed var(--border-color);
+            max-height: 0; /* Collapsed by default */
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, padding-top 0.5s ease-out, padding-bottom 0.5s ease-out, margin-top 0.5s ease-out;
+            opacity: 0;
+            display: block; /* Ensure it's a block for max-height transition */
+        }
+        .meta-evolutions.expanded {
+            max-height: 1000px; /* Valor grande o suficiente para o conteúdo */
+            opacity: 1;
+            padding-top: 1.2rem; /* Padding when expanded */
+            padding-bottom: 1.2rem;
+            margin-top: 1.8rem;
+        }
+
         .metas-section-header {
             font-size: 1.2rem;
             font-weight: 700;
@@ -600,7 +651,18 @@
         .collapsible-header.collapsed .fa-chevron-down {
             transform: rotate(-90deg);
         }
-        .collapsible-content { transition: max-height 0.3s ease-out; overflow: hidden; }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .collapsible-content.expanded {
+            max-height: 2000px; /* Ajuste conforme o conteúdo máximo esperado */
+            padding-top: 1rem; /* Adiciona padding quando expandido */
+            padding-bottom: 1rem;
+        }
 
 
         /* --- Agenda & Chat --- */
@@ -661,80 +723,117 @@
         .status-badge.status-pendente { background-color: var(--status-pendente); }
         .status-badge.status-cancelado { background-color: var(--status-cancelado); }
 
-        /* Dark Mode Scrollbars */
-        [data-theme="dark"] .registro-content::-webkit-scrollbar-thumb,
-        [data-theme="dark"] .agenda-scroll-container::-webkit-scrollbar-thumb,
-        [data-theme="dark"] .chat-messages-container::-webkit-scrollbar-thumb {
-            background: #6b7280; /* Cor mais escura para dark mode */
-            border: 2px solid var(--dark-bg);
-        }
-        [data-theme="dark"] .registro-content::-webkit-scrollbar-track,
-        [data-theme="dark"] .agenda-scroll-container::-webkit-scrollbar-track {
-            background: var(--dark-card);
-        }
 
-        /* --- Responsive Adjustments --- */
-        .toggle-btn-desktop { display: none; }
-        .menu-btn-mobile { display: block; }
+        /* --- Chat-like Evolutions (NEW) --- */
+        .chat-container {
+            background-color: var(--card); /* Mudado para card para melhor contraste */
+            border-radius: 10px;
+            padding: 1rem;
+            max-height: 400px; /* Ajuste conforme necessário */
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 1px solid var(--border-color);
+        }
+        [data-theme="dark"] .chat-container { background-color: var(--dark-card); }
 
-        @media(min-width: 769px) {
-            .toggle-btn-desktop { display: grid; }
-            .menu-btn-mobile { display: none; }
-            span.btn-text-desktop { display: inline; }
-            .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: none; } /* Re-apply for desktop after mobile reset */
+        .chat-message-wrapper {
+            display: flex;
+            flex-direction: column;
         }
 
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-                box-shadow: 5px 0 15px rgba(0,0,0,0.3); /* Sombra para sidebar móvel */
-                transition: transform 0.3s ease-out;
-            }
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
-            .topbar { padding: 0.8rem 1rem; }
-            .topbar .page-title { font-size: 1.1rem; }
-            .topbar-actions {
-                flex-direction: column; /* Pilha os botões verticalmente */
-                align-items: flex-end; /* Alinha à direita */
-                gap: 0.5rem; /* Menor espaçamento */
-                width: 100%;
-                margin-top: 0.5rem;
-            }
-            .topbar-actions .btn { width: 100%; } /* Botões ocupam largura total */
-            span.btn-text-desktop { display: none; } /* Esconde o texto dos botões no mobile */
-
-            main { padding: 1rem; } /* Menos padding no corpo principal */
-            .paciente-info-card { padding: 1.5rem; margin-bottom: 1.5rem; }
-            .paciente-info-card h3 { font-size: 1.5rem; }
-            .paciente-info-grid { grid-template-columns: 1fr; gap: 1rem; } /* Uma coluna no mobile */
-
-            .prontuario-header { flex-direction: column; align-items: flex-start; text-align: left; gap: 0.8rem; margin-bottom: 1.5rem; }
-            .prontuario-header h2 { font-size: 1.5rem; }
-            .registro-card { padding: 1.2rem; margin-bottom: 1.2rem; border-left-width: 6px; } /* Reduzido */
-            .registro-header { flex-direction: column; align-items: flex-start; padding-bottom: 0.8rem; margin-bottom: 0.8rem; }
-            .registro-header h4 { font-size: 1.1rem; }
-            .registro-meta { text-align: left; font-size: 0.8rem; }
-            .registro-actions { justify-content: flex-start; padding-top: 1rem; margin-top: 1rem; gap: 0.5rem; }
-            .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
-
-            .tab-nav { flex-wrap: wrap; gap: 4px; margin-bottom: 1rem; justify-content: center; } /* Centraliza e quebra em várias linhas */
-            .tab-nav-item { padding: 0.6rem 1rem; font-size: 0.9rem; }
-
-            .modal-content { width: 98%; max-width: 98%; } /* Quase toda a largura no mobile */
-            #modalVisualizarRegistro .modal-content { max-width: 98%; width: 98%; }
-            #modalVisualizarRegistro .modal-body { padding: 1.2rem; font-size: 0.9rem; }
-            .modal-header { padding: 1rem 1.2rem; }
-            .modal-footer { padding: 1rem 1.2rem; }
+        .chat-message {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
         }
+        .chat-message.self { /* Messages by the current user (e.g., professional) */
+            background-color: var(--chat-bubble-bg-user);
+            align-self: flex-end; /* Align right */
+            border-bottom-right-radius: 2px; /* Pointy corner */
+        }
+        .chat-message.other { /* Messages about the patient (e.g., from assistant/AI or other sources) */
+            background-color: var(--chat-bubble-bg-other);
+            color: var(--primary-dark); /* Texto escuro para bolha clara */
+            align-self: flex-start; /* Align left */
+            border-bottom-left-radius: 2px; /* Pointy corner */
+        }
+        [data-theme="dark"] .chat-message.other { color: var(--dark-text); } /* Texto claro para bolha escura */
+
+
+        .chat-message-meta {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 5px;
+            text-align: right;
+            display: flex; /* Para alinhar o botão apagar */
+            justify-content: flex-end; /* Alinha o meta à direita */
+            align-items: center;
+            gap: 5px;
+        }
+        .chat-message.other + .chat-message-meta {
+            text-align: left;
+            justify-content: flex-start; /* Alinha o meta à esquerda */
+        }
+        .chat-message-meta .btn-danger-outline {
+            padding: 0.2rem 0.4rem; /* Botão menor */
+            font-size: 0.7rem;
+            border-radius: 5px;
+            line-height: 1;
+        }
+
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 1rem;
+        }
+        .chat-input-area textarea {
+            flex-grow: 1;
+            resize: none;
+            padding: 0.8rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg); /* Fundo do textarea ajustado */
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .chat-input-area textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
+            outline: none;
+        }
+        [data-theme="dark"] .chat-input-area textarea { background-color: var(--dark-bg); border-color: var(--dark-border-color); }
+
+
+        /* --- Responsive Adjustments (CONTINUED) --- */
+        @media(max-width: 768px) {
+            .chat-message { max-width: 95%; font-size: 0.85rem; }
+            .chat-input-area { flex-direction: column; }
+            .chat-input-area textarea { width: 100%; }
+            .chat-input-area .btn { width: 100%; }
+            .meta-actions-bar { justify-content: flex-start; } /* Alinha botões para a esquerda em mobile */
+            .btn-text-desktop { display: none; } /* Esconde o texto dos botões para o mobile */
+        }
+        @media(min-width: 769px) { /* Only show on desktop */
+            .btn-text-desktop { display: inline; }
+        }
+
     </style>
 </head>
 <body>
     <div class="layout">
         <aside class="sidebar">
-            <!-- Conteúdo da Sidebar (NÃO ALTERADO) -->
             <div class="sidebar-inner-content">
                 <div class="sidebar-header">
                     <a href="{{ url_for('index') }}" class="logo">
@@ -787,16 +886,15 @@
                 <div class="paciente-info-card">
                     <h3>{{ paciente.nome }}</h3>
                     <div class="paciente-info-grid">
-                           <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}</span></div>
-                         <div class="paciente-info-item"><strong>CPF:</strong> <span>{{ paciente.cpf or 'N/A' }}</span></div>
-                         <div class="paciente-info-item"><strong>Telefone:</strong> <span>{{ paciente.contato_telefone or 'N/A' }}</span></div>
-                         <div class="paciente-info-item"><strong>Convênio:</strong> <span>{{ paciente.convenio_nome or 'Particular' }}</span></div>
-                         <div class="paciente-info-item" style="grid-column: 1 / -1;"><strong>Observações:</strong> <span>{{ paciente.observacoes or 'Nenhuma observação.' }}</span></div>
+                            <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.split(' ')[0] if paciente.data_nascimento else 'N/A' }}</span></div>
+                           <div class="paciente-info-item"><strong>CPF:</strong> <span>{{ paciente.cpf or 'N/A' }}</span></div>
+                           <div class="paciente-info-item"><strong>Telefone:</strong> <span>{{ paciente.contato_telefone or 'N/A' }}</span></div>
+                           <div class="paciente-info-item"><strong>Convênio:</strong> <span>{{ paciente.convenio_nome or 'Particular' }}</span></div>
+                           <div class="paciente-info-item" style="grid-column: 1 / -1;"><strong>Observações:</strong> <span>{{ paciente.observacoes or 'Nenhuma observação.' }}</span></div>
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- Container Principal com Abas -->
                 <section class="prontuario-section">
                     <div class="tabs-container">
                         <div class="tab-nav">
@@ -805,7 +903,6 @@
                             <button class="tab-nav-item" data-tab="agenda-paciente">Agenda do Paciente</button>
                         </div>
                         <div class="tab-content">
-                            <!-- Aba de Registros Clínicos -->
                             <div id="tab-panel-registros" class="tab-panel active">
                                 {% set registros_clinicos = registros | rejectattr('tipo_registro', 'equalto', 'evolucao_pei') | list %}
                                 {% if registros_clinicos %}
@@ -820,8 +917,7 @@
                                                 </div>
                                                 <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
                                                 <div class="registro-actions">
-                                                    <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i></button>
-                                                    <!-- Novo botão Visualizar -->
+                                                    <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir</span></button>
                                                     <button class="btn btn-sm btn-info btn-visualizar-registro"
                                                             data-title="{{ registro.tipo_registro | replace('_', ' ') | capitalize }} - {{ registro.titulo | default('') }}"
                                                             data-content="{{ registro.conteudo | e }}"
@@ -846,13 +942,13 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Aba de PEIs -->
                             <div id="tab-panel-peis" class="tab-panel">
 
-                                {% macro render_meta(meta, pei_id) %}
+                                {% macro render_meta(meta, pei_id, meta_index) %}
                                     <li data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"
                                         data-cronometro-inicio="{{ meta.cronometro_inicio if meta.cronometro_inicio else '' }}"
-                                        data-tempo-gasto="{{ meta.tempo_total_gasto | default(0) }}">
+                                        data-tempo-gasto="{{ meta.tempo_total_gasto | default(0) }}"
+                                        data-meta-status="{{ meta.status | default('nao-iniciada') | lower | replace(' ', '-') }}">
                                         <div class="meta-header">
                                             <strong>{{ meta.titulo }}</strong>
                                             <span class="meta-status-badge meta-status-{{ meta.status | default('nao-iniciada') | lower | replace(' ', '-') }}">{{ meta.status | default('Não Iniciada') }}</span>
@@ -861,42 +957,59 @@
 
                                         <div class="meta-actions-bar">
                                             <div class="meta-timer-controls">
+                                                {% if meta.status != 'Concluída' %}
                                                 <button class="btn btn-sm btn-secondary btn-timer-toggle" title="Iniciar/Pausar Cronômetro">
                                                     <i class="fas fa-play"></i>
                                                 </button>
+                                                {% endif %}
                                                 <span class="timer-display">00:00:00</span>
+                                                {% if meta.status != 'Concluída' %}
                                                 <button class="btn btn-sm btn-danger-outline btn-timer-reset" title="Zerar Cronômetro">
                                                     <i class="fas fa-history"></i>
                                                 </button>
+                                                {% endif %}
                                             </div>
+                                            {% if meta.status != 'Concluída' %}
                                             <button class="btn btn-sm btn-success btn-concluir-meta">
                                                 <i class="fas fa-check"></i> <span class="btn-text-desktop">Concluir Meta</span>
                                             </button>
-                                            <button class="btn btn-sm btn-primary btn-add-pei-evolution">
-                                                <i class="fas fa-plus"></i> <span class="btn-text-desktop">Registrar Evolução</span>
-                                            </button>
-                                            <button class="btn btn-sm btn-info btn-toggle-evolutions" style="display: none;">
-                                                <i class="fas fa-eye"></i> <span class="btn-text-desktop">Visualizar Evoluções</span> (<span class="evolution-count">0</span>)
+                                            {% endif %}
+                                            {# Botão "Atividade" que substitui "Registrar Evolução" e "Visualizar Evoluções" #}
+                                            <button class="btn btn-sm btn-primary btn-toggle-evolutions"
+                                                    data-pei-id="{{ pei_id }}"
+                                                    data-meta-titulo="{{ meta.titulo }}"
+                                                    data-meta-index="{{ meta_index }}">
+                                                <i class="fas fa-comments"></i> <span class="btn-text-desktop">Atividade</span> (<span class="evolution-count">0</span>)
                                             </button>
                                         </div>
 
                                         <div class="meta-evolutions">
-                                            {% for registro in registros if registro.tipo_registro == 'evolucao_pei' and registro.referencia_pei_id == pei_id and registro.referencia_meta_titulo == meta.titulo %}
-                                                <div class="registro-card registro-card--evolucao_pei" id="registro-{{ registro.id }}" style="margin-top:1rem; margin-bottom: 0;">
-                                                    <div class="registro-header" style="padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
-                                                        <h4 style="font-size: 1rem;">{{ registro.titulo }}</h4>
-                                                        <div class="registro-meta" style="font-size: 0.8rem;">
-                                                            <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro.split(' ')[0] }}</span>
-                                                            <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="registro-content" id="content-{{ registro.id }}">{{ registro.conteudo | safe }}</div>
-                                                    <div class="registro-actions">
-                                                           <button class="btn btn-sm btn-secondary btn-print-pdf" data-target-id="content-{{ registro.id }}" data-title="Evolução de Meta: {{ meta.titulo }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir</span></button>
-                                                         <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i> <span class="btn-text-desktop">Apagar</span></button>
-                                                    </div>
-                                                </div>
-                                            {% endfor %}
+                                            <div class="chat-container" id="chat-meta-{{ pei_id }}-{{ meta_index }}">
+                                                {% if registros %}
+                                                    {% set evolucoes_meta = registros | selectattr('tipo_registro', 'equalto', 'evolucao_pei') | selectattr('referencia_pei_id', 'equalto', pei_id) | selectattr('referencia_meta_titulo', 'equalto', meta.titulo) | list %}
+                                                    {% if evolucoes_meta %}
+                                                        {% for evolucao in evolucoes_meta %}
+                                                            <div class="chat-message-wrapper">
+                                                                <div class="chat-message self"> {# Assumindo que a evolução é do profissional logado #}
+                                                                    {{ evolucao.conteudo | safe }}
+                                                                </div>
+                                                                <div class="chat-message-meta">
+                                                                    {{ evolucao.data_registro.split(' ')[0] }} - {{ evolucao.profissional_nome }}
+                                                                    <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ evolucao.id }}" title="Apagar Evolução"><i class="fas fa-trash"></i></button>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        <div class="empty-state" style="padding:1rem; font-size:0.9rem;"><p>Nenhuma evolução registrada para esta meta.</p></div>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <div class="empty-state" style="padding:1rem; font-size:0.9rem;"><p>Nenhuma evolução registrada para esta meta.</p></div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="chat-input-area">
+                                                <textarea placeholder="Digite uma nova evolução..." rows="1"></textarea>
+                                                <button class="btn btn-primary btn-send-evolution" data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"><i class="fas fa-paper-plane"></i> <span class="btn-text-desktop">Enviar</span></button>
+                                            </div>
                                         </div>
                                     </li>
                                 {% endmacro %}
@@ -918,38 +1031,36 @@
                                                 <p><strong>Responsável pelo Plano:</strong> {{ pei.profissional_responsavel_nome or 'Não definido' }}</p>
 
                                                 {% if pei.metas %}
-                                                    <!-- Seção para Metas em Andamento -->
                                                     <div class="metas-section">
                                                         <h5 class="metas-section-header">Metas em Andamento</h5>
                                                         <ul class="pei-metas-list">
                                                             {% set metas_em_andamento = pei.metas | rejectattr('status', 'eq', 'Concluída') | list %}
                                                             {% for meta in metas_em_andamento %}
-                                                                {{ render_meta(meta, pei.id) }}
+                                                                {{ render_meta(meta, pei.id, loop.index0) }} {# Passando loop.index0 #}
                                                             {% else %}
-                                                                <li class="empty-state" style="font-size: 0.9rem; padding: 1rem;">Nenhuma meta em andamento.</li>
+                                                                <li class="empty-state" style="padding:1rem; font-size:0.9rem;"><p>Nenhuma meta em andamento.</p></li>
                                                             {% endfor %}
                                                         </ul>
                                                     </div>
 
-                                                    <!-- Seção para Metas Concluídas -->
                                                     <div class="metas-section">
-                                                        <h5 class="metas-section-header collapsible-header collapsed">
+                                                        <h5 class="metas-section-header collapsible-header {% if not (metas_concluidas is defined and metas_concluidas|length > 0) %}collapsed{% endif %}"> {# Adjusted collapse state #}
                                                             <span>Metas Concluídas</span>
                                                             <i class="fas fa-chevron-down"></i>
                                                         </h5>
-                                                        <div class="collapsible-content" style="display: none;">
+                                                        <div class="collapsible-content"> {# Removed inline style to be controlled by JS #}
                                                             <ul class="pei-metas-list">
                                                                 {% set metas_concluidas = pei.metas | selectattr('status', 'eq', 'Concluída') | list %}
                                                                 {% for meta in metas_concluidas %}
-                                                                    {{ render_meta(meta, pei.id) }}
+                                                                    {{ render_meta(meta, pei.id, loop.index0) }} {# Passando loop.index0 #}
                                                                 {% else %}
-                                                                    <li class="empty-state" style="font-size: 0.9rem; padding: 1rem;">Nenhuma meta concluída.</li>
+                                                                    <li class="empty-state" style="padding:1rem; font-size:0.9rem;"><p>Nenhuma meta concluída.</p></li>
                                                                 {% endfor %}
                                                             </ul>
                                                         </div>
                                                     </div>
                                                 {% else %}
-                                                        <div class="empty-state"><p>Nenhuma meta cadastrada para este PEI.</p></div>
+                                                            <div class="empty-state"><p>Nenhuma meta cadastrada para este PEI.</p></div>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -960,16 +1071,15 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Aba de Agenda -->
                             <div id="tab-panel-agenda-paciente" class="tab-panel">
-                                    <div class="agenda-paciente-container">
-                                        <h3>Histórico de Agendamentos Concluídos</h3>
-                                        <div class="agenda-scroll-container">
-                                            <div id="agenda-paciente-list">
-                                                <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
+                                        <div class="agenda-paciente-container">
+                                            <h3>Histórico de Agendamentos Concluídos</h3>
+                                            <div class="agenda-scroll-container">
+                                                <div id="agenda-paciente-list">
+                                                    <div class="empty-state" id="agenda-paciente-empty-state"><p>Carregando agendamentos...</p></div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
                             </div>
                         </div>
                     </div>
@@ -978,8 +1088,6 @@
         </div>
     </div>
 
-    <!-- MODAIS -->
-    <!-- Modal para Registro Genérico (Adicionar e Editar) -->
     <div id="modalRegistroGenerico" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -1006,7 +1114,7 @@
                              <div id="lgpd-consent-text" class="consent-text">
                                  Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
                              </div>
-                         </div>
+                           </div>
                     </div>
 
                     <div class="form-group">
@@ -1035,7 +1143,6 @@
         </div>
     </div>
 
-    <!-- Modal para Concluir Meta -->
     <div id="concluir-meta-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
                <div class="modal-header">
@@ -1056,11 +1163,10 @@
         </div>
     </div>
 
-    <!-- Modal de Confirmação Genérico -->
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
                <div class="modal-header">
-                <h3 id="confirm-modal-title">Confirmar Ação</h3>
+                <h3>Confirmar Ação</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
             <div class="modal-body">
@@ -1073,12 +1179,10 @@
         </div>
     </div>
 
-    <!-- Formulários ocultos para ações -->
     <form id="formApagarRegistro" method="POST" action="{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}" style="display: none;">
         <input type="hidden" name="registro_id" id="registro_id_apagar">
     </form>
 
-    <!-- Nova Modal de Visualização de Registro -->
     <div id="modalVisualizarRegistro" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -1104,6 +1208,7 @@
             const pacienteId = "{{ paciente.id if paciente else '' }}";
             const pacienteNome = "{{ paciente.nome if paciente else 'Paciente' }}";
             const clinicaNome = "{{ session.clinica_nome_display or 'Clínica On' }}";
+            const usuarioNome = "{{ session.user_name if session.user_name else 'Usuário' }}"; // Obter o nome do usuário logado
 
             // --- Lógica de UI Geral (Sidebar, Tema, Modals) ---
             const modalController = {
@@ -1230,7 +1335,7 @@
                         let chatHistory = [];
                         chatHistory.push({ role: "user", parts: [{ text: fullPrompt }] });
                         const payload = { contents: chatHistory };
-                        const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // Canvas will provide this at runtime
+                        const apiKey = ""; // Canvas will provide this at runtime
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                         const response = await fetch(apiUrl, {
@@ -1311,7 +1416,7 @@
                 modalTitle.textContent = isEdit ? `Editar ${tipoCapitalizado}` : `Adicionar ${tipoCapitalizado}`;
                 tipoInput.value = tipo;
                 tipoFeedbackInput.value = tipoCapitalizado;
-                tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo}` : '');
+                tituloInput.value = dados.titulo || (tipo === 'evolucao_pei' ? `Evolução - ${dados.metaTitulo || 'Sem Título'}` : ''); // Fallback mais robusto
                 genericEditor.innerHTML = dados.conteudo || '';
 
                 // Adiciona referências do PEI se for uma evolução
@@ -1365,14 +1470,32 @@
                     document.querySelectorAll('.pei-metas-list li[data-pei-id]').forEach(li => {
                         const cronometroInicio = li.dataset.cronometroInicio;
                         const tempoGasto = parseInt(li.dataset.tempoGasto, 10) || 0;
-                        const timerButtonIcon = li.querySelector('.btn-timer-toggle i');
+                        const timerButtonToggle = li.querySelector('.btn-timer-toggle'); // Seleciona o botão, não o ícone
+                        const timerButtonReset = li.querySelector('.btn-timer-reset');
+                        const concluirMetaButton = li.querySelector('.btn-concluir-meta');
+                        const status = li.dataset.metaStatus;
 
-                        if (cronometroInicio) {
-                            startVisualTimer(li, cronometroInicio, tempoGasto);
-                            timerButtonIcon.className = 'fas fa-pause';
+
+                        if (status === 'concluida') {
+                            if (timerButtonToggle) timerButtonToggle.style.display = 'none';
+                            if (timerButtonReset) timerButtonReset.style.display = 'none';
+                            if (concluirMetaButton) concluirMetaButton.disabled = true; // Desabilita o botão
+                            clearInterval(activeTimers[li.dataset.peiId + '||' + li.dataset.metaTitulo]); // Para o timer visual
+                            li.querySelector('.timer-display').textContent = formatTime(tempoGasto); // Garante que o tempo final seja exibido
+                            li.querySelector('.timer-display').style.fontWeight = 'bold'; // Opcional: destaque o tempo final
+                            li.querySelector('.timer-display').style.color = 'var(--text)'; // Opcional: destaque a cor
                         } else {
-                            li.querySelector('.timer-display').textContent = formatTime(tempoGasto);
-                            timerButtonIcon.className = 'fas fa-play';
+                            if (timerButtonToggle) timerButtonToggle.style.display = 'inline-flex'; // Mostra se não concluída
+                            if (timerButtonReset) timerButtonReset.style.display = 'inline-flex'; // Mostra se não concluída
+                            if (concluirMetaButton) concluirMetaButton.disabled = false; // Habilita o botão
+
+                            if (cronometroInicio) {
+                                startVisualTimer(li, cronometroInicio, tempoGasto);
+                                if (timerButtonToggle) timerButtonToggle.querySelector('i').className = 'fas fa-pause';
+                            } else {
+                                li.querySelector('.timer-display').textContent = formatTime(tempoGasto);
+                                if (timerButtonToggle) timerButtonToggle.querySelector('i').className = 'fas fa-play';
+                            }
                         }
                     });
                 }
@@ -1407,6 +1530,7 @@
                                 const statusBadge = li.querySelector('.meta-status-badge');
                                 statusBadge.textContent = meta.status;
                                 statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(/ /g, '-')}`;
+                                li.dataset.metaStatus = meta.status.toLowerCase().replace(' ', '-'); // Atualiza o status no dataset
                                 initializeMetaTimers(); // Re-initialize timers to update all displays
                             }
                         }
@@ -1422,8 +1546,26 @@
                     header.addEventListener('click', () => {
                         const content = header.nextElementSibling;
                         const icon = header.querySelector('.pei-toggle-btn i');
-                        content.style.display = content.style.display === 'block' ? 'none' : 'block';
-                        icon.className = content.style.display === 'block' ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+                        
+                        // Toggle 'expanded' class for smooth transition
+                        const isExpanded = content.classList.contains('expanded');
+                        content.classList.toggle('expanded', !isExpanded);
+                        // Aumente a altura para garantir que o conteúdo completo seja visível
+                        content.style.maxHeight = !isExpanded ? '2000px' : '0'; // Fixed large height for PEI content
+                        content.style.paddingTop = !isExpanded ? '1.8rem' : '0'; 
+                        content.style.paddingBottom = !isExpanded ? '1.8rem' : '0'; 
+
+                        icon.className = isExpanded ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+                        
+                        // If collapsing, also collapse any expanded meta-evolutions inside
+                        if (isExpanded) {
+                            content.querySelectorAll('.meta-evolutions.expanded').forEach(evoContainer => {
+                                evoContainer.classList.remove('expanded');
+                                evoContainer.style.maxHeight = '0';
+                                evoContainer.style.paddingTop = '0';
+                                evoContainer.style.paddingBottom = '0';
+                            });
+                        }
                     });
                 });
 
@@ -1434,15 +1576,18 @@
 
                         const peiId = li.dataset.peiId;
                         const metaTitulo = li.dataset.metaTitulo;
+                        const metaStatus = li.dataset.metaStatus;
 
                         if (e.target.closest('.btn-timer-toggle')) {
+                            if (metaStatus === 'concluida') return; // Não permite iniciar/pausar se concluído
                             const isRunning = !!li.dataset.cronometroInicio;
                             const action = isRunning ? 'stop_timer' : 'start_timer';
                             await sendMetaUpdate(peiId, metaTitulo, action);
                         } else if (e.target.closest('.btn-timer-reset')) {
+                            if (metaStatus === 'concluida') return; // Não permite resetar se concluído
                             Swal.fire({
                                 title: 'Zerar Cronômetro',
-                                text: 'Tem certeza que deseja zerar o tempo e o status desta meta?',
+                                text: 'Tem certeza que deseja zerar o tempo e o status desta meta? Isso irá redefinir a meta para "Não Iniciada".',
                                 icon: 'warning',
                                 showCancelButton: true,
                                 confirmButtonText: 'Sim, zerar',
@@ -1452,13 +1597,99 @@
                                     await sendMetaUpdate(peiId, metaTitulo, 'reset');
                                 }
                             });
-                        } else if (e.target.closest('.btn-concluir-meta')) {
+                        } else if (e.target.closest('.btn-concluir-meta')) { // Não permite concluir se já concluído
+                            if (metaStatus === 'concluida') return;
                             document.getElementById('concluir-meta-titulo').textContent = metaTitulo;
                             modalController.concluirMeta.dataset.peiId = peiId;
                             modalController.concluirMeta.dataset.metaTitulo = metaTitulo;
                             modalController.open(modalController.concluirMeta);
-                        } else if (e.target.closest('.btn-add-pei-evolution')) {
-                            openModalParaRegistro('evolucao_pei', { peiId: peiId, metaTitulo: metaTitulo });
+                        } else if (e.target.closest('.btn-send-evolution')) { // Novo: Enviar Evolução
+                            const textArea = li.querySelector('.chat-input-area textarea');
+                            const evolutionContent = textArea.value.trim();
+                            if (evolutionContent) {
+                                const response = await fetch(`/prontuarios/${pacienteId}/registrar_registro_generico`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        tipo_registro: 'evolucao_pei',
+                                        // Garante que o título não seja vazio
+                                        titulo: metaTitulo ? `Evolução de ${metaTitulo}` : 'Evolução Registrada',
+                                        conteudo: evolutionContent,
+                                        referencia_pei_id: peiId,
+                                        referencia_meta_titulo: metaTitulo
+                                    })
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                    Swal.fire('Sucesso!', 'Evolução registrada.', 'success');
+                                    textArea.value = ''; // Limpa o textarea
+                                    // Adicionar a nova mensagem ao chat sem recarregar a página
+                                    const chatContainer = li.querySelector('.chat-container');
+                                    const newMessageHtml = `
+                                        <div class="chat-message-wrapper">
+                                            <div class="chat-message self">
+                                                ${evolutionContent}
+                                            </div>
+                                            <div class="chat-message-meta">
+                                                ${new Date().toLocaleDateString('pt-BR')} - ${usuarioNome}
+                                                <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="${result.registro_id}" title="Apagar Evolução"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                    `;
+                                    chatContainer.insertAdjacentHTML('beforeend', newMessageHtml);
+                                    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll para o final
+                                    
+                                    // Atualiza a contagem de evoluções
+                                    const evolutionCountSpan = li.querySelector('.evolution-count');
+                                    evolutionCountSpan.textContent = parseInt(evolutionCountSpan.textContent) + 1;
+                                    li.querySelector('.btn-toggle-evolutions').style.display = 'inline-flex';
+                                } else {
+                                    Swal.fire('Erro!', `Falha ao registrar evolução: ${result.message}`, 'error');
+                                }
+                            } else {
+                                Swal.fire('Atenção', 'Por favor, digite o conteúdo da evolução.', 'warning');
+                            }
+                        } else if (e.target.closest('.btn-toggle-evolutions')) { // Botão "Atividade"
+                            const li = e.target.closest('li');
+                            const evolutionsContainer = li.querySelector('.meta-evolutions');
+                            const toggleButton = e.target.closest('.btn-toggle-evolutions');
+                            const icon = toggleButton.querySelector('i');
+                            const chatContainer = li.querySelector('.chat-container');
+
+                            // Garantir que o PEI card pai esteja aberto
+                            const peiCard = li.closest('.pei-card');
+                            if (peiCard) {
+                                const peiContent = peiCard.querySelector('.pei-content');
+                                if (peiContent && !peiContent.classList.contains('expanded')) {
+                                    peiContent.classList.add('expanded');
+                                    // Recalcula scrollHeight para transição suave
+                                    peiContent.style.maxHeight = (peiContent.scrollHeight + 50) + 'px'; // Added extra height for PEI content
+                                    peiContent.style.paddingTop = '1.8rem';
+                                    peiContent.style.paddingBottom = '1.8rem';
+
+                                    const peiHeader = peiCard.querySelector('.pei-header');
+                                    if (peiHeader) {
+                                        const peiHeaderIcon = peiHeader.querySelector('.pei-toggle-btn i');
+                                        if (peiHeaderIcon) peiHeaderIcon.className = 'fas fa-chevron-up';
+                                    }
+                                }
+                            }
+
+                            // Agora, alternar a visibilidade do meta-evolutions (o chat)
+                            const isVisible = evolutionsContainer.classList.contains('expanded');
+                            evolutionsContainer.classList.toggle('expanded', !isVisible);
+                            // Aumente a altura para garantir que o conteúdo completo seja visível
+                            evolutionsContainer.style.maxHeight = !isVisible ? '2000px' : '0'; // Fixed large height for chat/evolutions
+                            evolutionsContainer.style.paddingTop = !isVisible ? '1.2rem' : '0';
+                            evolutionsContainer.style.paddingBottom = !isVisible ? '1.2rem' : '0';
+                            
+                            // Always show comments icon for 'Atividade'
+                            icon.className = 'fas fa-comments';
+
+                            // Scroll para o final do chat ao abrir
+                            if (!isVisible && chatContainer) {
+                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                            }
                         }
                     });
                 });
@@ -1478,41 +1709,45 @@
                         const toggleBtn = metaLi.querySelector('.btn-toggle-evolutions');
                         if (!evolutionsContainer || !toggleBtn) return;
 
-                        const evolutionCards = evolutionsContainer.querySelectorAll('.registro-card');
-                        const count = evolutionCards.length;
+                        // Calculate initial evolution count
+                        const chatMessages = evolutionsContainer.querySelectorAll('.chat-message-wrapper');
+                        const count = chatMessages.length;
 
-                        if (count > 0) {
-                            toggleBtn.style.display = 'inline-flex';
-                            toggleBtn.querySelector('.evolution-count').textContent = count;
-                        } else {
-                            toggleBtn.style.display = 'none';
+                        // Always show 'Atividade' button
+                        toggleBtn.style.display = 'inline-flex';
+                        toggleBtn.querySelector('.evolution-count').textContent = count;
+                        toggleBtn.querySelector('i').className = 'fas fa-comments'; // Always show comments icon
+
+                        // Ensure chat container scrolls to bottom on load/toggle
+                        const chatContainer = metaLi.querySelector('.chat-container');
+                        if (chatContainer) {
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
                         }
-                    });
-
-                    document.querySelectorAll('.btn-toggle-evolutions').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            const li = e.target.closest('li');
-                            const evolutionsContainer = li.querySelector('.meta-evolutions');
-                            const icon = button.querySelector('i');
-
-                            const isVisible = evolutionsContainer.style.display === 'block';
-                            evolutionsContainer.style.display = isVisible ? 'none' : 'block';
-                            icon.className = isVisible ? 'fas fa-eye-slash' : 'fas fa-eye';
-                        });
                     });
                 }
 
                 document.querySelectorAll('.collapsible-header').forEach(header => {
                     header.addEventListener('click', () => {
-                        header.classList.toggle('collapsed');
                         const content = header.nextElementSibling;
                         const icon = header.querySelector('i');
-                        if (content.style.display === 'none') {
-                            content.style.display = 'block';
-                            icon.style.transform = 'rotate(0deg)';
-                        } else {
-                            content.style.display = 'none';
-                            icon.style.transform = 'rotate(-90deg)';
+                        
+                        const isCollapsed = header.classList.contains('collapsed');
+                        header.classList.toggle('collapsed', !isCollapsed);
+                        content.classList.toggle('expanded', isCollapsed);
+                        // Aumente a altura para garantir que o conteúdo completo seja visível
+                        content.style.maxHeight = isCollapsed ? '5000px' : '0'; // Fixed large height for collapsible content
+                        content.style.paddingTop = isCollapsed ? '1rem' : '0';
+                        content.style.paddingBottom = isCollapsed ? '1rem' : '0';
+                        icon.style.transform = isCollapsed ? 'rotate(0deg)' : 'rotate(-90deg)';
+
+                        // If collapsing, also collapse any expanded meta-evolutions inside
+                        if (!isCollapsed) { // Only collapse if it was expanded
+                            content.querySelectorAll('.meta-evolutions.expanded').forEach(evoContainer => {
+                                evoContainer.classList.remove('expanded');
+                                evoContainer.style.maxHeight = '0';
+                                evoContainer.style.paddingTop = '0';
+                                evoContainer.style.paddingBottom = '0';
+                            });
                         }
                     });
                 });
@@ -1559,7 +1794,7 @@
                             profissional: 'Fisiot. Ana Paula',
                             status: 'concluido'
                         },
-                         {
+                           {
                             id: 'agendamento4',
                             data: '2024-06-25',
                             hora: '11:00',
@@ -1587,8 +1822,7 @@
                                         <p><strong>Profissional:</strong> ${app.profissional}</p>
                                     </div>
                                     <div class="card-footer">
-                                        <!-- Botões de ação para agendamentos podem ser adicionados aqui -->
-                                    </div>
+                                        </div>
                                 </div>
                             `;
                             agendaListDiv.insertAdjacentHTML('beforeend', card);
@@ -1669,8 +1903,8 @@
                             return;
                         }
                         if (node.nodeType === Node.ELEMENT_NODE && node.children.length === 0 && !node.textContent.trim()) {
-                             // Ignore empty elements that don't contain other elements or significant text
-                             return;
+                            // Ignore empty elements that don't contain other elements or significant text
+                            return;
                         }
 
 
@@ -1757,7 +1991,7 @@
                             if (blockElements.includes(node.nodeName)) {
                                 if (node.textContent.trim().length > 0) { // Only add space if there's actual content
                                     // Avoid adding extra space right at the top of a new page or after a header
-                                    if (y > margin + 20 || !node.parentNode || !blockElements.includes(node.parentNode.nodeName) ) { // Smarter spacing
+                                    if (y > margin + 20 || (node.previousElementSibling && !blockElements.includes(node.previousElementSibling.nodeName)) ) { // Smarter spacing, avoids double spacing
                                         y += 3; // Spacing between blocks (reduced from 4 to 3)
                                     }
                                 }
@@ -1854,7 +2088,7 @@
                     const btn = e.target.closest('.btn-print-pdf');
                     generatePdfForRecord(btn.dataset.targetId, btn.dataset.title);
                 }
-                 // Botão de Visualizar Registro (novo)
+                   // Botão de Visualizar Registro (novo)
                 if (e.target.closest('.btn-visualizar-registro')) {
                     const btn = e.target.closest('.btn-visualizar-registro');
                     openVisualizarRegistroModal(
