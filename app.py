@@ -160,13 +160,23 @@ def session_login():
             if not mapeamento_data or 'clinica_id' not in mapeamento_data or 'role' not in mapeamento_data:
                 return jsonify({"success": False, "message": "Configuração de usuário incompleta. Entre em contato com o administrador."}), 500
 
+            clinica_id = mapeamento_data['clinica_id']
+            clinica_doc_ref = db.collection('clinicas').document(clinica_id)
+            clinica_doc = clinica_doc_ref.get()
+            
+            clinica_logo_url = None
+            if clinica_doc.exists:
+                clinica_data = clinica_doc.to_dict()
+                clinica_logo_url = clinica_data.get('url_logo') # Obtém a URL da logo do Firestore
+
             session['logged_in'] = True
             session['user_uid'] = uid_from_token
             session['user_email'] = email
-            session['clinica_id'] = mapeamento_data['clinica_id']
+            session['clinica_id'] = clinica_id
             session['clinica_nome_display'] = mapeamento_data.get('nome_clinica_display', 'Clínica On')
             session['user_role'] = mapeamento_data['role']
-            session['user_name'] = mapeamento_data.get('nome_completo', email) 
+            session['user_name'] = mapeamento_data.get('nome_completo', email)
+            session['clinica_logo_url'] = clinica_logo_url # Salva a URL da logo na sessão
 
             print(f"Usuário {email} logado com sucesso. Função: {session['user_role']}")
             return jsonify({"success": True, "message": "Login bem-sucedido!"})
@@ -2045,7 +2055,7 @@ def ver_evolucao_agendamento(agendamento_id):
         evolucao_docs = evolucao_ref.order_by('data_registro').stream()
         
         for doc in evolucao_docs:
-            msg = convert_doc_to_dict(doc)
+            msg = convert_doc_to_dict(msg)
             if msg:
                 mensagens_evolucao.append(msg)
 

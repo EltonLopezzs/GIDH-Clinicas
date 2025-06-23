@@ -254,12 +254,15 @@
     <div class="layout">
         <aside class="sidebar">
             <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
-                <nav>
+<div class="sidebar-header">
+    <a href="{{ url_for('index') }}" class="logo">
+        {% if session.clinica_logo_url %}
+            <img src="{{ session.clinica_logo_url }}" alt="Logo Clínica" style="height: 40px; width: auto; max-width: 100px; object-fit: contain;"> {% else %}
+            <i class="fa-solid fa-staff-snake"></i> 
+        {% endif %}
+        <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
+    </a>
+</div>
                     <ul>
                         <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
                         <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
