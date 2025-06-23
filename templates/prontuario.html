@@ -546,7 +546,7 @@
             justify-content: space-between; /* To push title left and actions right */
             align-items: center;
             padding: 1.2rem 1.8rem;
-            cursor: pointer;
+            cursor: pointer; /* Moved cursor: pointer here */
             background-color: var(--pei-color); /* Fundo integrado */
             border-bottom: 1px solid var(--border-color);
             border-radius: 0; /* Remove rounded top from here */
@@ -584,7 +584,7 @@
             border: none;
             font-size: 1.1rem;
             color: var(--pei-color-dark);
-            cursor: pointer;
+            cursor: pointer; /* Keep cursor pointer for explicit button interaction */
             transition: transform 0.3s ease;
             padding: 0.5rem; /* Aumenta a área de clique */
         }
@@ -1768,13 +1768,16 @@
 
                 document.querySelectorAll('.pei-header').forEach(header => {
                     header.addEventListener('click', (e) => {
-                        if (e.target.closest('.pei-toggle-btn')) {
-                            const content = header.nextElementSibling;
-                            const icon = header.querySelector('.pei-toggle-btn i');
-                            const isExpanded = content.classList.contains('expanded');
-                            content.classList.toggle('expanded', !isExpanded);
-                            icon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
-                        }
+                        // Find the closest .pei-card ancestor
+                        const peiCard = e.currentTarget.closest('.pei-card');
+                        if (!peiCard) return; // Should not happen
+
+                        const content = peiCard.querySelector('.pei-content');
+                        const icon = peiCard.querySelector('.pei-toggle-btn i'); // Still target the icon specifically
+
+                        const isExpanded = content.classList.contains('expanded');
+                        content.classList.toggle('expanded', !isExpanded);
+                        icon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
                     });
                 });
 
@@ -1943,11 +1946,11 @@
                         const tabClicked = e.target;
                         const targetPanelId = 'tab-panel-' + tabClicked.dataset.tab;
                         
-                        // Remove 'active' de todas as sub-abas e painéis
+                        // Remover 'active' de todas as sub-abas e painéis
                         subTabNav.querySelectorAll('.tab-nav-item').forEach(tab => tab.classList.remove('active'));
                         peiContainer.querySelectorAll('.tab-content > .tab-panel').forEach(panel => panel.classList.remove('active'));
                         
-                        // Adiciona 'active' à aba clicada e ao painel correspondente
+                        // Adicionar 'active' à aba clicada e ao painel correspondente
                         tabClicked.classList.add('active');
                         document.getElementById(targetPanelId).classList.add('active');
                     }
@@ -1958,7 +1961,7 @@
             // --- Lógica para carregar agendamentos do paciente ---
             async function loadPatientAppointments() {
                 console.log("A carregar agendamentos do paciente."); // Mensagem de diagnóstico
-                const agendaListTableBody = document.querySelector('#agenda-paciente-list tbody');
+                const agendaListTableBody = document.querySelector('#agenda-paciente-tbody'); // Alterado para tbody
                 agendaListTableBody.innerHTML = `
                     <tr class="no-results">
                         <td colspan="6">Carregando agendamentos...</td>
