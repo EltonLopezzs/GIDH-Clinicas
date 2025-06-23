@@ -884,10 +884,14 @@ def listar_pacientes():
 @app.route('/pacientes/novo', methods=['GET', 'POST'])
 @login_required
 def adicionar_paciente():
+    if not db:
+        flash('Erro crítico: A conexão com o banco de dados não está disponível.', 'danger')
+        return redirect(url_for('index'))
+
     clinica_id = session['clinica_id']
     
     convenios_lista = []
-    peis_disponiveis = [] # Add this to load available PEI templates for selection
+    peis_disponiveis = []
     try:
         convenios_docs = db.collection('clinicas').document(clinica_id).collection('convenios').order_by('nome').stream()
         for doc in convenios_docs:
@@ -895,12 +899,11 @@ def adicionar_paciente():
             if conv_data:
                 convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome', doc.id)})
 
-        # Fetch available PEI templates
         peis_docs = db.collection('clinicas').document(clinica_id).collection('peis').order_by('identificacao_pei').stream()
         for doc in peis_docs:
-            pei_data = doc.to_dict()
-            if pei_data:
-                peis_disponiveis.append({'id': doc.id, 'identificacao': pei_data.get('identificacao_pei', doc.id)})
+            pei_data_template = doc.to_dict()
+            if pei_data_template:
+                peis_disponiveis.append({'id': doc.id, 'identificacao': pei_data_template.get('identificacao_pei', doc.id)})
 
     except Exception as e:
         flash('Erro ao carregar convênios ou PEIs.', 'danger')
@@ -912,10 +915,10 @@ def adicionar_paciente():
         cpf = request.form.get('cpf', '').strip()
         rg = request.form.get('rg', '').strip()
         genero = request.form.get('genero', '').strip()
-        estado_civil = request.form.get('estado_civil', '').strip()
+        # Removido: estado_civil = request.form.get('estado_civil', '').strip() # Não existe no formulário
         telefone = request.form.get('telefone', '').strip()
         email = request.form.get('email', '').strip()
-        indicacao = request.form.get('indicacao', '').strip()
+        # Removido: indicacao = request.form.get('indicacao', '').strip() # Não existe no formulário
         convenio_id = request.form.get('convenio_id', '').strip()
         observacoes = request.form.get('observacoes', '').strip()
         cep = request.form.get('cep', '').strip()
@@ -925,7 +928,7 @@ def adicionar_paciente():
         bairro = request.form.get('bairro', '').strip()
         cidade = request.form.get('cidade', '').strip()
         estado = request.form.get('estado', '').strip()
-        peis_associados_ids = request.form.getlist('peis_associados') # Get selected PEI template IDs
+        peis_associados_ids = request.form.getlist('peis_associados')
 
         if not nome:
             flash('O nome do paciente é obrigatório.', 'danger')
@@ -944,10 +947,8 @@ def adicionar_paciente():
                 'cpf': cpf if cpf else None,
                 'rg': rg if rg else None,
                 'genero': genero if genero else None,
-                'estado_civil': estado_civil if estado_civil else None,
                 'contato_telefone': telefone if telefone else None,
                 'contato_email': email if email else None,
-                'indicacao': indicacao if indicacao else None,
                 'convenio_id': convenio_id if convenio_id else None,
                 'observacoes': observacoes if observacoes else None,
                 'endereco': {
@@ -959,35 +960,42 @@ def adicionar_paciente():
                     'cidade': cidade if cidade else None,
                     'estado': estado if estado else None,
                 },
-                'peis_associados': peis_associados_ids, # Save the list of associated PEI template IDs
+                'peis_associados': peis_associados_ids,
                 'data_cadastro': firestore.SERVER_TIMESTAMP
             }
             
-            # Use a batch to ensure atomicity for patient and individual PEI creation
             batch = db.batch()
             pacientes_col_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
-            new_paciente_ref = pacientes_col_ref.document() # Create a new document reference with an auto-ID
-            batch.set(new_paciente_ref, paciente_data) # Set the patient data to this new document
+            new_paciente_ref = pacientes_col_ref.document()
+            batch.set(new_paciente_ref, paciente_data)
 
-            # Add PEIs to the patient's subcollection based on selected templates
             for pei_template_id in peis_associados_ids:
                 pei_template_doc = db.collection('clinicas').document(clinica_id).collection('peis').document(pei_template_id).get()
                 if pei_template_doc.exists:
                     pei_data = pei_template_doc.to_dict()
-                    # Add original PEI ID for reference (optional, but good for tracing)
-                    pei_data['pei_template_id'] = pei_template_id 
-                    # Set initial status for metas if not already defined
-                    if 'metas' in pei_data and isinstance(pei_data['metas'], list):
-                        for meta in pei_data['metas']:
-                            if 'status' not in meta:
-                                meta['status'] = 'Não Iniciada'
-                            if 'tempo_total_gasto' not in meta:
-                                meta['tempo_total_gasto'] = 0
-                            if 'cronometro_inicio' not in meta:
-                                meta['cronometro_inicio'] = None
+                    if pei_data is None:
+                        print(f"Aviso: pei_template_doc.to_dict() retornou None para ID {pei_template_id}")
+                        continue
                     
+                    pei_data['pei_template_id'] = pei_template_id
+                    
+                    # Certifica-se de que 'metas' é uma lista antes de iterar
+                    metas_list = pei_data.get('metas')
+                    if not isinstance(metas_list, list):
+                        print(f"Aviso: 'metas' para PEI {pei_template_id} não é uma lista. Forçando para lista vazia.")
+                        metas_list = []
+                    
+                    for meta in metas_list:
+                        if 'status' not in meta:
+                            meta['status'] = 'Não Iniciada'
+                        if 'tempo_total_gasto' not in meta:
+                            meta['tempo_total_gasto'] = 0
+                        if 'cronometro_inicio' not in meta:
+                            meta['cronometro_inicio'] = None
+                    pei_data['metas'] = metas_list # Atribui a lista tratada de volta
+
                     individual_pei_ref = new_paciente_ref.collection('peis_individuais').document(pei_template_id)
-                    batch.set(individual_pei_ref, pei_data) # Use the template ID as the individual PEI ID
+                    batch.set(individual_pei_ref, pei_data)
 
             batch.commit()
 
@@ -1040,10 +1048,10 @@ def editar_paciente(paciente_doc_id):
         cpf = request.form.get('cpf', '').strip()
         rg = request.form.get('rg', '').strip()
         genero = request.form.get('genero', '').strip()
-        estado_civil = request.form.get('estado_civil', '').strip()
+        # Removido: estado_civil = request.form.get('estado_civil', '').strip()
         telefone = request.form.get('telefone', '').strip()
         email = request.form.get('email', '').strip()  
-        indicacao = request.form.get('indicacao', '').strip()
+        # Removido: indicacao = request.form.get('indicacao', '').strip()
         convenio_id = request.form.get('convenio_id', '').strip()
         observacoes = request.form.get('observacoes', '').strip()
         
@@ -1075,10 +1083,8 @@ def editar_paciente(paciente_doc_id):
                 'cpf': cpf if cpf else None,
                 'rg': rg if rg else None,
                 'genero': genero if genero else None,
-                'estado_civil': estado_civil if estado_civil else None, 
                 'contato_telefone': telefone if telefone else None, 
                 'contato_email': email if email else None,  
-                'indicacao': indicacao if indicacao else None, 
                 'convenio_id': convenio_id if convenio_id else None,
                 'observacoes': observacoes if observacoes else None,
                 'endereco': {
@@ -1090,11 +1096,10 @@ def editar_paciente(paciente_doc_id):
                     'cidade': cidade if cidade else None,
                     'estado': estado if estado else None,
                 },
-                'peis_associados': new_peis_associados_ids, # Update the list of associated PEI template IDs
+                'peis_associados': new_peis_associados_ids,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             }
             
-            # Start a batch write for atomic updates
             batch = db.batch()
             batch.update(paciente_ref, paciente_data_update)
 
@@ -1108,26 +1113,35 @@ def editar_paciente(paciente_doc_id):
                     pei_template_doc = db.collection('clinicas').document(clinica_id).collection('peis').document(pei_template_id).get()
                     if pei_template_doc.exists:
                         pei_data = pei_template_doc.to_dict()
-                        pei_data['pei_template_id'] = pei_template_id # Store reference to original template
-                        # Set initial status for metas if not already defined
-                        if 'metas' in pei_data and isinstance(pei_data['metas'], list):
-                            for meta in pei_data['metas']:
-                                if 'status' not in meta:
-                                    meta['status'] = 'Não Iniciada'
-                                if 'tempo_total_gasto' not in meta:
-                                    meta['tempo_total_gasto'] = 0
-                                if 'cronometro_inicio' not in meta:
-                                    meta['cronometro_inicio'] = None
+                        if pei_data is None:
+                            print(f"Aviso: pei_template_doc.to_dict() retornou None para ID {pei_template_id}")
+                            continue
+                            
+                        pei_data['pei_template_id'] = pei_template_id
+                        
+                        metas_list = pei_data.get('metas')
+                        if not isinstance(metas_list, list):
+                            print(f"Aviso: 'metas' para PEI {pei_template_id} não é uma lista. Forçando para lista vazia.")
+                            metas_list = []
+
+                        for meta in metas_list:
+                            if 'status' not in meta:
+                                meta['status'] = 'Não Iniciada'
+                            if 'tempo_total_gasto' not in meta:
+                                meta['tempo_total_gasto'] = 0
+                            if 'cronometro_inicio' not in meta:
+                                meta['cronometro_inicio'] = None
+                        pei_data['metas'] = metas_list
 
                         individual_pei_ref = paciente_ref.collection('peis_individuais').document(pei_template_id)
-                        batch.set(individual_pei_ref, pei_data) # Use the template ID as the individual PEI ID
+                        batch.set(individual_pei_ref, pei_data)
 
             # Remove PEIs from subcollection if they are no longer associated
             for existing_pei_id in existing_individual_pei_ids:
                 if existing_pei_id not in new_peis_associados_ids:
                     batch.delete(paciente_ref.collection('peis_individuais').document(existing_pei_id))
 
-            batch.commit() # Commit all changes in the batch
+            batch.commit()
             
             flash('Paciente atualizado com sucesso!', 'success')
             return redirect(url_for('listar_pacientes'))
@@ -1143,7 +1157,6 @@ def editar_paciente(paciente_doc_id):
             if paciente:
                 paciente['id'] = paciente_doc.id
                 
-                # Format dates for form display
                 if paciente.get('data_nascimento') and isinstance(paciente.get('data_nascimento'), datetime.datetime):
                     paciente['data_nascimento'] = paciente['data_nascimento'].strftime('%Y-%m-%d')
                 else:
@@ -1155,7 +1168,6 @@ def editar_paciente(paciente_doc_id):
                 paciente['contato_telefone'] = paciente.get('contato_telefone', '')  
                 paciente['contato_email'] = paciente.get('contato_email', '') 
 
-                # Ensure endereco is a dict and its keys are present
                 if 'endereco' not in paciente or not isinstance(paciente['endereco'], dict):
                     paciente['endereco'] = {}
                 paciente['endereco']['cep'] = paciente['endereco'].get('cep', '')
@@ -1166,8 +1178,6 @@ def editar_paciente(paciente_doc_id):
                 paciente['endereco']['cidade'] = paciente['endereco'].get('cidade', '')
                 paciente['endereco']['estado'] = paciente['endereco'].get('estado', '')
 
-                # Pass the list of currently associated PEI template IDs to the form
-                # This ensures the checkboxes are correctly pre-selected
                 paciente['peis_associados_ids'] = paciente.get('peis_associados', [])  
 
                 print("Dados do paciente carregados para edição:", paciente)
@@ -1514,7 +1524,7 @@ def editar_horario(profissional_doc_id, horario_doc_id):
             hora_fim = request.form['hora_fim']
             intervalo_minutos_str = request.form.get('intervalo_minutos')
             intervalo_minutos = int(intervalo_minutos_str) if intervalo_minutos_str and intervalo_minutos_str.isdigit() else None
-            ativo = 'ativo' in request.form
+            ativo = 'ativo' in request.form   
 
             if hora_inicio >= hora_fim:
                 flash('A hora de início deve ser anterior à hora de término.', 'warning')
@@ -1845,7 +1855,7 @@ def editar_agendamento():
         profissional_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get()
         servico_procedimento_doc = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get()
 
-        profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
+        profissional_nome = professional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
         servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A'
         
         dt_agendamento_naive = datetime.datetime.strptime(f"{data_agendamento_str} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
@@ -1853,11 +1863,6 @@ def editar_agendamento():
         data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
 
         update_data = {
-            # This variable `paciente_doc_id` is not defined in this scope. 
-            # For editing, we usually don't change `paciente_id`.
-            # I will remove `paciente_id` from the `update_data` dictionary,
-            # as it's typically set during appointment creation and not modified
-            # during an edit operation.
             'paciente_nome': paciente_nome,
             'profissional_id': profissional_id_manual,
             'profissional_nome': profissional_nome,
@@ -1892,9 +1897,10 @@ def apagar_agendamento():
     try:
         db.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_id).delete()
         flash('Agendamento apagado com sucesso!', 'success')
+        
     except Exception as e:
         flash(f'Erro ao apagar agendamento: {e}', 'danger')
-        print(f"Erro delete_appointment: {e}")
+        print(f"Erro apagar_agendamento: {e}")
     return redirect(url_for('listar_agendamentos'))
 
 @app.route('/prontuarios')
@@ -1932,7 +1938,6 @@ def ver_prontuario(paciente_doc_id):
 
     paciente_data = None
     registros_prontuario = []
-    # Renamed for clarity: this now stores individual PEIs associated with this patient, not templates.
     peis_individuais_paciente = [] 
 
     try:
@@ -1943,11 +1948,9 @@ def ver_prontuario(paciente_doc_id):
 
         paciente_data = convert_doc_to_dict(paciente_doc)
 
-        # Carrega PEIs da subcoleção individual do paciente
-        peis_individuais_docs = paciente_ref.collection('peis_individuais').order_by('identificacao_pei').stream() # Changed order_by
+        peis_individuais_docs = paciente_ref.collection('peis_individuais').order_by('identificacao_pei').stream()
         for doc in peis_individuais_docs:
             pei_data = convert_doc_to_dict(doc)
-            # Ensure 'metas' is a list and populate missing fields if necessary
             if 'metas' in pei_data and isinstance(pei_data['metas'], list):
                 for meta in pei_data['metas']:
                     if 'status' not in meta:
@@ -1958,7 +1961,6 @@ def ver_prontuario(paciente_doc_id):
                         meta['cronometro_inicio'] = None
             peis_individuais_paciente.append(pei_data)
 
-        # Busca o histórico de prontuários
         prontuarios_docs = paciente_ref.collection('prontuarios').order_by('data_registro', direction=firestore.Query.DESCENDING).stream()
         for doc in prontuarios_docs:
             registros_prontuario.append(convert_doc_to_dict(doc))
@@ -1971,34 +1973,30 @@ def ver_prontuario(paciente_doc_id):
     return render_template('prontuario.html',
                             paciente=paciente_data,
                             registros=registros_prontuario,
-                            # Pass the individualized PEIs to the template
                             peis_do_paciente=peis_individuais_paciente)
 
 @app.route('/api/pacientes/<string:paciente_doc_id>/agendamentos', methods=['GET'])
 @login_required
-def api_paciente_agendamentos(paciente_doc_id): # Renomeada de api_agendamentos_concluidos
+def api_paciente_agendamentos(paciente_doc_id):
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
     
-    agendamentos_paciente = [] # Renomeada para agendamentos_paciente
+    agendamentos_paciente = []
     
     try:
         profissional_id_logado = None
-        # Se não for admin, pega o ID do profissional associado ao usuário
         if user_role != 'admin':
             prof_doc = db.collection('User').document(user_uid).get()
             profissional_id_logado = prof_doc.to_dict().get('profissional_id') if prof_doc.exists else None
             if not profissional_id_logado:
                 return jsonify({'success': False, 'message': 'Usuário não associado a um profissional.'}), 403
 
-        # Constrói a query para buscar agendamentos do paciente
         query = db.collection('clinicas').document(clinica_id).collection('agendamentos') \
             .where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)) \
             .order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING) \
-            .limit(20) # Limita para evitar sobrecarga, ajuste conforme necessário
+            .limit(20)
 
-        # Se não for admin, filtra apenas os agendamentos do profissional logado
         if user_role != 'admin':
             query = query.where(filter=FieldFilter('profissional_id', '==', profissional_id_logado))
 
@@ -2008,12 +2006,10 @@ def api_paciente_agendamentos(paciente_doc_id): # Renomeada de api_agendamentos_
             if ag:
                 ag['id'] = doc.id
                 if ag.get('data_agendamento_ts'):
-                    # Formata a data para exibição no frontend (DD/MM/YYYY)
                     ag['data_agendamento_fmt'] = ag['data_agendamento_ts'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y')
                 else:
                     ag['data_agendamento_fmt'] = 'N/A'
                 
-                # Garante que o status está em minúsculas para corresponder às classes CSS
                 ag['status'] = ag.get('status', 'pendente').lower() 
                 agendamentos_paciente.append(ag)
         
@@ -2041,7 +2037,6 @@ def ver_evolucao_agendamento(agendamento_id):
         if not agendamento_data:
             return jsonify({'success': False, 'message': 'Dados do agendamento ausentes.'}), 500
 
-        # Verifica permissão: admin pode ver tudo, profissional só pode ver os seus
         if session.get('user_role') != 'admin':
             user_uid = session.get('user_uid')
             prof_doc = db.collection('User').document(user_uid).get()
@@ -2050,7 +2045,6 @@ def ver_evolucao_agendamento(agendamento_id):
             if agendamento_data.get('profissional_id') != profissional_id_logado:
                 return jsonify({'success': False, 'message': 'Acesso negado.'}), 403
 
-        # Busca as mensagens de evolução na subcoleção
         evolucao_ref = agendamento_ref.collection('evolucao')
         evolucao_docs = evolucao_ref.order_by('data_registro').stream()
         
@@ -2091,11 +2085,9 @@ def adicionar_evolucao_agendamento(agendamento_id):
             profissional_id = user_data.get('profissional_id')
         
         if not profissional_id:
-            # Fallback caso o usuário não esteja linkado a um profissional (ex: um admin registrando)
             profissional_id = profissional_logado_uid
             print(f"Aviso: Usuário {profissional_logado_uid} não tem profissional_id associado. Usando UID para registro de evolução.")
 
-        # Validação de permissão
         agendamento_doc = agendamento_ref.get()
         if not agendamento_doc.exists:
             return jsonify({'success': False, 'message': 'Agendamento não encontrado.'}), 404
@@ -2116,7 +2108,6 @@ def adicionar_evolucao_agendamento(agendamento_id):
         
         update_time, new_doc_ref = evolucao_ref.add(nova_mensagem)
         
-        # Precisamos buscar o documento recém-criado para obter o timestamp gerado pelo servidor
         new_doc = new_doc_ref.get()
         final_message = convert_doc_to_dict(new_doc)
 
@@ -2356,9 +2347,6 @@ def apagar_registro_generico(paciente_doc_id):
         db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(registro_id).delete()
         flash('Registro apagado com sucesso!', 'success')
         
-        # Check if it was a PEI evolution message and update the evolution count on the frontend
-        # This part will require the frontend to re-fetch the PEI data or update locally if possible.
-        # For now, relying on the page reload from the flash message.
     except Exception as e:
         flash(f'Erro ao apagar registro: {e}', 'danger')
         print(f"Erro apagar_registro_generico: {e}")
@@ -2509,7 +2497,6 @@ def adicionar_pei():
                 flash(f'Erro ao buscar nome do profissional: {e}', 'warning')
         
         try:
-            # (Restante da lógica de validação e salvamento permanece igual)
             data_inicio_dt = parse_date_input(data_inicio_str) if data_inicio_str else None
             data_fim_dt = parse_date_input(data_fim_str) if data_fim_str else None
             metas_data = json.loads(metas_json)
@@ -2534,7 +2521,6 @@ def adicionar_pei():
     return render_template('pei_form.html', pei=None, action_url=url_for('adicionar_pei'), page_title='Adicionar Novo PEI', profissionais=profissionais_lista)
 
 
-# Em app.py, substitua a rota editar_pei
 @app.route('/peis/editar/<string:pei_doc_id>', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -2568,7 +2554,6 @@ def editar_pei(pei_doc_id):
                 flash(f'Erro ao buscar nome do profissional: {e}', 'warning')
         
         try:
-            # (Restante da lógica de validação e salvamento permanece igual)
             data_inicio_dt = parse_date_input(data_inicio_str) if data_inicio_str else None
             data_fim_dt = parse_date_input(data_fim_str) if data_fim_str else None
             metas_data = json.loads(metas_json)
@@ -2625,15 +2610,12 @@ def editar_pei(pei_doc_id):
 def excluir_pei(pei_doc_id):
     clinica_id = session['clinica_id']
     try:
-        # TODO: Check if this PEI is associated with any patient before deletion.
         db.collection('clinicas').document(clinica_id).collection('peis').document(pei_doc_id).delete()
         flash('PEI excluído com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao excluir PEI: {e}.', 'danger')
         print(f"Erro excluir_pei: {e}")
     return redirect(url_for('listar_peis'))
-
-# Adicione esta nova rota ao final do seu arquivo app.py
 
 @app.route('/api/pacientes/<string:paciente_id>/peis/<string:pei_individual_id>/meta/update', methods=['POST'])
 @login_required
@@ -2647,16 +2629,19 @@ def update_pei_meta(paciente_id, pei_individual_id):
         return jsonify({'success': False, 'message': 'Dados incompletos.'}), 400
 
     try:
-        # O caminho agora aponta para o PEI individual do paciente
         pei_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_id).collection('peis_individuais').document(pei_individual_id)
         pei_doc = pei_ref.get()
 
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI individual não encontrado para este paciente.'}), 404
         
-         
         pei_data = pei_doc.to_dict()
         metas = pei_data.get('metas', [])
+        
+        if not isinstance(metas, list): # Safety check for 'metas' being a list
+            print(f"Aviso: 'metas' para PEI individual {pei_individual_id} não é uma lista. Reformatando.")
+            metas = []
+
         meta_encontrada = False
         target_meta_index = -1
 

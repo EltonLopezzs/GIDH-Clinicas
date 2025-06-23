@@ -915,7 +915,8 @@
             try {
                 // Ensure default empty array if Jinja2 variables are not set or null
                 const initialPeisDataRaw = '{{ peis_disponiveis | tojson | default("[]") | safe }}';
-                const patientSelectedPeiIdsRaw = '{{ paciente.peis_associados_ids | tojson | default("[]") | safe }}';
+                // CORRECTED: Ensure `paciente.peis_associados_ids` is evaluated to an empty list if `paciente` is None.
+                const patientSelectedPeiIdsRaw = '{{ (paciente.peis_associados_ids if paciente and paciente.peis_associados_ids is not none else []) | tojson | safe }}';
                 
                 let initialPeisData = [];
                 try {
