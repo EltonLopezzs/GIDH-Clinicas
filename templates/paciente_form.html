@@ -194,6 +194,15 @@
         .btn.loading i { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        /* Validation Error Message */
+        .validation-error {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 0.4rem;
+            display: block;
+            min-height: 1.2em; /* Reserve space to prevent layout shift */
+        }
+
         /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
@@ -472,6 +481,7 @@
                             <div class="form-group">
                                 <label for="data_nascimento">Data de Nascimento</label>
                                 <input type="text" id="data_nascimento" name="data_nascimento" class="flatpickr-input" value="{{ request.form.data_nascimento if 'data_nascimento' in request.form else paciente.data_nascimento if paciente else '' }}" placeholder="DD/MM/AAAA" required>
+                                <span class="validation-error" id="data_nascimento_error"></span>
                             </div>
                             <!-- Campo Gênero -->
                             <div class="form-group">
@@ -489,6 +499,7 @@
                             <div class="form-group">
                                 <label for="cpf">CPF</label>
                                 <input type="text" id="cpf" name="cpf" value="{{ request.form.cpf if 'cpf' in request.form else paciente.cpf if paciente else '' }}" placeholder="XXX.XXX.XXX-XX">
+                                <span class="validation-error" id="cpf_error"></span>
                             </div>
                             <!-- Campo RG -->
                             <div class="form-group">
@@ -627,6 +638,23 @@
             const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
             const themeToggle = document.querySelector('#theme-toggle');
             const logoutButton = document.getElementById('logoutButton');
+            const form = document.querySelector('form'); // Get the form element
+
+            // --- Helper to display validation errors ---
+            function showValidationError(elementId, message) {
+                const errorElement = document.getElementById(elementId);
+                if (errorElement) {
+                    errorElement.textContent = message;
+                    errorElement.style.display = 'block';
+                }
+            }
+
+            function clearValidationErrors() {
+                document.querySelectorAll('.validation-error').forEach(el => {
+                    el.textContent = '';
+                    el.style.display = 'none';
+                });
+            }
 
             // --- Sidebar Logic ---
             function setupSidebar() {
@@ -775,17 +803,98 @@
                 const telefoneInput = document.getElementById('telefone');
                 if (telefoneInput) applyMask(telefoneInput, '(XX) XXXXX-XXXX');
 
-                // Form submission loading state
-                const form = document.querySelector('form');
-                if (form) {
-                    form.addEventListener('submit', () => {
-                        updateHiddenPeiInput();
+                // --- Form Validation ---
+                form.addEventListener('submit', (event) => {
+                    clearValidationErrors(); // Clear previous errors
+
+                    let isValid = true;
+                    const dataNascimentoInput = document.getElementById('data_nascimento');
+                    const cpfInputValidation = document.getElementById('cpf');
+
+                    // Validate Date of Birth
+                    if (dataNascimentoInput) {
+                        const dobString = dataNascimentoInput.value;
+                        if (dobString) {
+                            const [year, month, day] = dobString.split('-').map(Number); // Assuming YYYY-MM-DD from flatpickr
+                            const dob = new Date(year, month - 1, day); // Month is 0-indexed
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0); // Normalize today's date to midnight
+
+                            if (dob > today) {
+                                showValidationError('data_nascimento_error', 'Data de nascimento não pode ser futura.');
+                                isValid = false;
+                            }
+                        }
+                    }
+
+                    // Validate CPF
+                    if (cpfInputValidation && cpfInputValidation.value) {
+                        const cpf = cpfInputValidation.value.replace(/\D/g, ''); // Clean CPF
+                        if (!validateCPF(cpf)) {
+                            showValidationError('cpf_error', 'CPF inválido.');
+                            isValid = false;
+                        }
+                    }
+
+                    if (!isValid) {
+                        event.preventDefault(); // Prevent form submission
+                        // Re-enable submit button if validation fails
+                        const submitButton = form.querySelector('button[type="submit"]');
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = '<i class="fas fa-save"></i>&nbsp;Salvar';
+                        }
+                    } else {
+                        // If all client-side validations pass, proceed with normal submission logic
+                        updateHiddenPeiInput(); // Update hidden fields for PEIs
                         const submitButton = form.querySelector('button[type="submit"]');
                         if (submitButton) {
                             submitButton.disabled = true;
                             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Salvando...';
                         }
-                    });
+                    }
+                });
+
+                // CPF Validation Function
+                function validateCPF(cpf) {
+                    if (typeof cpf !== 'string') return false;
+                    cpf = cpf.replace(/[.\-]/g, ''); // Remove dots and hyphens
+
+                    if (cpf.length !== 11 || !/^\d{11}$/.test(cpf) ||
+                        cpf === '00000000000' ||
+                        cpf === '11111111111' ||
+                        cpf === '22222222222' ||
+                        cpf === '33333333333' ||
+                        cpf === '44444444444' ||
+                        cpf === '55555555555' ||
+                        cpf === '66666666666' ||
+                        cpf === '77777777777' ||
+                        cpf === '88888888888' ||
+                        cpf === '99999999999') {
+                        return false;
+                    }
+
+                    let sum = 0;
+                    let remainder;
+
+                    for (let i = 1; i <= 9; i++) {
+                        sum = sum + parseInt(cpf.substring(i - 1, i)) * (11 - i);
+                    }
+                    remainder = (sum * 10) % 11;
+
+                    if (remainder === 10 || remainder === 11) remainder = 0;
+                    if (remainder !== parseInt(cpf.substring(9, 10))) return false;
+
+                    sum = 0;
+                    for (let i = 1; i <= 10; i++) {
+                        sum = sum + parseInt(cpf.substring(i - 1, i)) * (12 - i);
+                    }
+                    remainder = (sum * 10) % 11;
+
+                    if (remainder === 10 || remainder === 11) remainder = 0;
+                    if (remainder !== parseInt(cpf.substring(10, 11))) return false;
+
+                    return true;
                 }
             }
 
