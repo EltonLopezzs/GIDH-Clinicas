@@ -1843,8 +1843,11 @@ def editar_agendamento():
         data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
 
         update_data = {
-            'paciente_id': paciente_doc_id, # This variable is not defined in this scope. It should be the patient_doc_id from the original agendamento.
-                                           # For editing, we usually don't change paciente_id.
+            # This variable `paciente_doc_id` is not defined in this scope. 
+            # For editing, we usually don't change `paciente_id`.
+            # I will remove `paciente_id` from the `update_data` dictionary,
+            # as it's typically set during appointment creation and not modified
+            # during an edit operation.
             'paciente_nome': paciente_nome,
             'profissional_id': profissional_id_manual,
             'profissional_nome': profissional_nome,
@@ -1961,14 +1964,14 @@ def ver_prontuario(paciente_doc_id):
                             # Pass the individualized PEIs to the template
                             peis_do_paciente=peis_individuais_paciente)
 
-@app.route('/api/pacientes/<string:paciente_doc_id>/agendamentos-concluidos', methods=['GET'])
+@app.route('/api/pacientes/<string:paciente_doc_id>/agendamentos', methods=['GET'])
 @login_required
-def api_agendamentos_concluidos(paciente_doc_id):
+def api_paciente_agendamentos(paciente_doc_id): # Renomeada de api_agendamentos_concluidos
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
     
-    agendamentos_concluidos = []
+    agendamentos_paciente = [] # Renomeada para agendamentos_paciente
     
     try:
         profissional_id_logado = None
@@ -1979,12 +1982,11 @@ def api_agendamentos_concluidos(paciente_doc_id):
             if not profissional_id_logado:
                 return jsonify({'success': False, 'message': 'Usuário não associado a um profissional.'}), 403
 
-        # Constrói a query para buscar agendamentos concluídos do paciente
+        # Constrói a query para buscar agendamentos do paciente
         query = db.collection('clinicas').document(clinica_id).collection('agendamentos') \
             .where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)) \
-            .where(filter=FieldFilter('status', '==', 'concluido')) \
             .order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING) \
-            .limit(10) # Limita aos últimos 10 para performance
+            .limit(20) # Limita para evitar sobrecarga, ajuste conforme necessário
 
         # Se não for admin, filtra apenas os agendamentos do profissional logado
         if user_role != 'admin':
@@ -1992,15 +1994,25 @@ def api_agendamentos_concluidos(paciente_doc_id):
 
         docs = query.stream()
         for doc in docs:
-            ag = convert_doc_to_dict(doc)
+            ag = doc.to_dict()
             if ag:
-                agendamentos_concluidos.append(ag)
+                ag['id'] = doc.id
+                if ag.get('data_agendamento_ts'):
+                    # Formata a data para exibição no frontend (DD/MM/YYYY)
+                    ag['data_agendamento_fmt'] = ag['data_agendamento_ts'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y')
+                else:
+                    ag['data_agendamento_fmt'] = 'N/A'
+                
+                # Garante que o status está em minúsculas para corresponder às classes CSS
+                ag['status'] = ag.get('status', 'pendente').lower() 
+                agendamentos_paciente.append(ag)
         
-        return jsonify({'success': True, 'agendamentos': agendamentos_concluidos})
+        return jsonify({'success': True, 'agendamentos': agendamentos_paciente})
 
     except Exception as e:
-        print(f"Erro API ao carregar agendamentos concluídos para paciente {paciente_doc_id}: {e}")
+        print(f"Erro API ao carregar agendamentos para paciente {paciente_doc_id}: {e}")
         return jsonify({'success': False, 'message': f'Erro interno do servidor: {e}'}), 500
+
 
 @app.route('/agendamentos/<string:agendamento_id>/evolucao', methods=['GET'])
 @login_required
@@ -2190,7 +2202,7 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         print(f"Erro ao carregar modelos de anamnese (edit): {e}")
 
     if request.method == 'POST':
-        conteudo = request.form.get('conteudo', '').strip()
+        conteudo = request.form.get('conteudo', '').strip()   
         modelo_base_id = request.form.get('modelo_base_id')
         
         try:
@@ -2699,3 +2711,4 @@ def update_pei_meta(paciente_id, pei_individual_id):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
+
