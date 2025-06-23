@@ -215,6 +215,193 @@
             .form-card h2.form-title { font-size: 1.4rem; }
             .form-row { grid-template-columns: 1fr; }
         }
+
+        /* --- PEI Shuttle Component Styles --- */
+        .pei-shuttle-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align items to the top */
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+
+        .pei-list-box {
+            flex: 1; /* Distribute space evenly */
+            min-width: 280px; /* Minimum width for each list box */
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            /* Box-shadow for the entire box, making it pop */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            display: flex;
+            flex-direction: column;
+            min-height: 250px; /* Provides a base height for the box */
+        }
+
+        .pei-list-box h4 {
+            font-size: 1rem;
+            color: var(--text);
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .pei-search-bar {
+            position: relative;
+            margin-bottom: 0.75rem;
+        }
+
+        .pei-search-input {
+            width: 100%;
+            padding: 0.6rem 0.8rem 0.6rem 2.5rem; /* Left padding for icon */
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--card); /* Lighter background for search input */
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .pei-search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+        }
+
+        .pei-search-icon {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .pei-list {
+            list-style: none;
+            padding: 0.5rem; /* Padding inside the scrollable list */
+            margin: 0.5rem 0; /* Margin between search/list and list/bottom */
+            flex-grow: 1; /* Allows it to expand within the .pei-list-box */
+            max-height: 200px; /* Force scroll after approximately 5 items (5 * ~40px) */
+            overflow-y: auto; /* Enable vertical scrolling */
+            border: 1px solid var(--border-color); /* Add border for visible scroll area */
+            border-radius: 8px;
+            background-color: var(--card);
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.05); /* Subtle inner shadow */
+        }
+        
+        .pei-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .pei-list::-webkit-scrollbar-track {
+            background: var(--bg);
+            border-radius: 4px;
+        }
+        .pei-list::-webkit-scrollbar-thumb {
+            background: var(--muted);
+            border-radius: 4px;
+            border: 2px solid var(--card); /* Match list background */
+        }
+        .pei-list::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+
+        .pei-list-item {
+            padding: 0.6rem 0.8rem; /* Adjusted padding */
+            margin-bottom: 0.2rem; /* Adjusted margin */
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-size: 0.92rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            white-space: nowrap; /* Prevent wrapping */
+            overflow: hidden; /* Hide overflow */
+            text-overflow: ellipsis; /* Show ellipsis */
+            color: var(--text);
+            border: 1px solid transparent; /* Add a subtle border */
+        }
+        .pei-list-item:last-child { margin-bottom: 0; }
+
+        .pei-list-item:hover {
+            background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+            color: var(--primary-dark);
+            border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+        }
+        [data-theme="dark"] .pei-list-item:hover {
+            background-color: color-mix(in srgb, var(--primary) 20%, transparent);
+            color: var(--dark-text);
+        }
+
+        .pei-list-item.selected {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+            border-color: var(--primary-dark);
+        }
+        .pei-list-item.selected:hover {
+            background-color: var(--primary-dark);
+            color: white;
+        }
+        .pei-list-item.selected .item-icon {
+            color: white; /* Ensure icon is visible on selected state */
+        }
+
+        .item-icon {
+            font-size: 0.8em;
+            color: var(--muted);
+        }
+
+        .pei-shuttle-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 3.5rem; /* Adjust to align with list content */
+        }
+
+        .pei-shuttle-controls .btn {
+            width: 45px; /* Fixed width for control buttons */
+            height: 45px; /* Fixed height for control buttons */
+            padding: 0; /* Remove padding */
+            font-size: 1.2rem; /* Larger icon */
+            border-radius: 50%; /* Make them round */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .pei-shuttle-controls .btn:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
+        }
+        .pei-shuttle-controls .btn i {
+            margin: 0; /* Remove margin for centered icon */
+        }
+
+        /* Responsive adjustments for shuttle */
+        @media (max-width: 768px) {
+            .pei-shuttle-container {
+                flex-direction: column; /* Stack vertically */
+                align-items: center; /* Center items when stacked */
+                gap: 1.5rem;
+            }
+            .pei-list-box {
+                width: 100%;
+                max-width: 400px; /* Limit width even when stacked */
+            }
+            .pei-shuttle-controls {
+                flex-direction: row; /* Buttons in a row */
+                width: 100%;
+                justify-content: center; /* Center buttons */
+                margin-top: 0;
+            }
+            .pei-shuttle-controls .btn {
+                width: 50px;
+                height: 50px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -359,18 +546,38 @@
                         
                         <h3 class="section-title">Planos Educacionais Individualizados (PEIs)</h3>
                         <div class="form-group">
-                            <label for="peis_associados">Atrelar PEIs (Ctrl+clique para múltiplos)</label>
-                            <select id="peis_associados" name="peis_associados" multiple size="5">
-                                <option value="">Nenhum PEI atrelado</option>
-                                {% for pei_item in peis_disponiveis %}
-                                    <option value="{{ pei_item.id }}" 
-                                            {% if paciente and pei_item.id in paciente.peis_associados_ids %}selected{% endif %}>
-                                        {{ pei_item.identificacao }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <small class="text-muted" style="color: var(--muted); font-size: 0.8em; display: block; margin-top: 0.5em;">Segure Ctrl/Cmd para selecionar múltiplos PEIs.</small>
+                            <div class="pei-shuttle-container">
+                                <div class="pei-list-box">
+                                    <h4>PEIs Disponíveis</h4>
+                                    <div class="pei-search-bar">
+                                        <input type="text" id="available-pei-search" placeholder="Buscar PEI disponível..." class="pei-search-input">
+                                        <i class="fas fa-search pei-search-icon"></i>
+                                    </div>
+                                    <ul id="available-peis-list" class="pei-list">
+                                        <!-- PEIs will be loaded here by JS -->
+                                    </ul>
+                                </div>
+                                <div class="pei-shuttle-controls">
+                                    <button type="button" id="add-selected-pei" class="btn btn-sm btn-primary" title="Adicionar Selecionados"><i class="fas fa-chevron-right"></i></button>
+                                    <button type="button" id="remove-selected-pei" class="btn btn-sm btn-secondary" title="Remover Selecionados"><i class="fas fa-chevron-left"></i></button>
+                                    <button type="button" id="add-all-peis" class="btn btn-sm btn-primary" title="Adicionar Todos"><i class="fas fa-angles-right"></i></button>
+                                    <button type="button" id="remove-all-peis" class="btn btn-sm btn-secondary" title="Remover Todos"><i class="fas fa-angles-left"></i></button>
+                                </div>
+                                <div class="pei-list-box">
+                                    <h4>PEIs Atribuídos</h4>
+                                    <div class="pei-search-bar">
+                                        <input type="text" id="selected-pei-search" placeholder="Buscar PEI atribuído..." class="pei-search-input">
+                                        <i class="fas fa-search pei-search-icon"></i>
+                                    </div>
+                                    <ul id="selected-peis-list" class="pei-list">
+                                        <!-- Selected PEIs will be loaded here by JS -->
+                                    </ul>
+                                </div>
+                            </div>
+                            <!-- Hidden inputs for selected PEI IDs will be generated here -->
+                            <div id="selected_peis_hidden_container"></div>
                         </div>
+
                         <h3 class="section-title">Outras Informações</h3>
                         <div class="form-group">
                             <label for="convenio_id">Convênio</label>
@@ -411,6 +618,8 @@
         let auth = getAuth(initializeApp(firebaseConfig));
 
         document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM totalmente carregado. Iniciando script de paciente_form.html");
+
             const htmlEl = document.documentElement;
             const sidebar = document.querySelector('.sidebar');
             const mainContent = document.querySelector('.main-content');
@@ -484,9 +693,17 @@
                 if (!logoutButton) return;
                 logoutButton.addEventListener('click', async (event) => {
                     event.preventDefault();
+                    console.log("Tentando fazer logout...");
                     fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
+                        .then(() => {
+                            console.log("Redirecionando para a página de login...");
+                            window.location.href = "{{ url_for('login_page') }}";
+                        })
+                        .catch((error) => {
+                            console.error("Erro ao fazer logout:", error);
+                            // Fallback para redirecionar mesmo com erro de fetch
+                            window.location.href = "{{ url_for('login_page') }}";
+                        });
                 });
             }
 
@@ -519,23 +736,19 @@
                                     // Focus on numero for user to complete
                                     document.getElementById('numero').focus();
                                 } else {
-                                    // Handle CEP not found
                                     console.log("CEP não encontrado.");
-                                    // Optional: Clear fields or show a message to the user
                                 }
                             } catch (error) {
                                 console.error("Erro ao buscar CEP:", error);
-                                // Optional: Show a user-friendly error message
                             }
                         }
                     });
                 }
 
                 // Add simple input masking for CPF, RG, and Telefone (client-side aesthetic)
-                // This is a basic example; for production, consider a more robust library
                 const applyMask = (inputElement, mask) => {
                     inputElement.addEventListener('input', (e) => {
-                        let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                        let value = e.target.value.replace(/\D/g, ''); 
                         let maskedValue = '';
                         let maskCharIndex = 0;
 
@@ -546,7 +759,7 @@
                             } else {
                                 maskedValue += mask[maskCharIndex];
                                 maskCharIndex++;
-                                i--; // Re-evaluate current value character against next mask character
+                                i--; 
                             }
                         }
                         e.target.value = maskedValue;
@@ -557,7 +770,7 @@
                 if (cpfInput) applyMask(cpfInput, 'XXX.XXX.XXX-XX');
 
                 const rgInput = document.getElementById('rg');
-                if (rgInput) applyMask(rgInput, 'XX.XXX.XXX-X'); // Simplified mask, adjust as needed
+                if (rgInput) applyMask(rgInput, 'XX.XXX.XXX-X'); 
 
                 const telefoneInput = document.getElementById('telefone');
                 if (telefoneInput) applyMask(telefoneInput, '(XX) XXXXX-XXXX');
@@ -566,6 +779,7 @@
                 const form = document.querySelector('form');
                 if (form) {
                     form.addEventListener('submit', () => {
+                        updateHiddenPeiInput();
                         const submitButton = form.querySelector('button[type="submit"]');
                         if (submitButton) {
                             submitButton.disabled = true;
@@ -575,11 +789,201 @@
                 }
             }
 
-            // --- Initialization ---
+            // --- PEI Shuttle Logic ---
+            const availablePeisList = document.getElementById('available-peis-list');
+            const selectedPeisList = document.getElementById('selected-peis-list');
+            const addSelectedBtn = document.getElementById('add-selected-pei');
+            const removeSelectedBtn = document.getElementById('remove-selected-pei');
+            const addAllBtn = document.getElementById('add-all-peis');
+            const removeAllBtn = document.getElementById('remove-all-peis');
+            const availableSearchInput = document.getElementById('available-pei-search');
+            const selectedSearchInput = document.getElementById('selected-pei-search');
+            const hiddenPeiInputContainer = document.getElementById('selected_peis_hidden_container'); // Reference to the new container
+
+            let allAvailablePeis = []; // Stores the full list of PEIs available for selection
+            let currentSelectedPeis = []; // Stores PEIs currently selected for the patient
+
+            try {
+                // Ensure default empty array if Jinja2 variables are not set or null
+                const initialPeisDataRaw = '{{ peis_disponiveis | tojson | default("[]") | safe }}';
+                const patientSelectedPeiIdsRaw = '{{ paciente.peis_associados_ids | tojson | default("[]") | safe }}';
+                
+                let initialPeisData = [];
+                try {
+                    initialPeisData = JSON.parse(initialPeisDataRaw);
+                } catch (e) {
+                    console.error("Erro ao parsear initialPeisDataRaw:", initialPeisDataRaw, e);
+                    initialPeisData = [];
+                }
+
+                let patientSelectedPeiIds = [];
+                try {
+                    patientSelectedPeiIds = JSON.parse(patientSelectedPeiIdsRaw);
+                } catch (e) {
+                    console.error("Erro ao parsear patientSelectedPeiIdsRaw:", patientSelectedPeiIdsRaw, e);
+                    patientSelectedPeiIds = [];
+                }
+                
+                console.log("Dados Iniciais de PEIs (parsed):", initialPeisData);
+                console.log("IDs de PEIs do Paciente (parsed):", patientSelectedPeiIds);
+
+                // Populate allAvailablePeis and currentSelectedPeis based on initial data
+                allAvailablePeis = []; // Clear previous data
+                currentSelectedPeis = []; // Clear previous data
+
+                initialPeisData.forEach(pei => {
+                    // Check if the PEI's ID is in the list of selected IDs for the patient
+                    const isSelected = patientSelectedPeiIds.includes(pei.id);
+                    if (isSelected) {
+                        currentSelectedPeis.push(pei);
+                    } else {
+                        allAvailablePeis.push(pei);
+                    }
+                });
+                console.log("PEIs Disponíveis (após distribuição):", allAvailablePeis);
+                console.log("PEIs Atribuídos (após distribuição):", currentSelectedPeis);
+
+            } catch (e) {
+                console.error("Erro geral na inicialização do shuttle de PEIs:", e);
+                // Fallback to empty arrays on any error during the setup of PEI data
+                allAvailablePeis = [];
+                currentSelectedPeis = [];
+            }
+
+            // Renders the PEI lists based on current data and search terms
+            function renderPeiLists() {
+                renderList(availablePeisList, allAvailablePeis, 'available');
+                renderList(selectedPeisList, currentSelectedPeis, 'selected');
+            }
+
+            // Helper function to render a single PEI list (available or selected)
+            function renderList(ulElement, peiArray, type) {
+                ulElement.innerHTML = '';
+                const searchTerm = (type === 'available' ? availableSearchInput.value : selectedSearchInput.value).toLowerCase();
+
+                const filteredPeis = peiArray.filter(pei => 
+                    pei.identificacao.toLowerCase().includes(searchTerm)
+                );
+
+                if (filteredPeis.length === 0) {
+                    const li = document.createElement('li');
+                    li.className = 'pei-list-item'; // Keep class for styling
+                    li.textContent = `Nenhum PEI encontrado.`;
+                    // Apply styles for empty state
+                    li.style.color = 'var(--muted)';
+                    li.style.textAlign = 'center';
+                    li.style.justifyContent = 'center';
+                    li.style.cursor = 'default';
+                    li.style.backgroundColor = 'transparent';
+                    li.style.borderColor = 'transparent';
+                    li.tabIndex = -1; // Make it not focusable
+                    ulElement.appendChild(li);
+                    return;
+                }
+
+                filteredPeis.forEach(pei => {
+                    const li = document.createElement('li');
+                    li.className = 'pei-list-item';
+                    li.dataset.peiId = pei.id; // Store PEI ID in data attribute
+                    li.textContent = pei.identificacao; // Display PEI identification
+                    li.tabIndex = 0; // Make list items focusable for keyboard navigation
+
+                    // Toggle 'selected' class on click
+                    li.addEventListener('click', () => {
+                        li.classList.toggle('selected');
+                    });
+                    
+                    // Handle keyboard navigation for accessibility (Enter or Space key)
+                    li.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault(); // Prevent default scroll behavior for space key
+                            li.classList.toggle('selected');
+                        }
+                    });
+
+                    ulElement.appendChild(li);
+                });
+            }
+
+            // Function to move PEIs between lists
+            function movePeis(sourceList, destinationList, allItems = false) {
+                let itemsToMove = [];
+                if (allItems) {
+                    // Filter out any "no PEI found" messages from the actual items
+                    itemsToMove = Array.from(sourceList.children).filter(item => item.dataset.peiId);
+                } else {
+                    itemsToMove = Array.from(sourceList.children).filter(item => item.classList.contains('selected') && item.dataset.peiId);
+                }
+
+                if (itemsToMove.length === 0) {
+                    console.warn("Nenhum item selecionado ou disponível para mover.");
+                    return; // Exit if no items to move
+                }
+
+                itemsToMove.forEach(item => {
+                    const peiId = item.dataset.peiId;
+                    // Remove 'selected' class before moving
+                    item.classList.remove('selected');
+
+                    if (sourceList === availablePeisList) {
+                        // Move from available to selected
+                        const peiIndex = allAvailablePeis.findIndex(p => p.id === peiId);
+                        if (peiIndex !== -1) {
+                            currentSelectedPeis.push(allAvailablePeis[peiIndex]);
+                            allAvailablePeis.splice(peiIndex, 1);
+                        }
+                    } else {
+                        // Move from selected to available
+                        const peiIndex = currentSelectedPeis.findIndex(p => p.id === peiId);
+                        if (peiIndex !== -1) {
+                            allAvailablePeis.push(currentSelectedPeis[peiIndex]);
+                            currentSelectedPeis.splice(peiIndex, 1);
+                        }
+                    }
+                });
+
+                // Sort lists alphabetically by identification after moving items
+                allAvailablePeis.sort((a, b) => a.identificacao.localeCompare(b.identificacao));
+                currentSelectedPeis.sort((a, b) => a.identificacao.localeCompare(b.identificacao));
+
+                renderPeiLists(); // Re-render both lists to reflect changes
+                updateHiddenPeiInput(); // Update the hidden input for form submission
+            }
+
+            // Updates the hidden input fields for form submission
+            function updateHiddenPeiInput() {
+                // Clear all existing hidden inputs in the container
+                hiddenPeiInputContainer.innerHTML = ''; 
+
+                // Create a new hidden input for each selected PEI
+                currentSelectedPeis.forEach(pei => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'peis_associados'; // Use the same name for all hidden inputs
+                    input.value = pei.id; // Set the value to the PEI's ID
+                    hiddenPeiInputContainer.appendChild(input);
+                });
+                console.log("Campos hidden 'peis_associados' atualizados no container.");
+                // You can inspect hiddenPeiInputContainer in browser console to verify
+            }
+
+            // Event Listeners for Shuttle Buttons
+            addSelectedBtn.addEventListener('click', () => movePeis(availablePeisList, selectedPeisList));
+            removeSelectedBtn.addEventListener('click', () => movePeis(selectedPeisList, availablePeisList));
+            addAllBtn.addEventListener('click', () => movePeis(availablePeisList, selectedPeisList, true));
+            removeAllBtn.addEventListener('click', () => movePeis(selectedPeisList, availablePeisList, true));
+
+            // Event Listeners for Search Inputs - trigger re-render on input
+            availableSearchInput.addEventListener('input', renderPeiLists);
+            selectedSearchInput.addEventListener('input', renderPeiLists);
+
+            // --- Initial Setup Calls ---
             setupSidebar();
             setupTheme();
             setupLogout();
             setupPatientForm(); // Call patient form specific logic
+            renderPeiLists(); // Initial render of PEI lists when the page loads
+            updateHiddenPeiInput(); // Set initial value of hidden input
         });
     </script>
 </body>
