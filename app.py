@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import re
 from functools import wraps
 from flask_cors import CORS
 import firebase_admin
@@ -92,6 +93,22 @@ def parse_date_input(date_string):
     
     return None
 
+# Função slugify para Jinja2
+def slugify_filter(s):
+    """
+    Converte uma string em um slug URL-friendly.
+    Remove caracteres não alfanuméricos, converte para minúsculas e substitui espaços por hífens.
+    """
+    s = s.lower().strip()
+    s = re.sub(r'[^\w\s-]', '', s) # Remove caracteres não alfanuméricos, exceto espaços e hífens
+    s = re.sub(r'[\s_-]+', '-', s)  # Substitui espaços e múltiplos hífens/underscores por um único hífen
+    s = re.sub(r'^-+|-+$', '', s)  # Remove hífens do início e do fim
+    return s
+
+# Registra o filtro slugify no ambiente Jinja2 do Flask
+app.jinja_env.filters['slugify'] = slugify_filter
+
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -143,13 +160,23 @@ def session_login():
             if not mapeamento_data or 'clinica_id' not in mapeamento_data or 'role' not in mapeamento_data:
                 return jsonify({"success": False, "message": "Configuração de usuário incompleta. Entre em contato com o administrador."}), 500
 
+            clinica_id = mapeamento_data['clinica_id']
+            clinica_doc_ref = db.collection('clinicas').document(clinica_id)
+            clinica_doc = clinica_doc_ref.get()
+            
+            clinica_logo_url = None
+            if clinica_doc.exists:
+                clinica_data = clinica_doc.to_dict()
+                clinica_logo_url = clinica_data.get('url_logo') # Obtém a URL da logo do Firestore
+
             session['logged_in'] = True
             session['user_uid'] = uid_from_token
             session['user_email'] = email
-            session['clinica_id'] = mapeamento_data['clinica_id']
+            session['clinica_id'] = clinica_id
             session['clinica_nome_display'] = mapeamento_data.get('nome_clinica_display', 'Clínica On')
             session['user_role'] = mapeamento_data['role']
-            session['user_name'] = mapeamento_data.get('nome_completo', email) 
+            session['user_name'] = mapeamento_data.get('nome_completo', email)
+            session['clinica_logo_url'] = clinica_logo_url # Salva a URL da logo na sessão
 
             print(f"Usuário {email} logado com sucesso. Função: {session['user_role']}")
             return jsonify({"success": True, "message": "Login bem-sucedido!"})
@@ -652,11 +679,11 @@ def editar_usuario(user_uid):
             
     user_data_original['uid'] = user_uid
     return render_template(
-        'usuario_form.html',    
-        user=user_data_original,    
-        page_title="Editar Utilizador",    
-        action_url=url_for('editar_usuario', user_uid=user_uid),    
-        roles=['admin', 'medico'],    
+        'usuario_form.html',   
+        user=user_data_original,   
+        page_title="Editar Utilizador",   
+        action_url=url_for('editar_usuario', user_uid=user_uid),   
+        roles=['admin', 'medico'],   
         profissionais=profissionais_disponiveis
     )
 
@@ -797,7 +824,7 @@ def ativar_desativar_profissional(profissional_doc_id):
         if profissional_doc.exists:
             data = profissional_doc.to_dict()
             if data:
-                current_status = data.get('ativo', False)   
+                current_status = data.get('ativo', False)  
                 new_status = not current_status
                 profissional_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
                 flash(f'Profissional {"ativado" if new_status else "desativado"} com sucesso!', 'success')
@@ -857,88 +884,11 @@ def listar_pacientes():
 @app.route('/pacientes/novo', methods=['GET', 'POST'])
 @login_required
 def adicionar_paciente():
+    if not db:
+        flash('Erro crítico: A conexão com o banco de dados não está disponível.', 'danger')
+        return redirect(url_for('index'))
+
     clinica_id = session['clinica_id']
-    
-    convenios_lista = []
-    try:
-        convenios_docs = db.collection('clinicas').document(clinica_id).collection('convenios').order_by('nome').stream()
-        for doc in convenios_docs:
-            conv_data = doc.to_dict()
-            if conv_data:
-                convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome', doc.id)})
-    except Exception as e:
-        flash('Erro ao carregar convênios.', 'danger')
-        print(f"Erro ao carregar convênios (add_patient GET): {e}")
-
-    if request.method == 'POST':
-        nome = request.form['nome'].strip()
-        data_nascimento = request.form.get('data_nascimento', '').strip()
-        cpf = request.form.get('cpf', '').strip()
-        rg = request.form.get('rg', '').strip()
-        genero = request.form.get('genero', '').strip()
-        estado_civil = request.form.get('estado_civil', '').strip()
-        telefone = request.form.get('telefone', '').strip()
-        email = request.form.get('email', '').strip()
-        indicacao = request.form.get('indicacao', '').strip()
-        convenio_id = request.form.get('convenio_id', '').strip()
-        observacoes = request.form.get('observacoes', '').strip()
-        cep = request.form.get('cep', '').strip()
-        logradouro = request.form.get('logradouro', '').strip()
-        numero = request.form.get('numero', '').strip()
-        complemento = request.form.get('complemento', '').strip()
-        bairro = request.form.get('bairro', '').strip()
-        cidade = request.form.get('cidade', '').strip()
-        estado = request.form.get('estado', '').strip()
-
-        if not nome:
-            flash('O nome do paciente é obrigatório.', 'danger')
-            return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
-
-        try:
-            data_nascimento_dt = parse_date_input(data_nascimento)
-            
-            if data_nascimento and data_nascimento_dt is None:
-                flash('Formato de data de nascimento inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
-                return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
-
-            paciente_data = {
-                'nome': nome,
-                'data_nascimento': data_nascimento_dt,
-                'cpf': cpf if cpf else None,
-                'rg': rg if rg else None,
-                'genero': genero if genero else None,
-                'estado_civil': estado_civil if estado_civil else None,
-                'contato_telefone': telefone if telefone else None,
-                'contato_email': email if email else None,
-                'indicacao': indicacao if indicacao else None,
-                'convenio_id': convenio_id if convenio_id else None,
-                'observacoes': observacoes if observacoes else None,
-                'endereco': {
-                    'cep': cep if cep else None,
-                    'logradouro': logradouro if logradouro else None,
-                    'numero': numero if numero else None,
-                    'complemento': complemento if complemento else None,
-                    'bairro': bairro if bairro else None,
-                    'cidade': cidade if cidade else None,
-                    'estado': estado if estado else None,
-                },
-                'data_cadastro': firestore.SERVER_TIMESTAMP
-            }
-            
-            db.collection('clinicas').document(clinica_id).collection('pacientes').add(paciente_data)
-            flash('Paciente adicionado com sucesso!', 'success')
-            return redirect(url_for('listar_pacientes'))
-        except Exception as e:
-            flash(f'Erro ao adicionar paciente: {e}', 'danger')
-            print(f"Erro add_patient: {e}")
-    
-    return render_template('paciente_form.html', paciente=None, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
-
-@app.route('/pacientes/editar/<string:paciente_doc_id>', methods=['GET', 'POST'])
-@login_required
-def editar_paciente(paciente_doc_id):
-    clinica_id = session['clinica_id']
-    paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
     
     convenios_lista = []
     peis_disponiveis = []
@@ -951,9 +901,142 @@ def editar_paciente(paciente_doc_id):
 
         peis_docs = db.collection('clinicas').document(clinica_id).collection('peis').order_by('identificacao_pei').stream()
         for doc in peis_docs:
+            pei_data_template = doc.to_dict()
+            if pei_data_template:
+                peis_disponiveis.append({'id': doc.id, 'identificacao': pei_data_template.get('identificacao_pei', doc.id)})
+
+    except Exception as e:
+        flash('Erro ao carregar convênios ou PEIs.', 'danger')
+        print(f"Erro ao carregar convênios/PEIs (add_patient GET): {e}")
+
+    if request.method == 'POST':
+        nome = request.form['nome'].strip()
+        data_nascimento = request.form.get('data_nascimento', '').strip()
+        cpf = request.form.get('cpf', '').strip()
+        rg = request.form.get('rg', '').strip()
+        genero = request.form.get('genero', '').strip()
+        # Removido: estado_civil = request.form.get('estado_civil', '').strip() # Não existe no formulário
+        telefone = request.form.get('telefone', '').strip()
+        email = request.form.get('email', '').strip()
+        # Removido: indicacao = request.form.get('indicacao', '').strip() # Não existe no formulário
+        convenio_id = request.form.get('convenio_id', '').strip()
+        observacoes = request.form.get('observacoes', '').strip()
+        cep = request.form.get('cep', '').strip()
+        logradouro = request.form.get('logradouro', '').strip()
+        numero = request.form.get('numero', '').strip()
+        complemento = request.form.get('complemento', '').strip()
+        bairro = request.form.get('bairro', '').strip()
+        cidade = request.form.get('cidade', '').strip()
+        estado = request.form.get('estado', '').strip()
+        peis_associados_ids = request.form.getlist('peis_associados')
+
+        if not nome:
+            flash('O nome do paciente é obrigatório.', 'danger')
+            return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista, peis_disponiveis=peis_disponiveis)
+
+        try:
+            data_nascimento_dt = parse_date_input(data_nascimento)
+            
+            if data_nascimento and data_nascimento_dt is None:
+                flash('Formato de data de nascimento inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
+                return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista, peis_disponiveis=peis_disponiveis)
+
+            paciente_data = {
+                'nome': nome,
+                'data_nascimento': data_nascimento_dt,
+                'cpf': cpf if cpf else None,
+                'rg': rg if rg else None,
+                'genero': genero if genero else None,
+                'contato_telefone': telefone if telefone else None,
+                'contato_email': email if email else None,
+                'convenio_id': convenio_id if convenio_id else None,
+                'observacoes': observacoes if observacoes else None,
+                'endereco': {
+                    'cep': cep if cep else None,
+                    'logradouro': logradouro if logradouro else None,
+                    'numero': numero if numero else None,
+                    'complemento': complemento if complemento else None,
+                    'bairro': bairro if bairro else None,
+                    'cidade': cidade if cidade else None,
+                    'estado': estado if estado else None,
+                },
+                'peis_associados': peis_associados_ids,
+                'data_cadastro': firestore.SERVER_TIMESTAMP
+            }
+            
+            batch = db.batch()
+            pacientes_col_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
+            new_paciente_ref = pacientes_col_ref.document()
+            batch.set(new_paciente_ref, paciente_data)
+
+            for pei_template_id in peis_associados_ids:
+                pei_template_doc = db.collection('clinicas').document(clinica_id).collection('peis').document(pei_template_id).get()
+                if pei_template_doc.exists:
+                    pei_data = pei_template_doc.to_dict()
+                    if pei_data is None:
+                        print(f"Aviso: pei_template_doc.to_dict() retornou None para ID {pei_template_id}")
+                        continue
+                    
+                    pei_data['pei_template_id'] = pei_template_id
+                    
+                    # Certifica-se de que 'metas' é uma lista antes de iterar
+                    metas_list = pei_data.get('metas')
+                    if not isinstance(metas_list, list):
+                        print(f"Aviso: 'metas' para PEI {pei_template_id} não é uma lista. Forçando para lista vazia.")
+                        metas_list = []
+                    
+                    for meta in metas_list:
+                        if 'status' not in meta:
+                            meta['status'] = 'Não Iniciada'
+                        if 'tempo_total_gasto' not in meta:
+                            meta['tempo_total_gasto'] = 0
+                        if 'cronometro_inicio' not in meta:
+                            meta['cronometro_inicio'] = None
+                    pei_data['metas'] = metas_list # Atribui a lista tratada de volta
+
+                    individual_pei_ref = new_paciente_ref.collection('peis_individuais').document(pei_template_id)
+                    batch.set(individual_pei_ref, pei_data)
+
+            batch.commit()
+
+            flash('Paciente adicionado com sucesso!', 'success')
+            return redirect(url_for('listar_pacientes'))
+        except Exception as e:
+            flash(f'Erro ao adicionar paciente: {e}', 'danger')
+            print(f"Erro add_patient: {e}")
+    
+    return render_template('paciente_form.html', paciente=None, action_url=url_for('adicionar_paciente'), convenios=convenios_lista, peis_disponiveis=peis_disponiveis)
+
+@app.route('/pacientes/editar/<string:paciente_doc_id>', methods=['GET', 'POST'])
+@login_required
+def editar_paciente(paciente_doc_id):
+    clinica_id = session['clinica_id']
+    paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+    
+    convenios_lista = []
+    peis_disponiveis = []
+    
+    # Existing associated PEIs (template IDs) from the patient document
+    current_associated_peis = [] 
+
+    try:
+        convenios_docs = db.collection('clinicas').document(clinica_id).collection('convenios').order_by('nome').stream()
+        for doc in convenios_docs:
+            conv_data = doc.to_dict()
+            if conv_data:
+                convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome', doc.id)})
+
+        # Fetch all available PEI templates
+        peis_docs = db.collection('clinicas').document(clinica_id).collection('peis').order_by('identificacao_pei').stream()
+        for doc in peis_docs:
             pei_data = doc.to_dict()
             if pei_data:
                 peis_disponiveis.append({'id': doc.id, 'identificacao': pei_data.get('identificacao_pei', doc.id)})
+
+        # Get the patient's current data to retrieve existing associated PEIs
+        paciente_doc_current = paciente_ref.get()
+        if paciente_doc_current.exists:
+            current_associated_peis = paciente_doc_current.to_dict().get('peis_associados', [])
 
     except Exception as e:
         flash('Erro ao carregar convênios ou PEIs.', 'danger')
@@ -965,14 +1048,15 @@ def editar_paciente(paciente_doc_id):
         cpf = request.form.get('cpf', '').strip()
         rg = request.form.get('rg', '').strip()
         genero = request.form.get('genero', '').strip()
-        estado_civil = request.form.get('estado_civil', '').strip()
+        # Removido: estado_civil = request.form.get('estado_civil', '').strip()
         telefone = request.form.get('telefone', '').strip()
-        email = request.form.get('email', '').strip()
-        indicacao = request.form.get('indicacao', '').strip()
+        email = request.form.get('email', '').strip()  
+        # Removido: indicacao = request.form.get('indicacao', '').strip()
         convenio_id = request.form.get('convenio_id', '').strip()
         observacoes = request.form.get('observacoes', '').strip()
         
-        peis_associados_ids = request.form.getlist('peis_associados')
+        # Get the new list of associated PEI template IDs from the form
+        new_peis_associados_ids = request.form.getlist('peis_associados')
 
         cep = request.form.get('cep', '').strip()
         logradouro = request.form.get('logradouro', '').strip()
@@ -999,10 +1083,8 @@ def editar_paciente(paciente_doc_id):
                 'cpf': cpf if cpf else None,
                 'rg': rg if rg else None,
                 'genero': genero if genero else None,
-                'estado_civil': estado_civil if estado_civil else None,
-                'contato_telefone': telefone if telefone else None,
-                'contato_email': email if email else None,
-                'indicacao': indicacao if indicacao else None,
+                'contato_telefone': telefone if telefone else None, 
+                'contato_email': email if email else None,  
                 'convenio_id': convenio_id if convenio_id else None,
                 'observacoes': observacoes if observacoes else None,
                 'endereco': {
@@ -1014,37 +1096,99 @@ def editar_paciente(paciente_doc_id):
                     'cidade': cidade if cidade else None,
                     'estado': estado if estado else None,
                 },
-                'peis_associados': peis_associados_ids if peis_associados_ids else [],
+                'peis_associados': new_peis_associados_ids,
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             }
             
-            paciente_ref.update(paciente_data_update)
+            batch = db.batch()
+            batch.update(paciente_ref, paciente_data_update)
+
+            # Synchronize the 'peis_individuais' subcollection
+            existing_individual_peis_docs = paciente_ref.collection('peis_individuais').stream()
+            existing_individual_pei_ids = {doc.id for doc in existing_individual_peis_docs}
+
+            # Add new PEIs to subcollection if they don't exist
+            for pei_template_id in new_peis_associados_ids:
+                if pei_template_id not in existing_individual_pei_ids:
+                    pei_template_doc = db.collection('clinicas').document(clinica_id).collection('peis').document(pei_template_id).get()
+                    if pei_template_doc.exists:
+                        pei_data = pei_template_doc.to_dict()
+                        if pei_data is None:
+                            print(f"Aviso: pei_template_doc.to_dict() retornou None para ID {pei_template_id}")
+                            continue
+                            
+                        pei_data['pei_template_id'] = pei_template_id
+                        
+                        metas_list = pei_data.get('metas')
+                        if not isinstance(metas_list, list):
+                            print(f"Aviso: 'metas' para PEI {pei_template_id} não é uma lista. Forçando para lista vazia.")
+                            metas_list = []
+
+                        for meta in metas_list:
+                            if 'status' not in meta:
+                                meta['status'] = 'Não Iniciada'
+                            if 'tempo_total_gasto' not in meta:
+                                meta['tempo_total_gasto'] = 0
+                            if 'cronometro_inicio' not in meta:
+                                meta['cronometro_inicio'] = None
+                        pei_data['metas'] = metas_list
+
+                        individual_pei_ref = paciente_ref.collection('peis_individuais').document(pei_template_id)
+                        batch.set(individual_pei_ref, pei_data)
+
+            # Remove PEIs from subcollection if they are no longer associated
+            for existing_pei_id in existing_individual_pei_ids:
+                if existing_pei_id not in new_peis_associados_ids:
+                    batch.delete(paciente_ref.collection('peis_individuais').document(existing_pei_id))
+
+            batch.commit()
+            
             flash('Paciente atualizado com sucesso!', 'success')
             return redirect(url_for('listar_pacientes'))
         except Exception as e:
             flash(f'Erro ao atualizar paciente: {e}', 'danger')
-            print(f"Erro edit_patient (POST): {e}")
+            print(f"Erro edit_patient (POST): {e}")  
 
+   
     try:
         paciente_doc = paciente_ref.get()
         if paciente_doc.exists:
             paciente = paciente_doc.to_dict()
             if paciente:
                 paciente['id'] = paciente_doc.id
+                
                 if paciente.get('data_nascimento') and isinstance(paciente.get('data_nascimento'), datetime.datetime):
                     paciente['data_nascimento'] = paciente['data_nascimento'].strftime('%Y-%m-%d')
                 else:
                     paciente['data_nascimento'] = ''
+ 
+                paciente['genero'] = paciente.get('genero', '')
+                paciente['cpf'] = paciente.get('cpf', '')
+                paciente['rg'] = paciente.get('rg', '')
+                paciente['contato_telefone'] = paciente.get('contato_telefone', '')  
+                paciente['contato_email'] = paciente.get('contato_email', '') 
 
-                paciente['peis_associados_ids'] = paciente.get('peis_associados', [])
+                if 'endereco' not in paciente or not isinstance(paciente['endereco'], dict):
+                    paciente['endereco'] = {}
+                paciente['endereco']['cep'] = paciente['endereco'].get('cep', '')
+                paciente['endereco']['logradouro'] = paciente['endereco'].get('logradouro', '')
+                paciente['endereco']['numero'] = paciente['endereco'].get('numero', '')
+                paciente['endereco']['complemento'] = paciente['endereco'].get('complemento', '')
+                paciente['endereco']['bairro'] = paciente['endereco'].get('bairro', '')
+                paciente['endereco']['cidade'] = paciente['endereco'].get('cidade', '')
+                paciente['endereco']['estado'] = paciente['endereco'].get('estado', '')
 
+                paciente['peis_associados_ids'] = paciente.get('peis_associados', [])  
+
+                print("Dados do paciente carregados para edição:", paciente)
+           
                 return render_template('paciente_form.html', paciente=paciente, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista, peis_disponiveis=peis_disponiveis)
         else:
             flash('Paciente não encontrado.', 'danger')
             return redirect(url_for('listar_pacientes'))
     except Exception as e:
         flash(f'Erro ao carregar paciente para edição: {e}', 'danger')
-        print(f"Erro edit_patient (GET): {e}")
+        print(f"Erro edit_patient (GET): {e}")  
         return redirect(url_for('listar_pacientes'))
     
 @app.route('/servicos_procedimentos')
@@ -1320,7 +1464,7 @@ def adicionar_horario():
             hora_fim = request.form['hora_fim']
             intervalo_minutos_str = request.form.get('intervalo_minutos')
             intervalo_minutos = int(intervalo_minutos_str) if intervalo_minutos_str and intervalo_minutos_str.isdigit() else None
-            ativo = 'ativo' in request.form    
+            ativo = 'ativo' in request.form   
 
             if not profissional_id_selecionado:
                 flash('Por favor, selecione um profissional.', 'warning')
@@ -1331,7 +1475,7 @@ def adicionar_horario():
                     'dia_semana': dia_semana,
                     'hora_inicio': hora_inicio,
                     'hora_fim': hora_fim,
-                    'ativo': ativo,    
+                    'ativo': ativo,   
                     'criado_em': firestore.SERVER_TIMESTAMP
                 }
                 if intervalo_minutos is not None:
@@ -1346,13 +1490,13 @@ def adicionar_horario():
             flash(f'Erro ao adicionar horário: {e}', 'danger')
             print(f"Erro add_schedule (POST): {e}")
             
-    return render_template('horario_form.html',    
-                           profissionais=profissionais_ativos_lista,
-                           dias_semana=dias_semana_map,    
-                           horario=None,    
-                           action_url=url_for('adicionar_horario'),
-                           page_title='Adicionar Novo Horário',
-                           current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
+    return render_template('horario_form.html',   
+                            profissionais=profissionais_ativos_lista,
+                            dias_semana=dias_semana_map,   
+                            horario=None,   
+                            action_url=url_for('adicionar_horario'),
+                            page_title='Adicionar Novo Horário',
+                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 
 @app.route('/profissionais/<string:profissional_doc_id>/horarios/editar/<string:horario_doc_id>', methods=['GET', 'POST'])
@@ -1380,7 +1524,7 @@ def editar_horario(profissional_doc_id, horario_doc_id):
             hora_fim = request.form['hora_fim']
             intervalo_minutos_str = request.form.get('intervalo_minutos')
             intervalo_minutos = int(intervalo_minutos_str) if intervalo_minutos_str and intervalo_minutos_str.isdigit() else None
-            ativo = 'ativo' in request.form
+            ativo = 'ativo' in request.form   
 
             if hora_inicio >= hora_fim:
                 flash('A hora de início deve ser anterior à hora de término.', 'warning')
@@ -1389,12 +1533,12 @@ def editar_horario(profissional_doc_id, horario_doc_id):
                     'dia_semana': dia_semana,
                     'hora_inicio': hora_inicio,
                     'hora_fim': hora_fim,
-                    'ativo': ativo,    
+                    'ativo': ativo,   
                     'atualizado_em': firestore.SERVER_TIMESTAMP
                 }
                 if intervalo_minutos is not None:
                     horario_data_update['intervalo_minutos'] = intervalo_minutos
-                else:    
+                else:   
                     horario_data_update['intervalo_minutos'] = firestore.DELETE_FIELD
 
                 horario_ref.update(horario_data_update)
@@ -1411,19 +1555,19 @@ def editar_horario(profissional_doc_id, horario_doc_id):
         if horario_doc_snapshot.exists:
             horario_data_db = horario_doc_snapshot.to_dict()
             if horario_data_db:
-                horario_data_db['id'] = horario_doc_snapshot.id    
+                horario_data_db['id'] = horario_doc_snapshot.id   
                 horario_data_db['profissional_id_fk'] = profissional_doc_id
                 
                 profissional_pai_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
                 if profissional_pai_doc.exists:
                     profissional_pai_data = profissional_pai_doc.to_dict()
                     if profissional_pai_data:
-                        horario_data_db['profissional_nome_atual'] = profissional_pai_data.get('nome', profissional_doc_id)
+                        horario_data_db['profissional_nome_atual'] = professional_pai_data.get('nome', profissional_doc_id)
                 
-                return render_template('horario_form.html',    
+                return render_template('horario_form.html',   
                                        profissionais=profissionais_ativos_lista,
-                                       dias_semana=dias_semana_map,    
-                                       horario=horario_data_db,    
+                                       dias_semana=dias_semana_map,   
+                                       horario=horario_data_db,   
                                        action_url=url_for('editar_horario', profissional_doc_id=profissional_doc_id, horario_doc_id=horario_doc_id),
                                        page_title=f"Editar Horário para {horario_data_db.get('profissional_nome_atual', 'Profissional')}",
                                        current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
@@ -1460,7 +1604,7 @@ def ativar_desativar_horario(profissional_doc_id, horario_doc_id):
         if horario_doc.exists:
             data = horario_doc.to_dict()
             if data:
-                current_status = data.get('ativo', False)    
+                current_status = data.get('ativo', False)   
                 new_status = not current_status
                 horario_ref.update({'ativo': new_status, 'atualizado_em': firestore.SERVER_TIMESTAMP})
                 flash(f'Horário {"ativado" if new_status else "desativado"} com sucesso!', 'success')
@@ -1582,14 +1726,14 @@ def listar_agendamentos():
             stats_cards[status]['count'] += 1
             stats_cards[status]['total_valor'] += preco
 
-    return render_template('agendamentos.html',    
-                           agendamentos=agendamentos_lista,
-                           stats_cards=stats_cards,
-                           profissionais_para_filtro=profissionais_para_filtro,
-                           servicos_ativos=servicos_procedimentos_ativos,
-                           pacientes_para_filtro=pacientes_para_filtro,
-                           filtros_atuais=filtros_atuais,
-                           current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
+    return render_template('agendamentos.html',   
+                            agendamentos=agendamentos_lista,
+                            stats_cards=stats_cards,
+                            profissionais_para_filtro=profissionais_para_filtro,
+                            servicos_ativos=servicos_procedimentos_ativos,
+                            pacientes_para_filtro=pacientes_para_filtro,
+                            filtros_atuais=filtros_atuais,
+                            current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 @app.route('/agendamentos/registrar_manual', methods=['POST'])
 @login_required
@@ -1711,7 +1855,7 @@ def editar_agendamento():
         profissional_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get()
         servico_procedimento_doc = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get()
 
-        profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
+        profissional_nome = professional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
         servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A'
         
         dt_agendamento_naive = datetime.datetime.strptime(f"{data_agendamento_str} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
@@ -1753,9 +1897,10 @@ def apagar_agendamento():
     try:
         db.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_id).delete()
         flash('Agendamento apagado com sucesso!', 'success')
+        
     except Exception as e:
         flash(f'Erro ao apagar agendamento: {e}', 'danger')
-        print(f"Erro delete_appointment: {e}")
+        print(f"Erro apagar_agendamento: {e}")
     return redirect(url_for('listar_agendamentos'))
 
 @app.route('/prontuarios')
@@ -1783,16 +1928,17 @@ def buscar_prontuario():
 
     return render_template('prontuario_busca.html', pacientes_para_busca=pacientes_para_busca, search_query=search_query)
 
+# Em app.py
+
 @app.route('/prontuarios/<string:paciente_doc_id>')
 @login_required
 def ver_prontuario(paciente_doc_id):
     clinica_id = session['clinica_id']
     paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
-    peis_ref = db.collection('clinicas').document(clinica_id).collection('peis')
 
     paciente_data = None
     registros_prontuario = []
-    peis_do_paciente = []
+    peis_individuais_paciente = [] 
 
     try:
         paciente_doc = paciente_ref.get()
@@ -1802,34 +1948,22 @@ def ver_prontuario(paciente_doc_id):
 
         paciente_data = convert_doc_to_dict(paciente_doc)
 
-        if paciente_data and paciente_data.get('convenio_id'):
-            convenio_doc = db.collection('clinicas').document(clinica_id).collection('convenios').document(paciente_data['convenio_id']).get()
-            if convenio_doc.exists:
-                paciente_data['convenio_nome'] = convenio_doc.to_dict().get('nome', 'N/A')
+        peis_individuais_docs = paciente_ref.collection('peis_individuais').order_by('identificacao_pei').stream()
+        for doc in peis_individuais_docs:
+            pei_data = convert_doc_to_dict(doc)
+            if 'metas' in pei_data and isinstance(pei_data['metas'], list):
+                for meta in pei_data['metas']:
+                    if 'status' not in meta:
+                        meta['status'] = 'Não Iniciada'
+                    if 'tempo_total_gasto' not in meta:
+                        meta['tempo_total_gasto'] = 0
+                    if 'cronometro_inicio' not in meta:
+                        meta['cronometro_inicio'] = None
+            peis_individuais_paciente.append(pei_data)
 
-        raw_pei_ids = paciente_doc.to_dict().get('peis_associados', [])
-        
-        pei_ids_associados_limpos = [pid for pid in raw_pei_ids if pid and isinstance(pid, str)]
-        
-        if pei_ids_associados_limpos:
-            print(f"Buscando {len(pei_ids_associados_limpos)} PEIs individualmente...")
-            for pei_id in pei_ids_associados_limpos:
-                try:
-                    pei_doc = peis_ref.document(pei_id).get()
-                    if pei_doc.exists:
-                        peis_do_paciente.append(convert_doc_to_dict(pei_doc))
-                    else:
-                        print(f"Aviso: PEI com ID '{pei_id}' não foi encontrado na coleção 'peis'.")
-                except Exception as pei_e:
-                    print(f"!!! ERRO ao buscar PEI individual com ID '{pei_id}': {pei_e}")
-                    flash(f"Não foi possível carregar o PEI com ID: {pei_id}. Causa: {pei_e}", 'warning')
-
-        try:
-            prontuarios_docs = paciente_ref.collection('prontuarios').order_by('data_registro', direction=firestore.Query.DESCENDING).stream()
-            for doc in prontuarios_docs:
-                registros_prontuario.append(convert_doc_to_dict(doc))
-        except Exception as records_e:
-            flash(f"Erro ao carregar o histórico do prontuário: {records_e}.", 'danger')
+        prontuarios_docs = paciente_ref.collection('prontuarios').order_by('data_registro', direction=firestore.Query.DESCENDING).stream()
+        for doc in prontuarios_docs:
+            registros_prontuario.append(convert_doc_to_dict(doc))
 
     except Exception as e:
         flash(f'Erro fatal ao carregar prontuário: {e}.', 'danger')
@@ -1837,18 +1971,18 @@ def ver_prontuario(paciente_doc_id):
         return redirect(url_for('buscar_prontuario'))
 
     return render_template('prontuario.html',
-                           paciente=paciente_data,
-                           registros=registros_prontuario,
-                           peis_do_paciente=peis_do_paciente)
+                            paciente=paciente_data,
+                            registros=registros_prontuario,
+                            peis_do_paciente=peis_individuais_paciente)
 
-@app.route('/api/pacientes/<string:paciente_doc_id>/agendamentos-concluidos', methods=['GET'])
+@app.route('/api/pacientes/<string:paciente_doc_id>/agendamentos', methods=['GET'])
 @login_required
-def api_agendamentos_concluidos(paciente_doc_id):
+def api_paciente_agendamentos(paciente_doc_id):
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
     
-    agendamentos_concluidos = []
+    agendamentos_paciente = []
     
     try:
         profissional_id_logado = None
@@ -1860,24 +1994,31 @@ def api_agendamentos_concluidos(paciente_doc_id):
 
         query = db.collection('clinicas').document(clinica_id).collection('agendamentos') \
             .where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)) \
-            .where(filter=FieldFilter('status', '==', 'concluido')) \
             .order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING) \
-            .limit(10)
+            .limit(20)
 
         if user_role != 'admin':
             query = query.where(filter=FieldFilter('profissional_id', '==', profissional_id_logado))
 
         docs = query.stream()
         for doc in docs:
-            ag = convert_doc_to_dict(doc)
+            ag = doc.to_dict()
             if ag:
-                agendamentos_concluidos.append(ag)
+                ag['id'] = doc.id
+                if ag.get('data_agendamento_ts'):
+                    ag['data_agendamento_fmt'] = ag['data_agendamento_ts'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y')
+                else:
+                    ag['data_agendamento_fmt'] = 'N/A'
+                
+                ag['status'] = ag.get('status', 'pendente').lower() 
+                agendamentos_paciente.append(ag)
         
-        return jsonify({'success': True, 'agendamentos': agendamentos_concluidos})
+        return jsonify({'success': True, 'agendamentos': agendamentos_paciente})
 
     except Exception as e:
-        print(f"Erro API ao carregar agendamentos concluídos para paciente {paciente_doc_id}: {e}")
+        print(f"Erro API ao carregar agendamentos para paciente {paciente_doc_id}: {e}")
         return jsonify({'success': False, 'message': f'Erro interno do servidor: {e}'}), 500
+
 
 @app.route('/agendamentos/<string:agendamento_id>/evolucao', methods=['GET'])
 @login_required
@@ -1908,7 +2049,7 @@ def ver_evolucao_agendamento(agendamento_id):
         evolucao_docs = evolucao_ref.order_by('data_registro').stream()
         
         for doc in evolucao_docs:
-            msg = convert_doc_to_dict(doc)
+            msg = convert_doc_to_dict(msg)
             if msg:
                 mensagens_evolucao.append(msg)
 
@@ -1940,7 +2081,8 @@ def adicionar_evolucao_agendamento(agendamento_id):
     try:
         user_doc = db.collection('User').document(profissional_logado_uid).get()
         if user_doc.exists:
-            profissional_id = user_doc.to_dict().get('profissional_id')
+            user_data = user_doc.to_dict()
+            profissional_id = user_data.get('profissional_id')
         
         if not profissional_id:
             profissional_id = profissional_logado_uid
@@ -1966,7 +2108,6 @@ def adicionar_evolucao_agendamento(agendamento_id):
         
         update_time, new_doc_ref = evolucao_ref.add(nova_mensagem)
         
-        # We need to fetch the newly created doc to get the server-generated timestamp
         new_doc = new_doc_ref.get()
         final_message = convert_doc_to_dict(new_doc)
 
@@ -2030,12 +2171,12 @@ def adicionar_anamnese(paciente_doc_id):
             flash(f'Erro ao adicionar anamnese: {e}', 'danger')
             print(f"Erro add_anamnesis (POST): {e}")
     
-    return render_template('anamnese_form.html',    
-                           paciente_id=paciente_doc_id,    
-                           paciente_nome=paciente_nome,    
-                           modelos_anamnese=modelos_anamnese,    
-                           action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id),
-                           page_title=f"Registrar Anamnese para {paciente_nome}")
+    return render_template('anamnese_form.html',   
+                            paciente_id=paciente_doc_id,   
+                            paciente_nome=paciente_nome,   
+                            modelos_anamnese=modelos_anamnese,   
+                            action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id),
+                            page_title=f"Registrar Anamnese para {paciente_nome}")
 
 @app.route('/prontuarios/<string:paciente_doc_id>/anamnese/editar/<string:anamnese_doc_id>', methods=['GET', 'POST'])
 @login_required
@@ -2062,7 +2203,7 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         print(f"Erro ao carregar modelos de anamnese (edit): {e}")
 
     if request.method == 'POST':
-        conteudo = request.form.get('conteudo', '').strip()
+        conteudo = request.form.get('conteudo', '').strip()   
         modelo_base_id = request.form.get('modelo_base_id')
         
         try:
@@ -2082,10 +2223,10 @@ def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         if anamnese_doc.exists and anamnese_doc.to_dict().get('tipo_registro') == 'anamnese':
             anamnese_data = convert_doc_to_dict(anamnese_doc)
             
-            return render_template('anamnese_form.html',    
-                                   paciente_id=paciente_doc_id,    
-                                   paciente_nome=paciente_nome,    
-                                   anamnese=anamnese_data,    
+            return render_template('anamnese_form.html',   
+                                   paciente_id=paciente_doc_id,   
+                                   paciente_nome=paciente_nome,   
+                                   anamnese=anamnese_data,   
                                    modelos_anamnese=modelos_anamnese,
                                    action_url=url_for('editar_anamnese', paciente_doc_id=paciente_doc_id, anamnese_doc_id=anamnese_doc_id),
                                    page_title=f"Editar Anamnese para {paciente_nome}")
@@ -2108,8 +2249,9 @@ def registrar_registro_generico(paciente_doc_id):
     try:
         user_doc = db.collection('User').document(profissional_logado_uid).get()
         if user_doc.exists:
-            profissional_doc_id = user_doc.to_dict().get('profissional_id')
-            profissional_nome = user_doc.to_dict().get('nome_completo', profissional_nome)
+            user_data = user_doc.to_dict()
+            profissional_doc_id = user_data.get('profissional_id')
+            profissional_nome = user_data.get('nome_completo', profissional_nome)
 
         if not profissional_doc_id:
             flash('Seu usuário não está associado a um profissional. Não foi possível registrar.', 'danger')
@@ -2119,30 +2261,50 @@ def registrar_registro_generico(paciente_doc_id):
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     try:
-        tipo_registro = request.form.get('tipo_registro')
-        titulo = request.form.get('titulo', '').strip()
-        conteudo = request.form.get('conteudo', '').strip()
-        agendamento_id_referencia = request.form.get('agendamento_id_referencia', '').strip()
+        # Get data from JSON body since Content-Type is application/json
+        request_data = request.json
+        tipo_registro = request_data.get('tipo_registro')
+        titulo = request_data.get('titulo', '').strip()
+        conteudo = request_data.get('conteudo', '').strip()
+        
+        # Capture PEI references from JSON body
+        referencia_pei_id = request_data.get('referencia_pei_id')
+        referencia_meta_titulo = request_data.get('referencia_meta_titulo')
+
+        # If the record type is 'evolucao_pei' and the title is empty, set a default
+        if tipo_registro == 'evolucao_pei' and not titulo:
+            titulo = f"Evolução - {referencia_meta_titulo or 'Atividade'}"
 
         if not all([tipo_registro, titulo, conteudo]):
-            flash(f'Por favor, preencha o título e o conteúdo para o registro de {tipo_registro}.', 'danger')
-            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            # Return JSON response for frontend to handle, instead of flash and redirect
+            return jsonify({'success': False, 'message': 'Por favor, preencha o título e o conteúdo para o registro.'}), 400
 
-        db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
+        novo_registro_data = {
             'profissional_id': profissional_doc_id,
             'profissional_nome': profissional_nome,
             'data_registro': firestore.SERVER_TIMESTAMP,
             'tipo_registro': tipo_registro,
             'titulo': titulo,
             'conteudo': conteudo,
-            'agendamento_id_referencia': agendamento_id_referencia if agendamento_id_referencia else None,
             'atualizado_em': firestore.SERVER_TIMESTAMP
-        })
-        flash(f'Registro de {tipo_registro} adicionado com sucesso!', 'success')
+        }
+
+        # Add PEI references to the document if it's an evolution
+        if tipo_registro == 'evolucao_pei' and referencia_pei_id and referencia_meta_titulo:
+            novo_registro_data['referencia_pei_id'] = referencia_pei_id
+            novo_registro_data['referencia_meta_titulo'] = referencia_meta_titulo
+
+        # The path to save the record is always in the patient's 'prontuarios' subcollection
+        _, new_doc_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add(novo_registro_data)
+        
+        # To get the ID of the newly created document for the frontend
+        new_doc = new_doc_ref.get()
+        return jsonify({'success': True, 'message': f'Registro de {tipo_registro.replace("_", " ")} adicionado com sucesso!', 'registro_id': new_doc.id}), 201
+
     except Exception as e:
-        flash(f'Erro ao adicionar registro de {tipo_registro}: {e}', 'danger')
         print(f"Erro registrar_registro_generico: {e}")
-    return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+        return jsonify({'success': False, 'message': f'Erro ao adicionar registro: {e}'}), 500
+
 
 @app.route('/prontuarios/<string:paciente_doc_id>/editar_registro_generico/<string:registro_doc_id>', methods=['POST'])
 @login_required
@@ -2153,24 +2315,23 @@ def editar_registro_generico(paciente_doc_id, registro_doc_id):
     try:
         titulo = request.form.get('titulo', '').strip()
         conteudo = request.form.get('conteudo', '').strip()
-        agendamento_id_referencia = request.form.get('agendamento_id_referencia', '').strip()
-        tipo_registro = request.form.get('tipo_registro')
+        tipo_registro = request.form.get('tipo_registro_feedback', 'Registro') # Campo para feedback
 
         if not all([titulo, conteudo]):
-            flash(f'Por favor, preencha o título e o conteúdo para o registro de {tipo_registro}.', 'danger')
+            flash('Por favor, preencha o título e o conteúdo para o registro.', 'danger')
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
         registro_ref.update({
             'titulo': titulo,
             'conteudo': conteudo,
-            'agendamento_id_referencia': agendamento_id_referencia if agendamento_id_referencia else None,
             'atualizado_em': firestore.SERVER_TIMESTAMP
         })
-        flash(f'Registro de {tipo_registro} atualizado com sucesso!', 'success')
+        flash(f'{tipo_registro.capitalize()} atualizado com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao atualizar registro: {e}', 'danger')
         print(f"Erro editar_registro_generico: {e}")
     return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
 
 @app.route('/prontuarios/<string:paciente_doc_id>/apagar_registro_generico', methods=['POST'])
 @login_required
@@ -2185,6 +2346,7 @@ def apagar_registro_generico(paciente_doc_id):
     try:
         db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(registro_id).delete()
         flash('Registro apagado com sucesso!', 'success')
+        
     except Exception as e:
         flash(f'Erro ao apagar registro: {e}', 'danger')
         print(f"Erro apagar_registro_generico: {e}")
@@ -2309,42 +2471,43 @@ def listar_peis():
 @admin_required
 def adicionar_pei():
     clinica_id = session['clinica_id']
-    
+    profissionais_lista = []
+    try:
+        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+        for doc in profissionais_docs:
+            profissionais_lista.append(convert_doc_to_dict(doc))
+    except Exception as e:
+        flash('Erro ao carregar a lista de profissionais.', 'danger')
+
     if request.method == 'POST':
         identificacao_pei = request.form['identificacao_pei'].strip()
         descricao_pei = request.form.get('descricao_pei', '').strip()
         data_inicio_str = request.form.get('data_inicio', '').strip()
         data_fim_str = request.form.get('data_fim', '').strip()
         metas_json = request.form.get('metas_json', '[]')
-        
-        if not identificacao_pei:
-            flash('A identificação do PEI é obrigatória.', 'danger')
-            return render_template('pei_form.html', pei=request.form, action_url=url_for('adicionar_pei'))
+        profissional_responsavel_id = request.form.get('profissional_responsavel_id')
 
+        profissional_responsavel_nome = None
+        if profissional_responsavel_id:
+            try:
+                prof_doc = db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_responsavel_id).get()
+                if prof_doc.exists:
+                    profissional_responsavel_nome = prof_doc.to_dict().get('nome')
+            except Exception as e:
+                flash(f'Erro ao buscar nome do profissional: {e}', 'warning')
+        
         try:
             data_inicio_dt = parse_date_input(data_inicio_str) if data_inicio_str else None
             data_fim_dt = parse_date_input(data_fim_str) if data_fim_str else None
-
-            if data_inicio_str and not data_inicio_dt:
-                flash('Formato de Data de Início inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('adicionar_pei'))
-            if data_fim_str and not data_fim_dt:
-                flash('Formato de Data de Fim inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('adicionar_pei'))
-            
-            try:
-                metas_data = json.loads(metas_json)
-                if not isinstance(metas_data, list):
-                    raise ValueError("Metas deve ser uma lista JSON.")
-            except (json.JSONDecodeError, ValueError) as e:
-                flash(f'Formato inválido para as metas: {e}', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('adicionar_pei'))
+            metas_data = json.loads(metas_json)
 
             db.collection('clinicas').document(clinica_id).collection('peis').add({
                 'identificacao_pei': identificacao_pei,
                 'descricao_pei': descricao_pei,
                 'data_inicio': data_inicio_dt,
                 'data_fim': data_fim_dt,
+                'profissional_responsavel_id': profissional_responsavel_id,
+                'profissional_responsavel_nome': profissional_responsavel_nome,
                 'metas': metas_data,
                 'criado_em': firestore.SERVER_TIMESTAMP,
                 'criado_por_uid': session.get('user_uid'),
@@ -2354,9 +2517,9 @@ def adicionar_pei():
             return redirect(url_for('listar_peis'))
         except Exception as e:
             flash(f'Erro ao adicionar PEI: {e}', 'danger')
-            print(f"Erro adicionar_pei: {e}")
     
-    return render_template('pei_form.html', pei=None, action_url=url_for('adicionar_pei'), page_title='Adicionar Novo PEI')
+    return render_template('pei_form.html', pei=None, action_url=url_for('adicionar_pei'), page_title='Adicionar Novo PEI', profissionais=profissionais_lista)
+
 
 @app.route('/peis/editar/<string:pei_doc_id>', methods=['GET', 'POST'])
 @login_required
@@ -2365,41 +2528,43 @@ def editar_pei(pei_doc_id):
     clinica_id = session['clinica_id']
     pei_ref = db.collection('clinicas').document(clinica_id).collection('peis').document(pei_doc_id)
     
+    profissionais_lista = []
+    try:
+        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+        for doc in profissionais_docs:
+            profissionais_lista.append(convert_doc_to_dict(doc))
+    except Exception as e:
+        flash('Erro ao carregar a lista de profissionais.', 'danger')
+
     if request.method == 'POST':
         identificacao_pei = request.form['identificacao_pei'].strip()
         descricao_pei = request.form.get('descricao_pei', '').strip()
         data_inicio_str = request.form.get('data_inicio', '').strip()
         data_fim_str = request.form.get('data_fim', '').strip()
         metas_json = request.form.get('metas_json', '[]')
+        profissional_responsavel_id = request.form.get('profissional_responsavel_id')
 
-        if not identificacao_pei:
-            flash('A identificação do PEI é obrigatória.', 'danger')
-            return render_template('pei_form.html', pei=request.form, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id))
-
+        profissional_responsavel_nome = None
+        if profissional_responsavel_id:
+            try:
+                prof_doc = db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_responsavel_id).get()
+                if prof_doc.exists:
+                    profissional_responsavel_nome = prof_doc.to_dict().get('nome')
+            except Exception as e:
+                flash(f'Erro ao buscar nome do profissional: {e}', 'warning')
+        
         try:
             data_inicio_dt = parse_date_input(data_inicio_str) if data_inicio_str else None
             data_fim_dt = parse_date_input(data_fim_str) if data_fim_str else None
-
-            if data_inicio_str and not data_inicio_dt:
-                flash('Formato de Data de Início inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id))
-            if data_fim_str and not data_fim_dt:
-                flash('Formato de Data de Fim inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id))
-
-            try:
-                metas_data = json.loads(metas_json)
-                if not isinstance(metas_data, list):
-                    raise ValueError("Metas deve ser uma lista JSON.")
-            except (json.JSONDecodeError, ValueError) as e:
-                flash(f'Formato inválido para as metas: {e}', 'danger')
-                return render_template('pei_form.html', pei=request.form, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id))
+            metas_data = json.loads(metas_json)
 
             pei_ref.update({
                 'identificacao_pei': identificacao_pei,
                 'descricao_pei': descricao_pei,
                 'data_inicio': data_inicio_dt,
                 'data_fim': data_fim_dt,
+                'profissional_responsavel_id': profissional_responsavel_id,
+                'profissional_responsavel_nome': profissional_responsavel_nome,
                 'metas': metas_data,
                 'atualizado_em': firestore.SERVER_TIMESTAMP,
                 'atualizado_por_uid': session.get('user_uid'),
@@ -2409,7 +2574,6 @@ def editar_pei(pei_doc_id):
             return redirect(url_for('listar_peis'))
         except Exception as e:
             flash(f'Erro ao atualizar PEI: {e}', 'danger')
-            print(f"Erro editar_pei (POST): {e}")
 
     try:
         pei_doc = pei_ref.get()
@@ -2419,21 +2583,25 @@ def editar_pei(pei_doc_id):
                 pei['id'] = pei_doc.id
                 if pei.get('data_inicio') and isinstance(pei['data_inicio'], datetime.datetime):
                     pei['data_inicio'] = pei['data_inicio'].strftime('%Y-%m-%d')
+                else:
+                    pei['data_inicio'] = ''
+
                 if pei.get('data_fim') and isinstance(pei['data_fim'], datetime.datetime):
                     pei['data_fim'] = pei['data_fim'].strftime('%Y-%m-%d')
+                else:
+                    pei['data_fim'] = ''
                 
                 if 'metas' in pei and isinstance(pei['metas'], list):
                     pei['metas_json'] = json.dumps(pei['metas'], indent=2)
                 else:
                     pei['metas_json'] = '[]'
                 
-                return render_template('pei_form.html', pei=pei, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id), page_title=f"Editar PEI: {pei.get('identificacao_pei', 'N/A')}")
+                return render_template('pei_form.html', pei=pei, action_url=url_for('editar_pei', pei_doc_id=pei_doc_id), page_title=f"Editar PEI: {pei.get('identificacao_pei', 'N/A')}", profissionais=profissionais_lista)
         else:
             flash('PEI não encontrado.', 'danger')
             return redirect(url_for('listar_peis'))
     except Exception as e:
         flash(f'Erro ao carregar PEI para edição: {e}', 'danger')
-        print(f"Erro editar_pei (GET): {e}")
         return redirect(url_for('listar_peis'))
 
 @app.route('/peis/excluir/<string:pei_doc_id>', methods=['POST'])
@@ -2442,7 +2610,6 @@ def editar_pei(pei_doc_id):
 def excluir_pei(pei_doc_id):
     clinica_id = session['clinica_id']
     try:
-        # TODO: Check if this PEI is associated with any patient before deletion.
         db.collection('clinicas').document(clinica_id).collection('peis').document(pei_doc_id).delete()
         flash('PEI excluído com sucesso!', 'success')
     except Exception as e:
@@ -2450,5 +2617,93 @@ def excluir_pei(pei_doc_id):
         print(f"Erro excluir_pei: {e}")
     return redirect(url_for('listar_peis'))
 
+@app.route('/api/pacientes/<string:paciente_id>/peis/<string:pei_individual_id>/meta/update', methods=['POST'])
+@login_required
+def update_pei_meta(paciente_id, pei_individual_id):
+    clinica_id = session['clinica_id']
+    data = request.json
+    meta_titulo = data.get('meta_titulo')
+    action = data.get('action')
+
+    if not all([meta_titulo, action]):
+        return jsonify({'success': False, 'message': 'Dados incompletos.'}), 400
+
+    try:
+        pei_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_id).collection('peis_individuais').document(pei_individual_id)
+        pei_doc = pei_ref.get()
+
+        if not pei_doc.exists:
+            return jsonify({'success': False, 'message': 'PEI individual não encontrado para este paciente.'}), 404
+        
+        pei_data = pei_doc.to_dict()
+        metas = pei_data.get('metas', [])
+        
+        if not isinstance(metas, list): # Safety check for 'metas' being a list
+            print(f"Aviso: 'metas' para PEI individual {pei_individual_id} não é uma lista. Reformatando.")
+            metas = []
+
+        meta_encontrada = False
+        target_meta_index = -1
+
+        for i, meta in enumerate(metas):
+            if meta.get('titulo') == meta_titulo:
+               
+                meta_encontrada = True
+                target_meta_index = i
+                
+                if 'status' not in meta: meta['status'] = 'Não Iniciada'
+                if 'tempo_total_gasto' not in meta: meta['tempo_total_gasto'] = 0
+                if 'cronometro_inicio' not in meta: meta['cronometro_inicio'] = None
+
+                if action == 'start_timer':
+                    if meta['cronometro_inicio'] is None:
+                        meta['cronometro_inicio'] = datetime.datetime.now(pytz.utc)
+                        if meta['status'] == 'Não Iniciada':
+                            meta['status'] = 'Em Andamento'
+                
+                elif action == 'stop_timer':
+                    if meta.get('cronometro_inicio'):
+                        inicio_ts = meta['cronometro_inicio']
+                        inicio = inicio_ts if isinstance(inicio_ts, datetime.datetime) else pytz.utc.localize(datetime.datetime.fromisoformat(inicio_ts.replace('Z', '+00:00')))
+                        fim = datetime.datetime.now(pytz.utc)
+                        segundos_decorridos = (fim - inicio).total_seconds()
+                        meta['tempo_total_gasto'] += round(segundos_decorridos)
+                        meta['cronometro_inicio'] = None
+
+                elif action == 'concluir':
+                    if meta.get('cronometro_inicio'):
+                        inicio_ts = meta['cronometro_inicio']
+                        inicio = inicio_ts if isinstance(inicio_ts, datetime.datetime) else pytz.utc.localize(datetime.datetime.fromisoformat(inicio_ts.replace('Z', '+00:00')))
+                        fim = datetime.datetime.now(pytz.utc)
+                        segundos_decorridos = (fim - inicio).total_seconds()
+                        meta['tempo_total_gasto'] += round(segundos_decorridos)
+                        meta['cronometro_inicio'] = None
+                    
+                    meta['status'] = 'Concluída'
+                    if 'observacao' in data and data['observacao']:
+                        meta['observacao_conclusao'] = data['observacao']
+
+                elif action == 'reset':
+                    meta['status'] = 'Não Iniciada'
+                    meta['tempo_total_gasto'] = 0
+                    meta['cronometro_inicio'] = None
+                    if 'observacao_conclusao' in meta:
+                        del meta['observacao_conclusao']
+
+                metas[i] = meta
+                break
+
+        if not meta_encontrada:
+            return jsonify({'success': False, 'message': 'Meta não encontrada.'}), 404
+
+        pei_ref.update({'metas': metas})
+        
+        return jsonify({'success': True, 'updated_meta': metas[target_meta_index]})
+
+    except Exception as e:
+        print(f"Erro em update_pei_meta: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
+
