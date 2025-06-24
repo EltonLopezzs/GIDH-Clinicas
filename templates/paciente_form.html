@@ -141,7 +141,9 @@
         .form-card {
             background: var(--card); padding: 2rem; border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            max-width: 800px; margin: 0 auto;
+            /* UPDATED: Increased max-width for wider layout */
+            max-width: 1280px; 
+            margin: 0 auto;
         }
         .form-card h2.form-title {
             text-align: center; font-size: 1.6rem; color: var(--text);
@@ -149,17 +151,28 @@
         }
         .form-card h3.section-title {
             font-size: 1.1rem; color: var(--primary); font-weight: 600;
-            margin-top: 2rem; margin-bottom: 1.5rem;
+            margin-top: 2rem; margin-bottom: 1rem; /* Reduced bottom margin */
             padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);
+            grid-column: 1 / -1; /* Make title span all columns in the grid */
         }
         .form-card h3.section-title:first-of-type { margin-top: 0; }
-        .form-group { margin-bottom: 1.5rem; }
+        
+        /* NEW: Form Grid System */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1rem;
+        }
+
+        .form-group { margin-bottom: 0.5rem; } /* Reduced margin */
         .form-group label {
-            display: block; font-size: 0.9rem; color: var(--muted);
-            font-weight: 500; margin-bottom: 0.5rem;
+            display: block; font-size: 0.85rem; /* Slightly smaller label */
+            color: var(--muted);
+            font-weight: 500; margin-bottom: 0.4rem;
         }
         .form-group input, .form-group select, .form-group textarea {
-            font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%;
+            font-size: 0.95rem; padding: 0.6rem 0.8rem; /* Slightly smaller padding */
+            width: 100%;
             border: 1px solid var(--border-color); border-radius: 8px;
             background-color: var(--bg); color: var(--text);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -169,14 +182,25 @@
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
             outline: none;
         }
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
+        
+        /* NEW: Grid column span utilities */
+        .col-span-1 { grid-column: span 1; }
+        .col-span-2 { grid-column: span 2; }
+        .col-span-3 { grid-column: span 3; }
+        .col-span-4 { grid-column: span 4; }
+        .col-span-5 { grid-column: span 5; }
+        .col-span-6 { grid-column: span 6; }
+        .col-span-7 { grid-column: span 7; }
+        .col-span-8 { grid-column: span 8; }
+        .col-span-9 { grid-column: span 9; }
+        .col-span-10 { grid-column: span 10; }
+        .col-span-11 { grid-column: span 11; }
+        .col-span-12 { grid-column: span 12; }
+
         .form-actions {
             margin-top: 2rem; display: flex; justify-content: flex-end;
             gap: 0.75rem; flex-wrap: wrap;
+            grid-column: 1 / -1; /* Span all columns */
         }
         
         .btn {
@@ -194,13 +218,12 @@
         .btn.loading i { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Validation Error Message */
         .validation-error {
             color: var(--danger);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             margin-top: 0.4rem;
-            display: none; /* Hide by default */
-            min-height: 1.2em; /* Reserve space to prevent layout shift */
+            display: none;
+            min-height: 1.2em;
         }
 
         /* --- Responsive --- */
@@ -210,6 +233,11 @@
         @media(min-width: 769px) {
             .toggle-btn-desktop { display: grid; }
             .menu-btn-mobile { display: none; }
+        }
+        @media (max-width: 1024px) {
+            /* On tablets, use fewer columns */
+            .col-span-lg-4 { grid-column: span 6; }
+            .col-span-lg-6 { grid-column: span 12; }
         }
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
@@ -222,182 +250,90 @@
             main { padding: 1rem; }
             .form-card { padding: 1.5rem; }
             .form-card h2.form-title { font-size: 1.4rem; }
-            .form-row { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; } /* Stack columns on mobile */
+            /* On mobile, all items span the full width */
+            .col-span-1, .col-span-2, .col-span-3, .col-span-4, .col-span-5, .col-span-6, .col-span-7, .col-span-8, .col-span-9, .col-span-10, .col-span-11, .col-span-12 {
+                grid-column: span 1;
+            }
         }
 
         /* --- PEI Shuttle Component Styles --- */
         .pei-shuttle-container {
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Align items to the top */
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            align-items: flex-start;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
         }
-
         .pei-list-box {
-            flex: 1; /* Distribute space evenly */
-            min-width: 280px; /* Minimum width for each list box */
+            flex: 1;
+            min-width: 250px;
             background-color: var(--bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 1rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            box-shadow: 0 2px 4px rgb(0 0 0 / 0.05);
             display: flex;
             flex-direction: column;
             min-height: 250px;
         }
-
         .pei-list-box h4 {
-            font-size: 1rem;
-            color: var(--text);
-            margin-bottom: 1rem;
-            text-align: center;
-            font-weight: 600;
+            font-size: 1rem; color: var(--text); margin-bottom: 1rem; text-align: center; font-weight: 600;
         }
-
-        .pei-search-bar {
-            position: relative;
-            margin-bottom: 0.75rem;
-        }
-
+        .pei-search-bar { position: relative; margin-bottom: 0.75rem; }
         .pei-search-input {
-            width: 100%;
-            padding: 0.6rem 0.8rem 0.6rem 2.5rem; /* Left padding for icon */
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--card); /* Lighter background for search input */
-            color: var(--text);
-            font-size: 0.9rem;
+            width: 100%; padding: 0.6rem 0.8rem 0.6rem 2.5rem; border: 1px solid var(--border-color);
+            border-radius: 8px; background-color: var(--card); color: var(--text); font-size: 0.9rem;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-
         .pei-search-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none;
+            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
         }
-
-        .pei-search-icon {
-            position: absolute;
-            left: 0.8rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--muted);
-            font-size: 0.9rem;
-        }
-
+        .pei-search-icon { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.9rem; }
         .pei-list {
-            list-style: none;
-            padding: 0.5rem;
-            margin: 0.5rem 0;
-            flex-grow: 1;
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--card);
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+            list-style: none; padding: 0.5rem; margin: 0.5rem 0; flex-grow: 1;
+            max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color);
+            border-radius: 8px; background-color: var(--card); box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
         }
-        
         .pei-list::-webkit-scrollbar { width: 8px; }
         .pei-list::-webkit-scrollbar-track { background: var(--bg); border-radius: 4px; }
         .pei-list::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; border: 2px solid var(--card); }
         .pei-list::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-
-
         .pei-list-item {
-            padding: 0.6rem 0.8rem;
-            margin-bottom: 0.2rem;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s ease, color 0.2s ease;
-            font-size: 0.92rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: var(--text);
+            padding: 0.6rem 0.8rem; margin-bottom: 0.2rem; border-radius: 6px; cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease; font-size: 0.92rem;
+            display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);
             border: 1px solid transparent;
         }
         .pei-list-item:last-child { margin-bottom: 0; }
-
         .pei-list-item:hover {
             background-color: color-mix(in srgb, var(--primary) 10%, transparent);
-            color: var(--primary-dark);
-            border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+            color: var(--primary-dark); border-color: color-mix(in srgb, var(--primary) 30%, transparent);
         }
         [data-theme="dark"] .pei-list-item:hover {
-            background-color: color-mix(in srgb, var(--primary) 20%, transparent);
-            color: var(--dark-text);
+            background-color: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--dark-text);
         }
-
         .pei-list-item.selected {
-            background-color: var(--primary);
-            color: white;
-            font-weight: 500;
-            border-color: var(--primary-dark);
+            background-color: var(--primary); color: white; font-weight: 500; border-color: var(--primary-dark);
         }
-        .pei-list-item.selected:hover {
-            background-color: var(--primary-dark);
-            color: white;
-        }
-        .pei-list-item.selected .item-icon {
-            color: white;
-        }
-
-        .item-icon {
-            font-size: 0.8em;
-            color: var(--muted);
-        }
-
+        .pei-list-item.selected:hover { background-color: var(--primary-dark); color: white; }
+        .item-icon { font-size: 0.8em; color: var(--muted); }
         .pei-shuttle-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            margin-top: 3.5rem;
+            display: flex; flex-direction: column; gap: 0.75rem; margin-top: 3.5rem;
         }
-
         .pei-shuttle-controls .btn {
-            width: 45px;
-            height: 45px;
-            padding: 0;
-            font-size: 1.2rem;
-            border-radius: 50%;
+            width: 45px; height: 45px; padding: 0; font-size: 1.2rem; border-radius: 50%;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .pei-shuttle-controls .btn:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            transform: translateY(-1px);
-        }
-        .pei-shuttle-controls .btn i {
-            margin: 0;
-        }
-
-        /* Responsive adjustments for shuttle */
+        .pei-shuttle-controls .btn:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); transform: translateY(-1px); }
+        .pei-shuttle-controls .btn i { margin: 0; }
         @media (max-width: 768px) {
-            .pei-shuttle-container {
-                flex-direction: column;
-                align-items: center;
-                gap: 1.5rem;
-            }
-            .pei-list-box {
-                width: 100%;
-                max-width: 400px;
-            }
-            .pei-shuttle-controls {
-                flex-direction: row;
-                width: 100%;
-                justify-content: center;
-                margin-top: 0;
-            }
-            .pei-shuttle-controls .btn {
-                width: 50px;
-                height: 50px;
-            }
+            .pei-shuttle-container { flex-direction: column; align-items: center; gap: 1.5rem; }
+            .pei-list-box { width: 100%; max-width: 400px; }
+            .pei-shuttle-controls { flex-direction: row; width: 100%; justify-content: center; margin-top: 0; }
+            .pei-shuttle-controls .btn { width: 50px; height: 50px; }
         }
     </style>
 </head>
@@ -423,7 +359,7 @@
                         {% if session.user_role == 'admin' %}
                         <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                                <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -460,18 +396,22 @@
                     <h2 class="form-title">{{ page_title|default(('Editar' if paciente else 'Adicionar Novo') ~ ' Paciente') }}</h2>
                     <form method="POST" action="{{ action_url|default('') }}">
                         
-                        <h3 class="section-title">Dados Pessoais</h3>
-                        <div class="form-group">
-                            <label for="nome">Nome Completo</label>
-                            <input type="text" id="nome" name="nome" value="{{ request.form.nome if 'nome' in request.form else paciente.nome if paciente else '' }}" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
+                        <!-- UPDATED: Wrapped form sections in a .form-grid div -->
+                        <div class="form-grid">
+                            <h3 class="section-title">Dados Pessoais</h3>
+                            
+                            <div class="form-group col-span-12 col-span-lg-6">
+                                <label for="nome">Nome Completo</label>
+                                <input type="text" id="nome" name="nome" value="{{ request.form.nome if 'nome' in request.form else paciente.nome if paciente else '' }}" required>
+                            </div>
+                            
+                            <div class="form-group col-span-6 col-span-lg-3">
                                 <label for="data_nascimento">Data de Nascimento</label>
                                 <input type="text" id="data_nascimento" name="data_nascimento" class="flatpickr-input" value="{{ request.form.data_nascimento if 'data_nascimento' in request.form else paciente.data_nascimento if paciente else '' }}" placeholder="DD/MM/AAAA" required>
                                 <span class="validation-error" id="data_nascimento_error"></span>
                             </div>
-                            <div class="form-group">
+
+                            <div class="form-group col-span-6 col-span-lg-3">
                                 <label for="genero">Gênero</label>
                                 <select id="genero" name="genero">
                                     <option value="">Selecione</option>
@@ -480,122 +420,115 @@
                                     <option value="Outro" {% if (request.form.genero == 'Outro') or (paciente and paciente.genero == 'Outro') %}selected{% endif %}>Outro</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="form-row">
-                            <!-- Campo CPF -->
-                            <div class="form-group">
+
+                            <div class="form-group col-span-6">
                                 <label for="cpf">CPF</label>
-                                <!-- UPDATED: Added the 'required' attribute to make the field mandatory -->
                                 <input type="text" id="cpf" name="cpf" value="{{ request.form.cpf if 'cpf' in request.form else paciente.cpf if paciente else '' }}" placeholder="XXX.XXX.XXX-XX" required>
                                 <span class="validation-error" id="cpf_error"></span>
                             </div>
-                            <!-- Campo RG -->
-                            <div class="form-group">
+
+                            <div class="form-group col-span-6">
                                 <label for="rg">RG</label>
                                 <input type="text" id="rg" name="rg" value="{{ request.form.rg if 'rg' in request.form else paciente.rg if paciente else '' }}" placeholder="XX.XXX.XXX-X">
                             </div>
-                        </div>
 
-                        <h3 class="section-title">Contato</h3>
-                        <div class="form-row">
-                            <div class="form-group">
+                            <h3 class="section-title">Contato</h3>
+
+                            <div class="form-group col-span-6">
                                 <label for="telefone">Telefone (com DDD)</label>
                                 <input type="tel" id="telefone" name="telefone" value="{{ request.form.telefone if 'telefone' in request.form else paciente.contato_telefone if paciente else '' }}" placeholder="(XX) XXXXX-XXXX">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group col-span-6">
                                 <label for="email">E-mail</label>
                                 <input type="email" id="email" name="email" value="{{ request.form.email if 'email' in request.form else paciente.contato_email if paciente else '' }}" placeholder="seu.email@example.com">
                             </div>
-                        </div>
 
-                        <h3 class="section-title">Endereço</h3>
-                        <div class="form-row">
-                            <div class="form-group">
+                            <h3 class="section-title">Endereço</h3>
+                            
+                            <div class="form-group col-span-2">
                                 <label for="cep">CEP</label>
                                 <input type="text" id="cep" name="cep" value="{{ request.form.cep if 'cep' in request.form else (paciente.endereco.cep if paciente and paciente.endereco else '') }}" placeholder="XXXXX-XXX">
                             </div>
-                             <div class="form-group">
-                                <label for="cidade">Cidade</label>
-                                <input type="text" id="cidade" name="cidade" value="{{ request.form.cidade if 'cidade' in request.form else (paciente.endereco.cidade if paciente and paciente.endereco else '') }}" required>
+                            <div class="form-group col-span-7">
+                                <label for="logradouro">Logradouro (Rua, Avenida, etc.)</label>
+                                <input type="text" id="logradouro" name="logradouro" value="{{ request.form.logradouro if 'logradouro' in request.form else (paciente.endereco.logradouro if paciente and paciente.endereco else '') }}" placeholder="Rua Exemplo">
                             </div>
-                            <div class="form-group">
-                                <label for="estado">Estado (UF)</label>
-                                <input type="text" id="estado" name="estado" value="{{ request.form.estado if 'estado' in request.form else (paciente.endereco.estado if paciente and paciente.endereco else '') }}" placeholder="SP" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="logradouro">Logradouro (Rua, Avenida, etc.)</label>
-                            <input type="text" id="logradouro" name="logradouro" value="{{ request.form.logradouro if 'logradouro' in request.form else (paciente.endereco.logradouro if paciente and paciente.endereco else '') }}" placeholder="Rua Exemplo">
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group col-span-3">
                                 <label for="numero">Número</label>
                                 <input type="text" id="numero" name="numero" value="{{ request.form.numero if 'numero' in request.form else (paciente.endereco.numero if paciente and paciente.endereco else '') }}" placeholder="123">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group col-span-4">
                                 <label for="bairro">Bairro</label>
                                 <input type="text" id="bairro" name="bairro" value="{{ request.form.bairro if 'bairro' in request.form else (paciente.endereco.bairro if paciente and paciente.endereco else '') }}" placeholder="Centro">
                             </div>
-                        </div>
-                         <div class="form-group">
-                            <label for="complemento">Complemento (Apto, Bloco)</label>
-                            <input type="text" id="complemento" name="complemento" value="{{ request.form.complemento if 'complemento' in request.form else (paciente.endereco.complemento if paciente and paciente.endereco else '') }}" placeholder="Apto 401">
-                        </div>
-                        
-                        <h3 class="section-title">Planos Educacionais Individualizados (PEIs)</h3>
-                        <div class="form-group">
-                            <div class="pei-shuttle-container">
-                                <div class="pei-list-box">
-                                    <h4>PEIs Disponíveis</h4>
-                                    <div class="pei-search-bar">
-                                        <input type="text" id="available-pei-search" class="pei-search-input">
-                                        <i class="fas fa-search pei-search-icon"></i>
-                                    </div>
-                                    <ul id="available-peis-list" class="pei-list">
-                                        <!-- PEIs will be loaded here by JS -->
-                                    </ul>
-                                </div>
-                                <div class="pei-shuttle-controls">
-                                    <button type="button" id="add-selected-pei" class="btn btn-sm btn-primary" title="Adicionar Selecionados"><i class="fas fa-chevron-right"></i></button>
-                                    <button type="button" id="remove-selected-pei" class="btn btn-sm btn-secondary" title="Remover Selecionados"><i class="fas fa-chevron-left"></i></button>
-                                    <button type="button" id="add-all-peis" class="btn btn-sm btn-primary" title="Adicionar Todos"><i class="fas fa-angles-right"></i></button>
-                                    <button type="button" id="remove-all-peis" class="btn btn-sm btn-secondary" title="Remover Todos"><i class="fas fa-angles-left"></i></button>
-                                </div>
-                                <div class="pei-list-box">
-                                    <h4>PEIs Atribuídos</h4>
-                                    <div class="pei-search-bar">
-                                        <input type="text" id="selected-pei-search" class="pei-search-input" >
-                                        <i class="fas fa-search pei-search-icon"></i>
-                                    </div>
-                                    <ul id="selected-peis-list" class="pei-list">
-                                        <!-- Selected PEIs will be loaded here by JS -->
-                                    </ul>
-                                </div>
+                             <div class="form-group col-span-8">
+                                <label for="complemento">Complemento (Apto, Bloco)</label>
+                                <input type="text" id="complemento" name="complemento" value="{{ request.form.complemento if 'complemento' in request.form else (paciente.endereco.complemento if paciente and paciente.endereco else '') }}" placeholder="Apto 401">
                             </div>
-                            <div id="selected_peis_hidden_container"></div>
-                        </div>
+                            <div class="form-group col-span-8">
+                                <label for="cidade">Cidade</label>
+                                <input type="text" id="cidade" name="cidade" value="{{ request.form.cidade if 'cidade' in request.form else (paciente.endereco.cidade if paciente and paciente.endereco else '') }}" required>
+                            </div>
+                            <div class="form-group col-span-4">
+                                <label for="estado">Estado (UF)</label>
+                                <input type="text" id="estado" name="estado" value="{{ request.form.estado if 'estado' in request.form else (paciente.endereco.estado if paciente and paciente.endereco else '') }}" placeholder="SP" required>
+                            </div>
 
-                        <h3 class="section-title">Outras Informações</h3>
-                        <div class="form-group">
-                            <label for="convenio_id">Convênio</label>
-                            <select id="convenio_id" name="convenio_id">
-                                <option value="">Nenhum / Particular</option>
-                                {% for convenio in convenios %}
-                                    <option value="{{ convenio.id }}" 
-                                        {% if (request.form.convenio_id and request.form.convenio_id == convenio.id|string) or (paciente and paciente.convenio_id == convenio.id) %}selected{% endif %}>
-                                        {{ convenio.nome }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="observacoes">Observações Gerais (Serão exibidas no prontuário)</label>
-                            <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações relevantes sobre o paciente, alergias, etc.">{{ request.form.observacoes if 'observacoes' in request.form else paciente.observacoes if paciente else '' }}</textarea>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <a href="{{ url_for('listar_pacientes') }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>&nbsp;Salvar</button>
+                            <h3 class="section-title">Planos Educacionais Individualizados (PEIs)</h3>
+                            <div class="form-group col-span-12">
+                                <div class="pei-shuttle-container">
+                                    <div class="pei-list-box">
+                                        <h4>PEIs Disponíveis</h4>
+                                        <div class="pei-search-bar">
+                                            <i class="fas fa-search pei-search-icon"></i>
+                                            <input type="text" id="available-pei-search" class="pei-search-input" placeholder="Buscar PEI...">
+                                        </div>
+                                        <ul id="available-peis-list" class="pei-list">
+                                            <!-- PEIs will be loaded here by JS -->
+                                        </ul>
+                                    </div>
+                                    <div class="pei-shuttle-controls">
+                                        <button type="button" id="add-selected-pei" class="btn btn-primary" title="Adicionar Selecionados"><i class="fas fa-chevron-right"></i></button>
+                                        <button type="button" id="remove-selected-pei" class="btn btn-secondary" title="Remover Selecionados"><i class="fas fa-chevron-left"></i></button>
+                                        <button type="button" id="add-all-peis" class="btn btn-primary" title="Adicionar Todos"><i class="fas fa-angles-right"></i></button>
+                                        <button type="button" id="remove-all-peis" class="btn btn-secondary" title="Remover Todos"><i class="fas fa-angles-left"></i></button>
+                                    </div>
+                                    <div class="pei-list-box">
+                                        <h4>PEIs Atribuídos</h4>
+                                        <div class="pei-search-bar">
+                                            <i class="fas fa-search pei-search-icon"></i>
+                                            <input type="text" id="selected-pei-search" class="pei-search-input" placeholder="Buscar PEI...">
+                                        </div>
+                                        <ul id="selected-peis-list" class="pei-list">
+                                            <!-- Selected PEIs will be loaded here by JS -->
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div id="selected_peis_hidden_container"></div>
+                            </div>
+
+                            <h3 class="section-title">Outras Informações</h3>
+                            <div class="form-group col-span-12">
+                                <label for="convenio_id">Convênio</label>
+                                <select id="convenio_id" name="convenio_id">
+                                    <option value="">Nenhum / Particular</option>
+                                    {% for convenio in convenios %}
+                                        <option value="{{ convenio.id }}" 
+                                            {% if (request.form.convenio_id and request.form.convenio_id == convenio.id|string) or (paciente and paciente.convenio_id == convenio.id) %}selected{% endif %}>
+                                            {{ convenio.nome }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group col-span-12">
+                                <label for="observacoes">Observações Gerais (Serão exibidas no prontuário)</label>
+                                <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações relevantes sobre o paciente, alergias, etc.">{{ request.form.observacoes if 'observacoes' in request.form else paciente.observacoes if paciente else '' }}</textarea>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <a href="{{ url_for('listar_pacientes') }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>&nbsp;Salvar</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -818,27 +751,23 @@
                     const dataNascimentoInput = document.getElementById('data_nascimento');
                     const cpfInputValidation = document.getElementById('cpf');
                     
-                    // Browser handles most 'required' checks. This is for custom logic.
                     if (!form.checkValidity()) {
                         isValid = false;
                     }
 
-                    // 1. Validate Date of Birth (must not be a future date)
                     if (dataNascimentoInput && dataNascimentoInput.value) {
                         const dob = new Date(dataNascimentoInput.value);
                         const today = new Date();
-                        today.setHours(0, 0, 0, 0); // Compare dates only
+                        today.setHours(0, 0, 0, 0); 
                         if (dob > today) {
                             showValidationError('data_nascimento_error', 'Data de nascimento não pode ser futura.');
                             isValid = false;
                         }
                     }
 
-                    // 2. Validate CPF (now checks for emptiness and validity)
                     if (cpfInputValidation) {
                         const cpfValue = cpfInputValidation.value;
                         if (!cpfValue.trim()) {
-                            // This case is handled by the 'required' attribute, but we can add a custom message.
                             showValidationError('cpf_error', 'O campo CPF é obrigatório.');
                             isValid = false;
                         } else if (!validateCPF(cpfValue)) {
@@ -848,17 +777,16 @@
                     }
 
                     if (!isValid) {
-                        event.preventDefault(); // Prevent form submission
-                        // Find the first invalid field and focus on it for better UX
+                        event.preventDefault();
                         const firstInvalidField = form.querySelector(':invalid, [style*="display: block"].validation-error');
                         if (firstInvalidField) {
                              const fieldToFocus = firstInvalidField.previousElementSibling || firstInvalidField;
                              if(fieldToFocus && typeof fieldToFocus.focus === 'function') {
-                                 fieldToFocus.focus();
+                                  fieldToFocus.focus();
                              }
                         }
                     } else {
-                        updateHiddenPeiInput(); // Update hidden fields for PEIs
+                        updateHiddenPeiInput();
                         const submitButton = form.querySelector('button[type="submit"]');
                         if (submitButton) {
                             submitButton.disabled = true;
@@ -964,12 +892,12 @@
                 });
             }
 
-            addSelectedBtn.addEventListener('click', () => movePeis(availablePeisList, selectedPeisList));
-            removeSelectedBtn.addEventListener('click', () => movePeis(selectedPeisList, availablePeisList));
-            addAllBtn.addEventListener('click', () => movePeis(availablePeisList, selectedPeisList, true));
-            removeAllBtn.addEventListener('click', () => movePeis(selectedPeisList, availablePeisList, true));
-            availableSearchInput.addEventListener('input', renderPeiLists);
-            selectedSearchInput.addEventListener('input', renderPeiLists);
+            if (addSelectedBtn) addSelectedBtn.addEventListener('click', () => movePeis(availablePeisList, selectedPeisList));
+            if (removeSelectedBtn) removeSelectedBtn.addEventListener('click', () => movePeis(selectedPeisList, availablePeisList));
+            if (addAllBtn) addAllBtn.addEventListener('click', () => movePeis(availablePeisList, selectedPeisList, true));
+            if (removeAllBtn) removeAllBtn.addEventListener('click', () => movePeis(selectedPeisList, availablePeisList, true));
+            if (availableSearchInput) availableSearchInput.addEventListener('input', renderPeiLists);
+            if (selectedSearchInput) selectedSearchInput.addEventListener('input', renderPeiLists);
 
             // --- Initial Setup Calls ---
             setupSidebar();
