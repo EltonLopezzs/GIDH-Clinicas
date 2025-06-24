@@ -339,10 +339,11 @@ def index():
                 flash("Sua conta de usuário não está corretamente associada a um perfil de profissional. Contate o administrador.", "warning")
         except Exception as e:
             flash(f"Erro ao buscar informações do profissional: {e}", "danger")
-            return render_template('dashboard.html', kpi={}, proximos_agendamentos=[])
+            return render_template('dashboard.html', kpi={}, proximos_agendamentos=[], now=datetime.datetime.now(SAO_PAULO_TZ), timedelta=datetime.timedelta)
 
     agendamentos_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos')
     pacientes_ref = db.collection('clinicas').document(clinica_id).collection('pacientes')
+    convenios_ref = db.collection('clinicas').document(clinica_id).collection('convenios')
     current_year = datetime.datetime.now(SAO_PAULO_TZ).year
     
     hoje_dt = datetime.datetime.now(SAO_PAULO_TZ)
@@ -466,14 +467,106 @@ def index():
         "valores": [item[1] for item in top_5_profissionais]
     }
 
+    # Pré-carregar nomes de convênios para pacientes
+    convenios_dict = {}
+    try:
+        convenios_docs = convenios_ref.stream()
+        for doc in convenios_docs:
+            convenios_dict[doc.id] = doc.to_dict().get('nome', 'Convênio Desconhecido')
+    except Exception as e:
+        print(f"Erro ao carregar convênios para o dashboard: {e}")
+        # Não flashear aqui, pois o dashboard deve carregar mesmo com erro de convênio
+
+    # Mapear IDs de paciente para informações completas do paciente
+    pacientes_info_map = {}
+    try:
+        pacientes_docs = pacientes_ref.stream()
+        for doc in pacientes_docs:
+            pacientes_info_map[doc.id] = doc.to_dict()
+    except Exception as e:
+        print(f"Erro ao carregar informações de pacientes para o dashboard: {e}")
+    
+    # Adicionado: Dados para os filtros do dashboard
+    pacientes_para_filtro = []
+    convenios_para_filtro = []
+
+    try:
+        pacientes_docs = db.collection('clinicas').document(clinica_id).collection('pacientes').order_by('nome').stream()
+        for doc in pacientes_docs:
+            p_data = doc.to_dict()
+            if p_data: pacientes_para_filtro.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)})
+        
+        convenios_docs = db.collection('clinicas').document(clinica_id).collection('convenios').order_by('nome').stream()
+        for doc in convenios_docs:
+            c_data = doc.to_dict()
+            if c_data: convenios_para_filtro.append({'id': doc.id, 'nome': c_data.get('nome', doc.id)})
+    except Exception as e:
+        print(f"Erro ao carregar dados para os filtros do dashboard: {e}")
+
+    # Filtros atuais do dashboard
+    filtros_atuais_dashboard = {
+        'paciente_id': request.args.get('paciente_id', '').strip(),
+        'convenio_id': request.args.get('convenio_id', '').strip(),
+        'data_inicio_dashboard': request.args.get('data_inicio_dashboard', '').strip(),
+        'data_fim_dashboard': request.args.get('data_fim_dashboard', '').strip(),
+    }
+
     proximos_agendamentos_lista = []
     try:
         query_proximos = agendamentos_ref.where(
             filter=FieldFilter('status', '==', 'confirmado')
-        ).where(
-            filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt.replace(hour=0, minute=0, second=0))
         )
         
+        # Aplicar filtros do dashboard se existirem
+        if filtros_atuais_dashboard['paciente_id']:
+            query_proximos = query_proximos.where(
+                filter=FieldFilter('paciente_id', '==', filtros_atuais_dashboard['paciente_id'])
+            )
+        if filtros_atuais_dashboard['convenio_id']:
+            # Para filtrar por convênio, precisamos primeiro filtrar os pacientes com esse convênio
+            pacientes_com_convenio_ids = []
+            pacientes_query = pacientes_ref.where(
+                filter=FieldFilter('convenio_id', '==', filtros_atuais_dashboard['convenio_id'])
+            ).stream()
+            for p_doc in pacientes_query:
+                pacientes_com_convenio_ids.append(p_doc.id)
+            
+            if pacientes_com_convenio_ids:
+                query_proximos = query_proximos.where(
+                    filter=FieldFilter('paciente_id', 'in', pacientes_com_convenio_ids)
+                )
+            else: # Se não houver pacientes com o convênio selecionado, retorne uma lista vazia
+                # Passar as variáveis now e timedelta para o template, mesmo em caso de erro de filtro
+                return render_template(
+                    'dashboard.html',
+                    current_year=current_year,
+                    mes_atual_nome=mes_atual_nome,
+                    kpi=kpi_cards,
+                    proximos_agendamentos=[], # Lista vazia
+                    dados_atendimento_vs_receita=json.dumps(dados_atendimento_vs_receita),
+                    dados_receita_procedimento=json.dumps(dados_receita_procedimento),
+                    dados_desempenho_profissional=json.dumps(dados_desempenho_profissional),
+                    pacientes_para_filtro=pacientes_para_filtro,
+                    convenios_para_filtro=convenios_para_filtro,
+                    filtros_atuais_dashboard=filtros_atuais_dashboard,
+                    now=datetime.datetime.now(SAO_PAULO_TZ),
+                    timedelta=datetime.timedelta
+                )
+        
+        if filtros_atuais_dashboard['data_inicio_dashboard']:
+            try:
+                dt_inicio_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais_dashboard['data_inicio_dashboard'], '%Y-%m-%d')).astimezone(pytz.utc)
+                query_proximos = query_proximos.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_utc))
+            except ValueError:
+                flash('Data de início inválida no filtro do dashboard. Use o formato AAAA-MM-DD.', 'warning')
+        if filtros_atuais_dashboard['data_fim_dashboard']:
+            try:
+                dt_fim_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais_dashboard['data_fim_dashboard'], '%Y-%m-%d').replace(hour=23, minute=59, second=59)).astimezone(pytz.utc)
+                query_proximos = query_proximos.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_utc))
+            except ValueError:
+                flash('Data de término inválida no filtro do dashboard. Use o formato AAAA-MM-DD.', 'warning')
+
+        # Filtro de profissional logado (já existente)
         if user_role != 'admin':
             if profissional_id_logado:
                 query_proximos = query_proximos.where(
@@ -487,6 +580,14 @@ def index():
             for doc in docs_proximos:
                 ag_data = doc.to_dict()
                 if ag_data and ag_data.get('data_agendamento_ts'):
+                    paciente_id = ag_data.get('paciente_id')
+                    convenio_nome = 'Particular' # Default
+                    if paciente_id and paciente_id in pacientes_info_map:
+                        paciente_data = pacientes_info_map[paciente_id]
+                        convenio_id_paciente = paciente_data.get('convenio_id')
+                        if convenio_id_paciente and convenio_id_paciente in convenios_dict:
+                            convenio_nome = convenios_dict[convenio_id_paciente]
+
                     proximos_agendamentos_lista.append({
                         'id_profissional': ag_data.get('profissional_id'),
                         'data_agendamento': ag_data.get('data_agendamento_ts').strftime('%d/%m/%Y'),
@@ -494,7 +595,8 @@ def index():
                         'cliente_nome': ag_data.get('paciente_nome', "N/A"),
                         'profissional_nome': ag_data.get('profissional_nome', "N/A"),
                         'servico_procedimento_nome': ag_data.get('servico_procedimento_nome', "N/A"),
-                        'preco': float(ag_data.get('servico_procedimento_preco', 0.0))
+                        'preco': float(ag_data.get('servico_procedimento_preco', 0.0)),
+                        'convenio_nome': convenio_nome
                     })
     except Exception as e:
         print(f"ERRO ao buscar próximos agendamentos: {e}")
@@ -508,7 +610,12 @@ def index():
         proximos_agendamentos=proximos_agendamentos_lista,
         dados_atendimento_vs_receita=json.dumps(dados_atendimento_vs_receita),
         dados_receita_procedimento=json.dumps(dados_receita_procedimento),
-        dados_desempenho_profissional=json.dumps(dados_desempenho_profissional)
+        dados_desempenho_profissional=json.dumps(dados_desempenho_profissional),
+        pacientes_para_filtro=pacientes_para_filtro, # Passar para o filtro do dashboard
+        convenios_para_filtro=convenios_para_filtro, # Passar para o filtro do dashboard
+        filtros_atuais_dashboard=filtros_atuais_dashboard, # Passar os filtros atuais
+        now=hoje_dt, # Passar a variável now para o template
+        timedelta=datetime.timedelta # Passar timedelta para o template
     )
 
 @app.route('/usuarios')
@@ -1855,7 +1962,7 @@ def editar_agendamento():
         profissional_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get()
         servico_procedimento_doc = db.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get()
 
-        profissional_nome = professional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
+        profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
         servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A'
         
         dt_agendamento_naive = datetime.datetime.strptime(f"{data_agendamento_str} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
@@ -1863,6 +1970,7 @@ def editar_agendamento():
         data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
 
         update_data = {
+            'paciente_id': request.form.get('paciente_id'), # Garantir que o paciente_id seja mantido/atualizado
             'paciente_nome': paciente_nome,
             'profissional_id': profissional_id_manual,
             'profissional_nome': profissional_nome,
@@ -1935,6 +2043,7 @@ def buscar_prontuario():
 def ver_prontuario(paciente_doc_id):
     clinica_id = session['clinica_id']
     paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+    convenios_ref = db.collection('clinicas').document(clinica_id).collection('convenios')
 
     paciente_data = None
     registros_prontuario = []
@@ -1946,7 +2055,16 @@ def ver_prontuario(paciente_doc_id):
             flash('Paciente não encontrado.', 'danger')
             return redirect(url_for('buscar_prontuario'))
 
+        paciente_data_raw = paciente_doc.to_dict()
         paciente_data = convert_doc_to_dict(paciente_doc)
+
+        # Buscar nome do convênio para o paciente
+        convenio_nome_paciente = 'Particular'
+        if paciente_data_raw.get('convenio_id'):
+            convenio_doc = convenios_ref.document(paciente_data_raw['convenio_id']).get()
+            if convenio_doc.exists:
+                convenio_nome_paciente = convenio_doc.to_dict().get('nome', 'Convênio Desconhecido')
+        paciente_data['convenio_nome'] = convenio_nome_paciente
 
         peis_individuais_docs = paciente_ref.collection('peis_individuais').order_by('identificacao_pei').stream()
         for doc in peis_individuais_docs:
@@ -2049,7 +2167,7 @@ def ver_evolucao_agendamento(agendamento_id):
         evolucao_docs = evolucao_ref.order_by('data_registro').stream()
         
         for doc in evolucao_docs:
-            msg = convert_doc_to_dict(msg)
+            msg = convert_doc_to_dict(doc)
             if msg:
                 mensagens_evolucao.append(msg)
 
@@ -2706,4 +2824,3 @@ def update_pei_meta(paciente_id, pei_individual_id):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
-
