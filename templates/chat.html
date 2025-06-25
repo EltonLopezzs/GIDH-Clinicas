@@ -1,0 +1,183 @@
+<!-- Salve este arquivo como: templates/chat.html -->
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - GIDH-CLINICAS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <style>
+        .list-group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            margin-bottom: -1px;
+            background-color: #fff;
+            border: 1px solid rgba(0,0,0,.125);
+            text-decoration: none;
+            color: #212529;
+        }
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+        .list-group {
+            border-radius: .25rem;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: #fff;
+            padding: .5rem 1rem;
+            font-size: 1rem;
+            border-radius: .25rem;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <input type="checkbox" id="nav-toggle">
+    <div class="sidebar">
+        <div class="sidebar-header"><h3>GIDH-CLINICAS</h3></div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('index') }}"><span class="fas fa-tachometer-alt"></span><span>Dashboard</span></a></li>
+            <li><a href="{{ url_for('listar_pacientes') }}"><span class="fas fa-user-injured"></span><span>Pacientes</span></a></li>
+            <!-- ... outros links ... -->
+            <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
+            <li><a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"><span class="fas fa-sign-out-alt"></span><span>Sair</span></a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h2>
+                <label for="nav-toggle"><span class="fas fa-bars"></span></label>
+                Meus Grupos de Chat
+            </h2>
+            <div class="user-wrapper">
+                <img src="{{ session.get('clinica_logo_url', url_for('static', filename='images/avatar.png')) }}" width="40px" height="40px" alt="Avatar">
+                <div>
+                    <h4>{{ session.user_name }}</h4>
+                    <small>{{ session.user_role }}</small>
+                </div>
+            </div>
+        </header>
+
+        <main style="padding: 2rem;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <a href="{{ url_for('criar_grupo') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Criar Novo Grupo
+                </a>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="list-group">
+                {% if grupos %}
+                    {% for grupo in grupos %}
+                        <a href="{{ url_for('ver_grupo', grupo_id=grupo.id) }}" class="list-group-item">
+                            {{ grupo.nome }}
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="list-group-item">
+                        Você ainda não faz parte de nenhum grupo. <a href="{{ url_for('criar_grupo') }}">Crie um agora!</a>
+                    </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+
+
+<!-- Salve este arquivo como: templates/criar_grupo.html -->
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Grupo - GIDH-CLINICAS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <style>
+        .card { border: 1px solid #dee2e6; border-radius: .25rem; }
+        .card-header { padding: .75rem 1.25rem; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6; }
+        .card-body { padding: 1.25rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-control { width: 100%; padding: .375rem .75rem; border: 1px solid #ced4da; border-radius: .25rem; }
+        .form-check-input { margin-right: .5rem; }
+    </style>
+</head>
+<body>
+    <input type="checkbox" id="nav-toggle">
+    <div class="sidebar">
+        <div class="sidebar-header"><h3>GIDH-CLINICAS</h3></div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('index') }}"><span class="fas fa-tachometer-alt"></span><span>Dashboard</span></a></li>
+            <li><a href="{{ url_for('listar_pacientes') }}"><span class="fas fa-user-injured"></span><span>Pacientes</span></a></li>
+            <!-- ... outros links ... -->
+            <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
+            <li><a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"><span class="fas fa-sign-out-alt"></span><span>Sair</span></a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <h2>
+                <label for="nav-toggle"><span class="fas fa-bars"></span></label>
+                Criar Novo Grupo de Chat
+            </h2>
+            <div class="user-wrapper">
+                <img src="{{ session.get('clinica_logo_url', url_for('static', filename='images/avatar.png')) }}" width="40px" height="40px" alt="Avatar">
+                <div>
+                    <h4>{{ session.user_name }}</h4>
+                    <small>{{ session.user_role }}</small>
+                </div>
+            </div>
+        </header>
+
+        <main style="padding: 2rem;">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Informações do Grupo</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('criar_grupo') }}">
+                        <div class="form-group">
+                            <label for="nome_grupo">Nome do Grupo</label>
+                            <input type="text" class="form-control" id="nome_grupo" name="nome_grupo" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Selecionar Membros</label>
+                            <div class="list-group" style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                                {% for usuario in usuarios %}
+                                <label class="list-group-item">
+                                    <input class="form-check-input" type="checkbox" name="membros" value="{{ usuario.uid }}">
+                                    {{ usuario.nome }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Criar Grupo</button>
+                        <a href="{{ url_for('chat') }}" class="btn btn-secondary">Cancelar</a>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

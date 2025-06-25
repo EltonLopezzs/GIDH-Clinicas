@@ -8,7 +8,6 @@ import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth_admin
 from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify, render_template_string
 import pytz
-
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.field_path import FieldPath
 from collections import Counter
@@ -617,7 +616,157 @@ def index():
         now=hoje_dt, # Passar a variável now para o template
         timedelta=datetime.timedelta # Passar timedelta para o template
     )
+@app.route('/chat')
+@login_required
+def chat():
+    """Página principal do chat, lista os grupos do usuário."""
+    clinica_id = session['clinica_id']
+    user_uid = session['user_uid']
+    grupos_usuario = []
+    
+    try:
+        grupos_ref = db.collection(f'clinicas/{clinica_id}/grupos_chat')
+        query = grupos_ref.where(filter=FieldFilter('membros_uid', 'array_contains', user_uid)).stream()
+        
+        for doc in query:
+            grupo_data = convert_doc_to_dict(doc)
+            if grupo_data:
+                grupos_usuario.append(grupo_data)
+                
+    except Exception as e:
+        flash(f'Erro ao carregar seus grupos de chat: {e}', 'danger')
+        print(f"Erro em /chat: {e}")
 
+    return render_template('chat.html', grupos=grupos_usuario)
+
+@app.route('/criar_grupo', methods=['GET', 'POST'])
+@login_required
+def criar_grupo():
+    """Página e lógica para criar um novo grupo de chat usando Firestore."""
+    clinica_id = session['clinica_id']
+    user_uid = session['user_uid']
+
+    if request.method == 'POST':
+        nome_grupo = request.form.get('nome_grupo')
+        ids_membros_selecionados = request.form.getlist('membros')
+
+        if not nome_grupo or not ids_membros_selecionados:
+            flash('Nome do grupo e pelo menos um membro são obrigatórios.', 'warning')
+            return redirect(url_for('criar_grupo'))
+
+        grupos_ref = db.collection(f'clinicas/{clinica_id}/grupos_chat')
+        nome_existente_query = grupos_ref.where(filter=FieldFilter('nome', '==', nome_grupo)).limit(1).stream()
+        if len(list(nome_existente_query)) > 0:
+            flash('Já existe um grupo com este nome.', 'danger')
+            return redirect(url_for('criar_grupo'))
+
+        if user_uid not in ids_membros_selecionados:
+            ids_membros_selecionados.append(user_uid)
+            
+        try:
+            membros_info = {}
+            users_docs = db.collection('User').where(FieldPath.document_id(), 'in', ids_membros_selecionados).stream()
+            for doc in users_docs:
+                user_data = doc.to_dict()
+                membros_info[doc.id] = user_data.get('nome_completo', user_data.get('email', doc.id))
+
+            novo_grupo_data = {
+                'nome': nome_grupo,
+                'criado_por_uid': user_uid,
+                'criado_em': firestore.SERVER_TIMESTAMP,
+                'membros_uid': ids_membros_selecionados,
+                'membros_info': membros_info
+            }
+            grupos_ref.add(novo_grupo_data)
+            
+            flash(f'Grupo "{nome_grupo}" criado com sucesso!', 'success')
+            return redirect(url_for('chat'))
+        except Exception as e:
+            flash(f'Erro ao criar o grupo: {e}', 'danger')
+            return redirect(url_for('criar_grupo'))
+
+    usuarios_da_clinica = []
+    try:
+        users_ref = db.collection('User').where(filter=FieldFilter('clinica_id', '==', clinica_id)).stream()
+        for doc in users_ref:
+            if doc.id != user_uid:
+                user_data = doc.to_dict()
+                usuarios_da_clinica.append({
+                    'uid': doc.id,
+                    'nome': user_data.get('nome_completo', user_data.get('email', doc.id))
+                })
+    except Exception as e:
+        flash(f'Erro ao carregar a lista de usuários: {e}', 'danger')
+
+    return render_template('criar_grupo.html', usuarios=usuarios_da_clinica)
+
+@app.route('/grupo/<string:grupo_id>')
+@login_required
+def ver_grupo(grupo_id):
+    """Página de um grupo de chat específico. Carrega o histórico inicial."""
+    clinica_id = session['clinica_id']
+    user_uid = session['user_uid']
+    
+    try:
+        grupo_ref = db.collection(f'clinicas/{clinica_id}/grupos_chat').document(grupo_id)
+        grupo_doc = grupo_ref.get()
+
+        if not grupo_doc.exists:
+            flash('Grupo não encontrado.', 'danger')
+            return redirect(url_for('chat'))
+
+        grupo_data = convert_doc_to_dict(grupo_doc)
+        
+        if user_uid not in grupo_data.get('membros_uid', []):
+            flash('Você não tem permissão para acessar este grupo.', 'danger')
+            return redirect(url_for('chat'))
+        
+        # Carrega o histórico inicial de mensagens para a primeira renderização
+        mensagens_iniciais = []
+        mensagens_docs = grupo_ref.collection('mensagens').order_by('timestamp', direction=firestore.Query.ASCENDING).limit(50).stream()
+        for msg_doc in mensagens_docs:
+            mensagens_iniciais.append(convert_doc_to_dict(msg_doc))
+
+        return render_template('grupo_chat.html', grupo=grupo_data, mensagens_iniciais=mensagens_iniciais)
+    except Exception as e:
+        flash(f'Erro ao carregar o grupo: {e}', 'danger')
+        return redirect(url_for('chat'))
+
+@app.route('/api/grupo/<string:grupo_id>/enviar_mensagem', methods=['POST'])
+@login_required
+def enviar_mensagem(grupo_id):
+    """API para receber uma nova mensagem e salvar no Firestore."""
+    clinica_id = session['clinica_id']
+    user_uid = session['user_uid']
+    user_name = session.get('user_name', 'Nome Desconhecido')
+    
+    data = request.json
+    msg_content = data.get('conteudo', '').strip()
+
+    if not msg_content:
+        return jsonify({'success': False, 'message': 'A mensagem não pode estar vazia.'}), 400
+
+    try:
+        grupo_ref = db.collection(f'clinicas/{clinica_id}/grupos_chat').document(grupo_id)
+        grupo_doc = grupo_ref.get()
+        if not grupo_doc.exists or user_uid not in grupo_doc.to_dict().get('membros_uid', []):
+            return jsonify({'success': False, 'message': 'Acesso negado a este grupo.'}), 403
+
+        mensagens_ref = grupo_ref.collection('mensagens')
+        nova_mensagem_data = {
+            'conteudo': msg_content,
+            'user_uid': user_uid,
+            'user_nome': user_name,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        }
+        mensagens_ref.add(nova_mensagem_data)
+        
+        return jsonify({'success': True, 'message': 'Mensagem enviada.'})
+        
+    except Exception as e:
+        print(f"Erro em enviar_mensagem API: {e}")
+        return jsonify({'success': False, 'message': 'Erro interno do servidor.'}), 500
+    
 @app.route('/usuarios')
 @login_required
 @admin_required
