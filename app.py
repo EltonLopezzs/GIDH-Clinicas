@@ -555,13 +555,13 @@ def index():
         if filtros_atuais_dashboard['data_inicio_dashboard']:
             try:
                 dt_inicio_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais_dashboard['data_inicio_dashboard'], '%Y-%m-%d')).astimezone(pytz.utc)
-                query_proximos = query_proximos.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_utc))
+                query = query_proximos.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_utc))
             except ValueError:
                 flash('Data de início inválida no filtro do dashboard. Use o formato AAAA-MM-DD.', 'warning')
         if filtros_atuais_dashboard['data_fim_dashboard']:
             try:
                 dt_fim_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais_dashboard['data_fim_dashboard'], '%Y-%m-%d').replace(hour=23, minute=59, second=59)).astimezone(pytz.utc)
-                query_proximos = query_proximos.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_utc))
+                query = query_proximos.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_utc))
             except ValueError:
                 flash('Data de término inválida no filtro do dashboard. Use o formato AAAA-MM-DD.', 'warning')
 
@@ -639,66 +639,122 @@ def chat():
 
     return render_template('chat.html', grupos=grupos_usuario)
 
-@app.route('/criar_grupo', methods=['GET', 'POST'])
+@app.route('/criar_grupo', methods=['POST'])
 @login_required
 def criar_grupo():
-    """Página e lógica para criar um novo grupo de chat usando Firestore."""
+    """Lógica para criar um novo grupo de chat usando Firestore (via JSON POST)."""
     clinica_id = session['clinica_id']
     user_uid = session['user_uid']
-
-    if request.method == 'POST':
-        nome_grupo = request.form.get('nome_grupo')
-        ids_membros_selecionados = request.form.getlist('membros')
+    
+    try:
+        data = request.json # Usa request.json para pegar dados JSON
+        nome_grupo = data.get('nome_grupo')
+        ids_membros_selecionados = data.get('membros') # Lista de UIDs
 
         if not nome_grupo or not ids_membros_selecionados:
-            flash('Nome do grupo e pelo menos um membro são obrigatórios.', 'warning')
-            return redirect(url_for('criar_grupo'))
+            return jsonify({'success': False, 'error': 'Nome do grupo e pelo menos um membro são obrigatórios.'}), 400
 
         grupos_ref = db.collection(f'clinicas/{clinica_id}/grupos_chat')
         nome_existente_query = grupos_ref.where(filter=FieldFilter('nome', '==', nome_grupo)).limit(1).stream()
         if len(list(nome_existente_query)) > 0:
-            flash('Já existe um grupo com este nome.', 'danger')
-            return redirect(url_for('criar_grupo'))
+            return jsonify({'success': False, 'error': 'Já existe um grupo com este nome.'}), 409
 
         if user_uid not in ids_membros_selecionados:
             ids_membros_selecionados.append(user_uid)
             
-        try:
-            membros_info = {}
+        membros_info = {}
+        # Fetch detailed user info for selected members
+        # Using a batch read for performance if many members are selected, or individual reads if few
+        if ids_membros_selecionados:
             users_docs = db.collection('User').where(FieldPath.document_id(), 'in', ids_membros_selecionados).stream()
             for doc in users_docs:
                 user_data = doc.to_dict()
                 membros_info[doc.id] = user_data.get('nome_completo', user_data.get('email', doc.id))
 
-            novo_grupo_data = {
-                'nome': nome_grupo,
-                'criado_por_uid': user_uid,
-                'criado_em': firestore.SERVER_TIMESTAMP,
-                'membros_uid': ids_membros_selecionados,
-                'membros_info': membros_info
-            }
-            grupos_ref.add(novo_grupo_data)
-            
-            flash(f'Grupo "{nome_grupo}" criado com sucesso!', 'success')
-            return redirect(url_for('chat'))
-        except Exception as e:
-            flash(f'Erro ao criar o grupo: {e}', 'danger')
-            return redirect(url_for('criar_grupo'))
-
-    usuarios_da_clinica = []
-    try:
-        users_ref = db.collection('User').where(filter=FieldFilter('clinica_id', '==', clinica_id)).stream()
-        for doc in users_ref:
-            if doc.id != user_uid:
-                user_data = doc.to_dict()
-                usuarios_da_clinica.append({
-                    'uid': doc.id,
-                    'nome': user_data.get('nome_completo', user_data.get('email', doc.id))
-                })
+        novo_grupo_data = {
+            'nome': nome_grupo,
+            'criado_por_uid': user_uid,
+            'criado_em': firestore.SERVER_TIMESTAMP,
+            'membros_uid': ids_membros_selecionados,
+            'membros_info': membros_info,
+            'is_direct_message': False # Flag para distinguir grupos de DMs
+        }
+        add_result = grupos_ref.add(novo_grupo_data)
+        
+        return jsonify({'success': True, 'message': f'Grupo "{nome_grupo}" criado com sucesso!', 'grupo_id': add_result[1].id}), 201
     except Exception as e:
-        flash(f'Erro ao carregar a lista de usuários: {e}', 'danger')
+        print(f'Erro ao criar o grupo: {e}')
+        return jsonify({'success': False, 'error': f'Erro ao criar o grupo: {str(e)}'}), 500
 
-    return render_template('criar_grupo.html', usuarios=usuarios_da_clinica)
+@app.route('/iniciar_conversa_direta', methods=['POST'])
+@login_required
+def iniciar_conversa_direta():
+    """Lógica para iniciar uma nova conversa direta (DM) no Firestore."""
+    clinica_id = session['clinica_id']
+    user_uid = session['user_uid']
+    user_name = session.get('user_name', session.get('user_email', 'Usuário Atual'))
+
+    try:
+        data = request.json
+        target_uid = data.get('target_uid')
+
+        if not target_uid:
+            return jsonify({'success': False, 'error': 'UID do usuário alvo não fornecido.'}), 400
+        
+        if target_uid == user_uid:
+            return jsonify({'success': False, 'error': 'Não é possível iniciar uma conversa direta consigo mesmo.'}), 400
+
+        # Verifica se já existe uma conversa direta entre os dois usuários
+        # A convenção para DMs será ter um nome de grupo padronizado (e.g., UIDA-UIDB)
+        # E garantir que os membros são exatamente os dois envolvidos.
+        
+        # Para evitar duplicatas e padronizar, crie um ID de conversação único e ordenado
+        members_sorted = sorted([user_uid, target_uid])
+        dm_group_name = f"DM_{members_sorted[0]}_{members_sorted[1]}"
+
+        grupos_ref = db.collection(f'clinicas/{clinica_id}/grupos_chat')
+        
+        # Tenta encontrar uma DM existente com os dois membros
+        # Firestore não tem consulta 'AND' para array_contains em dois campos diferentes diretamente
+        # Então, vamos consultar pelo nome padronizado para DMs
+        existing_dm_query = grupos_ref.where(filter=FieldFilter('nome', '==', dm_group_name)) \
+                                        .where(filter=FieldFilter('is_direct_message', '==', True)) \
+                                        .limit(1).stream()
+        
+        for doc in existing_dm_query:
+            existing_dm_data = doc.to_dict()
+            if all(m in existing_dm_data.get('membros_uid', []) for m in members_sorted) and \
+               len(existing_dm_data.get('membros_uid', [])) == 2:
+                # DM existente encontrada, redireciona para ela
+                return jsonify({'success': True, 'message': 'Conversa direta existente encontrada.', 'grupo_id': doc.id}), 200
+
+        # Se não encontrou, cria uma nova DM
+        target_user_doc = db.collection('User').document(target_uid).get()
+        if not target_user_doc.exists:
+            return jsonify({'success': False, 'error': 'Usuário alvo não encontrado.'}), 404
+        target_user_name = target_user_doc.to_dict().get('nome_completo', target_user_doc.to_dict().get('email', target_uid))
+
+        membros_info = {
+            user_uid: user_name,
+            target_uid: target_user_name
+        }
+
+        nova_dm_data = {
+            'nome': dm_group_name, # Nome padronizado para DMs
+            'display_name': f"{user_name} e {target_user_name}", # Nome amigável para exibição
+            'criado_por_uid': user_uid,
+            'criado_em': firestore.SERVER_TIMESTAMP,
+            'membros_uid': members_sorted,
+            'membros_info': membros_info,
+            'is_direct_message': True
+        }
+        add_result = grupos_ref.add(nova_dm_data)
+        
+        return jsonify({'success': True, 'message': 'Conversa direta criada com sucesso!', 'grupo_id': add_result[1].id}), 201
+    except Exception as e:
+        print(f'Erro ao iniciar conversa direta: {e}')
+        return jsonify({'success': False, 'error': f'Erro ao iniciar conversa direta: {str(e)}'}), 500
+
 
 @app.route('/grupo/<string:grupo_id>')
 @login_required
@@ -706,6 +762,7 @@ def ver_grupo(grupo_id):
     """Página de um grupo de chat específico. Carrega o histórico inicial."""
     clinica_id = session['clinica_id']
     user_uid = session['user_uid']
+    user_name = session.get('user_name', session.get('user_email', 'Você')) # Nome do usuário logado
     
     try:
         grupo_ref = db.collection(f'clinicas/{clinica_id}/grupos_chat').document(grupo_id)
@@ -721,15 +778,33 @@ def ver_grupo(grupo_id):
             flash('Você não tem permissão para acessar este grupo.', 'danger')
             return redirect(url_for('chat'))
         
+        # Ajusta o nome de exibição para DMs
+        if grupo_data.get('is_direct_message', False):
+            # Encontrar o nome do outro participante da DM
+            other_member_uid = [uid for uid in grupo_data.get('membros_uid', []) if uid != user_uid]
+            if other_member_uid:
+                other_user_name = grupo_data.get('membros_info', {}).get(other_member_uid[0], 'Outro Usuário')
+                grupo_data['display_name'] = f"Conversa com {other_user_name}"
+            else:
+                grupo_data['display_name'] = "Conversa Direta" # Fallback
+        else:
+            grupo_data['display_name'] = grupo_data.get('nome', 'Grupo de Chat') # Para grupos normais
+
         # Carrega o histórico inicial de mensagens para a primeira renderização
         mensagens_iniciais = []
         mensagens_docs = grupo_ref.collection('mensagens').order_by('timestamp', direction=firestore.Query.ASCENDING).limit(50).stream()
         for msg_doc in mensagens_docs:
             mensagens_iniciais.append(convert_doc_to_dict(msg_doc))
 
-        return render_template('grupo_chat.html', grupo=grupo_data, mensagens_iniciais=mensagens_iniciais)
+        return render_template('grupo_chat.html', 
+                               grupo=grupo_data, 
+                               mensagens_iniciais=mensagens_iniciais,
+                               user_uid=user_uid, # Passa o UID do usuário para o frontend
+                               user_name=user_name # Passa o nome do usuário para o frontend
+                               )
     except Exception as e:
         flash(f'Erro ao carregar o grupo: {e}', 'danger')
+        print(f"Erro em /grupo/<grupo_id>: {e}")
         return redirect(url_for('chat'))
 
 @app.route('/api/grupo/<string:grupo_id>/enviar_mensagem', methods=['POST'])
