@@ -22,6 +22,7 @@
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
             --success: #16a34a; /* Green-600 */
+            --warning: #f59e0b;
             --border-color: #e2e8f0;
             
             --dark-bg: #0f172a;
@@ -255,26 +256,26 @@
         <aside class="sidebar">
             <div class="sidebar-inner-content">
                 <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
+                    <a href="{{ url_for('dashboard_bp.index') }}" class="logo">
                         <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
                     </a>
                 </div>
                 <nav>
                     <ul> 
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        <li><a href="{{ url_for('dashboard_bp.index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('patients_bp.listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('medical_records_bp.buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('professionals_bp.listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('services_procedures_bp.listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('covenants_bp.listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('schedules_bp.listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('appointments_bp.listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                                <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li><a href="{{ url_for('auth_users_bp.listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li class="active"><a href="{{ url_for('anamnesis_templates_bp.listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li {% if request.endpoint == 'peis_bp.listar_peis' %}class="active"{% endif %}><a href="{{ url_for('peis_bp.listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
-                            <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
+                            <li><a href="{{ url_for('chat_bp.chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
@@ -297,13 +298,13 @@
 
             <main>
                 {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
+                    {% if messages %}
                     <div class="flash-messages">
-                      {% for category, message in messages %}
+                        {% for category, message in messages %}
                         <div class="flash-message {{ category }}">{{ message }}</div>
-                      {% endfor %}
+                        {% endfor %}
                     </div>
-                  {% endif %}
+                    {% endif %}
                 {% endwith %}
 
                 <div class="form-card">
@@ -324,11 +325,11 @@
                                     </button>
                                 </div>
                             </div>
-                             <div class="form-group">
-                                <div id="lgpd-consent-text" class="consent-text">
-                                    Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional.
-                                </div>
-                            </div>
+                               <div class="form-group">
+                                 <div id="lgpd-consent-text" class="consent-text">
+                                     Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional.
+                                 </div>
+                               </div>
                         </div>
 
                         <div class="form-group">
@@ -346,7 +347,7 @@
                             <textarea id="conteudo_modelo" name="conteudo_modelo" style="display:none;"></textarea>
                         </div>
                         <div class="form-actions">
-                            <a href="{{ url_for('listar_modelos_anamnese') }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
+                            <a href="{{ url_for('anamnesis_templates_bp.listar_modelos_anamnese') }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
                             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>&nbsp;Salvar Modelo</button>
                         </div>
                     </form>
@@ -424,6 +425,7 @@
                 updateThemeUI(currentTheme);
                 themeToggle.addEventListener('click', () => {
                     const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    htmlEl.setAttribute('data-theme', newTheme);
                     localStorage.setItem('theme', newTheme);
                     updateThemeUI(newTheme);
                 });
@@ -435,9 +437,9 @@
                 logoutButton.addEventListener('click', async (event) => {
                     event.preventDefault();
                     // Firebase logic should be here in a real app
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
+                    fetch("{{ url_for('auth_users_bp.logout') }}", { method: 'POST' })
+                        .then(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}")
+                        .catch(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}");
                 });
             }
             
@@ -475,7 +477,7 @@
                 const lgpdConsentText = document.getElementById('lgpd-consent-text');
                 
                 if (lgpdConsentText && generateBtn) {
-                     lgpdConsentText.addEventListener('click', () => {
+                    lgpdConsentText.addEventListener('click', () => {
                         lgpdConsentText.classList.toggle('active');
                         generateBtn.disabled = !lgpdConsentText.classList.contains('active');
                     });

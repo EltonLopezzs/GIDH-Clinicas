@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -256,26 +255,26 @@
         <aside class="sidebar">
             <div class="sidebar-inner-content">
                 <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
+                    <a href="{{ url_for('dashboard_bp.index') }}" class="logo">
                         <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
                     </a>
                 </div>
                 <nav>
                     <ul> 
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li class="active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        <li><a href="{{ url_for('dashboard_bp.index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('patients_bp.listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('medical_records_bp.buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('professionals_bp.listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('services_procedures_bp.listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li class="active"><a href="{{ url_for('covenants_bp.listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('schedules_bp.listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('appointments_bp.listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                                   <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li><a href="{{ url_for('auth_users_bp.listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('anamnesis_templates_bp.listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li {% if request.endpoint == 'peis_bp.listar_peis' %}class="active"{% endif %}><a href="{{ url_for('peis_bp.listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
-                            <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
+                            <li><a href="{{ url_for('chat_bp.chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
@@ -292,256 +291,215 @@
                 <div class="topbar-left">
                     <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">{{ page_title|default('Registrar Anamnese') }} para {{ paciente_nome }}</h1>
+                    <h1 class="page-title">Gerenciar Convênios</h1>
                 </div>
+                <a href="{{ url_for('covenants_bp.adicionar_convenio') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    <span class="btn-text-desktop">Adicionar Convênio</span>
+                </a>
             </header>
 
             <main>
                 {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
+                    {% if messages %}
                     <div class="flash-messages">
-                      {% for category, message in messages %}
+                        {% for category, message in messages %}
                         <div class="flash-message {{ category }}">{{ message }}</div>
-                      {% endfor %}
+                        {% endfor %}
                     </div>
-                  {% endif %}
+                    {% endif %}
                 {% endwith %}
 
-                <div class="form-card">
-                    <h2 class="form-title">{{ page_title|default('Registrar Anamnese') }}</h2>
-                    
-                    <form id="anamneseForm" method="POST" action="{{ action_url|default('') }}">
-                        <div class="form-group">
-                            <label for="modelo_base_id">Aplicar Modelo de Anamnese</label>
-                            <select id="modelo_base_id" name="modelo_base_id">
-                                <option value="">Nenhum Modelo (Anamnese em branco)</option>
-                                {% for modelo in modelos_anamnese %}
-                                    <option value="{{ modelo.id }}" 
-                                            data-conteudo="{{ modelo.conteudo_modelo | e }}"
-                                            {% if anamnese and anamnese.modelo_base_id == modelo.id %}selected{% endif %}>
-                                        {{ modelo.identificacao }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="gemini-generator">
-                            <div class="form-group">
-                                <label for="gemini-prompt">Gerar conteúdo com Inteligência Artificial</label>
-                                <div class="gemini-generator-actions">
-                                    <input type="text" id="gemini-prompt" placeholder="Ex: Anamnese para paciente com histórico de enxaqueca">
-                                    <button type="button" id="generate-anamnesis-btn" class="btn btn-primary" disabled>
-                                        <i class="fas fa-robot"></i>&nbsp;<span>Gerar</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div id="lgpd-consent-text" class="consent-text">
-                                    Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="conteudo">Conteúdo da Anamnese</label>
-                            <div class="editor-toolbar">
-                                <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><i class="fas fa-bold"></i></button>
-                                <button type="button" data-command="italic" title="Itálico (Ctrl+I)"><i class="fas fa-italic"></i></button>
-                                <button type="button" data-command="underline" title="Sublinhado (Ctrl+U)"><i class="fas fa-underline"></i></button>
-                                <button type="button" data-command="insertUnorderedList" title="Lista não ordenada"><i class="fas fa-list-ul"></i></button>
-                                <button type="button" data-command="insertOrderedList" title="Lista ordenada"><i class="fas fa-list-ol"></i></button>
-                                <button type="button" data-command="undo" title="Desfazer (Ctrl+Z)"><i class="fas fa-undo"></i></button>
-                                <button type="button" data-command="redo" title="Refazer (Ctrl+Y)"><i class="fas fa-redo"></i></button>
-                            </div>
-                            <div id="editor-content" contenteditable="true" class="editor-content" data-placeholder="Digite o conteúdo da anamnese aqui...">{{ anamnese.conteudo | safe if anamnese else '' }}</div>
-                            <textarea id="conteudo" name="conteudo" style="display:none;"></textarea>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente_id) }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>&nbsp;Salvar Anamnese</button>
-                        </div>
-                    </form>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Registro ANS</th>
+                                <th>Tipo de Plano</th>
+                                <th style="width: 150px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for convenio in convenios %}
+                            <tr>
+                                <td>{{ convenio.nome }}</td>
+                                <td>{{ convenio.registro_ans or 'N/A' }}</td>
+                                <td>{{ convenio.tipo_plano or 'N/A' }}</td>
+                                <td class="table-actions">
+                                    <a href="{{ url_for('covenants_bp.editar_convenio', convenio_doc_id=convenio.id) }}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="{{ url_for('covenants_bp.excluir_convenio', convenio_doc_id=convenio.id) }}" method="post" class="form-delete-convenio">
+                                        <button type="button" class="btn btn-sm btn-danger btn-delete-convenio-trigger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr class="no-results">
+                                <td colspan="4">Nenhum convênio cadastrado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </main>
         </div>
     </div>
-    
+
+    <div class="modal-overlay" id="customConfirmModal">
+        <div class="modal-content">
+            <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="modal-title">Confirmar Exclusão</h3>
+            <p class="modal-text">Tem certeza que deseja excluir este convênio? Esta ação não pode ser desfeita.</p>
+            <div class="modal-actions">
+                <button id="customConfirmCancel" class="btn btn-secondary">Cancelar</button>
+                <button id="customConfirmOk" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
-        import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
-        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-
-        // IMPORTANTE: Cole aqui a configuração do seu projeto Firebase
-        const firebaseConfig = {
-            apiKey: "SUA_API_KEY",
-            authDomain: "SEU_AUTH_DOMAIN",
-            projectId: "SEU_PROJECT_ID",
-            storageBucket: "SEU_STORAGE_BUCKET",
-            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-            appId: "SEU_APP_ID"
+        // Placeholder for Firebase - adjust with your actual config
+        const FAKE_FIREBASE = {
+            initializeApp: () => ({}),
+            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
         };
-
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        const { initializeApp } = FAKE_FIREBASE;
+        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        let auth = getAuth(initializeApp(firebaseConfig));
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
-            
-            // --- Lógica Geral da Interface (Sidebar, Tema, Logout) ---
-            function setupCommonUI() {
-                const sidebar = document.querySelector('.sidebar');
-                const mainContent = document.querySelector('.main-content');
-                const toggleButtons = document.querySelectorAll('.toggle-btn');
-                const themeToggle = document.getElementById('theme-toggle');
-                const logoutButton = document.getElementById('logoutButton');
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+            const themeToggle = document.querySelector('#theme-toggle');
+            const logoutButton = document.getElementById('logoutButton');
 
-                // 1. Lógica do Tema (Dark/Light Mode)
-                if (themeToggle) {
-                    const themeIcon = themeToggle.querySelector('i');
-                    const currentTheme = localStorage.getItem('theme') || 'light';
-                    
-                    htmlEl.dataset.theme = currentTheme;
-                    themeIcon.className = currentTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-
-                    themeToggle.addEventListener('click', () => {
-                        const newTheme = htmlEl.dataset.theme === 'dark' ? 'light' : 'dark';
-                        htmlEl.dataset.theme = newTheme;
-                        localStorage.setItem('theme', newTheme);
-                        themeIcon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                    });
-                }
-
-                // 2. Lógica da Sidebar (Expandir/Recolher)
-                if (sidebar && mainContent && toggleButtons.length > 0) {
-                    // Aplica o estado salvo no desktop
-                    if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
-                        sidebar.classList.add('collapsed');
-                        mainContent.classList.add('collapsed');
+            // --- Sidebar Logic ---
+            function setupSidebar() {
+                if (!sidebar || !mainContent) return;
+                const updateDesktopToggleIcon = () => {
+                    if (!toggleBtnDesktop) return;
+                    const icon = toggleBtnDesktop.querySelector('i');
+                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
+                };
+                const applyInitialState = () => {
+                    if (window.innerWidth > 768) {
+                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                            sidebar.classList.add('collapsed');
+                            mainContent.classList.add('collapsed');
+                        }
+                    } else {
+                        sidebar.classList.remove('open', 'collapsed');
+                        mainContent.classList.remove('collapsed');
                     }
-                    
-                    toggleButtons.forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            if (window.innerWidth > 768) { // Desktop
-                                sidebar.classList.toggle('collapsed');
-                                mainContent.classList.toggle('collapsed');
-                                localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
-                            } else { // Mobile
-                                sidebar.classList.toggle('open');
-                            }
-                        });
+                    updateDesktopToggleIcon();
+                };
+                if (toggleBtnDesktop) {
+                    toggleBtnDesktop.addEventListener('click', () => {
+                        sidebar.classList.toggle('collapsed');
+                        mainContent.classList.toggle('collapsed');
+                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                        updateDesktopToggleIcon();
                     });
                 }
-                
-                // 3. Lógica de Logout
-                if (logoutButton) {
-                    logoutButton.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        firebaseSignOut(auth).then(() => {
-                            // Redireciona para a página de login após o logout
-                            window.location.href = '/login'; 
-                        }).catch((error) => {
-                            console.error('Erro ao fazer logout:', error);
-                            alert('Não foi possível sair. Tente novamente.');
-                        });
+                if (menuBtnMobile) {
+                    menuBtnMobile.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        sidebar.classList.toggle('open');
                     });
                 }
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+                applyInitialState();
+                window.addEventListener('resize', applyInitialState);
+            }
+
+            // --- Theme Logic ---
+            function setupTheme() {
+                if (!themeToggle) return;
+                const updateThemeUI = (theme) => {
+                    htmlEl.setAttribute('data-theme', theme);
+                    const icon = themeToggle.querySelector('i');
+                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                };
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                updateThemeUI(currentTheme);
+                themeToggle.addEventListener('click', () => {
+                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeUI(newTheme);
+                });
+            }
+
+            // --- Logout Logic ---
+            function setupLogout() {
+                if (!logoutButton) return;
+                logoutButton.addEventListener('click', async (event) => {
+                    event.preventDefault();
+                    fetch("{{ url_for('auth_users_bp.logout') }}", { method: 'POST' })
+                        .then(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}")
+                        .catch(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}");
+                });
             }
             
-            // --- Lógica Específica da Página de Anamnese ---
-            function setupAnamnesisPage() {
-                const editor = document.getElementById('editor-content');
-                const hiddenTextarea = document.getElementById('conteudo');
-                const modeloSelect = document.getElementById('modelo_base_id');
+            // --- Confirmation Modal Logic ---
+            function setupConfirmationModal() {
+                const customConfirmModal = document.getElementById('customConfirmModal');
+                if (!customConfirmModal) return;
 
-                if (editor && hiddenTextarea) {
-                    editor.addEventListener('input', () => { hiddenTextarea.value = editor.innerHTML; });
-                    hiddenTextarea.value = editor.innerHTML; // Sincroniza o conteúdo inicial
-                }
-                
-                document.querySelectorAll('.editor-toolbar button').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const command = e.currentTarget.dataset.command;
-                        document.execCommand(command, false, null);
-                        editor.focus();
-                        if (hiddenTextarea) hiddenTextarea.value = editor.innerHTML;
+                const customConfirmOk = document.getElementById('customConfirmOk');
+                const customConfirmCancel = document.getElementById('customConfirmCancel');
+                let formToSubmit = null;
+
+                document.querySelectorAll('.btn-delete-convenio-trigger').forEach(button => {
+                    button.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        formToSubmit = this.closest('form.form-delete-convenio');
+                        if (customConfirmModal && formToSubmit) {
+                            customConfirmModal.classList.add('active');
+                        }
                     });
                 });
-                
-                if (modeloSelect && editor && hiddenTextarea) {
-                    modeloSelect.addEventListener('change', (e) => {
-                        const selected = e.target.options[e.target.selectedIndex];
-                        const content = selected.dataset.conteudo;
-                        if (content && (!editor.innerHTML.trim() || confirm('Deseja substituir o conteúdo atual pelo modelo?'))) {
-                            editor.innerHTML = content;
-                            hiddenTextarea.value = content;
+
+                if (customConfirmOk) {
+                    customConfirmOk.addEventListener('click', () => {
+                        if (formToSubmit) {
+                            formToSubmit.submit();
                         }
+                        customConfirmModal.classList.remove('active');
+                    });
+                }
+
+                if (customConfirmCancel) {
+                    customConfirmCancel.addEventListener('click', () => {
+                        customConfirmModal.classList.remove('active');
+                        formToSubmit = null;
                     });
                 }
                 
-                // --- Lógica do Gerador Gemini ---
-                const generateBtn = document.getElementById('generate-anamnesis-btn');
-                const promptInput = document.getElementById('gemini-prompt');
-                const lgpdConsentText = document.getElementById('lgpd-consent-text');
-                
-                if (lgpdConsentText && generateBtn) {
-                    lgpdConsentText.addEventListener('click', () => {
-                        lgpdConsentText.classList.toggle('active');
-                        generateBtn.disabled = !lgpdConsentText.classList.contains('active');
-                    });
-                }
-                
-                if (generateBtn && promptInput && editor) {
-                    generateBtn.addEventListener('click', async () => {
-                        const userPrompt = promptInput.value.trim();
-                        if (!userPrompt) {
-                            alert('Por favor, descreva o tipo de anamnese que você deseja gerar.');
-                            return;
-                        }
-                        
-                        const fullPrompt = `Você é um assistente especialista em criar documentos para a área da saúde. Sua tarefa é criar um modelo de anamnese em HTML, que seja extremamente completo e detalhado, para a seguinte especialidade ou queixa: "${userPrompt}". O modelo deve incluir seções essenciais como: 'Identificação do Paciente', 'Queixa Principal (QP)', 'História da Doença Atual (HDA)', 'Histórico Médico Pregresso (HMP)', 'Histórico Familiar', 'Hábitos de Vida e Condições Socioeconômicas', e 'Exame Físico' (com subseções para sinais vitais, inspeção, palpação, etc.). Utilize títulos com a tag <h3> ou <strong>, listas <ul> para itens, e parágrafos <p> para descrições. O resultado deve ser um documento robusto e pronto para ser preenchido por um profissional de saúde, sem placeholders como "[...]" e com conteúdo exemplo.`;
-                        
-                        generateBtn.disabled = true;
-                        generateBtn.classList.add('loading');
-                        generateBtn.querySelector('span').textContent = 'Gerando...';
-
-                        try {
-                            // --- ATENÇÃO: Substitua pela sua chave de API real do Gemini ---
-                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // <<<<<<< IMPORTANTE
-                            const genAI = new GoogleGenerativeAI(apiKey);
-                            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
-
-                            const result = await model.generateContent(fullPrompt);
-                            const response = await result.response;
-                            const text = response.text();
-                            
-                            if (editor.innerHTML.trim() && !confirm('Deseja substituir o conteúdo atual pelo texto gerado pela IA?')) {
-                                generateBtn.disabled = !lgpdConsentText.classList.contains('active');
-                                generateBtn.classList.remove('loading');
-                                generateBtn.querySelector('span').textContent = 'Gerar';
-                                return;
-                            }
-                            
-                            editor.innerHTML = text;
-                            if (hiddenTextarea) hiddenTextarea.value = text;
-
-                        } catch (error) {
-                            console.error('Gemini API Error:', error);
-                            alert('Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.');
-                        } finally {
-                            generateBtn.disabled = !lgpdConsentText.classList.contains('active');
-                            generateBtn.classList.remove('loading');
-                            generateBtn.querySelector('span').textContent = 'Gerar';
-                        }
-                    });
-                }
+                customConfirmModal.addEventListener('click', (e) => {
+                    if(e.target === customConfirmModal) {
+                        customConfirmModal.classList.remove('active');
+                    }
+                })
             }
 
-            // --- Inicialização ---
-            setupCommonUI();
-            setupAnamnesisPage();
+
+            // --- Initialization ---
+            setupSidebar();
+            setupTheme();
+            setupLogout();
+            setupConfirmationModal();
         });
     </script>
 </body>

@@ -235,26 +235,26 @@
         <aside class="sidebar">
             <div class="sidebar-inner-content">
                 <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
+                    <a href="{{ url_for('dashboard_bp.index') }}" class="logo">
                         <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
                     </a>
                 </div>
                 <nav>
                     <ul> 
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        <li><a href="{{ url_for('dashboard_bp.index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('patients_bp.listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('medical_records_bp.buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('professionals_bp.listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('services_procedures_bp.listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('covenants_bp.listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('schedules_bp.listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li class="active"><a href="{{ url_for('appointments_bp.listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                                    <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li><a href="{{ url_for('auth_users_bp.listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('anamnesis_templates_bp.listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li {% if request.endpoint == 'peis_bp.listar_peis' %}class="active"{% endif %}><a href="{{ url_for('peis_bp.listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
-                            <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
+                            <li><a href="{{ url_for('chat_bp.chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
@@ -319,7 +319,7 @@
                 <h3><i class="fa-solid fa-filter"></i> Filtrar Agendamentos</h3>
                 <button type="button" class="modal-close-btn" data-close>&times;</button>
             </div>
-            <form method="GET" action="{{ url_for('listar_agendamentos') }}" id="formFiltros">
+            <form method="GET" action="{{ url_for('appointments_bp.listar_agendamentos') }}" id="formFiltros">
                 <div class="modal-body filter-bar-modal-body">
                     <div class="form-group">
                         <label for="filter_paciente_nome">Nome do Paciente</label>
@@ -384,7 +384,7 @@
 
     <div class="modal-overlay" id="modalRegistroManual">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('registrar_atendimento_manual') }}" id="formRegistroManual">
+            <form method="POST" action="{{ url_for('appointments_bp.registrar_atendimento_manual') }}" id="formRegistroManual">
                 <input type="hidden" name="agendamento_id" id="agendamento_id_manual">
                 <div class="modal-header">
                     <h3 id="modalRegistroManualTitle"><i class="fa-solid fa-plus-circle"></i> Registrar Atendimento</h3>
@@ -458,7 +458,7 @@
         </div>
     </div>
 
-    <form id="formApagarAgendamento" method="POST" action="{{ url_for('apagar_agendamento') }}" style="display: none;">
+    <form id="formApagarAgendamento" method="POST" action="{{ url_for('appointments_bp.apagar_agendamento') }}" style="display: none;">
         <input type="hidden" name="agendamento_id" id="agendamento_id_apagar">
     </form>
 
@@ -497,7 +497,7 @@
             // --- Logout Logic (reused) ---
             function setupLogout() {
                 if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => { event.preventDefault(); fetch("{{ url_for('logout') }}", { method: 'POST' }).then(() => window.location.href = "{{ url_for('login_page') }}").catch(() => window.location.href = "{{ url_for('login_page') }}"); });
+                logoutButton.addEventListener('click', async (event) => { event.preventDefault(); fetch("{{ url_for('auth_users_bp.logout') }}", { method: 'POST' }).then(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}").catch(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}"); });
             }
 
             // --- Calendar & Agenda Logic ---
@@ -620,11 +620,11 @@
                     `;
                     
                     document.querySelectorAll('.calendar-day:not(.other-month)').forEach(dayEl => {
-                                   dayEl.addEventListener('click', () => {
-                                   selectedDate = new Date(dayEl.dataset.date + 'T00:00:00');
-                                   renderCalendar(currentDate); 
-                                   renderAgenda(selectedDate);
-                                  });
+                                dayEl.addEventListener('click', () => {
+                                selectedDate = new Date(dayEl.dataset.date + 'T00:00:00');
+                                renderCalendar(currentDate); 
+                                renderAgenda(selectedDate);
+                                });
                     });
                 }
 
@@ -664,7 +664,7 @@
                 
                 function openBookingModal(date, time) {
                     modalFormRegistro.reset();
-                    modalFormRegistro.action = "{{ url_for('registrar_atendimento_manual') }}";
+                    modalFormRegistro.action = "{{ url_for('appointments_bp.registrar_atendimento_manual') }}";
                     modalTitleRegistro.innerHTML = '<i class="fa-solid fa-plus-circle"></i> Registrar Atendimento';
                     document.getElementById('agendamento_id_manual').value = '';
 
@@ -720,11 +720,11 @@
                     };
 
                     btnApagar.onclick = () => {
-                                   if (confirm('Tem certeza que deseja apagar este agendamento? Esta ação não pode ser desfeita.')) {
-                                       formApagar.action = "{{ url_for('apagar_agendamento') }}"; // Ação da rota já configurada
-                                       document.getElementById('agendamento_id_apagar').value = agendamento.id; // Define o ID no campo oculto
-                                       formApagar.submit();
-                                   }
+                                        if (confirm('Tem certeza que deseja apagar este agendamento? Esta ação não pode ser desfeita.')) {
+                                            formApagar.action = "{{ url_for('appointments_bp.apagar_agendamento') }}"; // Ação da rota já configurada
+                                            document.getElementById('agendamento_id_apagar').value = agendamento.id; // Define o ID no campo oculto
+                                            formApagar.submit();
+                                        }
                     };
 
                     modalDetalhes.classList.add('active');
@@ -733,7 +733,7 @@
                 function openEditModal(agendamento) {
                     modalFormRegistro.reset();
                     // Assumindo que você terá uma rota para editar
-                    modalFormRegistro.action = `{{ url_for('editar_agendamento') }}`;
+                    modalFormRegistro.action = `{{ url_for('appointments_bp.editar_agendamento') }}`;
                     modalTitleRegistro.innerHTML = '<i class="fas fa-edit"></i> Editar Agendamento';
                     
                     // Preenche o formulário com os dados existentes
@@ -779,20 +779,19 @@
                 const telefoneInputManual = document.getElementById('cliente_telefone_manual');
                 if(pacienteSelectManual && nomeInputManual && telefoneInputManual) {
                     pacienteSelectManual.addEventListener('change', function() {
-                               const selectedOption = this.options[this.selectedIndex];
-                               if (selectedOption.value) {
-                                   nomeInputManual.value = selectedOption.text;
-                                   telefoneInputManual.value = selectedOption.dataset.telefone || '';
-                                   nomeInputManual.readOnly = true;
-                                   // Telefone pode ser editado mesmo com paciente selecionado
-                                   telefoneInputManual.readOnly = false;
-                               } else {
-                                   nomeInputManual.value = '';
-                                   telefoneInputManual.value = '';
-                                   nomeInputManual.readOnly = false;
-                                   telefoneInputManual.readOnly = false;
-                               }
-                           });
+                                if (selectedOption.value) {
+                                    nomeInputManual.value = selectedOption.text;
+                                    telefoneInputManual.value = selectedOption.dataset.telefone || '';
+                                    nomeInputManual.readOnly = true;
+                                    // Telefone pode ser editado mesmo com paciente selecionado
+                                    telefoneInputManual.readOnly = false;
+                                } else {
+                                    nomeInputManual.value = '';
+                                    telefoneInputManual.value = '';
+                                    nomeInputManual.readOnly = false;
+                                    telefoneInputManual.readOnly = false;
+                                }
+                            });
                 }
                 
                 populateSelectors();
@@ -803,7 +802,7 @@
                 const currentFilters = {{ filtros_atuais | tojson }}; // Pega os filtros do Flask
                 const filterBtn = document.getElementById('openFilterModalBtn');
                 const filterModal = document.getElementById('modalFiltros');
-                const filterForm = document.getElementById('formFiltros');
+                const formFiltros = document.getElementById('formFiltros');
                 const clearFiltersButton = document.getElementById('clearFiltersBtn');
 
                 // Verifica se há filtros aplicados para mudar a cor do botão
