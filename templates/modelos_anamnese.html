@@ -234,28 +234,28 @@
         <aside class="sidebar">
             <div class="sidebar-inner-content">
                 <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
+                    <a href="{{ url_for('dashboard_bp.index') }}" class="logo">
                         <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
                     </a>
                 </div>
                 <nav>
                     <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        <li><a href="{{ url_for('dashboard_bp.index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('patients_bp.listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('medical_records_bp.buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('professionals_bp.listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('services_procedures_bp.listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('covenants_bp.listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('schedules_bp.listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('appointments_bp.listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                                 <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li><a href="{{ url_for('auth_users_bp.listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li class="active"><a href="{{ url_for('anamnesis_templates_bp.listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li {% if request.endpoint == 'peis_bp.listar_peis' %}class="active"{% endif %}><a href="{{ url_for('peis_bp.listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
-                            <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
-                    </ul> 
-                </nav>
+                            <li><a href="{{ url_for('chat_bp.chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
+                    </ul>
+                </nav> 
                 <div class="sidebar-footer">
                     <button id="theme-toggle" aria-label="Alternar tema">
                         <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
@@ -272,7 +272,7 @@
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
                     <h1 class="page-title">Modelos de Anamnese</h1>
                 </div>
-                <a href="{{ url_for('adicionar_modelo_anamnese') }}" class="btn btn-primary">
+                <a href="{{ url_for('anamnesis_templates_bp.adicionar_modelo_anamnese') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> 
                     <span class="btn-text-desktop">Adicionar Modelo</span>
                 </a>
@@ -280,13 +280,13 @@
 
             <main>
                 {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
+                    {% if messages %}
                     <div class="flash-messages">
-                      {% for category, message in messages %}
+                        {% for category, message in messages %}
                         <div class="flash-message {{ category }}">{{ message }}</div>
-                      {% endfor %}
+                        {% endfor %}
                     </div>
-                  {% endif %}
+                    {% endif %}
                 {% endwith %}
 
                 <div class="table-container">
@@ -302,10 +302,10 @@
                             <tr>
                                 <td>{{ modelo.identificacao }}</td>
                                 <td class="table-actions">
-                                    <a href="{{ url_for('editar_modelo_anamnese', modelo_doc_id=modelo.id) }}" class="btn btn-sm btn-warning">
+                                    <a href="{{ url_for('anamnesis_templates_bp.editar_modelo_anamnese', modelo_doc_id=modelo.id) }}" class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ url_for('excluir_modelo_anamnese', modelo_doc_id=modelo.id) }}" method="post" class="form-confirm-action">
+                                    <form action="{{ url_for('anamnesis_templates_bp.excluir_modelo_anamnese', modelo_doc_id=modelo.id) }}" method="post" class="form-confirm-action">
                                         <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -321,17 +321,17 @@
                     </table>
                 </div>
 
-                 <div class="mobile-cards-wrapper">
+                   <div class="mobile-cards-wrapper">
                     {% for modelo in modelos %}
                     <div class="modelo-card-mobile">
                         <div class="card-header-modelo">
                             <h4>{{ modelo.identificacao }}</h4>
                         </div>
                         <div class="card-actions-footer">
-                            <a href="{{ url_for('editar_modelo_anamnese', modelo_doc_id=modelo.id) }}" class="btn btn-sm btn-warning">
+                            <a href="{{ url_for('anamnesis_templates_bp.editar_modelo_anamnese', modelo_doc_id=modelo.id) }}" class="btn btn-sm btn-warning">
                                 <i class="fas fa-edit"></i> Editar
                             </a>
-                            <form action="{{ url_for('excluir_modelo_anamnese', modelo_doc_id=modelo.id) }}" method="post" class="form-confirm-action">
+                            <form action="{{ url_for('anamnesis_templates_bp.excluir_modelo_anamnese', modelo_doc_id=modelo.id) }}" method="post" class="form-confirm-action">
                                 <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger">
                                     <i class="fas fa-trash"></i> Excluir
                                 </button>
@@ -443,9 +443,9 @@
                 if (!logoutButton) return;
                 logoutButton.addEventListener('click', async (event) => {
                     event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
+                    fetch("{{ url_for('auth_users_bp.logout') }}", { method: 'POST' })
+                        .then(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}")
+                        .catch(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}");
                 });
             }
 

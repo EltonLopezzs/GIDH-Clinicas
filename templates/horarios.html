@@ -253,26 +253,26 @@
         <aside class="sidebar">
             <div class="sidebar-inner-content">
                 <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
+                    <a href="{{ url_for('dashboard_bp.index') }}" class="logo">
                         <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
                     </a>
                 </div>
                 <nav>
                     <ul> 
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        <li><a href="{{ url_for('dashboard_bp.index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('patients_bp.listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('medical_records_bp.buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('professionals_bp.listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('services_procedures_bp.listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('covenants_bp.listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li class="active"><a href="{{ url_for('schedules_bp.listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('appointments_bp.listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                                  <li {% if request.endpoint == 'listar_peis' %}class="active"{% endif %}><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li><a href="{{ url_for('auth_users_bp.listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('anamnesis_templates_bp.listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li {% if request.endpoint == 'peis_bp.listar_peis' %}class="active"{% endif %}><a href="{{ url_for('peis_bp.listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
-                            <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
+                            <li><a href="{{ url_for('chat_bp.chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
@@ -291,7 +291,7 @@
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
                     <h1 class="page-title">Gerenciar Horários</h1>
                 </div>
-                <a href="{{ url_for('adicionar_horario') }}" class="btn btn-primary">
+                <a href="{{ url_for('schedules_bp.adicionar_horario') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> 
                     <span class="btn-text-desktop">Adicionar Horário</span>
                 </a>
@@ -299,13 +299,13 @@
 
             <main>
                 {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
+                    {% if messages %}
                     <div class="flash-messages">
-                      {% for category, message in messages %}
+                        {% for category, message in messages %}
                         <div class="flash-message {{ category }}">{{ message }}</div>
-                      {% endfor %}
+                        {% endfor %}
                     </div>
-                  {% endif %}
+                    {% endif %}
                 {% endwith %}
 
                 <div class="table-container">
@@ -337,7 +337,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="table-actions">
-                                    <form action="{{ url_for('ativar_desativar_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" method="post" class="form-confirm-action">
+                                    <form action="{{ url_for('schedules_bp.ativar_desativar_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" method="post" class="form-confirm-action">
                                         {% if horario.ativo %}
                                             <button type="button" class="btn btn-sm btn-toggle-inactive btn-confirm-trigger">
                                                 <i class="fas fa-toggle-off"></i> Desativar
@@ -348,10 +348,10 @@
                                             </button>
                                         {% endif %}
                                     </form>
-                                    <a href="{{ url_for('editar_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" class="btn btn-sm btn-warning">
+                                    <a href="{{ url_for('schedules_bp.editar_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ url_for('excluir_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" method="post" class="form-confirm-action">
+                                    <form action="{{ url_for('schedules_bp.excluir_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" method="post" class="form-confirm-action">
                                         <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -392,15 +392,15 @@
                             </div>
                         </div>
                         <div class="card-actions-footer">
-                            <form action="{{ url_for('ativar_desativar_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" method="post" class="form-confirm-action">
+                            <form action="{{ url_for('schedules_bp.ativar_desativar_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" method="post" class="form-confirm-action">
                                 {% if horario.ativo %}
                                     <button type="button" class="btn btn-sm btn-toggle-inactive btn-confirm-trigger"><i class="fas fa-toggle-off"></i> Desativar</button>
                                 {% else %}
                                     <button type="button" class="btn btn-sm btn-info btn-confirm-trigger"><i class="fas fa-toggle-on"></i> Ativar</button>
                                 {% endif %}
                             </form>
-                            <a href="{{ url_for('editar_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Editar</a>
-                             <form action="{{ url_for('excluir_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" method="post" class="form-confirm-action">
+                            <a href="{{ url_for('schedules_bp.editar_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Editar</a>
+                           <form action="{{ url_for('schedules_bp.excluir_horario', profissional_doc_id=horario.profissional_id_fk, horario_doc_id=horario.id) }}" method="post" class="form-confirm-action">
                                 <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger"><i class="fas fa-trash"></i> Excluir</button>
                             </form>
                         </div>
@@ -455,10 +455,9 @@
                 };
                 const applyInitialState = () => {
                     if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
+                        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                        sidebar.classList.toggle('collapsed', isCollapsed);
+                        mainContent.classList.toggle('collapsed', isCollapsed);
                     } else {
                         sidebar.classList.remove('open', 'collapsed');
                         mainContent.classList.remove('collapsed');
@@ -510,9 +509,9 @@
                 if (!logoutButton) return;
                 logoutButton.addEventListener('click', async (event) => {
                     event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
+                    fetch("{{ url_for('auth_users_bp.logout') }}", { method: 'POST' })
+                        .then(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}")
+                        .catch(() => window.location.href = "{{ url_for('auth_users_bp.login_page') }}");
                 });
             }
 
@@ -540,10 +539,10 @@
                             message = 'Tem certeza que deseja desativar este horário?';
                         } else if(this.textContent.toLowerCase().includes('ativar')){
                             action = 'Ativar';
-                             message = 'Tem certeza que deseja ativar este horário?';
+                            message = 'Tem certeza que deseja ativar este horário?';
                         } else if(this.textContent.toLowerCase().includes('excluir')){
-                             action = 'Excluir';
-                             message = 'Tem certeza que deseja excluir este horário? Esta ação não pode ser desfeita.';
+                            action = 'Excluir';
+                            message = 'Tem certeza que deseja excluir este horário? Esta ação não pode ser desfeita.';
                         }
 
                         titleEl.textContent = `Confirmar ${action}`;
@@ -573,4 +572,4 @@
         });
     </script>
 </body>
-</ht
+</html>

@@ -929,26 +929,26 @@
         <aside class="sidebar">
             <div class="sidebar-inner-content">
                 <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
+                    <a href="{{ url_for('dashboard_bp.index') }}" class="logo">
                         <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
                     </a>
                 </div>
                 <nav>
                     <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li class="active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        <li><a href="{{ url_for('dashboard_bp.index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('patients_bp.listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li class="active"><a href="{{ url_for('medical_records_bp.buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('professionals_bp.listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('services_procedures_bp.listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('covenants_bp.listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('schedules_bp.listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('appointments_bp.listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
+                        <li><a href="{{ url_for('auth_users_bp.listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('anamnesis_templates_bp.listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li><a href="{{ url_for('peis_bp.listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
-                            <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
+                            <li><a href="{{ url_for('chat_bp.chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
                     </ul>  
                 </nav>
                 <div class="sidebar-footer">
@@ -968,7 +968,7 @@
                     <h1 class="page-title">Prontuário de {{ paciente.nome if paciente else 'Paciente' }}</h1>
                 </div>
                 <div class="topbar-actions">
-                    <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="btn btn-primary"><i class="fas fa-plus"></i> <span class="btn-text-desktop">Anamnese</span></a>
+                    <a href="{{ url_for('medical_records_bp.adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="btn btn-primary"><i class="fas fa-plus"></i> <span class="btn-text-desktop">Anamnese</span></a>
                     <button type="button" class="btn btn-secondary btn-add-generic" data-tipo="laudo"><i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Laudo</span></button>
                     <button type="button" class="btn btn-secondary btn-add-generic" data-tipo="orientacao"><i class="fas fa-notes-medical"></i> <span class="btn-text-desktop">Orientação</span></button>
                     <button type="button" class="btn btn-secondary btn-add-generic" data-tipo="procedimento"><i class="fas fa-syringe"></i> <span class="btn-text-desktop">Procedimento</span></button>
@@ -1024,7 +1024,7 @@
                                                     </button>
 
                                                     {% if registro.tipo_registro == 'anamnese' %}
-                                                        <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></a>
+                                                        <a href="{{ url_for('medical_records_bp.editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></a>
                                                     {% else %}
                                                         <button class="btn btn-sm btn-warning btn-editar-registro" data-registro-id="{{ registro.id }}" data-tipo="{{ registro.tipo_registro }}" data-titulo="{{ registro.titulo }}" data-conteudo="{{ registro.conteudo | e }}"><i class="fas fa-edit"></i> <span class="btn-text-desktop">Editar</span></button>
                                                     {% endif %}
@@ -1040,29 +1040,24 @@
 
                             {% if peis_do_paciente %}
                             <div id="tab-panel-peis" class="tab-panel">
-                                <!-- Nova navegação de abas para PEIs Ativos/Finalizados -->
                                 <div class="tab-nav" id="pei-sub-tab-nav">
                                     <button class="tab-nav-item active" data-tab="peis-ativos">PEIs Ativos</button>
                                     <button class="tab-nav-item" data-tab="peis-finalizados">PEIs Finalizados</button>
                                 </div>
                             
-                                <!-- Painéis para as sub-abas -->
                                 <div class="tab-content">
                                     <div id="tab-panel-peis-ativos" class="tab-panel active">
                                         <div class="pei-accordion" id="pei-accordion-ativos">
-                                            <!-- PEIs Ativos serão inseridos aqui via JS -->
-                                        </div>
+                                            </div>
                                         <div class="empty-state" id="empty-state-peis-ativos" style="display: none; padding: 2rem;"><p>Nenhum PEI ativo encontrado.</p></div>
                                     </div>
                                     <div id="tab-panel-peis-finalizados" class="tab-panel">
                                         <div class="pei-accordion" id="pei-accordion-finalizados">
-                                            <!-- PEIs Finalizados serão inseridos aqui via JS -->
-                                        </div>
+                                            </div>
                                         <div class="empty-state" id="empty-state-peis-finalizados" style="display: none; padding: 2rem;"><p>Nenhum PEI finalizado encontrado.</p></div>
                                     </div>
                                 </div>
                             
-                                <!-- Div oculta para armazenar os PEIs originais como template -->
                                 <div id="pei-template-container" style="display: none;">
                                     {% macro render_meta(meta, pei_id, meta_loop_index) %}
                                         <li data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"
@@ -1205,7 +1200,6 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody id="agenda-paciente-tbody">
-                                                    <!-- Conteúdo dinâmico será carregado aqui -->
                                                     <tr class="no-results">
                                                         <td colspan="6">Carregando agendamentos...</td>
                                                     </tr>
@@ -1314,7 +1308,7 @@
         </div>
     </div>
 
-    <form id="formApagarRegistro" method="POST" action="{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}" style="display: none;">
+    <form id="formApagarRegistro" method="POST" action="{{ url_for('medical_records_bp.apagar_registro_generico', paciente_doc_id=paciente.id) }}" style="display: none;">
         <input type="hidden" name="registro_id" id="registro_id_apagar">
     </form>
 
@@ -1422,12 +1416,12 @@
                     }).then(async (result) => {
                         if (result.isConfirmed) {
                             try {
-                                await fetch("{{ url_for('logout') }}", { method: 'POST' });
-                                window.location.href = "{{ url_for('login_page') }}";
+                                await fetch("{{ url_for('auth_users_bp.logout') }}", { method: 'POST' });
+                                window.location.href = "{{ url_for('auth_users_bp.login_page') }}";
                             }
                             catch (error) {
                                 console.error("Erro ao fazer logout:", error);
-                                window.location.href = "{{ url_for('login_page') }}"; // Fallback para redirecionar mesmo com erro
+                                window.location.href = "{{ url_for('auth_users_bp.login_page') }}"; // Fallback para redirecionar mesmo com erro
                             }
                         }
                     });
@@ -1605,7 +1599,7 @@
                     let fetchOptions = {};
 
                     if (isEdit) {
-                        url = `/prontuarios/${pacienteId}/editar_registro_generico/${dados.id}`;
+                        url = "{{ url_for('medical_records_bp.editar_registro_generico', paciente_doc_id=paciente.id, registro_doc_id='__RECORD_ID__') }}".replace('__RECORD_ID__', dados.id);
                         const formToSend = new FormData();
                         for (const key in requestData) {
                             formToSend.append(key, requestData[key]);
@@ -1613,7 +1607,7 @@
                         formToSend.append('tipo_registro_feedback', tipoFeedbackInput.value);
                         fetchOptions = { method: 'POST', body: formToSend };
                     } else {
-                        url = `/prontuarios/${pacienteId}/registrar_registro_generico`;
+                        url = "{{ url_for('medical_records_bp.registrar_registro_generico', paciente_doc_id=paciente.id) }}";
                         fetchOptions = {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -1723,7 +1717,7 @@
                 async function sendMetaUpdate(peiId, metaTitulo, action, extraData = {}) {
                     console.log(`A enviar atualização da meta para PEI: ${peiId}, Meta: ${metaTitulo}, Ação: ${action}`);
                     try {
-                        const response = await fetch(`/api/pacientes/${pacienteId}/peis/${peiId}/meta/update`, {
+                        const response = await fetch("{{ url_for('peis_bp.update_pei_meta', paciente_id=paciente.id, pei_individual_id='__PEI_ID__') }}".replace('__PEI_ID__', peiId), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ meta_titulo: metaTitulo, action, ...extraData })
@@ -1821,7 +1815,7 @@
                                 Swal.fire('Atenção', 'Por favor, digite o conteúdo da evolução.', 'warning');
                                 return;
                             }
-                            const response = await fetch(`/prontuarios/${pacienteId}/registrar_registro_generico`, {
+                            const response = await fetch("{{ url_for('medical_records_bp.registrar_registro_generico', paciente_doc_id=paciente.id) }}", {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -1971,7 +1965,7 @@
 
                 try {
                     // CUIDADO AQUI: O endpoint foi alterado de agendamentos-concluidos para agendamentos
-                    const response = await fetch(`/api/pacientes/${pacienteId}/agendamentos`);
+                    const response = await fetch("{{ url_for('medical_records_bp.api_paciente_agendamentos', paciente_doc_id=paciente.id) }}");
                     
                     if (!response.ok) {
                         const errorData = await response.json();
