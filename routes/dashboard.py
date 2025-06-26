@@ -4,7 +4,8 @@ from flask import Blueprint, render_template, session, flash, redirect, url_for,
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore_v1.field_path import FieldPath
 from collections import Counter
-from decorators.auth_decorators import login_required # Import decorators
+from decorators.auth_decorators import login_required
+import pytz # Adicionado: Importar pytz para manipulação de fuso horário
 
 dashboard_bp = Blueprint('dashboard_bp', __name__)
 
@@ -175,7 +176,7 @@ def index():
         # Não flashear aqui, pois o dashboard deve carregar mesmo com erro de convênio
 
     # Mapear IDs de paciente para informações completas do paciente
-    pacientes_info_map = {}
+    pacientes_info_map = {} # Corrigido: Variável nomeada corretamente
     try:
         pacientes_docs = pacientes_ref.stream()
         for doc in pacientes_docs:
@@ -252,13 +253,17 @@ def index():
         
         if filtros_atuais_dashboard['data_inicio_dashboard']:
             try:
-                dt_inicio_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais_dashboard['data_inicio_dashboard'], '%Y-%m-%d')).astimezone(pytz.utc)
+                # O fuso horário de São Paulo pode ser 'America/Sao_Paulo'
+                dt_inicio_local = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais_dashboard['data_inicio_dashboard'], '%Y-%m-%d'))
+                dt_inicio_utc = dt_inicio_local.astimezone(pytz.utc)
                 query_proximos = query_proximos.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_utc))
             except ValueError:
                 flash('Data de início inválida no filtro do dashboard. Use o formato AAAA-MM-DD.', 'warning')
         if filtros_atuais_dashboard['data_fim_dashboard']:
             try:
-                dt_fim_utc = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais_dashboard['data_fim_dashboard'], '%Y-%m-%d').replace(hour=23, minute=59, second=59)).astimezone(pytz.utc)
+                # O fuso horário de São Paulo pode ser 'America/Sao_Paulo'
+                dt_fim_local = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais_dashboard['data_fim_dashboard'], '%Y-%m-%d').replace(hour=23, minute=59, second=59))
+                dt_fim_utc = dt_fim_local.astimezone(pytz.utc)
                 query_proximos = query_proximos.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_utc))
             except ValueError:
                 flash('Data de término inválida no filtro do dashboard. Use o formato AAAA-MM-DD.', 'warning')
@@ -270,8 +275,9 @@ def index():
                     filter=FieldFilter('profissional_id', '==', profissional_id_logado)
                 )
             else:
-                proximos_agendamentos_lista = []  
-
+                proximos_agendamentos_lista = []  # Nenhuma agenda para este profissional
+        
+        # Somente execute a consulta se houver um profissional logado ou se for admin
         if user_role == 'admin' or profissional_id_logado:
             docs_proximos = query_proximos.order_by('data_agendamento_ts').limit(10).stream()
             for doc in docs_proximos:
@@ -279,13 +285,15 @@ def index():
                 if ag_data and ag_data.get('data_agendamento_ts'):
                     paciente_id = ag_data.get('paciente_id')
                     convenio_nome = 'Particular' # Default
+                    # Corrigido: Usar pacientes_info_map
                     if paciente_id and paciente_id in pacientes_info_map:
-                        paciente_data = patients_info_map[paciente_id]
+                        paciente_data = pacientes_info_map[paciente_id]
                         convenio_id_paciente = paciente_data.get('convenio_id')
                         if convenio_id_paciente and convenio_id_paciente in convenios_dict:
                             convenio_nome = convenios_dict[convenio_id_paciente]
 
                     proximos_agendamentos_lista.append({
+                        'id_agendamento': doc.id, # Adicionado ID do agendamento para futuras modificações
                         'id_profissional': ag_data.get('profissional_id'),
                         'data_agendamento': ag_data.get('data_agendamento_ts').strftime('%d/%m/%Y'),
                         'hora_agendamento': ag_data.get('hora_agendamento', "N/A"),
