@@ -217,6 +217,7 @@
             right: 0.5rem;
             display: flex;
             gap: 0.5rem;
+            z-index: 10;
         }
         .meta-item .meta-actions button {
             background: none;
@@ -239,6 +240,70 @@
         .meta-item .form-group input,
         .meta-item .form-group textarea {
             background-color: var(--card); /* Make nested inputs lighter */
+        }
+
+        /* Alvos specific styles */
+        .alvos-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            background-color: color-mix(in srgb, var(--primary) 5%, transparent);
+        }
+        .alvo-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05); /* Lighter border for alvos */
+        }
+        .alvo-item:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+        .alvo-item input[type="text"] {
+            flex-grow: 1;
+            padding: 0.5rem 0.7rem;
+            background-color: var(--card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        .alvo-item .alvo-actions {
+            display: flex;
+            gap: 0.25rem;
+            position: absolute;
+            right: 0;
+        }
+        .alvo-item .alvo-actions button {
+            background: none;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: var(--muted);
+            transition: color 0.2s ease;
+            padding: 0.2rem;
+        }
+        .alvo-item .alvo-actions button:hover {
+            color: var(--danger);
+        }
+        .add-alvo-button {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border: none;
+            margin-top: 0.5rem;
+        }
+        .add-alvo-button:hover {
+            background-color: var(--primary-dark);
         }
 
 
@@ -343,7 +408,6 @@
                             </div>
                         </div>
                         
-                        <!-- NOVO CAMPO -->
                         <div class="form-group">
                             <label for="profissional_responsavel_id">Profissional Responsável pelo PEI</label>
                             <select id="profissional_responsavel_id" name="profissional_responsavel_id">
@@ -370,7 +434,7 @@
                         <input type="hidden" name="metas_json" id="metas_json_hidden" value="{{ pei.metas_json if pei else '[]' }}">
 
                         <div class="form-actions">
-                            <a href="{{ url_for('listar_peis') }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
+                            <a href="{{ url_for('listar_peis') if not paciente_id else url_for('ver_prontuario', paciente_doc_id=paciente_id) }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
                             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>&nbsp;Salvar PEI</button>
                         </div>
                     </form>
@@ -394,7 +458,24 @@
                 const metasJsonHiddenInput = document.getElementById('metas_json_hidden');
                 const peiForm = document.getElementById('peiForm');
 
-                function createMetaItem(meta = {titulo: '', descricao: '', responsavel: ''}) {
+                function createAlvoItem(alvo = { descricao: '', finalizado: false }) {
+                    const div = document.createElement('div');
+                    div.className = 'alvo-item';
+                    div.innerHTML = `
+                        <input type="text" class="alvo-descricao" value="${alvo.descricao || ''}" placeholder="Descreva o alvo..." required>
+                        <div class="alvo-actions">
+                            <button type="button" class="btn-remove-alvo" title="Remover Alvo"><i class="fas fa-minus-circle"></i></button>
+                        </div>
+                    `;
+                    div.querySelector('.btn-remove-alvo').addEventListener('click', () => {
+                        div.remove();
+                        updateMetasJson(); // Update JSON after removing an alvo
+                    });
+                    div.querySelector('.alvo-descricao').addEventListener('input', updateMetasJson);
+                    return div;
+                }
+
+                function createMetaItem(meta = {titulo: '', descricao: '', responsavel: '', alvos: []}) {
                     const div = document.createElement('div');
                     div.className = 'meta-item';
                     div.innerHTML = `
@@ -410,28 +491,65 @@
                             <textarea class="meta-descricao" rows="2">${meta.descricao || ''}</textarea>
                         </div>
                         <div class="form-group">
-                            <label>Responsável pela Meta</label>
+                            <label>Profissional Responsável pela Meta</label>
                             <input type="text" class="meta-responsavel" value="${meta.responsavel || ''}" placeholder="Ex: Fonoaudiólogo, Psicólogo...">
                         </div>
+                        <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--muted); font-size: 0.95rem;">Alvos da Meta</h4>
+                        <div class="alvos-container">
+                            <!-- Alvos serão adicionados aqui via JavaScript -->
+                            <div class="alvos-list"></div>
+                            <button type="button" class="add-alvo-button"><i class="fas fa-plus"></i> Adicionar Alvo</button>
+                        </div>
                     `;
-                    metasContainer.appendChild(div);
+                    
+                    const alvosListContainer = div.querySelector('.alvos-list');
+                    const addAlvoButton = div.querySelector('.add-alvo-button');
+
+                    // Populate existing alvos
+                    if (meta.alvos && meta.alvos.length > 0) {
+                        meta.alvos.forEach(alvo => {
+                            alvosListContainer.appendChild(createAlvoItem(alvo));
+                        });
+                    } else {
+                        // Add an empty alvo if no existing alvos
+                        alvosListContainer.appendChild(createAlvoItem());
+                    }
+
+                    addAlvoButton.addEventListener('click', () => {
+                        alvosListContainer.appendChild(createAlvoItem());
+                        updateMetasJson(); // Update JSON after adding a new alvo
+                    });
+
                     div.querySelector('.btn-remove-meta').addEventListener('click', () => {
                         div.remove();
                         updateMetasJson();
                     });
                     
-                    div.querySelectorAll('input, textarea').forEach(input => {
+                    div.querySelectorAll('.meta-titulo, .meta-descricao, .meta-responsavel').forEach(input => {
                         input.addEventListener('input', updateMetasJson);
                     });
+                    
+                    metasContainer.appendChild(div);
+                    updateMetasJson(); // Initial update after creating a meta item
                 }
 
                 function updateMetasJson() {
                     const metas = [];
-                    metasContainer.querySelectorAll('.meta-item').forEach(item => {
+                    metasContainer.querySelectorAll('.meta-item').forEach(metaItem => {
+                        const alvos = [];
+                        metaItem.querySelectorAll('.alvo-item').forEach(alvoItem => {
+                            alvos.push({
+                                descricao: alvoItem.querySelector('.alvo-descricao').value.trim()
+                                // 'finalizado' status is managed in the individual PEI, not in the template form
+                                // We keep it in the template for structure, but it's not set here.
+                            });
+                        });
+
                         metas.push({
-                            titulo: item.querySelector('.meta-titulo').value.trim(),
-                            descricao: item.querySelector('.meta-descricao').value.trim(),
-                            responsavel: item.querySelector('.meta-responsavel').value.trim()
+                            titulo: metaItem.querySelector('.meta-titulo').value.trim(),
+                            descricao: metaItem.querySelector('.meta-descricao').value.trim(),
+                            responsavel: metaItem.querySelector('.meta-responsavel').value.trim(),
+                            alvos: alvos // Include the alvos list
                         });
                     });
                     metasJsonHiddenInput.value = JSON.stringify(metas);
@@ -444,25 +562,106 @@
                     console.error("Erro ao parsear metas iniciais:", e);
                 }
                 
-                metasContainer.innerHTML = '';
+                metasContainer.innerHTML = ''; // Clear existing content
                 if (initialMetas.length > 0) {
                     initialMetas.forEach(createMetaItem);
                 } else {
-                    createMetaItem(); // Adiciona uma meta em branco se não houver nenhuma
+                    createMetaItem(); // Add an empty meta with an empty alvo if no initial data
                 }
 
                 addMetaBtn.addEventListener('click', () => {
-                    createMetaItem();
-                    updateMetasJson();
+                    createMetaItem(); // Adds a new meta with an empty alvo by default
                 });
 
                 peiForm.addEventListener('submit', () => {
-                    updateMetasJson();
+                    updateMetasJson(); // Ensure the hidden input is updated before submission
                     // Lógica de loading do botão...
                 });
+
+                // Initial update on load to ensure hidden field reflects default empty meta/alvo
+                updateMetasJson(); 
             }
 
             setupPeiForm();
+
+            // Theme toggle logic (copied from existing templates)
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', () => {
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    // Update icon based on theme
+                    if (newTheme === 'dark') {
+                        themeToggleBtn.querySelector('i').classList.replace('fa-sun', 'fa-moon');
+                    } else {
+                        themeToggleBtn.querySelector('i').classList.replace('fa-moon', 'fa-sun');
+                    }
+                });
+                // Set initial icon based on current theme
+                if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                    themeToggleBtn.querySelector('i').classList.replace('fa-sun', 'fa-moon');
+                } else {
+                    themeToggleBtn.querySelector('i').classList.replace('fa-moon', 'fa-sun');
+                }
+            }
+
+            // Sidebar toggle logic (copied from existing templates)
+            const toggleButtons = document.querySelectorAll('.toggle-btn');
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            toggleButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('collapsed');
+                    sidebar.classList.remove('open'); // Close mobile sidebar if open
+                });
+            });
+
+            // Mobile menu toggle logic
+            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            if (menuBtnMobile) {
+                menuBtnMobile.addEventListener('click', () => {
+                    sidebar.classList.toggle('open');
+                });
+            }
+
+            // Logout button logic
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    try {
+                        const response = await fetch('/logout', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            window.location.href = '/login';
+                        } else {
+                            alert('Erro ao fazer logout: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Erro de rede ao fazer logout:', error);
+                        alert('Erro de rede ao fazer logout.');
+                    }
+                });
+            }
+
+            // Apply saved theme on load
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                if (themeToggleBtn) {
+                    if (savedTheme === 'dark') {
+                        themeToggleBtn.querySelector('i').classList.replace('fa-sun', 'fa-moon');
+                    } else {
+                        themeToggleBtn.querySelector('i').classList.replace('fa-moon', 'fa-sun');
+                    }
+                }
+            }
         });
     </script>
 </body>

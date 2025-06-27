@@ -570,7 +570,11 @@
             gap: 1.2rem; /* Space between dates and toggle button */
             margin-left: auto; /* Push to the right */
         }
-
+        .pei-actions-buttons {
+            display: flex;
+            gap: 0.5rem; /* Space between edit button and other elements */
+            margin-left: 0.5rem; /* Separates from dates */
+        }
         .pei-header .pei-dates {
             font-size: 0.88rem;
             color: var(--muted);
@@ -647,6 +651,8 @@
         .meta-status-nao-iniciada { background-color: var(--muted); }
         .meta-status-em-andamento { background-color: var(--info); }
         .meta-status-concluida { background-color: var(--success); }
+        .meta-status-badge.disabled { opacity: 0.6; } /* Para quando o botão concluir está desabilitado */
+
         .meta-description { margin-bottom: 1.2rem; font-size: 0.95rem; color: var(--text); } /* Ensure good contrast */
         .meta-actions-bar { display: flex; gap: 0.8rem; margin-top: 1.2rem; flex-wrap: wrap; align-items: center; }
         .meta-timer-controls {
@@ -721,6 +727,58 @@
             max-height: 5000px; /* Adjusted to a large fixed height */
             padding-top: 1rem; /* Adiciona padding quando expandido */
             padding-bottom: 1rem;
+        }
+
+        /* Styles for Targets (Alvos) within Metas */
+        .alvos-section {
+            margin-top: 1.2rem;
+            padding-top: 1.2rem;
+            border-top: 1px dashed var(--border-color);
+        }
+        .alvos-section h5 {
+            font-size: 1rem;
+            color: var(--muted);
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+        .alvos-list {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .alvo-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            padding: 0.5rem 0.8rem;
+            background-color: var(--card); /* Different background for nested item */
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .alvo-item input[type="checkbox"] {
+            margin-top: 0.3rem; /* Align checkbox with text */
+            transform: scale(1.2); /* Make checkbox slightly larger */
+            cursor: pointer;
+            accent-color: var(--primary); /* Color for checked state */
+        }
+        .alvo-item span {
+            flex-grow: 1;
+            font-size: 0.95rem;
+            color: var(--text);
+        }
+        .alvo-item.finalizado span {
+            text-decoration: line-through;
+            color: var(--muted);
+            opacity: 0.8;
+        }
+        .alvo-item .alvo-data-finalizacao {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-left: auto;
+            white-space: nowrap;
         }
 
 
@@ -949,7 +1007,7 @@
                         <li><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
                             <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
-                    </ul>  
+                    </ul>   
                 </nav>
                 <div class="sidebar-footer">
                     <button id="theme-toggle" aria-label="Alternar tema">
@@ -1045,7 +1103,7 @@
                                     <button class="tab-nav-item active" data-tab="peis-ativos">PEIs Ativos</button>
                                     <button class="tab-nav-item" data-tab="peis-finalizados">PEIs Finalizados</button>
                                 </div>
-                            
+                                
                                 <!-- Painéis para as sub-abas -->
                                 <div class="tab-content">
                                     <div id="tab-panel-peis-ativos" class="tab-panel active">
@@ -1061,43 +1119,60 @@
                                         <div class="empty-state" id="empty-state-peis-finalizados" style="display: none; padding: 2rem;"><p>Nenhum PEI finalizado encontrado.</p></div>
                                     </div>
                                 </div>
-                            
+                                
                                 <!-- Div oculta para armazenar os PEIs originais como template -->
                                 <div id="pei-template-container" style="display: none;">
-                                    {% macro render_meta(meta, pei_id, meta_loop_index) %}
-                                        <li data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"
-                                            data-cronometro-inicio="{{ meta.cronometro_inicio if meta.cronometro_inicio else '' }}"
+                                    {% macro render_meta(meta, pei_id, meta_loop_index, is_meta_concluida) %}
+                                        <li data-pei-id="{{ pei_id }}" data-meta-index="{{ meta_loop_index }}"
+                                            data-cronometro-inicio="{{ meta.cronometro_inicio.isoformat() if meta.cronometro_inicio else '' }}"
                                             data-tempo-gasto="{{ meta.tempo_total_gasto | default(0) }}"
-                                            data-meta-status="{{ meta.status | default('nao-iniciada') | lower | replace(' ', '-') }}">
+                                            data-meta-status="{{ meta.status | default('Não Iniciada') | lower | replace(' ', '-') }}">
                                             <div class="meta-header">
                                                 <strong>{{ meta.titulo }}</strong>
-                                                <span class="meta-status-badge meta-status-{{ meta.status | default('nao-iniciada') | lower | replace(' ', '-') }}">{{ meta.status | default('Não Iniciada') }}</span>
+                                                <span class="meta-status-badge meta-status-{{ meta.status | default('Não Iniciada') | lower | replace(' ', '-') }}">{{ meta.status | default('Não Iniciada') }}</span>
                                             </div>
                                             <p class="meta-description"> (Responsável: {{ meta.responsavel or 'N/A' }})<br>{{ meta.descricao }}</p>
 
+                                            <div class="alvos-section">
+                                                <h5>Alvos:</h5>
+                                                <ul class="alvos-list">
+                                                    {% if meta.alvos %}
+                                                        {% for alvo_item in meta.alvos %}
+                                                            <li class="alvo-item {% if alvo_item.concluido %}finalizado{% endif %}" data-alvo-index="{{ loop.index0 }}">
+                                                                <input type="checkbox" {% if alvo_item.concluido %}checked{% endif %} {% if is_meta_concluida %}disabled{% endif %}>
+                                                                <span>{{ alvo_item.descricao }}</span>
+                                                                {% if alvo_item.concluido and alvo_item.data_finalizacao_fmt %}
+                                                                    <span class="alvo-data-finalizacao">Concluído em: {{ alvo_item.data_finalizacao_fmt }}</span>
+                                                                {% endif %}
+                                                            </li>
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        <li>Nenhum alvo cadastrado para esta meta.</li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+
+
                                             <div class="meta-actions-bar">
                                                 <div class="meta-timer-controls">
-                                                    {% if meta.status != 'Concluída' %}
+                                                    {% if not is_meta_concluida %}
                                                     <button class="btn btn-sm btn-secondary btn-timer-toggle" title="Iniciar/Pausar Cronômetro">
                                                         <i class="fas fa-play"></i>
                                                     </button>
                                                     {% endif %}
                                                     <span class="timer-display">00:00:00</span>
-                                                    {% if meta.status != 'Concluída' %}
+                                                    {% if not is_meta_concluida %}
                                                     <button class="btn btn-sm btn-danger-outline btn-timer-reset" title="Zerar Cronômetro">
                                                         <i class="fas fa-history"></i>
                                                     </button>
                                                     {% endif %}
                                                 </div>
-                                                {% if meta.status != 'Concluída' %}
-                                                <button class="btn btn-sm btn-success btn-concluir-meta">
+                                                <button class="btn btn-sm btn-success btn-concluir-meta" {% if is_meta_concluida %}disabled{% endif %}>
                                                     <i class="fas fa-check"></i> <span class="btn-text-desktop">Concluir Meta</span>
                                                 </button>
-                                                {% endif %}
                                                 <button class="btn btn-sm btn-primary btn-toggle-evolutions"
-                                                        data-pei-id="{{ pei_id }}"
-                                                        data-meta-titulo="{{ meta.titulo }}"
-                                                        data-meta-index="{{ meta_loop_index }}">
+                                                            data-pei-id="{{ pei_id }}"
+                                                            data-meta-index="{{ meta_loop_index }}">
                                                     <i class="fas fa-comments"></i> <span class="btn-text-desktop">Atividade</span> (<span class="evolution-count">0</span>)
                                                 </button>
                                             </div>
@@ -1128,7 +1203,7 @@
                                                 </div>
                                                 <div class="chat-input-area">
                                                     <textarea placeholder="Digite uma nova evolução..." rows="1"></textarea>
-                                                    <button class="btn btn-primary btn-send-evolution" data-pei-id="{{ pei_id }}" data-meta-titulo="{{ meta.titulo }}"><i class="fas fa-paper-plane"></i> <span class="btn-text-desktop">Enviar</span></button>
+                                                    <button class="btn btn-primary btn-send-evolution" data-pei-id="{{ pei_id }}" data-meta-index="{{ meta_loop_index }}"><i class="fas fa-paper-plane"></i> <span class="btn-text-desktop">Enviar</span></button>
                                                     <button class="btn btn-sm btn-info btn-print-evolution" data-chat-id="chat-meta-{{ pei_id }}-{{ meta_loop_index }}" data-title="Evoluções de {{ meta.titulo }}"><i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir Atividades</span></button>
                                                 </div>
                                             </div>
@@ -1144,6 +1219,9 @@
                                                     <span>Início: {{ pei.data_inicio or 'N/A' }}</span>
                                                     <span>Fim: {{ pei.data_fim or 'N/A' }}</span>
                                                 </div>
+                                                <div class="pei-actions-buttons">
+                                                    <a href="{{ url_for('ver_editar_pei_individual', paciente_doc_id=paciente.id, pei_individual_id=pei.id) }}" class="btn btn-sm btn-warning" title="Editar PEI Individual"><i class="fas fa-edit"></i></a>
+                                                </div>
                                                 <button class="pei-toggle-btn"><i class="fas fa-chevron-down"></i></button>
                                             </div>
                                         </div>
@@ -1154,9 +1232,9 @@
                                                 <div class="metas-section">
                                                     <h5 class="metas-section-header">Metas em Andamento</h5>
                                                     <ul class="pei-metas-list">
-                                                        {% set metas_em_andamento = pei.metas | rejectattr('status', 'eq', 'Concluída') | list %}
+                                                        {% set metas_em_andamento = pei.metas | selectattr('status', 'ne', 'Concluída') | list %}
                                                         {% for meta in metas_em_andamento %}
-                                                            {{ render_meta(meta, pei.id, loop.index0) }}
+                                                            {{ render_meta(meta, pei.id, loop.index0, false) }}
                                                         {% else %}
                                                             <li class="empty-state" style="padding:1rem; font-size:0.9rem;"><p>Nenhuma meta em andamento.</p></li>
                                                         {% endfor %}
@@ -1171,7 +1249,7 @@
                                                         <ul class="pei-metas-list">
                                                             {% set metas_concluidas = pei.metas | selectattr('status', 'eq', 'Concluída') | list %}
                                                             {% for meta in metas_concluidas %}
-                                                                {{ render_meta(meta, pei.id, loop.index0) }}
+                                                                {{ render_meta(meta, pei.id, loop.index0, true) }}
                                                             {% else %}
                                                                 <li class="empty-state" style="padding:1rem; font-size:0.9rem;"><p>Nenhuma meta concluída.</p></li>
                                                             {% endfor %}
@@ -1251,11 +1329,11 @@
                                 </button>
                             </div>
                         </div>
-                               <div class="form-group">
-                                 <div id="lgpd-consent-text" class="consent-text">
-                                     Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
-                                 </div>
-                               </div>
+                                <div class="form-group">
+                                   <div id="lgpd-consent-text" class="consent-text">
+                                       Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
+                                   </div>
+                                </div>
                     </div>
                     <div class="form-group">
                         <label for="conteudo_generico">Conteúdo</label>
@@ -1477,7 +1555,7 @@
                         let chatHistory = [];
                         chatHistory.push({ role: "user", parts: [{ text: fullPrompt }] });
                         const payload = { contents: chatHistory };
-                        const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; 
+                        const apiKey = ""; // Canvas will provide this key
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                         const response = await fetch(apiUrl, {
@@ -1555,8 +1633,8 @@
                 hiddenContentTextarea.value = '';
 
                 // Reseta o estado do botão de IA
-                consentCheck.classList.remove('active');
-                generateBtn.disabled = true;
+                if (consentCheck) consentCheck.classList.remove('active');
+                if (generateBtn) generateBtn.disabled = true;
 
                 const isEdit = !!dados.id;
                 const tipoCapitalizado = tipo.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -1660,11 +1738,15 @@
                 }
 
                 function startVisualTimer(liElement, startTimeISO, baseSeconds) {
-                    const metaId = liElement.dataset.peiId + '||' + liElement.dataset.metaTitulo;
-                    const display = liElement.querySelector('.timer-display');
-                    const timerButtonToggle = liElement.querySelector('.btn-timer-toggle'); // Obter o elemento do botão
+                    // Use meta index instead of title for unique identification
+                    const peiId = liElement.dataset.peiId;
+                    const metaIndex = liElement.dataset.metaIndex;
+                    const metaKey = `${peiId}-${metaIndex}`; // Unique key for timer
 
-                    clearInterval(activeTimers[metaId]);
+                    const display = liElement.querySelector('.timer-display');
+                    const timerButtonToggle = li.querySelector('.btn-timer-toggle');
+
+                    clearInterval(activeTimers[metaKey]);
 
                     if (!startTimeISO) {
                         display.textContent = formatTime(baseSeconds);
@@ -1676,7 +1758,7 @@
                     if (timerButtonToggle) timerButtonToggle.querySelector('i').className = 'fas fa-pause';
 
 
-                    activeTimers[metaId] = setInterval(() => {
+                    activeTimers[metaKey] = setInterval(() => {
                         const now = new Date().getTime();
                         const elapsed = Math.floor((now - startTime) / 1000);
                         const total = baseSeconds + elapsed;
@@ -1693,9 +1775,11 @@
                         const concluirMetaButton = li.querySelector('.btn-concluir-meta');
                         const status = li.dataset.metaStatus;
 
-                        const metaId = li.dataset.peiId + '||' + li.dataset.metaTitulo;
+                        const peiId = li.dataset.peiId;
+                        const metaIndex = li.dataset.metaIndex;
+                        const metaKey = `${peiId}-${metaIndex}`;
 
-                        clearInterval(activeTimers[metaId]);
+                        clearInterval(activeTimers[metaKey]);
 
                         if (status === 'concluida') {
                             if (timerButtonToggle) timerButtonToggle.style.display = 'none';
@@ -1720,27 +1804,46 @@
                     });
                 }
 
-                async function sendMetaUpdate(peiId, metaTitulo, action, extraData = {}) {
-                    console.log(`A enviar atualização da meta para PEI: ${peiId}, Meta: ${metaTitulo}, Ação: ${action}`);
+                function updateMetaCompletionStatus(liElement) {
+                    const alvos = liElement.querySelectorAll('.alvo-item input[type="checkbox"]');
+                    const concluirButton = liElement.querySelector('.btn-concluir-meta');
+                    let allAlvosFinalized = true;
+                    if (alvos.length > 0) {
+                        allAlvosFinalized = Array.from(alvos).every(checkbox => checkbox.checked);
+                    }
+                    // Only enable if meta is not already 'concluida'
+                    const metaStatus = liElement.dataset.metaStatus;
+                    concluirButton.disabled = !allAlvosFinalized || (metaStatus === 'concluida');
+                    if (concluirButton.disabled) {
+                        concluirButton.classList.add('disabled');
+                    } else {
+                        concluirButton.classList.remove('disabled');
+                    }
+                }
+
+                async function sendMetaUpdate(peiId, metaIndex, action, extraData = {}) {
+                    console.log(`Sending meta update for PEI: ${peiId}, Meta Index: ${metaIndex}, Action: ${action}`);
                     try {
-                        const response = await fetch(`/api/pacientes/${pacienteId}/peis/${peiId}/meta/update`, {
+                        const response = await fetch(`/api/pacientes/${pacienteId}/peis/${peiId}/meta/${metaIndex}/update`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ meta_titulo: metaTitulo, action, ...extraData })
+                            body: JSON.stringify({ action, ...extraData })
                         });
                         const result = await response.json();
-                        if (!response.ok) throw new Error(result.message || 'Erro no servidor');
+                        if (!response.ok) {
+                            throw new Error(result.message || 'Erro no servidor');
+                        }
 
                         if (action === 'concluir' || action === 'reset') {
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Sucesso!',
-                                text: `Meta ${metaTitulo} ${action === 'concluir' ? 'concluída' : 'resetada'} com sucesso!`,
+                                text: `Meta ${action === 'concluir' ? 'concluída' : 'resetada'} com sucesso!`,
                                 showConfirmButton: false,
                                 timer: 1500
                             }).then(() => window.location.reload());
                         } else {
-                           const li = document.querySelector(`li[data-pei-id="${peiId}"][data-meta-titulo="${metaTitulo}"]`);
+                           const li = document.querySelector(`.pei-metas-list li[data-pei-id="${peiId}"][data-meta-index="${metaIndex}"]`);
                            if (li && result.updated_meta) {
                                 const meta = result.updated_meta;
                                 li.dataset.cronometroInicio = meta.cronometro_inicio || '';
@@ -1749,13 +1852,24 @@
                                 statusBadge.textContent = meta.status;
                                 statusBadge.className = `meta-status-badge meta-status-${meta.status.toLowerCase().replace(/ /g, '-')}`;
                                 li.dataset.metaStatus = meta.status.toLowerCase().replace(' ', '-');
-                                const metaId = peiId + '||' + metaTitulo;
-                                clearInterval(activeTimers[metaId]);
+                                const metaKey = `${peiId}-${metaIndex}`;
+                                clearInterval(activeTimers[metaKey]);
                                 if (meta.cronometro_inicio) {
                                     startVisualTimer(li, meta.cronometro_inicio, meta.tempo_total_gasto);
                                 } else {
                                     li.querySelector('.timer-display').textContent = formatTime(meta.tempo_total_gasto);
                                     li.querySelector('.btn-timer-toggle i').className = 'fas fa-play';
+                                }
+                                updateMetaCompletionStatus(li); // Re-check meta completion status
+                                // Update timer buttons visibility based on new meta status
+                                const timerButtonToggle = li.querySelector('.btn-timer-toggle');
+                                const timerButtonReset = li.querySelector('.btn-timer-reset');
+                                if (meta.status.toLowerCase() === 'concluída') {
+                                    if (timerButtonToggle) timerButtonToggle.style.display = 'none';
+                                    if (timerButtonReset) timerButtonReset.style.display = 'none';
+                                } else {
+                                    if (timerButtonToggle) timerButtonToggle.style.display = 'inline-flex';
+                                    if (timerButtonReset) timerButtonReset.style.display = 'inline-flex';
                                 }
                            }
                         }
@@ -1767,14 +1881,73 @@
                     }
                 }
 
+                async function sendAlvoUpdate(peiId, metaIndex, alvoIndex, isCompleted) {
+                    console.log(`Sending alvo update for PEI: ${peiId}, Meta Index: ${metaIndex}, Alvo Index: ${alvoIndex}, isCompleted: ${isCompleted}`);
+                    try {
+                        const response = await fetch(`/api/pacientes/${pacienteId}/peis/${peiId}/meta/${metaIndex}/alvo/toggle_complete`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ alvo_index: alvoIndex, is_completed: isCompleted })
+                        });
+                        const result = await response.json();
+                        if (!response.ok) throw new Error(result.message || 'Erro no servidor');
+
+                        const liMeta = document.querySelector(`.pei-metas-list li[data-pei-id="${peiId}"][data-meta-index="${metaIndex}"]`);
+                        if (liMeta) {
+                            updateMetaCompletionStatus(liMeta); // Update meta completion status after alvo changes
+                            // The meta status badge needs to be updated here if its status changes
+                            // The backend should return the updated meta object to properly reflect status changes.
+                            // For now, we rely on updateMetaCompletionStatus which only enables/disables the button.
+                            // If backend also updates meta status based on alvos, a full page reload is simpler.
+                            // As per the API in app.py, meta status is updated on toggle_meta_complete, not toggle_alvo_complete directly.
+                            // So, this is fine.
+                        }
+
+                        // Update the visual representation of the alvo (strikethrough and date)
+                        const alvoItem = liMeta.querySelector(`.alvo-item[data-alvo-index="${alvoIndex}"]`);
+                        if (alvoItem) {
+                            const dataFinalizacaoSpan = alvoItem.querySelector('.alvo-data-finalizacao');
+                            if (isCompleted) { // If alvo is being marked as complete
+                                if (!dataFinalizacaoSpan) {
+                                    const newSpan = document.createElement('span');
+                                    newSpan.className = 'alvo-data-finalizacao';
+                                    alvoItem.appendChild(newSpan);
+                                    // Use current date for display
+                                    const now = new Date();
+                                    newSpan.textContent = `Concluído em: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
+                                } else {
+                                    const now = new Date();
+                                    dataFinalizacaoSpan.textContent = `Concluído em: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
+                                }
+                                alvoItem.classList.add('finalizado');
+                            } else { // If alvo is being un-marked as complete
+                                if (dataFinalizacaoSpan) dataFinalizacaoSpan.remove();
+                                alvoItem.classList.remove('finalizado');
+                            }
+                        }
+
+                        return result;
+
+                    } catch (error) {
+                        console.error(`Erro na atualização do alvo:`, error);
+                        Swal.fire('Erro', `Erro: ${error.message}`, 'error');
+                        return null;
+                    }
+                }
+
+
                 document.querySelectorAll('.pei-header').forEach(header => {
                     header.addEventListener('click', (e) => {
+                        // Prevent expansion if clicking on edit button or action buttons inside header
+                        if (e.target.closest('.pei-actions-buttons') || e.target.closest('.pei-toggle-btn')) {
+                            return;
+                        }
                         // Find the closest .pei-card ancestor
                         const peiCard = e.currentTarget.closest('.pei-card');
                         if (!peiCard) return; // Should not happen
 
                         const content = peiCard.querySelector('.pei-content');
-                        const icon = peiCard.querySelector('.pei-toggle-btn i'); // Still target the icon specifically
+                        const icon = peiCard.querySelector('.pei-toggle-btn i');
 
                         const isExpanded = content.classList.contains('expanded');
                         content.classList.toggle('expanded', !isExpanded);
@@ -1784,35 +1957,52 @@
 
                 document.querySelectorAll('.pei-metas-list').forEach(list => {
                     list.addEventListener('click', async (e) => {
-                        const li = e.target.closest('li');
-                        if (!li || !li.dataset.peiId) return;
+                        const li = e.target.closest('li[data-pei-id][data-meta-index]'); // Select by both data attributes
+                        if (!li) return;
 
                         const peiId = li.dataset.peiId;
-                        const metaTitulo = li.dataset.metaTitulo;
+                        const metaIndex = parseInt(li.dataset.metaIndex, 10);
                         const metaStatus = li.dataset.metaStatus;
+                        const metaTitulo = li.querySelector('.meta-header strong').textContent; // Get the actual meta title from UI
 
                         if (e.target.closest('.btn-timer-toggle')) {
                             if (metaStatus === 'concluida') return;
                             const isRunning = !!li.dataset.cronometroInicio;
                             const action = isRunning ? 'stop_timer' : 'start_timer';
-                            await sendMetaUpdate(peiId, metaTitulo, action);
+                            await sendMetaUpdate(peiId, metaIndex, action);
                         } else if (e.target.closest('.btn-timer-reset')) {
                             if (metaStatus === 'concluida') return;
                             Swal.fire({
                                 title: 'Zerar Cronómetro',
-                                text: 'Tem certeza que deseja zerar o tempo e o status desta meta?',
+                                text: 'Tem certeza que deseja zerar o tempo e o status desta meta, incluindo seus alvos?',
                                 icon: 'warning',
                                 showCancelButton: true,
                                 confirmButtonText: 'Sim, zerar',
                                 cancelButtonText: 'Cancelar'
                             }).then(async (result) => {
-                                if (result.isConfirmed) await sendMetaUpdate(peiId, metaTitulo, 'reset');
+                                if (result.isConfirmed) {
+                                    const updateResult = await sendMetaUpdate(peiId, metaIndex, 'reset');
+                                    if (updateResult && updateResult.success) {
+                                        // Visualmente resetar todos os checkboxes dos alvos
+                                        li.querySelectorAll('.alvo-item input[type="checkbox"]').forEach(checkbox => {
+                                            checkbox.checked = false;
+                                            checkbox.closest('.alvo-item').classList.remove('finalizado');
+                                            const dataFinalizacaoSpan = checkbox.closest('.alvo-item').querySelector('.alvo-data-finalizacao');
+                                            if (dataFinalizacaoSpan) dataFinalizacaoSpan.remove();
+                                        });
+                                    }
+                                }
                             });
                         } else if (e.target.closest('.btn-concluir-meta')) {
                             if (metaStatus === 'concluida') return;
+                            const concluirButton = e.target.closest('.btn-concluir-meta');
+                            if (concluirButton.disabled) {
+                                Swal.fire('Atenção', 'Todos os alvos desta meta devem ser finalizados antes de concluí-la.', 'warning');
+                                return;
+                            }
                             document.getElementById('concluir-meta-titulo').textContent = metaTitulo;
                             modalController.concluirMeta.dataset.peiId = peiId;
-                            modalController.concluirMeta.dataset.metaTitulo = metaTitulo;
+                            modalController.concluirMeta.dataset.metaIndex = metaIndex;
                             modalController.open(modalController.concluirMeta);
                         } else if (e.target.closest('.btn-send-evolution')) {
                             const textArea = li.querySelector('.chat-input-area textarea');
@@ -1856,6 +2046,11 @@
                         } else if (e.target.closest('.btn-toggle-evolutions')) {
                             const evolutionsContainer = li.querySelector('.meta-evolutions');
                             evolutionsContainer.classList.toggle('expanded');
+                        } else if (e.target.closest('.alvo-item input[type="checkbox"]')) {
+                            const checkbox = e.target.closest('.alvo-item input[type="checkbox"]');
+                            const alvoItem = checkbox.closest('.alvo-item');
+                            const alvoIndex = parseInt(alvoItem.dataset.alvoIndex, 10);
+                            await sendAlvoUpdate(peiId, metaIndex, alvoIndex, checkbox.checked);
                         }
                     });
                 });
@@ -1863,9 +2058,9 @@
                 document.getElementById('confirmConcluirMetaBtn').addEventListener('click', async () => {
                     const modal = modalController.concluirMeta;
                     const peiId = modal.dataset.peiId;
-                    const metaTitulo = modal.dataset.metaTitulo;
+                    const metaIndex = parseInt(modal.dataset.metaIndex, 10);
                     const observacao = document.getElementById('concluir-meta-observacao').value;
-                    await sendMetaUpdate(peiId, metaTitulo, 'concluir', { observacao });
+                    await sendMetaUpdate(peiId, metaIndex, 'concluir', { observacao });
                     modalController.close(modal);
                 });
 
@@ -1894,6 +2089,8 @@
                     });
                 });
 
+                // Call this initially for all metas to set correct button states based on alvos
+                document.querySelectorAll('.pei-metas-list li[data-pei-id]').forEach(updateMetaCompletionStatus);
                 initializeMetaTimers();
                 setupEvolutionVisibility();
             }
@@ -1912,24 +2109,38 @@
 
                 if (!subTabNav || !peiTemplateContainer || !ativosAccordion || !finalizadosAccordion) return;
 
+                // Clear existing content from accordions before re-populating
+                ativosAccordion.innerHTML = '';
+                finalizadosAccordion.innerHTML = '';
+
                 // 1. Filtrar e distribuir os PEIs
                 const today = new Date();
                 today.setHours(23, 59, 59, 999); // Considerar o dia inteiro
 
-                const allPeiCards = peiTemplateContainer.querySelectorAll('.pei-card');
+                const allPeiCards = Array.from(peiTemplateContainer.querySelectorAll('.pei-card'));
                 
                 allPeiCards.forEach(card => {
                     const dataFimStr = card.dataset.dataFim;
-                    if (!dataFimStr) {
-                        ativosAccordion.appendChild(card.cloneNode(true));
-                        return;
+                    let isFinalizedByDate = false;
+                    if (dataFimStr) {
+                        // Converte a data de 'DD/MM/YYYY' para um objeto Date
+                        const parts = dataFimStr.split('/');
+                        const dataFim = new Date(parts[2], parts[1] - 1, parts[0]);
+                        isFinalizedByDate = (dataFim < today);
                     }
-                    
-                    // Converte a data de 'DD/MM/YYYY' para um objeto Date
-                    const parts = dataFimStr.split('/');
-                    const dataFim = new Date(parts[2], parts[1] - 1, parts[0]);
-                    
-                    if (dataFim < today) {
+
+                    // Check if all metas within this PEI are concluded
+                    const metasElements = Array.from(card.querySelectorAll('.pei-metas-list li'));
+                    let allMetasConcluded = true;
+                    if (metasElements.length > 0) {
+                        allMetasConcluded = metasElements.every(metaLi => metaLi.dataset.metaStatus === 'concluida');
+                    } else {
+                        // If no metas are defined for the PEI, consider it not concluded by metas
+                        allMetasConcluded = false; 
+                    }
+
+                    // A PEI is considered finalized if its end date has passed OR all its metas are concluded.
+                    if (isFinalizedByDate || allMetasConcluded) {
                         finalizadosAccordion.appendChild(card.cloneNode(true));
                     } else {
                         ativosAccordion.appendChild(card.cloneNode(true));
@@ -2208,13 +2419,6 @@
                             }
 
                             // Espaçamento após os blocos
-                            if (blockElements.includes(node.nodeName)) {
-                                if (node.textContent.trim().length > 0) {
-                                    y += 3; // Espaçamento após os blocos (reduzido de 4 para 3)
-                                }
-                            }
-
-                            // Decrementar nível da lista após processar todos os filhos da lista
                             if (node.nodeName === 'UL' || node.nodeName === 'OL') {
                                 newStyles.listLevel--;
                             }
@@ -2298,7 +2502,7 @@
                         btn.dataset.professional
                     );
                 }
-                   // Botão de Imprimir Evolução (novo)
+                    // Botão de Imprimir Evolução (novo)
                 if (e.target.closest('.btn-print-evolution')) {
                     const btn = e.target.closest('.btn-print-evolution');
                     const chatId = btn.dataset.chatId;
