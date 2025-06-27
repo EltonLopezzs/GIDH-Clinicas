@@ -1744,10 +1744,11 @@
                     const metaKey = `${peiId}-${metaIndex}`; // Unique key for timer
 
                     const display = liElement.querySelector('.timer-display');
-                    const timerButtonToggle = li.querySelector('.btn-timer-toggle');
+                    const timerButtonToggle = liElement.querySelector('.btn-timer-toggle'); // Corrected from `li` to `liElement`
 
                     clearInterval(activeTimers[metaKey]);
 
+                    // FIX: Check if startTimeISO is a valid non-empty string before creating a Date object
                     if (!startTimeISO) {
                         display.textContent = formatTime(baseSeconds);
                         if (timerButtonToggle) timerButtonToggle.querySelector('i').className = 'fas fa-play';
@@ -1755,6 +1756,14 @@
                     }
 
                     const startTime = new Date(startTimeISO).getTime();
+                    // Check if the date conversion resulted in an invalid date
+                    if (isNaN(startTime)) {
+                        console.error(`Invalid startTimeISO for PEI ${peiId}, Meta ${metaIndex}: ${startTimeISO}`);
+                        display.textContent = formatTime(baseSeconds); // Fallback to base time
+                        if (timerButtonToggle) timerButtonToggle.querySelector('i').className = 'fas fa-play';
+                        return;
+                    }
+
                     if (timerButtonToggle) timerButtonToggle.querySelector('i').className = 'fas fa-pause';
 
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title|default(('Editar' if pei else 'Adicionar Novo') ~ ' PEI') }} - Clínica On</title>
+    <title>{{ page_title|default(('Editar PEI Individual')) }} - Clínica On</title>
     
     <link rel="icon" type="image/png" href="https://i.imgur.com/SMYRwQT.png">
     
@@ -23,6 +23,10 @@
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
             --success: #16a34a; /* Green-600 */
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --pei-color: #A0C4FF; /* Soft pastel blue for PEI */
+            --pei-color-dark: #3F51B5; /* Darker shade for text in light mode */
             --border-color: #e2e8f0;
             
             --dark-bg: #0f172a;
@@ -41,6 +45,8 @@
             --muted: var(--dark-muted);
             --border-color: var(--dark-border-color);
             color-scheme: dark;
+            --pei-color: #3f51b5; /* Darker blue for PEI in dark mode */
+            --pei-color-dark: #A0C4FF; /* Lighter shade for text in dark mode */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -248,7 +254,10 @@
             padding: 1rem;
             border: 1px dashed var(--border-color);
             border-radius: 8px;
-            background-color: color-mix(in srgb, var(--primary) 5%, transparent);
+            background-color: color-mix(in srgb, var(--pei-color) 5%, transparent);
+        }
+        [data-theme="dark"] .alvos-container {
+            background-color: color-mix(in srgb, var(--pei-color) 15%, transparent);
         }
         .alvo-item {
             display: flex;
@@ -306,8 +315,24 @@
             background-color: var(--primary-dark);
         }
 
+        .meta-status-display, .meta-time-display {
+            font-size: 0.85rem;
+            color: var(--primary-dark);
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+        .meta-status-display span.status-indicator {
+            padding: 0.2em 0.5em;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+        .meta-status-display span.status-Não-Iniciada { background-color: #fca5a5; color: #b91c1c; } /* Red-300 / Red-700 */
+        .meta-status-display span.status-Em-Andamento { background-color: #bfdbfe; color: #1e40af; } /* Blue-300 / Blue-800 */
+        .meta-status-display span.status-Concluída { background-color: #d1fae5; color: #065f46; } /* Green-300 / Green-800 */
 
-        /* --- Responsive --- */
+        /* Responsive */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
         @media(min-width: 769px) {
@@ -353,7 +378,7 @@
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
                         <li class="active"><a href="{{ url_for('listar_peis') }}"><i class="fa-solid fa-clipboard-check"></i> <span>Gerenciar PEIs</span></a></li>
                         {% endif %}
-                            <li><a href="{{ url_for('chat') }}" class="active"><span class="fas fa-comments"></span><span>Chat</span></a></li>
+                        <li><a href="{{ url_for('chat') }}"><span class="fas fa-comments"></span><span>Chat</span></a></li>
                     </ul>
                 </nav> 
                 <div class="sidebar-footer">
@@ -370,7 +395,12 @@
                 <div class="topbar-left">
                     <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">{{ page_title|default(('Editar' if pei else 'Adicionar Novo') ~ ' PEI') }}</h1>
+                    <h1 class="page-title">{{ page_title|default(('Editar' if pei else 'Adicionar Novo') ~ ' PEI Individual') }}</h1>
+                </div>
+                <div class="topbar-actions">
+                    <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> <span class="btn-text-desktop">Voltar ao Prontuário</span>
+                    </a>
                 </div>
             </header>
 
@@ -386,25 +416,25 @@
                 {% endwith %}
 
                 <div class="form-card">
-                    <h2 class="form-title">{{ page_title|default(('Editar' if pei else 'Adicionar Novo') ~ ' Plano Educacional Individualizado (PEI)') }}</h2>
+                    <h2 class="form-title">{{ page_title|default(('Editar' if pei else 'Adicionar Novo') ~ ' Plano Educacional Individualizado (PEI)') }} para {{ paciente.nome if paciente else 'Paciente' }}</h2>
                     <form id="peiForm" method="POST" action="{{ action_url|default('') }}">
-                        <h3 class="section-title">Dados Gerais do PEI</h3>
+                        <h3 class="section-title">Dados Gerais do PEI Individual</h3>
                         <div class="form-group">
                             <label for="identificacao_pei">Identificação do PEI</label>
-                            <input type="text" id="identificacao_pei" name="identificacao_pei" value="{{ pei.identificacao_pei if pei else '' }}" required placeholder="Ex: PEI para Atraso de Linguagem">
+                            <input type="text" id="identificacao_pei" name="identificacao_pei" value="{{ pei.identificacao_pei | default('') }}" required placeholder="Ex: PEI para Atraso de Linguagem">
                         </div>
                         <div class="form-group">
                             <label for="descricao_pei">Descrição / Observações Gerais</label>
-                            <textarea id="descricao_pei" name="descricao_pei" rows="3" placeholder="Descreva o propósito geral do PEI, ou observações importantes.">{{ pei.descricao_pei if pei else '' }}</textarea>
+                            <textarea id="descricao_pei" name="descricao_pei" rows="3" placeholder="Descreva o propósito geral do PEI, ou observações importantes.">{{ pei.descricao_pei | default('') }}</textarea>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="data_inicio">Data de Início</label>
-                                <input type="text" id="data_inicio" name="data_inicio" class="flatpickr-input" value="{{ pei.data_inicio if pei else '' }}" placeholder="DD/MM/AAAA">
+                                <input type="text" id="data_inicio" name="data_inicio" class="flatpickr-input" value="{{ pei.data_inicio | default('') }}" placeholder="DD/MM/AAAA">
                             </div>
                             <div class="form-group">
                                 <label for="data_fim">Data de Fim (Previsão)</label>
-                                <input type="text" id="data_fim" name="data_fim" class="flatpickr-input" value="{{ pei.data_fim if pei else '' }}" placeholder="DD/MM/AAAA">
+                                <input type="text" id="data_fim" name="data_fim" class="flatpickr-input" value="{{ pei.data_fim | default('') }}" placeholder="DD/MM/AAAA">
                             </div>
                         </div>
                         
@@ -431,10 +461,10 @@
                             </button>
                         </div>
 
-                        <input type="hidden" name="metas_json" id="metas_json_hidden" value="{{ pei.metas_json if pei else '[]' }}">
+                        <input type="hidden" name="metas_json" id="metas_json_hidden" value="{{ pei.metas | tojson | safe }}">
 
                         <div class="form-actions">
-                            <a href="{{ url_for('listar_peis') if not paciente_id else url_for('ver_prontuario', paciente_doc_id=paciente_id) }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
+                            <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente.id) }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
                             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>&nbsp;Salvar PEI</button>
                         </div>
                     </form>
@@ -447,8 +477,11 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script> 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
-            
+            console.log("pei_individual_form.html: DOM fully loaded.");
+            const pacienteId = "{{ paciente.id | default('') }}"; // Ensure paciente.id is available
+
             function setupPeiForm() {
+                console.log("pei_individual_form.html: Setting up PEI form.");
                 // Initialize Flatpickr for date fields
                 flatpickr("#data_inicio", { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "pt", disableMobile: true });
                 flatpickr("#data_fim", { dateFormat: "Y-m-d", altInput: true, altFormat: "d/m/Y", locale: "pt", disableMobile: true });
@@ -458,24 +491,38 @@
                 const metasJsonHiddenInput = document.getElementById('metas_json_hidden');
                 const peiForm = document.getElementById('peiForm');
 
-                function createAlvoItem(alvo = { descricao: '', finalizado: false }) {
+                function formatTime(totalSeconds) {
+                    const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+                    const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+                    const seconds = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+                    return `${hours}:${minutes}:${seconds}`;
+                }
+
+                function createAlvoItem(alvo = { descricao: '', concluido: false, data_finalizacao_fmt: '' }, isMetaConcluida = false) {
                     const div = document.createElement('div');
-                    div.className = 'alvo-item';
+                    div.className = `alvo-item ${alvo.concluido ? 'finalizado' : ''}`;
+                    // Added a class to track checkbox changes for dynamic metas
                     div.innerHTML = `
-                        <input type="text" class="alvo-descricao" value="${alvo.descricao || ''}" placeholder="Descreva o alvo..." required>
+                        <input type="checkbox" class="alvo-checkbox" ${alvo.concluido ? 'checked' : ''} ${isMetaConcluida ? 'disabled' : ''}>
+                        <span class="alvo-descricao-text">${alvo.descricao || ''}</span>
+                        <input type="hidden" class="alvo-descricao" value="${alvo.descricao || ''}">
                         <div class="alvo-actions">
                             <button type="button" class="btn-remove-alvo" title="Remover Alvo"><i class="fas fa-minus-circle"></i></button>
                         </div>
+                        ${alvo.data_finalizacao_fmt ? `<span class="alvo-data-finalizacao">Concluído em: ${alvo.data_finalizacao_fmt}</span>` : ''}
                     `;
                     div.querySelector('.btn-remove-alvo').addEventListener('click', () => {
                         div.remove();
-                        updateMetasJson(); // Update JSON after removing an alvo
+                        updateMetasJson(); 
                     });
-                    div.querySelector('.alvo-descricao').addEventListener('input', updateMetasJson);
+                    div.querySelector('.alvo-descricao-text').addEventListener('input', updateMetasJson); // Listen to changes in the displayed text
+                    div.querySelector('.alvo-descricao').addEventListener('input', updateMetasJson); // For the hidden input
+                    div.querySelector('.alvo-checkbox').addEventListener('change', updateMetasJson); // For tracking completion in the form
                     return div;
                 }
 
-                function createMetaItem(meta = {titulo: '', descricao: '', responsavel: '', alvos: []}) {
+                function createMetaItem(meta = {titulo: '', descricao: '', responsavel: '', alvos: [], status: 'Não Iniciada', tempo_total_gasto: 0, cronometro_inicio: null}) {
+                    const isMetaConcluida = meta.status === 'Concluída';
                     const div = document.createElement('div');
                     div.className = 'meta-item';
                     div.innerHTML = `
@@ -484,40 +531,50 @@
                         </div>
                         <div class="form-group">
                             <label>Título da Meta</label>
-                            <input type="text" class="meta-titulo" value="${meta.titulo || ''}" required>
+                            <input type="text" class="meta-titulo" value="${meta.titulo || ''}" required ${isMetaConcluida ? 'readonly' : ''}>
                         </div>
                         <div class="form-group">
                             <label>Descrição da Meta</label>
-                            <textarea class="meta-descricao" rows="2">${meta.descricao || ''}</textarea>
+                            <textarea class="meta-descricao" rows="2" ${isMetaConcluida ? 'readonly' : ''}>${meta.descricao || ''}</textarea>
                         </div>
                         <div class="form-group">
                             <label>Profissional Responsável pela Meta</label>
-                            <input type="text" class="meta-responsavel" value="${meta.responsavel || ''}" placeholder="Ex: Fonoaudiólogo, Psicólogo...">
+                            <input type="text" class="meta-responsavel" value="${meta.responsavel || ''}" placeholder="Ex: Fonoaudiólogo, Psicólogo..." ${isMetaConcluida ? 'readonly' : ''}>
                         </div>
                         <h4 style="margin-top: 1rem; margin-bottom: 0.5rem; color: var(--muted); font-size: 0.95rem;">Alvos da Meta</h4>
                         <div class="alvos-container">
-                            <!-- Alvos serão adicionados aqui via JavaScript -->
                             <div class="alvos-list"></div>
-                            <button type="button" class="add-alvo-button"><i class="fas fa-plus"></i> Adicionar Alvo</button>
+                            <button type="button" class="add-alvo-button" ${isMetaConcluida ? 'disabled' : ''}><i class="fas fa-plus"></i> Adicionar Alvo</button>
                         </div>
+                        <div class="meta-status-display">
+                            Status: <span class="status-indicator status-${(meta.status || 'Não Iniciada').replace(' ', '-')}">${meta.status || 'Não Iniciada'}</span>
+                        </div>
+                        <div class="meta-time-display">
+                            Tempo Gasto: <span class="timer-display">${formatTime(meta.tempo_total_gasto || 0)}</span>
+                        </div>
+                        <input type="hidden" class="meta-status-hidden" value="${meta.status || 'Não Iniciada'}">
+                        <input type="hidden" class="meta-tempo-total-gasto-hidden" value="${meta.tempo_total_gasto || 0}">
+                        <input type="hidden" class="meta-cronometro-inicio-hidden" value="${meta.cronometro_inicio || ''}">
+                        ${meta.observacao_conclusao ? `<div class="form-group" style="margin-top:1rem;"><label>Observação de Conclusão:</label><p>${meta.observacao_conclusao}</p></div>` : ''}
                     `;
                     
                     const alvosListContainer = div.querySelector('.alvos-list');
                     const addAlvoButton = div.querySelector('.add-alvo-button');
 
-                    // Populate existing alvos
                     if (meta.alvos && meta.alvos.length > 0) {
                         meta.alvos.forEach(alvo => {
-                            alvosListContainer.appendChild(createAlvoItem(alvo));
+                            alvosListContainer.appendChild(createAlvoItem(alvo, isMetaConcluida));
                         });
                     } else {
-                        // Add an empty alvo if no existing alvos
-                        alvosListContainer.appendChild(createAlvoItem());
+                        // Add an empty alvo if no existing alvos, only if not concluded
+                        if (!isMetaConcluida) {
+                           alvosListContainer.appendChild(createAlvoItem({}, isMetaConcluida));
+                        }
                     }
 
                     addAlvoButton.addEventListener('click', () => {
-                        alvosListContainer.appendChild(createAlvoItem());
-                        updateMetasJson(); // Update JSON after adding a new alvo
+                        alvosListContainer.appendChild(createAlvoItem({}, isMetaConcluida));
+                        updateMetasJson(); 
                     });
 
                     div.querySelector('.btn-remove-meta').addEventListener('click', () => {
@@ -530,7 +587,7 @@
                     });
                     
                     metasContainer.appendChild(div);
-                    updateMetasJson(); // Initial update after creating a meta item
+                    updateMetasJson(); 
                 }
 
                 function updateMetasJson() {
@@ -539,9 +596,9 @@
                         const alvos = [];
                         metaItem.querySelectorAll('.alvo-item').forEach(alvoItem => {
                             alvos.push({
-                                descricao: alvoItem.querySelector('.alvo-descricao').value.trim()
-                                // 'finalizado' status is managed in the individual PEI, not in the template form
-                                // We keep it in the template for structure, but it's not set here.
+                                descricao: alvoItem.querySelector('.alvo-descricao').value.trim(),
+                                concluido: alvoItem.querySelector('.alvo-checkbox').checked,
+                                // data_finalizacao is stored in the backend via API, not directly from this form
                             });
                         });
 
@@ -549,36 +606,44 @@
                             titulo: metaItem.querySelector('.meta-titulo').value.trim(),
                             descricao: metaItem.querySelector('.meta-descricao').value.trim(),
                             responsavel: metaItem.querySelector('.meta-responsavel').value.trim(),
-                            alvos: alvos // Include the alvos list
+                            alvos: alvos, 
+                            // Preserve dynamic fields from hidden inputs (read-only in form)
+                            status: metaItem.querySelector('.meta-status-hidden').value,
+                            tempo_total_gasto: parseFloat(metaItem.querySelector('.meta-tempo-total-gasto-hidden').value),
+                            cronometro_inicio: metaItem.querySelector('.meta-cronometro-inicio-hidden').value || null,
+                            observacao_conclusao: metaItem.querySelector('p:has( + label[for="observacao_conclusao"])') ? metaItem.querySelector('p:has( + label[for="observacao_conclusao"])').textContent : '' // Get observation if present
                         });
                     });
                     metasJsonHiddenInput.value = JSON.stringify(metas);
+                    console.log("pei_individual_form.html: Metas JSON updated:", metasJsonHiddenInput.value);
                 }
                 
                 let initialMetas = [];
                 try {
-                    initialMetas = JSON.parse(metasJsonHiddenInput.value || '[]');
+                    // This is the full PEI object with all its dynamic data
+                    const peiDataFromPython = JSON.parse(metasJsonHiddenInput.value || '[]');
+                    // We only need the 'metas' array from it
+                    initialMetas = peiDataFromPython.metas || [];
+                    console.log("pei_individual_form.html: Initial metas loaded:", initialMetas);
                 } catch (e) {
-                    console.error("Erro ao parsear metas iniciais:", e);
+                    console.error("pei_individual_form.html: Erro ao parsear metas iniciais:", e);
                 }
                 
-                metasContainer.innerHTML = ''; // Clear existing content
+                metasContainer.innerHTML = ''; 
                 if (initialMetas.length > 0) {
                     initialMetas.forEach(createMetaItem);
                 } else {
-                    createMetaItem(); // Add an empty meta with an empty alvo if no initial data
+                    createMetaItem(); 
                 }
 
                 addMetaBtn.addEventListener('click', () => {
-                    createMetaItem(); // Adds a new meta with an empty alvo by default
+                    createMetaItem(); 
                 });
 
                 peiForm.addEventListener('submit', () => {
-                    updateMetasJson(); // Ensure the hidden input is updated before submission
-                    // Lógica de loading do botão...
+                    updateMetasJson(); 
                 });
 
-                // Initial update on load to ensure hidden field reflects default empty meta/alvo
                 updateMetasJson(); 
             }
 

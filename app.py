@@ -1323,6 +1323,17 @@ def adicionar_paciente():
                             meta['tempo_total_gasto'] = 0
                         if 'cronometro_inicio' not in meta:
                             meta['cronometro_inicio'] = None
+                        
+                        # Initialize alvo dynamic fields
+                        alvos_list = meta.get('alvos', [])
+                        if isinstance(alvos_list, list):
+                            for alvo in alvos_list:
+                                if 'concluido' not in alvo:
+                                    alvo['concluido'] = False
+                                if 'data_finalizacao' not in alvo:
+                                    alvo['data_finalizacao'] = None
+                        meta['alvos'] = alvos_list
+
                     pei_data['metas'] = metas_list # Atribui a lista tratada de volta
 
                     individual_pei_ref = new_paciente_ref.collection('peis_individuais').document(pei_template_id)
@@ -1462,6 +1473,17 @@ def editar_paciente(paciente_doc_id):
                                 meta['tempo_total_gasto'] = 0
                             if 'cronometro_inicio' not in meta:
                                 meta['cronometro_inicio'] = None
+                            
+                            # Initialize alvo dynamic fields
+                            alvos_list = meta.get('alvos', [])
+                            if isinstance(alvos_list, list):
+                                for alvo in alvos_list:
+                                    if 'concluido' not in alvo:
+                                        alvo['concluido'] = False
+                                    if 'data_finalizacao' not in alvo:
+                                        alvo['data_finalizacao'] = None
+                            meta['alvos'] = alvos_list
+
                         pei_data['metas'] = metas_list
 
                         individual_pei_ref = paciente_ref.collection('peis_individuais').document(pei_template_id)
@@ -2301,6 +2323,19 @@ def ver_prontuario(paciente_doc_id):
                         meta['tempo_total_gasto'] = 0
                     if 'cronometro_inicio' not in meta:
                         meta['cronometro_inicio'] = None
+                    
+                    # Ensure alvos also have their dynamic properties initialized/formatted
+                    alvos_list = meta.get('alvos', [])
+                    if isinstance(alvos_list, list):
+                        for alvo in alvos_list:
+                            if 'concluido' not in alvo:
+                                alvo['concluido'] = False
+                            if 'data_finalizacao' in alvo and isinstance(alvo['data_finalizacao'], datetime.datetime):
+                                alvo['data_finalizacao_fmt'] = alvo['data_finalizacao'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                            else:
+                                alvo['data_finalizacao_fmt'] = None
+                    meta['alvos'] = alvos_list # Assign back the updated list
+
             peis_individuais_paciente.append(pei_data)
 
         prontuarios_docs = paciente_ref.collection('prontuarios').order_by('data_registro', direction=firestore.Query.DESCENDING).stream()
@@ -2651,7 +2686,7 @@ def registrar_registro_generico(paciente_doc_id):
 @app.route('/prontuarios/<string:paciente_doc_id>/editar_registro_generico/<string:registro_doc_id>', methods=['POST'])
 @login_required
 def editar_registro_generico(paciente_doc_id, registro_doc_id):
-    clinica_id = session['clinica_id']
+    clinica_id = session['clinica_id'] # Corrigido de clinina_id
     registro_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(registro_doc_id)
 
     try:
@@ -2959,6 +2994,316 @@ def excluir_pei(pei_doc_id):
         print(f"Erro excluir_pei: {e}")
     return redirect(url_for('listar_peis'))
 
+# ----------------------------------------------------------------------------------------------------------------------
+# ROTAS DE GESTÃO DE PLANOS EDUCACIONAIS INDIVIDUALIZADOS (PEIs) INDIVIDUAIS DO PACIENTE
+# ----------------------------------------------------------------------------------------------------------------------
+
+@app.route('/pacientes/<string:paciente_doc_id>/peis_individuais/editar/<string:pei_individual_id>', methods=['GET', 'POST'])
+@login_required
+def ver_editar_pei_individual(paciente_doc_id, pei_individual_id):
+    clinica_id = session['clinica_id']
+    
+    # Referência ao paciente e ao PEI individual
+    paciente_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+    pei_individual_ref = paciente_ref.collection('peis_individuais').document(pei_individual_id)
+
+    paciente_data = None
+    pei_individual_data = None
+    
+    # Load available professionals for the dropdown (same as template PEI form)
+    profissionais_lista = []
+    try:
+        profissionais_docs = db.collection(f'clinicas/{clinica_id}/profissionais').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+        for doc in profissionais_docs:
+            profissionais_lista.append(convert_doc_to_dict(doc))
+    except Exception as e:
+        flash('Erro ao carregar a lista de profissionais.', 'danger')
+        print(f"Erro ao carregar profissionais para PEI individual: {e}")
+
+    # GET request: Display form with existing data
+    if request.method == 'GET':
+        try:
+            paciente_doc = paciente_ref.get()
+            if not paciente_doc.exists:
+                flash('Paciente não encontrado.', 'danger')
+                return redirect(url_for('buscar_prontuario'))
+            paciente_data = convert_doc_to_dict(paciente_doc)
+
+            pei_individual_doc = pei_individual_ref.get()
+            if not pei_individual_doc.exists:
+                flash('PEI Individual não encontrado.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            
+            pei_individual_data = convert_doc_to_dict(pei_individual_doc)
+
+            # Format dates for form display
+            if pei_individual_data.get('data_inicio') and isinstance(pei_individual_data['data_inicio'], datetime.datetime):
+                pei_individual_data['data_inicio'] = pei_individual_data['data_inicio'].strftime('%Y-%m-%d')
+            else:
+                pei_individual_data['data_inicio'] = ''
+
+            if pei_individual_data.get('data_fim') and isinstance(pei_individual_data['data_fim'], datetime.datetime):
+                pei_individual_data['data_fim'] = pei_individual_data['data_fim'].strftime('%Y-%m-%d')
+            else:
+                pei_individual_data['data_fim'] = ''
+            
+            # For metas, ensure it's a list and prepare for JSON.
+            # The JS will handle the structure for display/editing
+            if 'metas' in pei_individual_data and isinstance(pei_individual_data['metas'], list):
+                # We need to pass the *full* meta object for JS to manage.
+                # The form will then send back only the editable parts.
+                # So, the hidden input will contain only the editable parts.
+                # The server-side POST will then merge.
+                # For the GET request, just pass the raw object.
+                pass # Already a dict from convert_doc_to_dict
+            else:
+                pei_individual_data['metas'] = [] # Ensure it's an empty list if not present or not list
+
+            return render_template('pei_individual_form.html',
+                                   paciente=paciente_data,
+                                   pei=pei_individual_data,
+                                   action_url=url_for('ver_editar_pei_individual', paciente_doc_id=paciente_doc_id, pei_individual_id=pei_individual_id),
+                                   page_title=f"Editar PEI de {paciente_data.get('nome', 'Paciente')} ({pei_individual_data.get('identificacao_pei', 'N/A')})",
+                                   profissionais=profissionais_lista,
+                                   is_individual_pei=True # Flag for template logic
+                                   )
+
+        except Exception as e:
+            flash(f'Erro ao carregar PEI individual para edição: {e}', 'danger')
+            print(f"Erro GET ver_editar_pei_individual: {e}")
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    # POST request: Save updated data
+    elif request.method == 'POST':
+        identificacao_pei = request.form['identificacao_pei'].strip()
+        descricao_pei = request.form.get('descricao_pei', '').strip()
+        data_inicio_str = request.form.get('data_inicio', '').strip()
+        data_fim_str = request.form.get('data_fim', '').strip()
+        
+        # The 'metas_json' from the form will now only contain the editable parts
+        metas_from_form_json = request.form.get('metas_json', '[]')
+        profissional_responsavel_id = request.form.get('profissional_responsavel_id')
+
+        try:
+            # Re-fetch the current PEI individual document to preserve dynamic meta data
+            current_pei_individual_doc = pei_individual_ref.get()
+            if not current_pei_individual_doc.exists:
+                flash('PEI Individual não encontrado para atualização.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            
+            current_pei_individual_data = current_pei_individual_doc.to_dict()
+            original_metas = current_pei_individual_data.get('metas', [])
+            metas_from_form = json.loads(metas_from_form_json)
+            
+            # Find professional name for responsible professional
+            profissional_responsavel_nome = None
+            if profissional_responsavel_id:
+                prof_doc = db.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_responsavel_id).get()
+                if prof_doc.exists:
+                    profissional_responsavel_nome = prof_doc.to_dict().get('nome')
+
+            data_inicio_dt = parse_date_input(data_inicio_str) if data_inicio_str else None
+            data_fim_dt = parse_date_input(data_fim_str) if data_fim_str else None
+
+            # Merge updated meta data from form with original dynamic meta data
+            updated_metas = []
+            for form_meta in metas_from_form:
+                # Try to find the corresponding original meta by title
+                matched_original_meta = next((om for om in original_metas if om.get('titulo') == form_meta.get('titulo')), None)
+                
+                if matched_original_meta:
+                    # Update editable fields, preserve others
+                    merged_meta = matched_original_meta.copy()
+                    merged_meta['titulo'] = form_meta.get('titulo')
+                    merged_meta['descricao'] = form_meta.get('descricao')
+                    merged_meta['responsavel'] = form_meta.get('responsavel')
+
+                    # Preserve meta dynamic fields sent from the form as hidden inputs
+                    merged_meta['status'] = form_meta.get('status', merged_meta.get('status', 'Não Iniciada'))
+                    merged_meta['tempo_total_gasto'] = form_meta.get('tempo_total_gasto', merged_meta.get('tempo_total_gasto', 0))
+                    merged_meta['cronometro_inicio'] = form_meta.get('cronometro_inicio', merged_meta.get('cronometro_inicio', None))
+                    merged_meta['observacao_conclusao'] = form_meta.get('observacao_conclusao', merged_meta.get('observacao_conclusao', None))
+
+
+                    # Merge alvos
+                    updated_alvos = []
+                    for form_alvo in form_meta.get('alvos', []):
+                        matched_original_alvo = next((oa for oa in merged_meta.get('alvos', []) if oa.get('descricao') == form_alvo.get('descricao')), None)
+                        
+                        current_alvo = {}
+                        if matched_original_alvo:
+                            current_alvo = matched_original_alvo.copy()
+                        
+                        # Always take the 'descricao' from the form
+                        current_alvo['descricao'] = form_alvo.get('descricao')
+                        
+                        # IMPORTANT: Update 'concluido' from the form if provided
+                        if 'concluido' in form_alvo:
+                            current_alvo['concluido'] = form_alvo['concluido']
+                            # If it's being marked complete and wasn't before, set data_finalizacao
+                            if form_alvo['concluido'] and not current_alvo.get('concluido'): # Only set if newly completed
+                                current_alvo['data_finalizacao'] = firestore.SERVER_TIMESTAMP
+                            elif not form_alvo['concluido']: # If un-checked, clear data_finalizacao
+                                current_alvo['data_finalizacao'] = None 
+                        else:
+                            # If 'concluido' is not sent by form (shouldn't happen with current JS), preserve original
+                            current_alvo['concluido'] = current_alvo.get('concluido', False)
+                            current_alvo['data_finalizacao'] = current_alvo.get('data_finalizacao', None)
+
+                        updated_alvos.append(current_alvo)
+
+                    merged_meta['alvos'] = updated_alvos
+                    updated_metas.append(merged_meta)
+                else:
+                    # This is a new meta added to the individual PEI, initialize its dynamic fields
+                    new_meta = form_meta.copy()
+                    new_meta['status'] = new_meta.get('status', 'Não Iniciada') # Preserve if sent by form, else default
+                    new_meta['tempo_total_gasto'] = new_meta.get('tempo_total_gasto', 0)
+                    new_meta['cronometro_inicio'] = new_meta.get('cronometro_inicio', None)
+                    new_meta['observacao_conclusao'] = new_meta.get('observacao_conclusao', None)
+
+                    new_meta_alvos = []
+                    for new_alvo in new_meta.get('alvos', []):
+                        # For new alvos in new metas, explicitly set dynamic fields
+                        new_alvo['concluido'] = new_alvo.get('concluido', False)
+                        new_alvo['data_finalizacao'] = new_alvo.get('data_finalizacao', None)
+                        new_meta_alvos.append(new_alvo)
+                    new_meta['alvos'] = new_meta_alvos
+                    updated_metas.append(new_meta)
+
+            pei_individual_ref.update({
+                'identificacao_pei': identificacao_pei,
+                'descricao_pei': descricao_pei,
+                'data_inicio': data_inicio_dt,
+                'data_fim': data_fim_dt,
+                'profissional_responsavel_id': profissional_responsavel_id,
+                'profissional_responsavel_nome': profissional_responsavel_nome,
+                'metas': updated_metas, # Save the merged metas
+                'atualizado_em': firestore.SERVER_TIMESTAMP,
+                'atualizado_por_uid': session.get('user_uid'),
+                'atualizado_por_nome': session.get('user_name', session.get('user_email'))
+            })
+            flash('PEI Individual atualizado com sucesso!', 'success')
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+        except ValueError as ve:
+            flash(f'Erro de formato de dados: {ve}', 'danger')
+            print(f"ValueError POST ver_editar_pei_individual: {ve}")
+        except Exception as e:
+            flash(f'Erro ao atualizar PEI Individual: {e}', 'danger')
+            print(f"Erro POST ver_editar_pei_individual: {e}")
+
+        # If there's an error, re-render the form with original data and error message
+        try:
+            paciente_doc = paciente_ref.get()
+            if not paciente_doc.exists:
+                return redirect(url_for('buscar_prontuario'))
+            paciente_data = convert_doc_to_dict(paciente_doc)
+            
+            pei_individual_doc = pei_individual_ref.get()
+            if pei_individual_doc.exists:
+                pei_individual_data = convert_doc_to_dict(pei_individual_doc)
+            else:
+                pei_individual_data = {} # Fallback
+
+            # Ensure data_inicio and data_fim are formatted for re-rendering the form
+            if pei_individual_data.get('data_inicio') and isinstance(pei_individual_data['data_inicio'], datetime.datetime):
+                pei_individual_data['data_inicio'] = pei_individual_data['data_inicio'].strftime('%Y-%m-%d')
+            else:
+                pei_individual_data['data_inicio'] = ''
+
+            if pei_individual_data.get('data_fim') and isinstance(pei_individual_data['data_fim'], datetime.datetime):
+                pei_individual_data['data_fim'] = pei_individual_data['data_fim'].strftime('%Y-%m-%d')
+            else:
+                pei_individual_data['data_fim'] = ''
+
+            # If coming from a POST error, the request.form might have newer values
+            # that we want to pre-populate.
+            # However, the metas_json will be the one from the *last valid submission attempt*
+            # or the reloaded original. For robust error display, we should reconstruct `pei`
+            # from `request.form` as much as possible for text inputs.
+            # For metas_json, it's safer to rely on the current data from the DB or original `request.form`
+            # for the hidden field.
+            
+            # Reconstruct pei_data from request.form for sticky form fields on error
+            form_reconstruct_pei = {
+                'id': pei_individual_id,
+                'identificacao_pei': request.form.get('identificacao_pei', ''),
+                'descricao_pei': request.form.get('descricao_pei', ''),
+                'data_inicio': request.form.get('data_inicio', ''),
+                'data_fim': request.form.get('data_fim', ''),
+                'profissional_responsavel_id': request.form.get('profissional_responsavel_id', ''),
+                'metas': json.loads(request.form.get('metas_json', '[]')) # This will be the editable parts from the form
+            }
+
+            return render_template('pei_individual_form.html',
+                                   paciente=paciente_data,
+                                   pei=form_reconstruct_pei,
+                                   action_url=url_for('ver_editar_pei_individual', paciente_doc_id=paciente_doc_id, pei_individual_id=pei_individual_id),
+                                   page_title=f"Editar PEI de {paciente_data.get('nome', 'Paciente')} (Erro)",
+                                   profissionais=profissionais_lista,
+                                   is_individual_pei=True # Flag for template logic
+                                   )
+        except Exception as e_render:
+            print(f"Erro ao re-renderizar formulário de PEI individual após POST falha: {e_render}")
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+@app.route('/api/pacientes/<string:paciente_id>/peis/<string:pei_individual_id>/meta/<string:meta_index>/alvo/toggle_complete', methods=['POST'])
+@login_required
+def toggle_alvo_complete(paciente_id, pei_individual_id, meta_index):
+    clinica_id = session['clinica_id']
+    data = request.json
+    alvo_index = data.get('alvo_index')
+    is_completed = data.get('is_completed') # Boolean from frontend
+
+    if not all([alvo_index is not None, isinstance(is_completed, bool)]):
+        return jsonify({'success': False, 'message': 'Dados incompletos ou inválidos para atualizar alvo.'}), 400
+
+    try:
+        pei_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_id).collection('peis_individuais').document(pei_individual_id)
+        pei_doc = pei_ref.get()
+
+        if not pei_doc.exists:
+            return jsonify({'success': False, 'message': 'PEI individual não encontrado para este paciente.'}), 404
+        
+        pei_data = pei_doc.to_dict()
+        metas = pei_data.get('metas', [])
+        
+        if not isinstance(metas, list) or meta_index >= len(metas):
+            return jsonify({'success': False, 'message': 'Meta não encontrada ou índice inválido.'}), 404
+        
+        target_meta = metas[meta_index]
+        alvos = target_meta.get('alvos', [])
+
+        if not isinstance(alvos, list) or alvo_index >= len(alvos):
+            return jsonify({'success': False, 'message': 'Alvo não encontrado ou índice inválido.'}), 404
+        
+        target_alvo = alvos[alvo_index]
+        
+        target_alvo['concluido'] = is_completed
+        if is_completed:
+            target_alvo['data_finalizacao'] = firestore.SERVER_TIMESTAMP
+        else:
+            target_alvo['data_finalizacao'] = None # Clear timestamp if unchecked
+
+        # Update the meta in the list
+        metas[meta_index] = target_meta
+        
+        pei_ref.update({'metas': metas, 'atualizado_em': firestore.SERVER_TIMESTAMP})
+        
+        updated_alvo = target_alvo.copy()
+        if isinstance(updated_alvo.get('data_finalizacao'), datetime.datetime):
+            updated_alvo['data_finalizacao_fmt'] = updated_alvo['data_finalizacao'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+        else:
+            updated_alvo['data_finalizacao_fmt'] = None
+
+        return jsonify({'success': True, 'updated_alvo': updated_alvo})
+
+    except Exception as e:
+        print(f"Erro em toggle_alvo_complete: {e}")
+        return jsonify({'success': False, 'message': f'Erro ao atualizar o alvo: {str(e)}'}), 500
+
+
 @app.route('/api/pacientes/<string:paciente_id>/peis/<string:pei_individual_id>/meta/update', methods=['POST'])
 @login_required
 def update_pei_meta(paciente_id, pei_individual_id):
@@ -2996,6 +3341,9 @@ def update_pei_meta(paciente_id, pei_individual_id):
                 if 'status' not in meta: meta['status'] = 'Não Iniciada'
                 if 'tempo_total_gasto' not in meta: meta['tempo_total_gasto'] = 0
                 if 'cronometro_inicio' not in meta: meta['cronometro_inicio'] = None
+                # Initialize observacao_conclusao if not present
+                if 'observacao_conclusao' not in meta: meta['observacao_conclusao'] = None
+
 
                 if action == 'start_timer':
                     if meta['cronometro_inicio'] is None:
@@ -3006,6 +3354,7 @@ def update_pei_meta(paciente_id, pei_individual_id):
                 elif action == 'stop_timer':
                     if meta.get('cronometro_inicio'):
                         inicio_ts = meta['cronometro_inicio']
+                        # Ensure 'inicio_ts' is a datetime object, converting from string if necessary
                         inicio = inicio_ts if isinstance(inicio_ts, datetime.datetime) else pytz.utc.localize(datetime.datetime.fromisoformat(inicio_ts.replace('Z', '+00:00')))
                         fim = datetime.datetime.now(pytz.utc)
                         segundos_decorridos = (fim - inicio).total_seconds()
@@ -3022,15 +3371,21 @@ def update_pei_meta(paciente_id, pei_individual_id):
                         meta['cronometro_inicio'] = None
                     
                     meta['status'] = 'Concluída'
-                    if 'observacao' in data and data['observacao']:
-                        meta['observacao_conclusao'] = data['observacao']
+                    meta['observacao_conclusao'] = data.get('observacao', None) # Save observation
 
                 elif action == 'reset':
                     meta['status'] = 'Não Iniciada'
                     meta['tempo_total_gasto'] = 0
                     meta['cronometro_inicio'] = None
-                    if 'observacao_conclusao' in meta:
-                        del meta['observacao_conclusao']
+                    meta['observacao_conclusao'] = None # Clear observation on reset
+                    
+                    # Reset all alvos within this meta
+                    alvos_list = meta.get('alvos', [])
+                    if isinstance(alvos_list, list):
+                        for alvo in alvos_list:
+                            alvo['concluido'] = False
+                            alvo['data_finalizacao'] = None
+                    meta['alvos'] = alvos_list # Assign back the updated list
 
                 metas[i] = meta
                 break
@@ -3038,13 +3393,28 @@ def update_pei_meta(paciente_id, pei_individual_id):
         if not meta_encontrada:
             return jsonify({'success': False, 'message': 'Meta não encontrada.'}), 404
 
-        pei_ref.update({'metas': metas})
+        pei_ref.update({'metas': metas, 'atualizado_em': firestore.SERVER_TIMESTAMP})
         
-        return jsonify({'success': True, 'updated_meta': metas[target_meta_index]})
+        # Prepare updated meta for response
+        updated_meta_for_response = metas[target_meta_index].copy()
+        if isinstance(updated_meta_for_response.get('cronometro_inicio'), datetime.datetime):
+            updated_meta_for_response['cronometro_inicio'] = updated_meta_for_response['cronometro_inicio'].isoformat()
+        
+        # Format alvos data_finalizacao for response
+        alvos_in_response = updated_meta_for_response.get('alvos', [])
+        if isinstance(alvos_in_response, list):
+            for alvo in alvos_in_response:
+                if isinstance(alvo.get('data_finalizacao'), datetime.datetime):
+                    alvo['data_finalizacao_fmt'] = alvo['data_finalizacao'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                else:
+                    alvo['data_finalizacao_fmt'] = None
+        updated_meta_for_response['alvos'] = alvos_in_response
+
+        return jsonify({'success': True, 'updated_meta': updated_meta_for_response})
 
     except Exception as e:
         print(f"Erro em update_pei_meta: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True) 
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
