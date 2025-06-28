@@ -9,8 +9,10 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Define as variáveis de cores para os temas claro e escuro */
         :root {
             --bg: #f1f5f9;
             --card: #ffffff;
@@ -35,6 +37,7 @@
             color-scheme: light;
         }
 
+        /* Aplica as variáveis para o tema escuro quando o atributo data-theme="dark" está presente */
         [data-theme="dark"] {
             --bg: var(--dark-bg);
             --text: var(--dark-text);
@@ -44,6 +47,7 @@
             color-scheme: dark;
         }
 
+        /* Estilos globais reset e fonte */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; overflow-x: hidden; }
         body {
@@ -56,7 +60,7 @@
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* --- Sidebar --- */
+        /* --- Sidebar (Barra de Navegação Lateral) --- */
         .sidebar {
             width: 260px;
             background: linear-gradient(180deg, var(--primary), var(--accent));
@@ -104,7 +108,7 @@
             gap: 0; 
             align-items: center; 
         }
-        /* CORREÇÃO FINAL: Garante que o ícone se centralize perfeitamente quando recolhido */
+        /* Garante que o ícone se centralize perfeitamente quando recolhido */
         .sidebar.collapsed nav ul li a i {
             margin: 0 auto;
         }
@@ -122,7 +126,7 @@
         .sidebar.collapsed .sidebar-footer span { display: none; }
         .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
 
-        /* --- Main Content & Topbar --- */
+        /* --- Main Content & Topbar (Conteúdo Principal e Barra Superior) --- */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
             display: flex; flex-direction: column; width: calc(100% - 260px);
@@ -144,7 +148,7 @@
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
         main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
         
-        /* --- Buttons --- */
+        /* --- Buttons (Botões) --- */
         .btn {
             padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
             font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
@@ -177,7 +181,7 @@
         }
 
 
-        /* --- Paciente Info Card --- (Aprimorado) */
+        /* --- Paciente Info Card (Cartão de Informações do Paciente) --- */
         .paciente-info-card {
             background: var(--card);
             padding: 1.5rem 2rem;
@@ -229,21 +233,15 @@
             box-shadow: 0 4px 12px -2px rgba(0,0,0,0.3), 0 2px 8px -2px rgba(0,0,0,0.2);
         }
 
-        /* --- Prontuário Section --- */
+        /* --- Prontuário Section (Seção do Prontuário) --- */
         .prontuario-header {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
         }
         .prontuario-header h2 { font-size: 1.75rem; color: var(--text); margin: 0; font-weight: 700; }
         
-        /* Grid for all records to be displayed as cards */
-        .records-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem; /* Space from tabs */
-        }
-
+        /* Estilos para os cartões de registro e PEI */
+        /* Removido `grid-template-columns` para usar classes Tailwind */
         .registro-card, .pei-card, .goal-card {
             background: var(--card); padding: 1.5rem; border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -266,7 +264,7 @@
             max-height: 250px; overflow-y: auto; padding-right: 10px;
             flex-grow: 1; /* Allow content to grow and fill space */
         }
-        /* Custom scrollbar for content */
+        /* Scrollbar customizada para o conteúdo */
         .registro-content::-webkit-scrollbar { width: 6px; }
         .registro-content::-webkit-scrollbar-track { background: transparent; }
         .registro-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
@@ -281,13 +279,13 @@
             background: var(--card); border-radius: 12px;
         }
 
-        /* --- Custom Record Card Colors --- */
+        /* --- Custom Record Card Colors (Cores Personalizadas do Cartão de Registro) --- */
         .registro-card--anamnese { border-left-color: #0d9488; } /* Teal-600 */
         .registro-card--laudo { border-left-color: #0ea5e9; } /* Sky-500 (info) */
         .registro-card--orientacao { border-left-color: #f59e0b; } /* Amber-500 (secondary) */
         .registro-card--procedimento { border-left-color: #16a34a; } /* Green-600 (success) */
         
-        /* --- Tabs --- */
+        /* --- Tabs (Abas) --- */
         .tabs-container {
             margin-bottom: 1.5rem;
         }
@@ -376,7 +374,7 @@
             background-color: var(--bg);
         }
 
-        /* Rich Text Editor for generic modal */
+        /* Rich Text Editor para modal genérico */
         .editor-container {
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -446,7 +444,7 @@
             margin-right: 0.75rem;
         }
 
-        /* Loading Spinner for AI Generation */
+        /* Loading Spinner para Geração AI */
         .btn.loading {
             position: relative;
             pointer-events: none;
@@ -467,7 +465,7 @@
             animation: spin 0.8s linear infinite;
         }
         .btn.loading span, .btn.loading i {
-            visibility: hidden; /* Hide text and icon during loading */
+            visibility: hidden; /* Oculta texto e ícone durante o carregamento */
         }
 
         @keyframes spin {
@@ -475,7 +473,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Confirmation Modal */
+        /* Confirmation Modal (Modal de Confirmação) */
         .confirm-modal-content {
             max-width: 500px;
             padding: 1.5rem;
@@ -495,7 +493,7 @@
             gap: 1rem;
         }
 
-        /* --- PEI Specific Styles --- */
+        /* --- Estilos Específicos do PEI --- */
         .pei-container {
             display: flex;
             flex-direction: column;
@@ -514,18 +512,14 @@
             font-weight: 700;
         }
 
-        .pei-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
+        /* Removido `grid-template-columns` para usar classes Tailwind */
         .pei-card {
             border-left-color: var(--primary);
             display: flex;
             flex-direction: column;
-            border-left: 8px solid var(--primary); /* Default border for PEI card */
+            border-left: 8px solid var(--primary); /* Borda padrão para cartão PEI */
         }
-        .pei-card.finalizado { /* Style for finalized PEI */
+        .pei-card.finalizado { /* Estilo para PEI finalizado */
             border-left-color: var(--success);
             opacity: 0.9;
         }
@@ -640,16 +634,16 @@
             accent-color: var(--primary);
             cursor: pointer;
             flex-shrink: 0;
-            display: none; /* Hide native checkbox to use custom icon */
+            display: none; /* Oculta o checkbox nativo para usar ícone customizado */
         }
-        /* Style for disabled checkboxes */
+        /* Estilo para checkboxes desabilitados */
         .target-item input[type="checkbox"]:disabled + i.status-icon {
             opacity: 0.6;
             cursor: not-allowed;
             color: var(--muted);
         }
         .target-item input[type="checkbox"]:disabled + i.status-icon.fa-check-square {
-             color: var(--success); /* Keep green for disabled but checked */
+             color: var(--success); /* Mantém verde para desabilitado mas checado */
         }
 
 
@@ -690,7 +684,7 @@
             margin-top: 0.75rem;
         }
 
-        /* Global Loading Overlay */
+        /* Global Loading Overlay (Overlay de Carregamento Global) */
         #loading-overlay {
             position: fixed;
             top: 0;
@@ -721,12 +715,7 @@
             animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* --- Responsive --- */
+        /* Responsive (Responsividade) */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
 
@@ -747,7 +736,7 @@
             .paciente-info-card { padding: 1.5rem; }
             .paciente-info-grid { grid-template-columns: 1fr; }
             .prontuario-header { flex-direction: column; align-items: stretch; text-align: center; }
-            /* Mobile PEI actions to stack */
+            /* Ações do PEI móvel para empilhar */
             .pei-card-actions, .add-target-group {
                 flex-direction: column;
                 align-items: stretch;
@@ -756,7 +745,7 @@
                 width: 100%;
                 justify-content: center;
             }
-            .pei-card-actions .btn-danger-outline { margin-top: 0.5rem; } /* Add spacing when stacked */
+            .pei-card-actions .btn-danger-outline { margin-top: 0.5rem; } /* Adiciona espaçamento quando empilhado */
         }
     </style>
 </head>
@@ -805,7 +794,7 @@
                     <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Anamnese</span>
                     </a>
-                    <!-- NOVOS BOTÕES PARA LAUDO, ORIENTAÇÃO E PROCEDIMENTO -->
+                    <!-- Novos botões para Laudo, Orientação e Procedimento -->
                     <button type="button" class="btn btn-secondary" id="addLaudoBtn" data-record-type="laudo" data-record-title="Adicionar Laudo Médico">
                         <i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Adicionar Laudo</span>
                     </button>
@@ -842,7 +831,7 @@
                 </div>
                 {% endif %}
 
-                <!-- MACRO Definition for the record card -->
+                <!-- MACRO Definition for the record card (Definição da MACRO para o cartão de registro) -->
                 {% macro render_registro_card(registro) %}
                 <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
                     <div class="registro-header">
@@ -871,7 +860,7 @@
                 </div>
                 {% endmacro %}
 
-                <!-- MACRO for rendering a PEI card -->
+                <!-- MACRO for rendering a PEI card (MACRO para renderizar um cartão PEI) -->
                 {% macro render_pei_card(pei) %}
                 <div class="pei-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" id="pei-{{ pei.id }}">
                     <div class="pei-card-header">
@@ -975,7 +964,8 @@
                         <div class="tab-content">
                             <!-- Painel "Todos" -->
                             <div id="tab-panel-todos" class="tab-panel active">
-                                <div class="records-grid">
+                                <!-- Aplica classes Tailwind para grid responsivo -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {# Filter out PEIs from the 'Todos' tab #}
                                     {% set filtered_registros = [] %}
                                     {% for reg in registros %}
@@ -989,7 +979,7 @@
                                             {{ render_registro_card(registro) }}
                                         {% endfor %}
                                     {% else %}
-                                        <div class="empty-state">
+                                        <div class="empty-state col-span-full">
                                             <p>Nenhum registro encontrado para este paciente (excluindo PEIs).</p>
                                         </div>
                                     {% endif %}
@@ -998,56 +988,56 @@
 
                             <!-- Painel "Anamneses" -->
                             <div id="tab-panel-anamnese" class="tab-panel">
-                                <div class="records-grid">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {% set anamneses = registros | selectattr('tipo_registro', 'equalto', 'anamnese') | list %}
                                     {% if anamneses %}
                                         {% for registro in anamneses %}
                                             {{ render_registro_card(registro) }}
                                         {% endfor %}
                                     {% else %}
-                                        <div class="empty-state"><p>Nenhuma anamnese encontrada.</p></div>
+                                        <div class="empty-state col-span-full"><p>Nenhuma anamnese encontrada.</p></div>
                                     {% endif %}
                                 </div>
                             </div>
 
                             <!-- Painel "Laudos" -->
                             <div id="tab-panel-laudo" class="tab-panel">
-                                <div class="records-grid">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {% set laudos = registros | selectattr('tipo_registro', 'equalto', 'laudo') | list %}
                                     {% if laudos %}
                                         {% for registro in laudos %}
                                             {{ render_registro_card(registro) }}
                                         {% endfor %}
                                     {% else %}
-                                        <div class="empty-state"><p>Nenhum laudo encontrado.</p></div>
+                                        <div class="empty-state col-span-full"><p>Nenhum laudo encontrado.</p></div>
                                     {% endif %}
                                 </div>
                             </div>
 
                             <!-- Painel "Orientações" -->
                             <div id="tab-panel-orientacao" class="tab-panel">
-                                <div class="records-grid">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {% set orientacoes = registros | selectattr('tipo_registro', 'equalto', 'orientacao') | list %}
                                     {% if orientacoes %}
                                         {% for registro in orientacoes %}
                                             {{ render_registro_card(registro) }}
                                         {% endfor %}
                                     {% else %}
-                                        <div class="empty-state"><p>Nenhuma orientação encontrada.</p></div>
+                                        <div class="empty-state col-span-full"><p>Nenhuma orientação encontrada.</p></div>
                                     {% endif %}
                                 </div>
                             </div>
 
                             <!-- Painel "Procedimentos" -->
                             <div id="tab-panel-procedimento" class="tab-panel">
-                                <div class="records-grid">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {% set procedimentos = registros | selectattr('tipo_registro', 'equalto', 'procedimento') | list %}
                                     {% if procedimentos %}
                                         {% for registro in procedimentos %}
                                             {{ render_registro_card(registro) }}
                                         {% endfor %}
                                     {% else %}
-                                        <div class="empty-state"><p>Nenhum procedimento encontrado.</p></div>
+                                        <div class="empty-state col-span-full"><p>Nenhum procedimento encontrado.</p></div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -1063,7 +1053,8 @@
                                 
                                 <div class="pei-container">
                                     <h4>PEIs Ativos:</h4>
-                                    <div id="active-peis-list" class="pei-list">
+                                    <!-- Aplica classes Tailwind para grid responsivo -->
+                                    <div id="active-peis-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                         {# PEIs ativos serão renderizados aqui via JavaScript ou Jinja2 #}
                                         {% if peis %}
                                             {% set active_peis = peis | selectattr('status', 'equalto', 'ativo') | list %}
@@ -1072,15 +1063,16 @@
                                                     {{ render_pei_card(pei) }}
                                                 {% endfor %}
                                             {% else %}
-                                                <div class="empty-state"><p>Nenhum PEI ativo para este paciente.</p></div>
+                                                <div class="empty-state col-span-full"><p>Nenhum PEI ativo para este paciente.</p></div>
                                             {% endif %}
                                         {% else %}
-                                            <div class="empty-state"><p>Nenhum PEI para este paciente.</p></div>
+                                            <div class="empty-state col-span-full"><p>Nenhum PEI para este paciente.</p></div>
                                         {% endif %}
                                     </div>
 
                                     <h4>PEIs Finalizados:</h4>
-                                    <div id="finalized-peis-list" class="pei-list">
+                                    <!-- Aplica classes Tailwind para grid responsivo -->
+                                    <div id="finalized-peis-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                         {# PEIs finalizados serão renderizados aqui via JavaScript ou Jinja2 #}
                                         {% if peis %}
                                             {% set finalized_peis = peis | selectattr('status', 'equalto', 'finalizado') | list %}
@@ -1089,10 +1081,10 @@
                                                     {{ render_pei_card(pei) }}
                                                 {% endfor %}
                                             {% else %}
-                                                <div class="empty-state"><p>Nenhum PEI finalizado para este paciente.</p></div>
+                                                <div class="empty-state col-span-full"><p>Nenhum PEI finalizado para este paciente.</p></div>
                                             {% endif %}
                                         {% else %}
-                                            <!-- Already covered by the first empty-state if no PEIs at all -->
+                                            <!-- Já coberto pelo primeiro empty-state se não houver PEIs. -->
                                         {% endif %}
                                     </div>
                                 </div>
@@ -1104,7 +1096,7 @@
         </div>
     </div>
 
-    <!-- Global Loading Overlay -->
+    <!-- Global Loading Overlay (Overlay de Carregamento Global) -->
     <div id="loading-overlay">
         <div class="spinner"></div>
     </div>
@@ -1133,7 +1125,7 @@
                 <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
                 <input type="hidden" name="tipo_registro" id="tipo_registro_generico">
                 <input type="hidden" name="registro_id" id="registro_id_generico"> {# Para edição #}
-                <!-- FIX: Adicionado o campo oculto que estava faltando e causando o erro -->
+                <!-- Adicionado o campo oculto que estava faltando e causando o erro -->
                 <input type="hidden" name="agendamento_id_referencia" id="agendamento_id_referencia">
 
                 <div class="modal-body">
@@ -1185,7 +1177,7 @@
         </div>
     </div>
 
-    <!-- NEW MODAL: Adicionar PEI -->
+    <!-- NOVO MODAL: Adicionar PEI -->
     <div id="addPeiModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -1201,7 +1193,7 @@
                     </div>
                     <div class="form-group">
                         <label for="pei_data_criacao">Data de Criação</label>
-                        {# Corrected: Using current_date_iso from Flask context instead of non-existent 'date' filter #}
+                        {# Corrigido: Usando current_date_iso do contexto Flask #}
                         <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required>
                     </div>
                 </div>
@@ -1213,14 +1205,14 @@
         </div>
     </div>
 
-    <!-- NEW MODAL: Adicionar Meta ao PEI -->
+    <!-- NOVO MODAL: Adicionar Meta ao PEI -->
     <div id="addGoalModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Adicionar Nova Meta ao PEI</h3>
                 <button type="button" class="modal-close-btn" data-close-modal="addGoalModal">&times;</button>
             </div>
-            <form id="formAddGoal" method="POST" action=""> {# Action will be set by JS #}
+            <form id="formAddGoal" method="POST" action=""> {# Ação será definida pelo JS #}
                 <input type="hidden" name="pei_id" id="goal_pei_id">
                 <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
                 <div class="modal-body">
@@ -1248,7 +1240,7 @@
     </div>
 
 
-    <!-- Confirmation Modal for Deletion -->
+    <!-- Confirmation Modal for Deletion (Modal de Confirmação para Exclusão) -->
     <div id="confirm-delete-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
             <div class="modal-header">
@@ -1304,13 +1296,13 @@
 
         // Variáveis globais para dados, vindos do Jinja2
         const allRecordsData = {{ registros | tojson | safe }}; 
-        let allPeisData = {{ peis | tojson | safe }} || []; // Ensure it's an array, even if empty
+        let allPeisData = {{ peis | tojson | safe }} || []; // Garante que seja um array, mesmo que vazio
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
-            const loadingOverlay = document.getElementById('loading-overlay'); // Get the loading overlay
+            const loadingOverlay = document.getElementById('loading-overlay'); // Obtém o overlay de carregamento
 
-            // Function to show/hide loading overlay
+            // Função para mostrar/ocultar o overlay de carregamento
             function showLoading() {
                 loadingOverlay.classList.add('active');
             }
@@ -1327,7 +1319,7 @@
                 const themeToggle = document.getElementById('theme-toggle');
                 const logoutButton = document.getElementById('logoutButton');
 
-                // 1. Lógica do Tema (Dark/Light Mode)
+                // 1. Lógica do Tema (Modo Escuro/Claro)
                 if (themeToggle) {
                     const themeIcon = themeToggle.querySelector('i');
                     const currentTheme = localStorage.getItem('theme') || 'light';
@@ -1504,12 +1496,12 @@
                             return;
                         }
 
-                        showLoading(); // Show loading indicator
+                        showLoading(); // Mostra o indicador de carregamento
                         generateGenericBtn.disabled = true;
                         generateGenericBtn.classList.add('loading');
                         
                         try {
-                            // Using Canvas's provided API key mechanism
+                            // Usando o mecanismo de chave de API fornecido pelo Canvas
                             const apiKey = "";
                             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                             
@@ -1536,7 +1528,7 @@
                         } catch (error) {
                             console.error('Erro na API Gemini:', error);
                         } finally {
-                            hideLoading(); // Hide loading indicator
+                            hideLoading(); // Oculta o indicador de carregamento
                             generateGenericBtn.disabled = !lgpdConsentTextGeneric.classList.contains('active');
                             generateGenericBtn.classList.remove('loading');
                         }
@@ -1554,8 +1546,8 @@
                 const formApagarPei = document.getElementById('formApagarPei');
                 const formApagarGoal = document.getElementById('formApagarGoal');
 
-                let currentDeleteAction = null; // To store which delete action to perform
-                let currentDeleteData = {}; // To store IDs for deletion
+                let currentDeleteAction = null; // Para armazenar qual ação de exclusão executar
+                let currentDeleteData = {}; // Para armazenar IDs para exclusão
 
                 // Função genérica para fechar modais pelo ID
                 function closeModalById(modalId) {
@@ -1563,11 +1555,11 @@
                     if (modal) modal.classList.remove('active');
                 }
 
-                // Function to open the generic confirmation modal
+                // Função para abrir o modal de confirmação genérico
                 function openConfirmDeleteModal(title, message, action, data) {
                     confirmModalTitle.textContent = title;
                     confirmDeleteMessage.textContent = message;
-                    confirmDeleteBtn.textContent = (action.includes('delete') ? 'Apagar' : 'Finalizar'); // Dynamically change button text
+                    confirmDeleteBtn.textContent = (action.includes('delete') ? 'Apagar' : 'Finalizar'); // Altera dinamicamente o texto do botão
                     confirmDeleteBtn.classList.toggle('btn-danger-outline', action.includes('delete'));
                     confirmDeleteBtn.classList.toggle('btn-success', !action.includes('delete'));
 
@@ -1578,7 +1570,7 @@
                 }
 
                 // Event listener unificado para cliques no corpo do documento
-                document.body.addEventListener('click', async function(e) { // Made async here
+                document.body.addEventListener('click', async function(e) { // Tornando assíncrono aqui
                     const target = e.target;
                     
                     // Lógica para fechar modais
@@ -1644,7 +1636,7 @@
                     if (target.id === 'addPeiBtn') {
                         document.getElementById('addPeiModal').classList.add('active');
                         document.getElementById('formAddPei').reset();
-                        // current_date_iso is already set via Jinja, so no need for JS here
+                        // current_date_iso já está definido via Jinja, então não há necessidade de JS aqui
                         return;
                     }
 
@@ -1660,7 +1652,7 @@
                                 <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required>
                                 <button type="button" class="btn btn-danger-outline btn-remove-target" style="display: none;"><i class="fas fa-trash"></i></button>
                             </div>
-                        `; // Reset targets
+                        `; // Reseta os alvos
                         document.getElementById('addGoalModal').classList.add('active');
                         return;
                     }
@@ -1681,17 +1673,17 @@
 
                     // Botão Remover Alvo (dentro do modal de adicionar meta)
                     if (target.matches('.btn-remove-target')) {
-                        if (target.closest('.targets-input-container').children.length > 1) { // Ensure at least one target remains
+                        if (target.closest('.targets-input-container').children.length > 1) { // Garante que pelo menos um alvo permaneça
                             target.closest('.target-input-item').remove();
                         }
                         return;
                     }
 
                     // Checkbox/Icon para alvo do PEI
-                    const targetStatusToggle = target.closest('.target-item'); // Click anywhere on the target item
+                    const targetStatusToggle = target.closest('.target-item'); // Clique em qualquer lugar do item do alvo
                     if (targetStatusToggle) {
                         const checkbox = targetStatusToggle.querySelector('.target-checkbox');
-                        // Only toggle if not disabled
+                        // Apenas alterna se não estiver desabilitado
                         if (checkbox && !checkbox.disabled) {
                             checkbox.checked = !checkbox.checked;
                             const targetId = targetStatusToggle.dataset.targetId;
@@ -1700,7 +1692,7 @@
                             const goalId = goalList.dataset.goalId;
                             const isCompleted = checkbox.checked;
 
-                            // Visually update immediately
+                            // Atualiza visualmente imediatamente
                             if (isCompleted) {
                                 targetStatusToggle.classList.add('concluido');
                                 targetStatusToggle.querySelector('.status-icon').classList.replace('fa-square', 'fa-check-square');
@@ -1708,7 +1700,7 @@
                                 targetStatusToggle.classList.remove('concluido');
                                 targetStatusToggle.querySelector('.status-icon').classList.replace('fa-check-square', 'fa-square');
                             }
-                            await updateTargetStatus(peiId, goalId, targetId, isCompleted); // Await the async call
+                            await updateTargetStatus(peiId, goalId, targetId, isCompleted); // Aguarda a chamada assíncrona
                         }
                         return;
                     }
@@ -1747,37 +1739,37 @@
                         return;
                     }
 
-                    // Botão de CONFIRMAR exclusão/finalização (handle based on currentDeleteAction)
+                    // Botão de CONFIRMAR exclusão/finalização (lida com base em currentDeleteAction)
                     if (target.id === 'confirmDeleteBtn') {
-                        closeModalById('confirm-delete-modal'); // Close the confirmation modal first
-                        showLoading(); // Show loading indicator before starting the action
+                        closeModalById('confirm-delete-modal'); // Fecha o modal de confirmação primeiro
+                        showLoading(); // Mostra o indicador de carregamento antes de iniciar a ação
                         
                         try {
                             if (currentDeleteAction === 'delete_record') {
                                 formApagarRegistro.querySelector('#registro_id_apagar').value = currentDeleteData.id;
                                 formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}`;
-                                formApagarRegistro.submit(); // This will cause a full page reload
+                                formApagarRegistro.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'delete_pei') {
                                 formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
                                 formApagarPei.action = `{{ url_for('delete_pei', paciente_doc_id=paciente.id) }}`;
-                                formApagarPei.submit(); // This will cause a full page reload
+                                formApagarPei.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'delete_goal') {
                                 formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
                                 formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
                                 formApagarGoal.action = `{{ url_for('delete_goal', paciente_doc_id=paciente.id) }}`;
-                                formApagarGoal.submit(); // This will cause a full page reload
+                                formApagarGoal.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'finalize_goal') {
-                                await finalizeGoal(currentDeleteData.peiId, currentDeleteData.goalId); // Await the AJAX call
+                                await finalizeGoal(currentDeleteData.peiId, currentDeleteData.goalId); // Aguarda a chamada AJAX
                             } else if (currentDeleteAction === 'finalize_pei') {
-                                await finalizePei(currentDeleteData.peiId); // Await the AJAX call
+                                await finalizePei(currentDeleteData.peiId); // Aguarda a chamada AJAX
                             }
                         } catch (error) {
-                            console.error('Error during confirmation action:', error);
-                            // Optionally display a user-friendly error message
+                            console.error('Erro durante a ação de confirmação:', error);
+                            // Opcionalmente, exibe uma mensagem de erro amigável ao usuário
                         } finally {
-                            hideLoading(); // Hide loading indicator after action (or after reload if not async)
-                            currentDeleteAction = null; // Reset action
-                            currentDeleteData = {}; // Clear data
+                            hideLoading(); // Oculta o indicador de carregamento após a ação (ou após o recarregamento, se não for assíncrono)
+                            currentDeleteAction = null; // Reseta a ação
+                            currentDeleteData = {}; // Limpa os dados
                         }
                         return;
                     }
@@ -1790,9 +1782,97 @@
                      }
                 });
 
-                // --- Helper function for rendering PEIs (after an update from Flask) ---
+                // --- Funções AJAX para PEI/Metas/Alvos ---
+                async function updateTargetStatus(peiId, goalId, targetId, isCompleted) {
+                    console.log('Tentando atualizar o status do alvo:', { peiId, goalId, targetId, isCompleted }); // Depuração
+                    showLoading(); // Mostra o indicador de carregamento
+                    try {
+                        const response = await fetch(`{{ url_for('update_target_status', paciente_doc_id=paciente.id) }}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_id: targetId, concluido: isCompleted })
+                        });
+                        const data = await response.json();
+                        console.log('Resposta de atualização do status do alvo:', data); // Depuração
+                        if (response.ok && data.success) {
+                            console.log('Status do alvo atualizado com sucesso:', data.message);
+                            if (data.peis) {
+                                allPeisData = data.peis;
+                            }
+                            renderPeis(allPeisData);
+                        } else {
+                            console.error('Falha ao atualizar o status do alvo:', data.message || 'Erro desconhecido');
+                            alert(`Erro ao atualizar status do alvo: ${data.message || 'Erro desconhecido.'}`); // Feedback para o usuário
+                        }
+                    } catch (error) {
+                        console.error('Erro ao atualizar o status do alvo:', error);
+                        alert(`Erro de rede ou servidor ao atualizar status do alvo: ${error.message}`); // Feedback para o usuário
+                    } finally {
+                        hideLoading(); // Oculta o indicador de carregamento
+                    }
+                }
+
+                async function finalizeGoal(peiId, goalId) {
+                    console.log('Tentando finalizar meta:', { peiId, goalId }); // Depuração
+                    showLoading(); // Mostra o indicador de carregamento
+                    try {
+                        const response = await fetch(`{{ url_for('finalize_goal', paciente_doc_id=paciente.id) }}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
+                        });
+                        const data = await response.json();
+                        console.log('Resposta de finalização de meta:', data); // Depuração
+                        if (response.ok && data.success) {
+                            console.log('Meta finalizada com sucesso:', data.message);
+                            if (data.peis) {
+                                allPeisData = data.peis;
+                            }
+                            renderPeis(allPeisData);
+                        } else {
+                            console.error('Falha ao finalizar meta:', data.message || 'Erro desconhecido');
+                            alert(`Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`); // Feedback para o usuário
+                        }
+                    } catch (error) {
+                        console.error('Erro ao finalizar meta:', error);
+                        alert(`Erro de rede ou servidor ao finalizar meta: ${error.message}`); // Feedback para o usuário
+                    } finally {
+                        hideLoading(); // Oculta o indicador de carregamento
+                    }
+                }
+
+                async function finalizePei(peiId) {
+                    console.log('Tentando finalizar PEI:', { peiId }); // Depuração
+                    showLoading(); // Mostra o indicador de carregamento
+                    try {
+                        const response = await fetch(`{{ url_for('finalize_pei', paciente_doc_id=paciente.id) }}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId })
+                        });
+                        const data = await response.json();
+                        console.log('Resposta de finalização do PEI:', data); // Depuração
+                        if (response.ok && data.success) {
+                            console.log('PEI finalizado com sucesso:', data.message);
+                            if (data.peis) {
+                                allPeisData = data.peis;
+                            }
+                            renderPeis(allPeisData);
+                        } else {
+                            console.error('Falha ao finalizar PEI:', data.message || 'Erro desconhecido');
+                            alert(`Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`); // Feedback para o usuário
+                        }
+                    } catch (error) {
+                        console.error('Erro ao finalizar PEI:', error);
+                        alert(`Erro de rede ou servidor ao finalizar PEI: ${error.message}`); // Feedback para o usuário
+                    } finally {
+                        hideLoading(); // Oculta o indicador de carregamento
+                    }
+                }
+
+                // --- Função auxiliar para renderizar PEIs (após uma atualização do Flask) ---
                 function renderPeis(peis) {
-                    console.log('Rendering PEIs with data:', peis); // Debugging
+                    console.log('Renderizando PEIs com dados:', peis); // Depuração
                     const activePeisList = document.getElementById('active-peis-list');
                     const finalizedPeisList = document.getElementById('finalized-peis-list');
                     
@@ -1800,34 +1880,34 @@
                     finalizedPeisList.innerHTML = '';
 
                     if (peis.length === 0) {
-                        activePeisList.innerHTML = '<div class="empty-state"><p>Nenhum PEI ativo para este paciente.</p></div>';
-                        finalizedPeisList.innerHTML = '<div class="empty-state"><p>Nenhum PEI finalizado para este paciente.</p></div>';
+                        activePeisList.innerHTML = '<div class="empty-state col-span-full"><p>Nenhum PEI ativo para este paciente.</p></div>';
+                        finalizedPeisList.innerHTML = '<div class="empty-state col-span-full"><p>Nenhum PEI finalizado para este paciente.</p></div>';
                         return;
                     }
 
                     let hasActivePeis = false;
                     let hasFinalizedPeis = false;
 
-                    // Sort PEIs by data_criacao_timestamp (if available, otherwise fallback)
+                    // Ordena os PEIs por data_criacao_timestamp (se disponível, caso contrário, fallback)
                     const sortedPeis = [...peis].sort((a, b) => {
-                        // Ensure data_criacao is in a format Date can parse reliably, e.g., 'YYYY-MM-DD'
-                        // If it's already a formatted string like 'DD/MM/YYYY', parse it correctly.
-                        // Assuming it's 'DD/MM/YYYY' based on medical_records.py formatting for display.
+                        // Garante que data_criacao esteja em um formato que Date possa analisar de forma confiável, por exemplo, 'YYYY-MM-DD'
+                        // Se já for uma string formatada como 'DD/MM/YYYY', analise corretamente.
+                        // Supondo que seja 'DD/MM/YYYY' com base na formatação de medical_records.py para exibição.
                         const parseDate = (dateString) => {
-                            if (!dateString) return new Date(0); // Fallback for invalid dates
+                            if (!dateString) return new Date(0); // Fallback para datas inválidas
                             const parts = dateString.split('/');
-                            // new Date(year, monthIndex, day)
+                            // new Date(ano, índiceMes, dia)
                             return new Date(parts[2], parts[1] - 1, parts[0]);
                         };
 
                         const dateA = parseDate(a.data_criacao);
                         const dateB = parseDate(b.data_criacao);
-                        return dateB.getTime() - dateA.getTime(); // Descending order (most recent first)
+                        return dateB.getTime() - dateA.getTime(); // Ordem decrescente (mais recente primeiro)
                     });
 
 
                     sortedPeis.forEach(pei => {
-                        // Determine if buttons should be disabled based on PEI or Goal status
+                        // Determina se os botões devem ser desabilitados com base no status do PEI ou da Meta
                         const isPeiFinalized = pei.status === 'finalizado';
                         const peiCardClasses = `pei-card ${isPeiFinalized ? 'finalizado' : ''}`;
                         const peiActionClasses = `pei-card-actions ${isPeiFinalized ? 'disabled-actions' : ''}`;
@@ -1930,103 +2010,15 @@
                         }
                     });
 
-                    // Update empty states if needed
+                    // Atualiza os estados vazios se necessário
                     if (!hasActivePeis && peis.length > 0) {
-                         activePeisList.innerHTML = '<div class="empty-state"><p>Nenhum PEI ativo para este paciente.</p></div>';
+                         activePeisList.innerHTML = '<div class="empty-state col-span-full"><p>Nenhum PEI ativo para este paciente.</p></div>';
                     }
                      if (!hasFinalizedPeis && peis.length > 0) {
-                         finalizedPeisList.innerHTML = '<div class="empty-state"><p>Nenhum PEI finalizado para este paciente.</p></div>';
+                         finalizedPeisList.innerHTML = '<div class="empty-state col-span-full"><p>Nenhum PEI finalizado para este paciente.</p></div>';
                     }
                 }
 
-
-                // --- AJAX FUNCTIONS for PEI/Goals/Targets ---
-                async function updateTargetStatus(peiId, goalId, targetId, isCompleted) {
-                    console.log('Attempting to update target status:', { peiId, goalId, targetId, isCompleted }); // Debugging
-                    showLoading(); // Show loading indicator
-                    try {
-                        const response = await fetch(`{{ url_for('update_target_status', paciente_doc_id=paciente.id) }}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_id: targetId, concluido: isCompleted })
-                        });
-                        const data = await response.json();
-                        console.log('Update target status response:', data); // Debugging
-                        if (response.ok && data.success) {
-                            console.log('Target status updated successfully:', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
-                            }
-                            renderPeis(allPeisData);
-                        } else {
-                            console.error('Failed to update target status:', data.message || 'Unknown error');
-                            alert(`Erro ao atualizar status do alvo: ${data.message || 'Erro desconhecido.'}`); // User feedback
-                        }
-                    } catch (error) {
-                        console.error('Error updating target status:', error);
-                        alert(`Erro de rede ou servidor ao atualizar status do alvo: ${error.message}`); // User feedback
-                    } finally {
-                        hideLoading(); // Hide loading indicator
-                    }
-                }
-
-                async function finalizeGoal(peiId, goalId) {
-                    console.log('Attempting to finalize goal:', { peiId, goalId }); // Debugging
-                    showLoading(); // Show loading indicator
-                    try {
-                        const response = await fetch(`{{ url_for('finalize_goal', paciente_doc_id=paciente.id) }}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
-                        });
-                        const data = await response.json();
-                        console.log('Finalize goal response:', data); // Debugging
-                        if (response.ok && data.success) {
-                            console.log('Goal finalized successfully:', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
-                            }
-                            renderPeis(allPeisData);
-                        } else {
-                            console.error('Failed to finalize goal:', data.message || 'Unknown error');
-                            alert(`Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`); // User feedback
-                        }
-                    } catch (error) {
-                        console.error('Error finalizing goal:', error);
-                        alert(`Erro de rede ou servidor ao finalizar meta: ${error.message}`); // User feedback
-                    } finally {
-                        hideLoading(); // Hide loading indicator
-                    }
-                }
-
-                async function finalizePei(peiId) {
-                    console.log('Attempting to finalize PEI:', { peiId }); // Debugging
-                    showLoading(); // Show loading indicator
-                    try {
-                        const response = await fetch(`{{ url_for('finalize_pei', paciente_doc_id=paciente.id) }}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId })
-                        });
-                        const data = await response.json();
-                        console.log('Finalize PEI response:', data); // Debugging
-                        if (response.ok && data.success) {
-                            console.log('PEI finalized successfully:', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
-                            }
-                            renderPeis(allPeisData);
-                        } else {
-                            console.error('Failed to finalize PEI:', data.message || 'Unknown error');
-                            alert(`Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`); // User feedback
-                        }
-                    } catch (error) {
-                        console.error('Error finalizing PEI:', error);
-                        alert(`Erro de rede ou servidor ao finalizar PEI: ${error.message}`); // User feedback
-                    } finally {
-                        hideLoading(); // Hide loading indicator
-                    }
-                }
 
                 // --- Lógica de Geração de PDF ---
                 // Função melhorada para converter HTML em texto plano para o PDF
@@ -2115,7 +2107,7 @@
                 }
 
 
-                // --- Initial Render of PEIs ---
+                // --- Renderização Inicial dos PEIs ---
                 renderPeis(allPeisData);
 
 
