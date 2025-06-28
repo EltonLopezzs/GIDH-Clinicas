@@ -175,10 +175,16 @@
             flex-wrap: wrap; /* Para quebrar a linha em telas menores */
             justify-content: flex-end; /* Alinha à direita */
         }
+        /* Ajuste para mobile: empilha os botões da topbar e garante que não se sobreponham */
         @media (max-width: 768px) {
             .topbar-actions {
-                justify-content: center; /* Centraliza em telas menores */
+                flex-direction: column; /* Empilha os botões verticalmente */
+                align-items: stretch; /* Estica os botões para preencher o espaço */
+                gap: 0.5rem; /* Reduz o espaçamento entre botões empilhados */
                 margin-top: 0.5rem; /* Adiciona um pouco de margem superior */
+            }
+            .topbar-actions .btn {
+                width: 100%; /* Garante que cada botão ocupe a largura total */
             }
         }
 
@@ -754,6 +760,20 @@
             .toggle-btn-desktop { display: grid; }
             .menu-btn-mobile { display: none; }
             span.btn-text-desktop { display: inline; }
+
+            /* Reverte para grid em desktop */
+            .records-grid, .pei-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 1.5rem;
+                overflow-x: visible; /* Garante que não haja scrollbar lateral em desktop */
+                flex-wrap: wrap; /* Permite que os itens quebrem linha */
+            }
+            .records-grid > .registro-card,
+            .pei-list > .pei-card {
+                flex-shrink: 1; /* Permite que o item encolha conforme o grid */
+                width: auto; /* Remove largura fixa para o grid */
+            }
         }
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
@@ -777,6 +797,31 @@
                 justify-content: center;
             }
             .pei-card-actions .btn-danger-outline { margin-top: 0.5rem; } /* Adiciona espaçamento quando empilhado */
+
+            /* Estilos para scroll lateral de cards em mobile */
+            .records-grid, .pei-list {
+                display: flex; /* Altera para flexbox */
+                flex-wrap: nowrap; /* Impede quebra de linha */
+                overflow-x: auto; /* Permite rolagem horizontal */
+                padding-bottom: 1rem; /* Espaço para a scrollbar */
+                scroll-snap-type: x mandatory; /* Rolagem por snapping */
+                -webkit-overflow-scrolling: touch; /* Melhor rolagem em iOS */
+            }
+
+            .records-grid > .registro-card,
+            .pei-list > .pei-card {
+                flex-shrink: 0; /* Impede que os cards encolham */
+                width: 85%; /* Define uma largura fixa para cada card */
+                max-width: 350px; /* Garante que não fiquem muito grandes em telas um pouco maiores */
+                margin-right: 1.5rem; /* Espaçamento entre os cards */
+                scroll-snap-align: start; /* Alinha o início do card ao snap point */
+            }
+
+            /* Esconde a scrollbar para uma estética mais limpa, mas mantém a funcionalidade */
+            .records-grid::-webkit-scrollbar,
+            .pei-list::-webkit-scrollbar {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -1002,7 +1047,7 @@
                             <!-- Painel "Todos" -->
                             <div id="tab-panel-todos" class="tab-panel active">
                                 <!-- Aplica classes Tailwind para grid responsivo -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+                                <div class="records-grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {# Filter out PEIs from the 'Todos' tab #}
                                     {% set filtered_registros = [] %}
                                     {% for reg in registros %}
@@ -1026,7 +1071,7 @@
 
                             <!-- Painel "Anamneses" -->
                             <div id="tab-panel-anamnese" class="tab-panel">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+                                <div class="records-grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {% set anamneses = registros | selectattr('tipo_registro', 'equalto', 'anamnese') | list %}
                                     {% if anamneses %}
                                         {% for registro in anamneses %}
@@ -1043,7 +1088,7 @@
 
                             <!-- Painel "Laudos" -->
                             <div id="tab-panel-laudo" class="tab-panel">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+                                <div class="records-grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {% set laudos = registros | selectattr('tipo_registro', 'equalto', 'laudo') | list %}
                                     {% if laudos %}
                                         {% for registro in laudos %}
@@ -1060,7 +1105,7 @@
 
                             <!-- Painel "Orientações" -->
                             <div id="tab-panel-orientacao" class="tab-panel">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+                                <div class="records-grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {% set orientacoes = registros | selectattr('tipo_registro', 'equalto', 'orientacao') | list %}
                                     {% if orientacoes %}
                                         {% for registro in orientacoes %}
@@ -1077,7 +1122,7 @@
 
                             <!-- Painel "Procedimentos" -->
                             <div id="tab-panel-procedimento" class="tab-panel">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+                                <div class="records-grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
                                     {% set procedimentos = registros | selectattr('tipo_registro', 'equalto', 'procedimento') | list %}
                                     {% if procedimentos %}
                                         {% for registro in procedimentos %}
@@ -1104,7 +1149,7 @@
                                 <div class="pei-container">
                                     <h4>PEIs Ativos:</h4>
                                     <!-- Aplica classes Tailwind para grid responsivo -->
-                                    <div id="active-peis-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                    <div id="active-peis-list" class="pei-list grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                         {# PEIs ativos serão renderizados aqui via JavaScript ou Jinja2 #}
                                         {% if peis %}
                                             {% set active_peis = peis | selectattr('status', 'equalto', 'ativo') | list %}
@@ -1131,7 +1176,7 @@
 
                                     <h4>PEIs Finalizados:</h4>
                                     <!-- Aplica classes Tailwind para grid responsivo -->
-                                    <div id="finalized-peis-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                    <div id="finalized-peis-list" class="pei-list grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                         {# PEIs finalizados serão renderizados aqui via JavaScript ou Jinja2 #}
                                         {% if peis %}
                                             {% set finalized_peis = peis | selectattr('status', 'equalto', 'finalizado') | list %}
