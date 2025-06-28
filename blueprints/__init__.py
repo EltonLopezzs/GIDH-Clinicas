@@ -1,0 +1,1 @@
+# Este arquivo pode permanecer vazio. Ele indica que 'blueprints' é um pacote Python.
