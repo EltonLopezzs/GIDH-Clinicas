@@ -1,8 +1,10 @@
-from flask import render_template, session, flash, redirect, url_for, request
+from flask import render_template, session, flash, redirect, url_for, request, jsonify
 import datetime
 import json
+import uuid # Importar para gerar IDs únicos
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud import firestore # Importar no topo
+# Removed: from google.cloud.firestore import Timestamp # Importar Timestamp explicitamente
 
 
 # Importar utils
@@ -69,6 +71,10 @@ def register_medical_records_routes(app):
         
         paciente_data = None
         registros_prontuario = []
+        peis_data = [] # Lista para armazenar os PEIs
+        
+        # Get current date for default value in PEI creation form
+        current_date_iso = datetime.date.today().isoformat()
         
         try:
             paciente_doc = paciente_ref.get()
@@ -91,13 +97,12 @@ def register_medical_records_routes(app):
                     registro = doc.to_dict()
                     if registro:
                         registro['id'] = doc.id
+                        # Use datetime.datetime from the standard library for type checking
                         if registro.get('data_registro') and isinstance(registro['data_registro'], datetime.datetime):
                             registro['data_registro_fmt'] = registro['data_registro'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
                         else:
                             registro['data_registro_fmt'] = "N/A"
                         
-                        # A busca pelo nome do profissional pode ser feita aqui ou no momento da inserção.
-                        # Para registros existentes, vamos manter a busca para exibir o nome.
                         profissional_doc_id = registro.get('profissional_id')
                         if profissional_doc_id:
                             prof_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
@@ -106,17 +111,45 @@ def register_medical_records_routes(app):
                             else:
                                 registro['profissional_nome'] = 'Desconhecido'
                         else:
-                            registro['profissional_nome'] = 'N/A' # Caso profissional_id não esteja no registro
+                            registro['profissional_nome'] = 'N/A' 
                         
                         registros_prontuario.append(registro)
+                
+                # --- Get PEIs data ---
+                if 'peis' in paciente_data and isinstance(paciente_data['peis'], list):
+                    for pei in paciente_data['peis']:
+                        # Convert Timestamp objects to formatted strings for display
+                        # Use firestore.Timestamp instead of a direct import
+                        if isinstance(pei.get('data_criacao'), firestore.Timestamp): 
+                            pei['data_criacao'] = pei['data_criacao'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y')
+                        # Add a raw timestamp for sorting purposes on the frontend if needed
+                        if isinstance(pei.get('data_criacao_raw'), firestore.Timestamp):
+                             pei['data_criacao_timestamp'] = pei['data_criacao_raw'].timestamp() # Unix timestamp
+                        elif isinstance(pei.get('data_criacao'), firestore.Timestamp): # If only data_criacao has the timestamp
+                             pei['data_criacao_timestamp'] = pei['data_criacao'].timestamp()
+                        else:
+                             pei['data_criacao_timestamp'] = 0 # Fallback
+
+                        if 'goals' not in pei or not isinstance(pei['goals'], list):
+                            pei['goals'] = [] # Initialize if missing or not a list
+
+                        for goal in pei['goals']:
+                            if 'targets' not in goal or not isinstance(goal['targets'], list):
+                                goal['targets'] = [] # Initialize if missing or not a list
+
+                    peis_data = paciente_data['peis']
+                else:
+                    paciente_data['peis'] = [] # Initialize if not existing
+                    peis_data = []
+
             else:
                 flash('Paciente não encontrado.', 'danger')
                 return redirect(url_for('buscar_prontuario'))
         except Exception as e:
             flash(f'Erro ao carregar prontuário do paciente: {e}.', 'danger')
-            print(f"Erro view_patient_record: {e}")
+            print(f"Erro ver_prontuario: {e}")
 
-        return render_template('prontuario.html', paciente=paciente_data, registros=registros_prontuario)
+        return render_template('prontuario.html', paciente=paciente_data, registros=registros_prontuario, peis=peis_data, current_date_iso=current_date_iso)
 
     @app.route('/prontuarios/<string:paciente_doc_id>/anamnese/novo', methods=['GET', 'POST'], endpoint='adicionar_anamnese')
     @login_required
@@ -128,7 +161,6 @@ def register_medical_records_routes(app):
         profissional_doc_id = None
         profissional_nome = "Profissional Desconhecido"
         try:
-            # CORREÇÃO: Obter profissional_id a partir do documento do usuário na coleção 'User'
             user_mapping_doc = db_instance.collection('User').document(profissional_logado_uid).get()
             if user_mapping_doc.exists:
                 user_data = user_mapping_doc.to_dict()
@@ -175,8 +207,8 @@ def register_medical_records_routes(app):
             
             try:
                 db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
-                    'profissional_id': profissional_doc_id, # Usando o ID do profissional corretamente obtido
-                    'profissional_nome': profissional_nome, # Armazenando o nome do profissional para exibição futura
+                    'profissional_id': profissional_doc_id, 
+                    'profissional_nome': profissional_nome, 
                     'data_registro': firestore.SERVER_TIMESTAMP,
                     'tipo_registro': 'anamnese',
                     'titulo': 'Anamnese',
@@ -204,9 +236,8 @@ def register_medical_records_routes(app):
         profissional_logado_uid = session.get('user_uid')
 
         profissional_doc_id = None
-        profissional_nome = "Profissional Desconhecido" # Necessário para o POST, caso não venha do GET
+        profissional_nome = "Profissional Desconhecido" 
         try:
-            # CORREÇÃO: Obter profissional_id a partir do documento do usuário na coleção 'User'
             user_mapping_doc = db_instance.collection('User').document(profissional_logado_uid).get()
             if user_mapping_doc.exists:
                 user_data = user_mapping_doc.to_dict()
@@ -257,8 +288,8 @@ def register_medical_records_routes(app):
                 anamnese_ref.update({
                     'conteudo': conteudo,
                     'modelo_base_id': modelo_base_id if modelo_base_id else None,
-                    'profissional_id': profissional_doc_id, # Garante que o profissional_id está correto na edição
-                    'profissional_nome': profissional_nome, # Garante que o nome do profissional está correto
+                    'profissional_id': profissional_doc_id, 
+                    'profissional_nome': profissional_nome, 
                     'atualizado_em': firestore.SERVER_TIMESTAMP
                 })
                 flash('Anamnese atualizada com sucesso!', 'success')
@@ -272,9 +303,6 @@ def register_medical_records_routes(app):
             if anamnese_doc.exists and anamnese_doc.to_dict().get('tipo_registro') == 'anamnese':
                 anamnese_data = anamnese_doc.to_dict()
                 anamnese_data['id'] = anamnese_doc.id    
-                # O profissional_id_fk é mais para ser usado como base para o profissional no formulário
-                # A lógica agora pega o profissional_doc_id_logado de forma mais robusta no início da função
-                # anamnese_data['profissional_id_fk'] = profissional_doc_id 
                 
                 return render_template('anamnese_form.html',    
                                         paciente_id=paciente_doc_id,    
@@ -301,7 +329,6 @@ def register_medical_records_routes(app):
         profissional_doc_id = None
         profissional_nome = "Profissional Desconhecido"
         try:
-            # CORREÇÃO: Obter profissional_id a partir do documento do usuário na coleção 'User'
             user_mapping_doc = db_instance.collection('User').document(profissional_logado_uid).get()
             if user_mapping_doc.exists:
                 user_data = user_mapping_doc.to_dict()
@@ -332,8 +359,8 @@ def register_medical_records_routes(app):
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
             db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
-                'profissional_id': profissional_doc_id, # Usando o ID do profissional corretamente obtido
-                'profissional_nome': profissional_nome, # Armazenando o nome do profissional para exibição futura
+                'profissional_id': profissional_doc_id, 
+                'profissional_nome': profissional_nome, 
                 'data_registro': firestore.SERVER_TIMESTAMP,
                 'tipo_registro': tipo_registro,
                 'titulo': titulo,
@@ -354,8 +381,6 @@ def register_medical_records_routes(app):
         clinica_id = session['clinica_id']
         registro_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(registro_doc_id)
 
-        # Para edição, não precisamos verificar a associação novamente, pois o registro já existe
-        # mas podemos adicionar o nome do profissional ao registro se não estiver lá
         profissional_logado_uid = session.get('user_uid')
         profissional_nome = "Profissional Desconhecido"
         try:
@@ -369,7 +394,6 @@ def register_medical_records_routes(app):
                         profissional_nome = prof_doc.to_dict().get('nome', 'Profissional Desconhecido')
         except Exception as e:
             print(f"Erro ao obter nome do profissional logado para edição de registro: {e}")
-            # Não flashear erro aqui para não interromper a edição, apenas logar.
 
         try:
             titulo = request.form.get('titulo', '').strip()
@@ -385,7 +409,7 @@ def register_medical_records_routes(app):
                 'titulo': titulo,
                 'conteudo': conteudo,
                 'agendamento_id_referencia': agendamento_id_referencia if agendamento_id_referencia else None,
-                'profissional_nome': profissional_nome, # Atualiza ou adiciona o nome do profissional no registro
+                'profissional_nome': profissional_nome, 
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             })
             flash(f'Registro de {tipo_registro} atualizado com sucesso!', 'success')
@@ -411,6 +435,400 @@ def register_medical_records_routes(app):
         except Exception as e:
             flash(f'Erro ao apagar registro: {e}', 'danger')
             print(f"Erro apagar_registro_generico: {e}")
+        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    # --- NEW PEI ROUTES ---
+
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_pei', methods=['POST'], endpoint='add_pei')
+    @login_required
+    def add_pei(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        
+        try:
+            data = request.form
+            titulo = data.get('titulo')
+            data_criacao_str = data.get('data_criacao')
+
+            if not titulo or not data_criacao_str:
+                flash('Título e data de criação do PEI são obrigatórios.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            
+            # Convert string date to datetime object
+            try:
+                data_criacao_obj = datetime.datetime.strptime(data_criacao_str, '%Y-%m-%d').date() # Get only date part
+            except ValueError:
+                flash('Formato de data inválido. Use AAAA-MM-DD.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+            paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+            paciente_doc = paciente_ref.get()
+            
+            if not paciente_doc.exists:
+                flash('Paciente não encontrado.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            
+            paciente_data = paciente_doc.to_dict()
+            peis = paciente_data.get('peis', [])
+
+            new_pei = {
+                'id': str(uuid.uuid4()),
+                'titulo': titulo,
+                'data_criacao': data_criacao_str, # Store as string 'YYYY-MM-DD' for display
+                'data_criacao_raw': firestore.SERVER_TIMESTAMP, # Use SERVER_TIMESTAMP for consistent sorting in Firestore
+                'status': 'ativo',
+                'goals': []
+            }
+            peis.append(new_pei)
+            
+            paciente_ref.update({'peis': peis})
+            flash('PEI adicionado com sucesso!', 'success')
+
+        except Exception as e:
+            flash(f'Erro ao adicionar PEI: {e}', 'danger')
+            print(f"Erro add_pei: {e}")
+        
+        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_goal', methods=['POST'], endpoint='add_goal')
+    @login_required
+    def add_goal(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        
+        try:
+            data = request.form
+            pei_id = data.get('pei_id')
+            descricao_goal = data.get('descricao')
+            targets_raw = request.form.getlist('targets[]') # Get all target inputs
+            
+            if not pei_id or not descricao_goal or not targets_raw:
+                flash('Dados insuficientes para adicionar meta.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+            paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+            paciente_doc = paciente_ref.get()
+            
+            if not paciente_doc.exists:
+                flash('Paciente não encontrado.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            
+            paciente_data = paciente_doc.to_dict()
+            peis = paciente_data.get('peis', [])
+            
+            target_pei = None
+            for pei in peis:
+                if pei.get('id') == pei_id:
+                    target_pei = pei
+                    break
+            
+            if not target_pei:
+                flash('PEI não encontrado.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+            new_targets = []
+            for target_desc in targets_raw:
+                if target_desc.strip(): # Only add non-empty targets
+                    new_targets.append({
+                        'id': str(uuid.uuid4()),
+                        'descricao': target_desc.strip(),
+                        'concluido': False
+                    })
+
+            new_goal = {
+                'id': str(uuid.uuid4()),
+                'descricao': descricao_goal.strip(),
+                'status': 'ativo',
+                'targets': new_targets
+            }
+            
+            if 'goals' not in target_pei:
+                target_pei['goals'] = []
+            target_pei['goals'].append(new_goal)
+            
+            paciente_ref.update({'peis': peis})
+            flash('Meta adicionada com sucesso ao PEI!', 'success')
+
+        except Exception as e:
+            flash(f'Erro ao adicionar meta: {e}', 'danger')
+            print(f"Erro add_goal: {e}")
+        
+        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/update_target_status', methods=['POST'], endpoint='update_target_status')
+    @login_required
+    def update_target_status(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        
+        try:
+            data = request.get_json()
+            pei_id = data.get('pei_id')
+            goal_id = data.get('goal_id')
+            target_id = data.get('target_id')
+            concluido = data.get('concluido') # This will be a boolean
+
+            if not all([pei_id, goal_id, target_id, isinstance(concluido, bool)]):
+                return jsonify({'success': False, 'message': 'Dados insuficientes para atualizar status do alvo.'}), 400
+
+            paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+            paciente_doc = paciente_ref.get()
+            
+            if not paciente_doc.exists:
+                return jsonify({'success': False, 'message': 'Paciente não encontrado.'}), 404
+            
+            paciente_data = paciente_doc.to_dict()
+            peis = paciente_data.get('peis', [])
+            
+            pei_found = False
+            for pei in peis:
+                if pei.get('id') == pei_id:
+                    pei_found = True
+                    goal_found = False
+                    for goal in pei.get('goals', []):
+                        if goal.get('id') == goal_id:
+                            goal_found = True
+                            target_found = False
+                            for target in goal.get('targets', []):
+                                if target.get('id') == target_id:
+                                    target['concluido'] = concluido
+                                    target_found = True
+                                    break
+                            if not target_found:
+                                return jsonify({'success': False, 'message': 'Alvo não encontrado.'}), 404
+                            break
+                    if not goal_found:
+                        return jsonify({'success': False, 'message': 'Meta não encontrada.'}), 404
+                    break
+            if not pei_found:
+                return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
+
+            paciente_ref.update({'peis': peis})
+
+            # Re-fetch the updated PEIs to send back, converting Timestamps
+            updated_paciente_doc = paciente_ref.get()
+            updated_peis_data = updated_paciente_doc.to_dict().get('peis', [])
+            for pei in updated_peis_data:
+                # Convert Timestamp objects to formatted strings for display
+                # Data de criação pode ser uma string, então só converta se for Timestamp
+                if isinstance(pei.get('data_criacao'), firestore.Timestamp):
+                    pei['data_criacao'] = pei['data_criacao'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y')
+                # data_criacao_raw sempre será um Timestamp
+                if isinstance(pei.get('data_criacao_raw'), firestore.Timestamp):
+                    pei['data_criacao_timestamp'] = pei['data_criacao_raw'].timestamp()
+                else:
+                    pei['data_criacao_timestamp'] = 0
+
+            return jsonify({'success': True, 'message': 'Status do alvo atualizado com sucesso!', 'peis': updated_peis_data}), 200
+        except Exception as e:
+            print(f"Erro update_target_status: {e}")
+            return jsonify({'success': False, 'message': f'Erro interno ao atualizar status do alvo: {e}'}), 500
+
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/finalize_goal', methods=['POST'], endpoint='finalize_goal')
+    @login_required
+    def finalize_goal(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        
+        try:
+            data = request.get_json()
+            pei_id = data.get('pei_id')
+            goal_id = data.get('goal_id')
+
+            if not all([pei_id, goal_id]):
+                return jsonify({'success': False, 'message': 'Dados insuficientes para finalizar meta.'}), 400
+
+            paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+            paciente_doc = paciente_ref.get()
+            
+            if not paciente_doc.exists:
+                return jsonify({'success': False, 'message': 'Paciente não encontrado.'}), 404
+            
+            paciente_data = paciente_doc.to_dict()
+            peis = paciente_data.get('peis', [])
+            
+            pei_found = False
+            for pei in peis:
+                if pei.get('id') == pei_id:
+                    pei_found = True
+                    goal_found = False
+                    for goal in pei.get('goals', []):
+                        if goal.get('id') == goal_id:
+                            goal_found = True
+                            # Check if all targets are completed
+                            all_targets_completed = all(target.get('concluido', False) for target in goal.get('targets', []))
+                            
+                            if all_targets_completed:
+                                goal['status'] = 'finalizado'
+                                # Also, set all targets to completed explicitly, in case not all were true
+                                for target in goal.get('targets', []):
+                                    target['concluido'] = True
+                            else:
+                                return jsonify({'success': False, 'message': 'Nem todos os alvos desta meta foram concluídos.'}), 400
+                            break
+                    if not goal_found:
+                        return jsonify({'success': False, 'message': 'Meta não encontrada.'}), 404
+                    break
+            if not pei_found:
+                return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
+
+            paciente_ref.update({'peis': peis})
+
+            # Re-fetch the updated PEIs to send back, converting Timestamps
+            updated_paciente_doc = paciente_ref.get()
+            updated_peis_data = updated_paciente_doc.to_dict().get('peis', [])
+            for pei in updated_peis_data:
+                # Convert Timestamp objects to formatted strings for display
+                if isinstance(pei.get('data_criacao'), firestore.Timestamp):
+                    pei['data_criacao'] = pei['data_criacao'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y')
+                if isinstance(pei.get('data_criacao_raw'), firestore.Timestamp):
+                    pei['data_criacao_timestamp'] = pei['data_criacao_raw'].timestamp()
+                else:
+                    pei['data_criacao_timestamp'] = 0
+            
+            return jsonify({'success': True, 'message': 'Meta finalizada com sucesso!', 'peis': updated_peis_data}), 200
+        except Exception as e:
+            print(f"Erro finalize_goal: {e}")
+            return jsonify({'success': False, 'message': f'Erro interno ao finalizar meta: {e}'}), 500
+
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/finalize_pei', methods=['POST'], endpoint='finalize_pei')
+    @login_required
+    def finalize_pei(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        
+        try:
+            data = request.get_json()
+            pei_id = data.get('pei_id')
+
+            if not pei_id:
+                return jsonify({'success': False, 'message': 'ID do PEI não fornecido.'}), 400
+
+            paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+            paciente_doc = paciente_ref.get()
+            
+            if not paciente_doc.exists:
+                return jsonify({'success': False, 'message': 'Paciente não encontrado.'}), 404
+            
+            paciente_data = paciente_doc.to_dict()
+            peis = paciente_data.get('peis', [])
+            
+            pei_found = False
+            for pei in peis:
+                if pei.get('id') == pei_id:
+                    pei_found = True
+                    pei['status'] = 'finalizado'
+                    # Mark all active goals within this PEI as finalized and all their targets as completed
+                    for goal in pei.get('goals', []):
+                        if goal.get('status') == 'ativo':
+                            goal['status'] = 'finalizado'
+                            for target in goal.get('targets', []):
+                                target['concluido'] = True
+                    break
+            if not pei_found:
+                return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
+
+            paciente_ref.update({'peis': peis})
+
+            # Re-fetch the updated PEIs to send back, converting Timestamps
+            updated_paciente_doc = paciente_ref.get()
+            updated_peis_data = updated_paciente_doc.to_dict().get('peis', [])
+            for pei in updated_peis_data:
+                # Convert Timestamp objects to formatted strings for display
+                if isinstance(pei.get('data_criacao'), firestore.Timestamp):
+                    pei['data_criacao'] = pei['data_criacao'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y')
+                if isinstance(pei.get('data_criacao_raw'), firestore.Timestamp):
+                    pei['data_criacao_timestamp'] = pei['data_criacao_raw'].timestamp()
+                else:
+                    pei['data_criacao_timestamp'] = 0
+
+            return jsonify({'success': True, 'message': 'PEI finalizado com sucesso!', 'peis': updated_peis_data}), 200
+        except Exception as e:
+            print(f"Erro finalize_pei: {e}")
+            return jsonify({'success': False, 'message': f'Erro interno ao finalizar PEI: {e}'}), 500
+
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/delete_pei', methods=['POST'], endpoint='delete_pei')
+    @login_required
+    def delete_pei(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        
+        try:
+            pei_id = request.form.get('pei_id')
+
+            if not pei_id:
+                flash('ID do PEI não fornecido para exclusão.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+            paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+            paciente_doc = paciente_ref.get()
+            
+            if not paciente_doc.exists:
+                flash('Paciente não encontrado.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            
+            paciente_data = paciente_doc.to_dict()
+            peis = paciente_data.get('peis', [])
+            
+            original_len = len(peis)
+            peis = [pei for pei in peis if pei.get('id') != pei_id]
+
+            if len(peis) == original_len:
+                flash('PEI não encontrado para exclusão.', 'warning')
+            else:
+                paciente_ref.update({'peis': peis})
+                flash('PEI excluído com sucesso!', 'success')
+
+        except Exception as e:
+            flash(f'Erro ao excluir PEI: {e}', 'danger')
+            print(f"Erro delete_pei: {e}")
+        
+        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/delete_goal', methods=['POST'], endpoint='delete_goal')
+    @login_required
+    def delete_goal(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        
+        try:
+            pei_id = request.form.get('pei_id')
+            goal_id = request.form.get('goal_id')
+
+            if not all([pei_id, goal_id]):
+                flash('Dados insuficientes para excluir meta.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+            paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+            paciente_doc = paciente_ref.get()
+            
+            if not paciente_doc.exists:
+                flash('Paciente não encontrado.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            
+            paciente_data = paciente_doc.to_dict()
+            peis = paciente_data.get('peis', [])
+            
+            pei_found = False
+            for pei in peis:
+                if pei.get('id') == pei_id:
+                    pei_found = True
+                    original_goals_len = len(pei.get('goals', []))
+                    pei['goals'] = [goal for goal in pei.get('goals', []) if goal.get('id') != goal_id]
+                    
+                    if len(pei['goals']) == original_goals_len:
+                        flash('Meta não encontrada para exclusão.', 'warning')
+                    else:
+                        paciente_ref.update({'peis': peis})
+                        flash('Meta excluída com sucesso!', 'success')
+                    break
+            if not pei_found:
+                flash('PEI da meta não encontrado.', 'danger')
+
+        except Exception as e:
+            flash(f'Erro ao excluir meta: {e}', 'danger')
+            print(f"Erro delete_goal: {e}")
+        
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/modelos_anamnese', endpoint='listar_modelos_anamnese')
@@ -509,4 +927,3 @@ def register_medical_records_routes(app):
             flash(f'Erro ao excluir modelo de anamnese: {e}', 'danger')
             print(f"Erro delete_anamnesis_template: {e}")
         return redirect(url_for('listar_modelos_anamnese'))
-

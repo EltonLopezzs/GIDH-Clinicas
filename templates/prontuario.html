@@ -236,7 +236,7 @@
         }
         .prontuario-header h2 { font-size: 1.75rem; color: var(--text); margin: 0; font-weight: 700; }
         
-        .registro-card {
+        .registro-card, .pei-card, .goal-card {
             background: var(--card); padding: 1.5rem; border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             margin-bottom: 1.5rem; position: relative;
@@ -346,12 +346,16 @@
         .form-group { margin-bottom: 1.25rem; }
         .form-group:last-child { margin-bottom: 0; }
         .form-group label { display: block; font-size: 0.9rem; color: var(--muted); font-weight: 500; margin-bottom: 0.5rem; }
-        .form-group input[type="text"], .form-group textarea {
+        .form-group input[type="text"], 
+        .form-group input[type="date"], 
+        .form-group textarea {
             font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color);
             border-radius: 8px; background-color: var(--bg); color: var(--text);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .form-group input[type="text"]:focus, .form-group textarea:focus {
+        .form-group input[type="text"]:focus, 
+        .form-group input[type="date"]:focus,
+        .form-group textarea:focus {
             border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
         }
         .modal-footer {
@@ -477,6 +481,167 @@
             display: flex;
             justify-content: center;
             gap: 1rem;
+        }
+
+        /* --- PEI Specific Styles --- */
+        .pei-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem; /* Espaço entre seções de PEI */
+        }
+        .pei-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .pei-section-header h3 {
+            font-size: 1.5rem;
+            color: var(--text);
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .pei-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .pei-card {
+            border-left-color: var(--primary);
+            display: flex;
+            flex-direction: column;
+        }
+        .pei-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .pei-card-header h4 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin: 0;
+            font-weight: 600;
+        }
+        .pei-card-meta {
+            font-size: 0.85rem;
+            color: var(--muted);
+            text-align: right;
+        }
+        .pei-card-meta span {
+            display: block;
+        }
+        .pei-card-actions {
+            margin-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .goals-section {
+            margin-top: 1rem;
+        }
+        .goals-section h5 {
+            font-size: 1rem;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        .goal-card {
+            border: 1px solid var(--border-color);
+            background-color: var(--bg);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--info); /* Cor para metas ativas */
+        }
+        .goal-card.completed {
+            border-left-color: var(--success); /* Cor para metas finalizadas */
+            opacity: 0.8;
+        }
+        .goal-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .goal-card-header strong {
+            font-size: 0.95rem;
+            color: var(--text);
+            font-weight: 600;
+        }
+        .goal-status {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        .goal-status.active-status { background-color: color-mix(in srgb, var(--info) 20%, transparent); color: var(--info); }
+        .goal-status.completed-status { background-color: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
+
+        .targets-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 0.75rem;
+        }
+        .target-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+        .target-item input[type="checkbox"] {
+            margin-right: 0.75rem;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+        .target-item.completed span {
+            text-decoration: line-through;
+            color: var(--success);
+        }
+        .add-target-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            align-items: center;
+        }
+        .add-target-group input {
+            flex-grow: 1;
+        }
+        .btn-add-target {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.85rem;
+        }
+        
+        .modal-body .targets-input-container .target-input-item {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+        .modal-body .targets-input-container .target-input-item input {
+            flex-grow: 1;
+        }
+        .modal-body .targets-input-container .target-input-item .btn-remove-target {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .modal-body .targets-input-container .target-input-item .btn-remove-target:hover {
+            color: var(--danger);
+        }
+        .add-target-button-modal {
+            margin-top: 0.75rem;
         }
 
 
@@ -615,6 +780,100 @@
                 </div>
                 {% endmacro %}
 
+                <!-- MACRO for rendering a PEI card -->
+                {% macro render_pei_card(pei) %}
+                <div class="pei-card" id="pei-{{ pei.id }}">
+                    <div class="pei-card-header">
+                        <h4>PEI: {{ pei.titulo }}</h4>
+                        <div class="pei-card-meta">
+                            <span><i class="fas fa-calendar-alt"></i> Criado em: {{ pei.data_criacao }}</span>
+                            <span>Status: <span class="goal-status {% if pei.status == 'ativo' %}active-status{% else %}completed-status{% endif %}">{{ pei.status | capitalize }}</span></span>
+                        </div>
+                    </div>
+                    <div class="pei-card-body">
+                        <h5>Metas Ativas:</h5>
+                        <div class="goals-list active-goals-list">
+                            {% set active_goals = pei.goals | selectattr('status', 'equalto', 'ativo') | list %}
+                            {% if active_goals %}
+                                {% for goal in active_goals %}
+                                <div class="goal-card" id="goal-{{ pei.id }}-{{ goal.id }}">
+                                    <div class="goal-card-header">
+                                        <strong>Meta: {{ goal.descricao }}</strong>
+                                        <span class="goal-status active-status">Ativa</span>
+                                    </div>
+                                    <ul class="targets-list" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">
+                                        {% for target in goal.targets %}
+                                        <li class="target-item {% if target.concluido %}completed{% endif %}" data-target-id="{{ target.id }}">
+                                            {# Removed Jinja2 conditional for disabled attribute here #}
+                                            <input type="checkbox" class="target-checkbox" {% if target.concluido %}checked{% endif %}>
+                                            <span>{{ target.descricao }}</span>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                    <div class="add-target-group">
+                                        <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta">
+                                        {# Removed Jinja2 conditional for disabled attribute here #}
+                                        <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">Adicionar Alvo</button>
+                                    </div>
+                                    <div class="pei-card-actions" style="border-top: none; padding-top: 0.5rem; justify-content: flex-start;">
+                                        {# Removed Jinja2 conditional for disabled attribute here #}
+                                        <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">
+                                            <i class="fas fa-check-circle"></i> Finalizar Meta
+                                        </button>
+                                        {# Removed Jinja2 conditional for disabled attribute here #}
+                                        <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-state"><p>Nenhuma meta ativa para este PEI.</p></div>
+                            {% endif %}
+                        </div>
+
+                        <h5>Metas Finalizadas:</h5>
+                        <div class="goals-list finalized-goals-list">
+                            {% set finalized_goals = pei.goals | selectattr('status', 'equalto', 'finalizado') | list %}
+                            {% if finalized_goals %}
+                                {% for goal in finalized_goals %}
+                                <div class="goal-card completed" id="goal-{{ pei.id }}-{{ goal.id }}">
+                                    <div class="goal-card-header">
+                                        <strong>Meta: {{ goal.descricao }}</strong>
+                                        <span class="goal-status completed-status">Finalizada</span>
+                                    </div>
+                                    <ul class="targets-list" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">
+                                        {% for target in goal.targets %}
+                                        <li class="target-item {% if target.concluido %}completed{% endif %}" data-target-id="{{ target.id }}">
+                                            <input type="checkbox" class="target-checkbox" {% if target.concluido %}checked{% endif %} disabled>
+                                            <span>{{ target.descricao }}</span>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-state"><p>Nenhuma meta finalizada para este PEI.</p></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="pei-card-actions">
+                        {# Removed Jinja2 conditional for disabled attribute here #}
+                        <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="{{ pei.id }}">
+                            <i class="fas fa-plus"></i> Adicionar Meta
+                        </button>
+                        {# Removed Jinja2 conditional for disabled attribute here #}
+                        <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="{{ pei.id }}">
+                            <i class="fas fa-trash"></i> Excluir PEI
+                        </button>
+                        {# Removed Jinja2 conditional for disabled attribute here #}
+                        <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="{{ pei.id }}">
+                            <i class="fas fa-check-double"></i> Finalizar PEI
+                        </button>
+                    </div>
+                </div>
+                {% endmacro %}
+
 
                 <section class="prontuario-section">
                     <div class="tabs-container">
@@ -624,6 +883,7 @@
                             <button class="tab-nav-item" data-tab="laudo">Laudos</button>
                             <button class="tab-nav-item" data-tab="orientacao">Orientações</button>
                             <button class="tab-nav-item" data-tab="procedimento">Procedimentos</button>
+                            <button class="tab-nav-item" data-tab="pei">PEI</button> {# New PEI Tab #}
                         </div>
                         
                         <div class="tab-content">
@@ -686,6 +946,52 @@
                                 {% else %}
                                     <div class="empty-state"><p>Nenhum procedimento encontrado.</p></div>
                                 {% endif %}
+                            </div>
+
+                            <!-- Painel "PEI" (New Tab Panel) -->
+                            <div id="tab-panel-pei" class="tab-panel">
+                                <div class="pei-section-header">
+                                    <h3>Planos Educacionais Individualizados (PEI)</h3>
+                                    <button type="button" class="btn btn-primary" id="addPeiBtn">
+                                        <i class="fas fa-plus"></i> Adicionar Novo PEI
+                                    </button>
+                                </div>
+                                
+                                <div class="pei-container">
+                                    <h4>PEIs Ativos:</h4>
+                                    <div id="active-peis-list" class="pei-list">
+                                        {# PEIs ativos serão renderizados aqui via JavaScript ou Jinja2 #}
+                                        {% if peis %}
+                                            {% set active_peis = peis | selectattr('status', 'equalto', 'ativo') | list %}
+                                            {% if active_peis %}
+                                                {% for pei in active_peis %}
+                                                    {{ render_pei_card(pei) }}
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="empty-state"><p>Nenhum PEI ativo para este paciente.</p></div>
+                                            {% endif %}
+                                        {% else %}
+                                            <div class="empty-state"><p>Nenhum PEI para este paciente.</p></div>
+                                        {% endif %}
+                                    </div>
+
+                                    <h4>PEIs Finalizados:</h4>
+                                    <div id="finalized-peis-list" class="pei-list">
+                                        {# PEIs finalizados serão renderizados aqui via JavaScript ou Jinja2 #}
+                                        {% if peis %}
+                                            {% set finalized_peis = peis | selectattr('status', 'equalto', 'finalizado') | list %}
+                                            {% if finalized_peis %}
+                                                {% for pei in finalized_peis %}
+                                                    {{ render_pei_card(pei) }}
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="empty-state"><p>Nenhum PEI finalizado para este paciente.</p></div>
+                                            {% endif %}
+                                        {% else %}
+                                            <!-- Already covered by the first empty-state if no PEIs at all -->
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -770,6 +1076,69 @@
         </div>
     </div>
 
+    <!-- NEW MODAL: Adicionar PEI -->
+    <div id="addPeiModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Novo PEI</h3>
+                <button type="button" class="modal-close-btn" data-close-modal="addPeiModal">&times;</button>
+            </div>
+            <form id="formAddPei" method="POST" action="{{ url_for('add_pei', paciente_doc_id=paciente.id) }}">
+                <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="pei_titulo">Título do PEI</label>
+                        <input type="text" id="pei_titulo" name="titulo" required placeholder="Ex: Plano para Desenvolvimento Motor">
+                    </div>
+                    <div class="form-group">
+                        <label for="pei_data_criacao">Data de Criação</label>
+                        {# Corrected: Using current_date_iso from Flask context instead of non-existent 'date' filter #}
+                        <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close-modal="addPeiModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Criar PEI</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NEW MODAL: Adicionar Meta ao PEI -->
+    <div id="addGoalModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Adicionar Nova Meta ao PEI</h3>
+                <button type="button" class="modal-close-btn" data-close-modal="addGoalModal">&times;</button>
+            </div>
+            <form id="formAddGoal" method="POST" action=""> {# Action will be set by JS #}
+                <input type="hidden" name="pei_id" id="goal_pei_id">
+                <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="goal_descricao">Descrição da Meta</label>
+                        <input type="text" id="goal_descricao" name="descricao" required placeholder="Ex: Desenvolver a coordenação olho-mão">
+                    </div>
+                    <div class="form-group">
+                        <label>Alvos da Meta</label>
+                        <div id="targets-input-container">
+                            <div class="target-input-item">
+                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required>
+                                <button type="button" class="btn btn-danger-outline btn-remove-target" style="display: none;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm add-target-button-modal"><i class="fas fa-plus"></i> Adicionar Outro Alvo</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close-modal="addGoalModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Adicionar Meta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <!-- Confirmation Modal for Deletion -->
     <div id="confirm-delete-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
@@ -778,7 +1147,7 @@
                 <button type="button" class="modal-close-btn" data-close-modal="confirm-delete-modal">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.</p>
+                <p id="confirm-delete-message">Tem certeza que deseja apagar este item? Esta ação não pode ser desfeita.</p>
             </div>
             <div class="modal-footer confirm-actions">
                 <button type="button" class="btn btn-secondary" data-close-modal="confirm-delete-modal">Cancelar</button>
@@ -792,13 +1161,24 @@
         <input type="hidden" name="registro_id" id="registro_id_apagar">
         <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
     </form>
+
+    <!-- Formulário para Apagar PEI (escondido) -->
+    <form id="formApagarPei" method="POST" action="" style="display: none;">
+        <input type="hidden" name="pei_id" id="pei_id_apagar">
+        <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+    </form>
+
+    <!-- Formulário para Apagar Meta (escondido) -->
+    <form id="formApagarGoal" method="POST" action="" style="display: none;">
+        <input type="hidden" name="pei_id" id="goal_delete_pei_id">
+        <input type="hidden" name="goal_id" id="goal_id_apagar">
+        <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+    </form>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js"; 
         import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
-        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-
         // IMPORTANTE: Cole a configuração do seu projeto Firebase aqui
         const firebaseConfig = {
             apiKey: "SUA_API_KEY",
@@ -813,8 +1193,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // Variável global com todos os dados dos registros, vindo diretamente do Jinja2
-        const allRecordsData = {{ registros | tojson }}; 
+        // Variáveis globais para dados, vindos do Jinja2
+        const allRecordsData = {{ registros | tojson | safe }}; 
+        let allPeisData = {{ peis | tojson | safe }} || []; // Ensure it's an array, even if empty
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
@@ -1008,7 +1389,8 @@
                         generateGenericBtn.classList.add('loading');
                         
                         try {
-                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; 
+                            // Using Canvas's provided API key mechanism
+                            const apiKey = "";
                             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                             
                             const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
@@ -1041,15 +1423,30 @@
                 }
 
 
-                // *** Lógica de Exclusão e Modais ***
+                // *** Lógica de Exclusão e Modais (Centralizada) ***
                 const confirmDeleteModal = document.getElementById('confirm-delete-modal');
+                const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                const confirmDeleteMessage = document.getElementById('confirm-delete-message');
+                
                 const formApagarRegistro = document.getElementById('formApagarRegistro');
-                let recordToDeleteId = null;
+                const formApagarPei = document.getElementById('formApagarPei');
+                const formApagarGoal = document.getElementById('formApagarGoal');
+
+                let currentDeleteAction = null; // To store which delete action to perform
+                let currentDeleteData = {}; // To store IDs for deletion
 
                 // Função genérica para fechar modais pelo ID
                 function closeModalById(modalId) {
                     const modal = document.getElementById(modalId);
                     if (modal) modal.classList.remove('active');
+                }
+
+                // Function to open the generic confirmation modal
+                function openConfirmDeleteModal(message, action, data) {
+                    confirmDeleteMessage.textContent = message;
+                    currentDeleteAction = action;
+                    currentDeleteData = data;
+                    confirmDeleteModal.classList.add('active');
                 }
 
                 // Event listener unificado para cliques no corpo do documento
@@ -1108,21 +1505,132 @@
                     }
 
                     // Botão APAGAR registro
-                    const deleteButton = target.closest('.btn-apagar-registro');
-                    if (deleteButton) {
-                        recordToDeleteId = deleteButton.dataset.registroId;
-                        if(confirmDeleteModal) confirmDeleteModal.classList.add('active');
+                    const deleteRecordButton = target.closest('.btn-apagar-registro');
+                    if (deleteRecordButton) {
+                        const recordId = deleteRecordButton.dataset.registroId;
+                        openConfirmDeleteModal('Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.', 'delete_record', { id: recordId });
                         return;
                     }
 
-                    // Botão de CONFIRMAR exclusão
+                    // Botão Adicionar Novo PEI
+                    if (target.id === 'addPeiBtn') {
+                        document.getElementById('addPeiModal').classList.add('active');
+                        document.getElementById('formAddPei').reset();
+                        // current_date_iso is already set via Jinja, so no need for JS here
+                        return;
+                    }
+
+                    // Botão Adicionar Meta (dentro de um PEI)
+                    const addGoalButton = target.closest('.btn-add-goal');
+                    if (addGoalButton) {
+                        const peiId = addGoalButton.dataset.peiId;
+                        document.getElementById('goal_pei_id').value = peiId;
+                        document.getElementById('formAddGoal').action = `{{ url_for('add_goal', paciente_doc_id=paciente.id) }}`;
+                        document.getElementById('formAddGoal').reset();
+                        document.getElementById('targets-input-container').innerHTML = `
+                            <div class="target-input-item">
+                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required>
+                                <button type="button" class="btn btn-danger-outline btn-remove-target" style="display: none;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `; // Reset targets
+                        document.getElementById('addGoalModal').classList.add('active');
+                        return;
+                    }
+
+                    // Botão Adicionar Outro Alvo (dentro do modal de adicionar meta)
+                    if (target.matches('.add-target-button-modal')) {
+                        const container = document.getElementById('targets-input-container');
+                        const newItem = document.createElement('div');
+                        newItem.classList.add('target-input-item');
+                        const targetCount = container.children.length + 1;
+                        newItem.innerHTML = `
+                            <input type="text" name="targets[]" placeholder="Descrição do Alvo ${targetCount}" required>
+                            <button type="button" class="btn btn-danger-outline btn-remove-target"><i class="fas fa-trash"></i></button>
+                        `;
+                        container.appendChild(newItem);
+                        return;
+                    }
+
+                    // Botão Remover Alvo (dentro do modal de adicionar meta)
+                    if (target.matches('.btn-remove-target')) {
+                        if (target.closest('.targets-input-container').children.length > 1) { // Ensure at least one target remains
+                            target.closest('.target-input-item').remove();
+                        }
+                        return;
+                    }
+
+                    // Checkbox para alvo do PEI
+                    const targetCheckbox = target.closest('.target-checkbox');
+                    if (targetCheckbox) {
+                        const targetItem = targetCheckbox.closest('.target-item');
+                        const targetId = targetItem.dataset.targetId;
+                        const goalList = targetCheckbox.closest('.targets-list');
+                        const peiId = goalList.dataset.peiId;
+                        const goalId = goalList.dataset.goalId;
+                        const isCompleted = targetCheckbox.checked;
+
+                        updateTargetStatus(peiId, goalId, targetId, isCompleted);
+                        return;
+                    }
+
+                    // Botão Finalizar Meta
+                    const finalizeGoalButton = target.closest('.btn-finalize-goal');
+                    if (finalizeGoalButton) {
+                        const peiId = finalizeGoalButton.dataset.peiId;
+                        const goalId = finalizeGoalButton.dataset.goalId;
+                        openConfirmDeleteModal('Tem certeza que deseja finalizar esta meta? Uma vez finalizada, não poderá ser editada.', 'finalize_goal', { peiId: peiId, goalId: goalId });
+                        return;
+                    }
+
+                    // Botão Excluir Meta
+                    const deleteGoalButton = target.closest('.btn-delete-goal');
+                    if (deleteGoalButton) {
+                        const peiId = deleteGoalButton.dataset.peiId;
+                        const goalId = deleteGoalButton.dataset.goalId;
+                        openConfirmDeleteModal('Tem certeza que deseja apagar esta meta e todos os seus alvos? Esta ação não pode ser desfeita.', 'delete_goal', { peiId: peiId, goalId: goalId });
+                        return;
+                    }
+
+                    // Botão Excluir PEI
+                    const deletePeiButton = target.closest('.btn-delete-pei');
+                    if (deletePeiButton) {
+                        const peiId = deletePeiButton.dataset.peiId;
+                        openConfirmDeleteModal('Tem certeza que deseja apagar este PEI e todas as suas metas e alvos? Esta ação não pode ser desfeita.', 'delete_pei', { peiId: peiId });
+                        return;
+                    }
+
+                    // Botão Finalizar PEI
+                    const finalizePeiButton = target.closest('.btn-finalize-pei');
+                    if (finalizePeiButton) {
+                        const peiId = finalizePeiButton.dataset.peiId;
+                        openConfirmDeleteModal('Tem certeza que deseja finalizar este PEI? Todas as metas ativas serão consideradas finalizadas. Esta ação não pode ser desfeita.', 'finalize_pei', { peiId: peiId });
+                        return;
+                    }
+
+                    // Botão de CONFIRMAR exclusão/finalização (handle based on currentDeleteAction)
                     if (target.id === 'confirmDeleteBtn') {
-                        if (recordToDeleteId && formApagarRegistro) {
-                            formApagarRegistro.querySelector('#registro_id_apagar').value = recordToDeleteId;
+                        closeModalById('confirm-delete-modal'); // Close the confirmation modal first
+                        
+                        if (currentDeleteAction === 'delete_record') {
+                            formApagarRegistro.querySelector('#registro_id_apagar').value = currentDeleteData.id;
                             formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}`;
                             formApagarRegistro.submit();
+                        } else if (currentDeleteAction === 'delete_pei') {
+                            formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
+                            formApagarPei.action = `{{ url_for('delete_pei', paciente_doc_id=paciente.id) }}`;
+                            formApagarPei.submit();
+                        } else if (currentDeleteAction === 'delete_goal') {
+                            formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
+                            formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
+                            formApagarGoal.action = `{{ url_for('delete_goal', paciente_doc_id=paciente.id) }}`;
+                            formApagarGoal.submit();
+                        } else if (currentDeleteAction === 'finalize_goal') {
+                            finalizeGoal(currentDeleteData.peiId, currentDeleteData.goalId);
+                        } else if (currentDeleteAction === 'finalize_pei') {
+                            finalizePei(currentDeleteData.peiId);
                         }
-                        closeModalById('confirm-delete-modal');
+                        currentDeleteAction = null; // Reset action
+                        currentDeleteData = {}; // Clear data
                         return;
                     }
 
@@ -1133,6 +1641,207 @@
                          return;
                      }
                 });
+
+                // --- Helper function for rendering PEIs (after an update from Flask) ---
+                function renderPeis(peis) {
+                    const activePeisList = document.getElementById('active-peis-list');
+                    const finalizedPeisList = document.getElementById('finalized-peis-list');
+                    
+                    activePeisList.innerHTML = '';
+                    finalizedPeisList.innerHTML = '';
+
+                    if (peis.length === 0) {
+                        activePeisList.innerHTML = '<div class="empty-state"><p>Nenhum PEI ativo para este paciente.</p></div>';
+                        finalizedPeisList.innerHTML = '<div class="empty-state"><p>Nenhum PEI finalizado para este paciente.</p></div>';
+                        return;
+                    }
+
+                    let hasActivePeis = false;
+                    let hasFinalizedPeis = false;
+
+                    // Sort PEIs by data_criacao_timestamp (if available, otherwise fallback)
+                    const sortedPeis = [...peis].sort((a, b) => {
+                        // Ensure data_criacao is in a format Date can parse reliably, e.g., 'YYYY-MM-DD'
+                        // If it's already a formatted string like 'DD/MM/YYYY', parse it correctly.
+                        // Assuming it's 'DD/MM/YYYY' based on medical_records.py formatting for display.
+                        const parseDate = (dateString) => {
+                            if (!dateString) return new Date(0); // Fallback for invalid dates
+                            const parts = dateString.split('/');
+                            // new Date(year, monthIndex, day)
+                            return new Date(parts[2], parts[1] - 1, parts[0]);
+                        };
+
+                        const dateA = parseDate(a.data_criacao);
+                        const dateB = parseDate(b.data_criacao);
+                        return dateB.getTime() - dateA.getTime(); // Descending order (most recent first)
+                    });
+
+
+                    sortedPeis.forEach(pei => {
+                        // Determine if buttons should be disabled based on PEI or Goal status
+                        const isPeiFinalized = pei.status === 'finalizado';
+
+                        const peiHtml = `
+                        <div class="pei-card" id="pei-${pei.id}">
+                            <div class="pei-card-header">
+                                <h4>PEI: ${pei.titulo}</h4>
+                                <div class="pei-card-meta">
+                                    <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
+                                    <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'completed-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
+                                </div>
+                            </div>
+                            <div class="pei-card-body">
+                                <h5>Metas Ativas:</h5>
+                                <div class="goals-list active-goals-list" id="active-goals-for-pei-${pei.id}">
+                                    ${pei.goals.filter(goal => goal.status === 'ativo').length > 0 ?
+                                        pei.goals.filter(goal => goal.status === 'ativo').map(goal => `
+                                            <div class="goal-card" id="goal-${pei.id}-${goal.id}">
+                                                <div class="goal-card-header">
+                                                    <strong>Meta: ${goal.descricao}</strong>
+                                                    <span class="goal-status active-status">Ativa</span>
+                                                </div>
+                                                <ul class="targets-list" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
+                                                    ${goal.targets.map(target => `
+                                                    <li class="target-item ${target.concluido ? 'completed' : ''}" data-target-id="${target.id}">
+                                                        <input type="checkbox" class="target-checkbox" ${target.concluido ? 'checked' : ''} ${isPeiFinalized || goal.status === 'finalizado' ? 'disabled' : ''}>
+                                                        <span>${target.descricao}</span>
+                                                    </li>
+                                                    `).join('')}
+                                                </ul>
+                                                <div class="add-target-group">
+                                                    <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta">
+                                                    <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${isPeiFinalized || goal.status === 'finalizado' ? 'disabled' : ''}>Adicionar Alvo</button>
+                                                </div>
+                                                <div class="pei-card-actions" style="border-top: none; padding-top: 0.5rem; justify-content: flex-start;">
+                                                    <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goal.status === 'finalizado' ? 'disabled' : ''}>
+                                                        <i class="fas fa-check-circle"></i> Finalizar Meta
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${isPeiFinalized || goal.status === 'finalizado' ? 'disabled' : ''}>
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `).join('')
+                                    : '<div class="empty-state"><p>Nenhuma meta ativa para este PEI.</p></div>'}
+                                </div>
+
+                                <h5>Metas Finalizadas:</h5>
+                                <div class="goals-list finalized-goals-list">
+                                    ${pei.goals.filter(goal => goal.status === 'finalizado').length > 0 ?
+                                        pei.goals.filter(goal => goal.status === 'finalizado').map(goal => `
+                                            <div class="goal-card completed" id="goal-${pei.id}-${goal.id}">
+                                                <div class="goal-card-header">
+                                                    <strong>Meta: ${goal.descricao}</strong>
+                                                    <span class="goal-status completed-status">Finalizada</span>
+                                                </div>
+                                                <ul class="targets-list" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
+                                                    ${goal.targets.map(target => `
+                                                    <li class="target-item ${target.concluido ? 'completed' : ''}" data-target-id="${target.id}">
+                                                        <input type="checkbox" class="target-checkbox" ${target.concluido ? 'checked' : ''} disabled>
+                                                        <span>${target.descricao}</span>
+                                                    </li>
+                                                    `).join('')}
+                                                </ul>
+                                            </div>
+                                        `).join('')
+                                    : '<div class="empty-state"><p>Nenhuma meta finalizada para este PEI.</p></div>'}
+                                </div>
+                            </div>
+                            <div class="pei-card-actions">
+                                <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
+                                    <i class="fas fa-plus"></i> Adicionar Meta
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
+                                    <i class="fas fa-trash"></i> Excluir PEI
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
+                                    <i class="fas fa-check-double"></i> Finalizar PEI
+                                </button>
+                            </div>
+                        </div>
+                        `;
+                        if (pei.status === 'ativo') {
+                            activePeisList.insertAdjacentHTML('beforeend', peiHtml);
+                            hasActivePeis = true;
+                        } else {
+                            finalizedPeisList.insertAdjacentHTML('beforeend', peiHtml);
+                            hasFinalizedPeis = true;
+                        }
+                    });
+
+                    // Update empty states if needed
+                    if (!hasActivePeis && peis.length > 0) {
+                         activePeisList.innerHTML = '<div class="empty-state"><p>Nenhum PEI ativo para este paciente.</p></div>';
+                    }
+                     if (!hasFinalizedPeis && peis.length > 0) {
+                         finalizedPeisList.innerHTML = '<div class="empty-state"><p>Nenhum PEI finalizado para este paciente.</p></div>';
+                    }
+                }
+
+
+                // --- AJAX FUNCTIONS for PEI/Goals/Targets ---
+                async function updateTargetStatus(peiId, goalId, targetId, isCompleted) {
+                    try {
+                        const response = await fetch(`{{ url_for('update_target_status', paciente_doc_id=paciente.id) }}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_id: targetId, concluido: isCompleted })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            console.log('Target status updated:', data.message);
+                            // Update the local data and re-render PEIs
+                            allPeisData = data.peis;
+                            renderPeis(allPeisData);
+                            // Optional: show a flash message (implement a custom one, as Flask's won't show on AJAX)
+                        } else {
+                            console.error('Failed to update target status:', data.message);
+                            // Optional: show an error message
+                        }
+                    } catch (error) {
+                        console.error('Error updating target status:', error);
+                    }
+                }
+
+                async function finalizeGoal(peiId, goalId) {
+                    try {
+                        const response = await fetch(`{{ url_for('finalize_goal', paciente_doc_id=paciente.id) }}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            console.log('Goal finalized:', data.message);
+                            allPeisData = data.peis;
+                            renderPeis(allPeisData);
+                        } else {
+                            console.error('Failed to finalize goal:', data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error finalizing goal:', error);
+                    }
+                }
+
+                async function finalizePei(peiId) {
+                    try {
+                        const response = await fetch(`{{ url_for('finalize_pei', paciente_doc_id=paciente.id) }}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            console.log('PEI finalized:', data.message);
+                            allPeisData = data.peis;
+                            renderPeis(allPeisData);
+                        } else {
+                            console.error('Failed to finalize PEI:', data.message);
+                        }
+                    } catch (error) {
+                        console.error('Error finalizing PEI:', error);
+                    }
+                }
 
                 // --- Lógica de Geração de PDF ---
                 // Função melhorada para converter HTML em texto plano para o PDF
@@ -1219,6 +1928,10 @@
 
                      doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
+
+
+                // --- Initial Render of PEIs ---
+                renderPeis(allPeisData);
 
 
                 // --- Inicialização ---
