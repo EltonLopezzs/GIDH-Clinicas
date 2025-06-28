@@ -612,6 +612,7 @@
             font-size: 1rem;
             width: 18px; /* Fixed width for icon */
             text-align: center;
+            flex-shrink: 0; /* Prevent icon from shrinking */
         }
         .target-item.concluido span { /* Corrigido de 'completed' para 'concluido' */
             text-decoration: line-through;
@@ -621,19 +622,24 @@
             color: var(--success);
         }
         .target-item input[type="checkbox"] {
-            margin-right: 0.75rem;
+            margin-right: 0.75rem; /* Adjust margin to align with icon */
             width: 18px;
             height: 18px;
             accent-color: var(--primary);
             cursor: pointer;
             flex-shrink: 0;
+            display: none; /* Hide native checkbox to use custom icon */
         }
         /* Style for disabled checkboxes */
-        .target-item input[type="checkbox"]:disabled {
+        .target-item input[type="checkbox"]:disabled + i.status-icon {
             opacity: 0.6;
             cursor: not-allowed;
-            accent-color: var(--muted);
+            color: var(--muted);
         }
+        .target-item input[type="checkbox"]:disabled + i.status-icon.fa-check-square {
+             color: var(--success); /* Keep green for disabled but checked */
+        }
+
 
         .add-target-group {
             display: flex;
@@ -849,7 +855,7 @@
                                         {% endfor %}
                                     </ul>
                                     <div class="add-target-group">
-                                        <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta">
+                                        <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>
                                         <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>Adicionar Alvo</button>
                                     </div>
                                     <div class="pei-card-actions" style="border-top: none; padding-top: 0.5rem; justify-content: flex-start;">
@@ -1184,7 +1190,7 @@
     <div id="confirm-delete-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
             <div class="modal-header">
-                <h3>Confirmar Exclusão</h3>
+                <h3 id="confirm-modal-title">Confirmar Exclusão</h3>
                 <button type="button" class="modal-close-btn" data-close-modal="confirm-delete-modal">&times;</button>
             </div>
             <div class="modal-body">
@@ -1466,6 +1472,7 @@
 
                 // *** Lógica de Exclusão e Modais (Centralizada) ***
                 const confirmDeleteModal = document.getElementById('confirm-delete-modal');
+                const confirmModalTitle = document.getElementById('confirm-modal-title');
                 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
                 const confirmDeleteMessage = document.getElementById('confirm-delete-message');
                 
@@ -1483,8 +1490,14 @@
                 }
 
                 // Function to open the generic confirmation modal
-                function openConfirmDeleteModal(message, action, data) {
+                function openConfirmDeleteModal(title, message, action, data) {
+                    confirmModalTitle.textContent = title;
                     confirmDeleteMessage.textContent = message;
+                    confirmDeleteBtn.textContent = (action.includes('delete') ? 'Apagar' : 'Finalizar'); // Dynamically change button text
+                    confirmDeleteBtn.classList.toggle('btn-danger-outline', action.includes('delete'));
+                    confirmDeleteBtn.classList.toggle('btn-success', !action.includes('delete'));
+
+
                     currentDeleteAction = action;
                     currentDeleteData = data;
                     confirmDeleteModal.classList.add('active');
@@ -1549,7 +1562,7 @@
                     const deleteRecordButton = target.closest('.btn-apagar-registro');
                     if (deleteRecordButton) {
                         const recordId = deleteRecordButton.dataset.registroId;
-                        openConfirmDeleteModal('Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.', 'delete_record', { id: recordId });
+                        openConfirmDeleteModal('Confirmar Exclusão', 'Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.', 'delete_record', { id: recordId });
                         return;
                     }
 
@@ -1600,17 +1613,29 @@
                         return;
                     }
 
-                    // Checkbox para alvo do PEI
-                    const targetCheckbox = target.closest('.target-checkbox');
-                    if (targetCheckbox) {
-                        const targetItem = targetCheckbox.closest('.target-item');
-                        const targetId = targetItem.dataset.targetId;
-                        const goalList = targetCheckbox.closest('.targets-list');
-                        const peiId = goalList.dataset.peiId;
-                        const goalId = goalList.dataset.goalId;
-                        const isCompleted = targetCheckbox.checked;
+                    // Checkbox/Icon para alvo do PEI
+                    const targetStatusToggle = target.closest('.target-item'); // Click anywhere on the target item
+                    if (targetStatusToggle) {
+                        const checkbox = targetStatusToggle.querySelector('.target-checkbox');
+                        // Only toggle if not disabled
+                        if (checkbox && !checkbox.disabled) {
+                            checkbox.checked = !checkbox.checked;
+                            const targetId = targetStatusToggle.dataset.targetId;
+                            const goalList = targetStatusToggle.closest('.targets-list');
+                            const peiId = goalList.dataset.peiId;
+                            const goalId = goalList.dataset.goalId;
+                            const isCompleted = checkbox.checked;
 
-                        updateTargetStatus(peiId, goalId, targetId, isCompleted);
+                            // Visually update immediately
+                            if (isCompleted) {
+                                targetStatusToggle.classList.add('concluido');
+                                targetStatusToggle.querySelector('.status-icon').classList.replace('fa-square', 'fa-check-square');
+                            } else {
+                                targetStatusToggle.classList.remove('concluido');
+                                targetStatusToggle.querySelector('.status-icon').classList.replace('fa-check-square', 'fa-square');
+                            }
+                            updateTargetStatus(peiId, goalId, targetId, isCompleted);
+                        }
                         return;
                     }
 
@@ -1619,7 +1644,7 @@
                     if (finalizeGoalButton) {
                         const peiId = finalizeGoalButton.dataset.peiId;
                         const goalId = finalizeGoalButton.dataset.goalId;
-                        openConfirmDeleteModal('Tem certeza que deseja finalizar esta meta? Uma vez finalizada, não poderá ser editada.', 'finalize_goal', { peiId: peiId, goalId: goalId });
+                        openConfirmDeleteModal('Confirmar Finalização da Meta', 'Tem certeza que deseja finalizar esta meta? Uma vez finalizada, não poderá ser editada.', 'finalize_goal', { peiId: peiId, goalId: goalId });
                         return;
                     }
 
@@ -1628,7 +1653,7 @@
                     if (deleteGoalButton) {
                         const peiId = deleteGoalButton.dataset.peiId;
                         const goalId = deleteGoalButton.dataset.goalId;
-                        openConfirmDeleteModal('Tem certeza que deseja apagar esta meta e todos os seus alvos? Esta ação não pode ser desfeita.', 'delete_goal', { peiId: peiId, goalId: goalId });
+                        openConfirmDeleteModal('Confirmar Exclusão da Meta', 'Tem certeza que deseja apagar esta meta e todos os seus alvos? Esta ação não pode ser desfeita.', 'delete_goal', { peiId: peiId, goalId: goalId });
                         return;
                     }
 
@@ -1636,7 +1661,7 @@
                     const deletePeiButton = target.closest('.btn-delete-pei');
                     if (deletePeiButton) {
                         const peiId = deletePeiButton.dataset.peiId;
-                        openConfirmDeleteModal('Tem certeza que deseja apagar este PEI e todas as suas metas e alvos? Esta ação não pode ser desfeita.', 'delete_pei', { peiId: peiId });
+                        openConfirmDeleteModal('Confirmar Exclusão do PEI', 'Tem certeza que deseja apagar este PEI e todas as suas metas e alvos? Esta ação não pode ser desfeita.', 'delete_pei', { peiId: peiId });
                         return;
                     }
 
@@ -1644,7 +1669,7 @@
                     const finalizePeiButton = target.closest('.btn-finalize-pei');
                     if (finalizePeiButton) {
                         const peiId = finalizePeiButton.dataset.peiId;
-                        openConfirmDeleteModal('Tem certeza que deseja finalizar este PEI? Todas as metas ativas serão consideradas finalizadas. Esta ação não pode ser desfeita.', 'finalize_pei', { peiId: peiId });
+                        openConfirmDeleteModal('Confirmar Finalização do PEI', 'Tem certeza que deseja finalizar este PEI? Todas as metas ativas serão consideradas finalizadas. Esta ação não pode ser desfeita.', 'finalize_pei', { peiId: peiId });
                         return;
                     }
 
