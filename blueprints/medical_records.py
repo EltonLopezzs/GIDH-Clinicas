@@ -23,18 +23,20 @@ def register_medical_records_routes(app):
             query = pacientes_ref.order_by('nome')
 
             if search_query:
+                # Correção: Adicionado distinct para evitar duplicatas em buscas múltiplas
+                pacientes_set = set()
+
+                # Busca por nome
                 query_nome = pacientes_ref.where(filter=FieldFilter('nome', '>=', search_query))\
                                          .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
-                
-                query_cpf = pacientes_ref.where(filter=FieldFilter('cpf', '==', search_query))
-
-                pacientes_set = set()
                 for doc in query_nome.stream():
                     paciente_data = doc.to_dict()
                     if paciente_data:
                         paciente_data['id'] = doc.id
                         pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
                 
+                # Busca por CPF
+                query_cpf = pacientes_ref.where(filter=FieldFilter('cpf', '==', search_query))
                 for doc in query_cpf.stream():
                     paciente_data = doc.to_dict()
                     if paciente_data:
@@ -42,7 +44,7 @@ def register_medical_records_routes(app):
                         pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
                 
                 pacientes_para_busca = [json.loads(p) for p in pacientes_set]
-                pacientes_para_busca.sort(key=lambda x: x.get('nome', ''))
+                pacientes_para_busca.sort(key=lambda x: x.get('nome', '')) # Garante ordenação por nome
 
             else:
                 docs = query.stream()
@@ -74,10 +76,15 @@ def register_medical_records_routes(app):
                 paciente_data = paciente_doc.to_dict()
                 paciente_data['id'] = paciente_doc.id
 
+                # Buscar nome do convênio
                 if paciente_data.get('convenio_id'):
                     convenio_doc = db_instance.collection('clinicas').document(clinica_id).collection('convenios').document(paciente_data['convenio_id']).get()
                     if convenio_doc.exists:
                         paciente_data['convenio_nome'] = convenio_doc.to_dict().get('nome', 'N/A')
+                    else:
+                        paciente_data['convenio_nome'] = 'Particular' # Se o convênio não existir mais, marque como Particular
+                else:
+                    paciente_data['convenio_nome'] = 'Particular'
                 
                 docs_stream = prontuarios_ref.order_by('data_registro', direction=firestore.Query.DESCENDING).stream()
                 for doc in docs_stream:
@@ -89,6 +96,8 @@ def register_medical_records_routes(app):
                         else:
                             registro['data_registro_fmt'] = "N/A"
                         
+                        # A busca pelo nome do profissional pode ser feita aqui ou no momento da inserção.
+                        # Para registros existentes, vamos manter a busca para exibir o nome.
                         profissional_doc_id = registro.get('profissional_id')
                         if profissional_doc_id:
                             prof_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
@@ -96,7 +105,9 @@ def register_medical_records_routes(app):
                                 registro['profissional_nome'] = prof_doc.to_dict().get('nome', 'Desconhecido')
                             else:
                                 registro['profissional_nome'] = 'Desconhecido'
-
+                        else:
+                            registro['profissional_nome'] = 'N/A' # Caso profissional_id não esteja no registro
+                        
                         registros_prontuario.append(registro)
             else:
                 flash('Paciente não encontrado.', 'danger')
@@ -117,12 +128,17 @@ def register_medical_records_routes(app):
         profissional_doc_id = None
         profissional_nome = "Profissional Desconhecido"
         try:
-            prof_query = db_instance.collection('clinicas').document(clinica_id).collection('profissionais')\
-                                         .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
-            for doc in prof_query:
-                profissional_doc_id = doc.id
-                profissional_nome = doc.to_dict().get('nome', profissional_nome)
-                break
+            # CORREÇÃO: Obter profissional_id a partir do documento do usuário na coleção 'User'
+            user_mapping_doc = db_instance.collection('User').document(profissional_logado_uid).get()
+            if user_mapping_doc.exists:
+                user_data = user_mapping_doc.to_dict()
+                profissional_doc_id = user_data.get('profissional_id')
+                
+                if profissional_doc_id:
+                    prof_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
+                    if prof_doc.exists:
+                        profissional_nome = prof_doc.to_dict().get('nome', 'Profissional Desconhecido')
+            
             if not profissional_doc_id:
                 flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
@@ -159,7 +175,8 @@ def register_medical_records_routes(app):
             
             try:
                 db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
-                    'profissional_id': profissional_doc_id,
+                    'profissional_id': profissional_doc_id, # Usando o ID do profissional corretamente obtido
+                    'profissional_nome': profissional_nome, # Armazenando o nome do profissional para exibição futura
                     'data_registro': firestore.SERVER_TIMESTAMP,
                     'tipo_registro': 'anamnese',
                     'titulo': 'Anamnese',
@@ -187,15 +204,23 @@ def register_medical_records_routes(app):
         profissional_logado_uid = session.get('user_uid')
 
         profissional_doc_id = None
+        profissional_nome = "Profissional Desconhecido" # Necessário para o POST, caso não venha do GET
         try:
-            prof_query = db_instance.collection('clinicas').document(clinica_id).collection('profissionais')\
-                                         .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
-            for doc in prof_query:
-                profissional_doc_id = doc.id
-                break
+            # CORREÇÃO: Obter profissional_id a partir do documento do usuário na coleção 'User'
+            user_mapping_doc = db_instance.collection('User').document(profissional_logado_uid).get()
+            if user_mapping_doc.exists:
+                user_data = user_mapping_doc.to_dict()
+                profissional_doc_id = user_data.get('profissional_id')
+                
+                if profissional_doc_id:
+                    prof_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
+                    if prof_doc.exists:
+                        profissional_nome = prof_doc.to_dict().get('nome', 'Profissional Desconhecido')
+            
             if not profissional_doc_id:
                 flash('Seu usuário não está associado a um profissional. Entre em contato com o administrador.', 'danger')
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
         except Exception as e:
             flash(f'Erro ao verificar profissional associado para edição: {e}', 'danger')
             print(f"Erro edit_anamnesis (GET - professional check): {e}")
@@ -232,6 +257,8 @@ def register_medical_records_routes(app):
                 anamnese_ref.update({
                     'conteudo': conteudo,
                     'modelo_base_id': modelo_base_id if modelo_base_id else None,
+                    'profissional_id': profissional_doc_id, # Garante que o profissional_id está correto na edição
+                    'profissional_nome': profissional_nome, # Garante que o nome do profissional está correto
                     'atualizado_em': firestore.SERVER_TIMESTAMP
                 })
                 flash('Anamnese atualizada com sucesso!', 'success')
@@ -245,7 +272,9 @@ def register_medical_records_routes(app):
             if anamnese_doc.exists and anamnese_doc.to_dict().get('tipo_registro') == 'anamnese':
                 anamnese_data = anamnese_doc.to_dict()
                 anamnese_data['id'] = anamnese_doc.id    
-                anamnese_data['profissional_id_fk'] = profissional_doc_id
+                # O profissional_id_fk é mais para ser usado como base para o profissional no formulário
+                # A lógica agora pega o profissional_doc_id_logado de forma mais robusta no início da função
+                # anamnese_data['profissional_id_fk'] = profissional_doc_id 
                 
                 return render_template('anamnese_form.html',    
                                         paciente_id=paciente_doc_id,    
@@ -272,15 +301,21 @@ def register_medical_records_routes(app):
         profissional_doc_id = None
         profissional_nome = "Profissional Desconhecido"
         try:
-            prof_query = db_instance.collection('clinicas').document(clinica_id).collection('profissionais') \
-                                         .where(filter=FieldFilter('user_uid', '==', profissional_logado_uid)).limit(1).get()
-            for doc in prof_query:
-                profissional_doc_id = doc.id
-                profissional_nome = doc.to_dict().get('nome', profissional_nome)
-                break
+            # CORREÇÃO: Obter profissional_id a partir do documento do usuário na coleção 'User'
+            user_mapping_doc = db_instance.collection('User').document(profissional_logado_uid).get()
+            if user_mapping_doc.exists:
+                user_data = user_mapping_doc.to_dict()
+                profissional_doc_id = user_data.get('profissional_id')
+                
+                if profissional_doc_id:
+                    prof_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
+                    if prof_doc.exists:
+                        profissional_nome = prof_doc.to_dict().get('nome', 'Profissional Desconhecido')
+            
             if not profissional_doc_id:
                 flash('Seu usuário não está associado a um profissional. Não foi possível registrar.', 'danger')
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
         except Exception as e:
             flash(f'Erro ao verificar profissional para registro: {e}', 'danger')
             print(f"Erro registrar_registro_generico (professional check): {e}")
@@ -297,8 +332,8 @@ def register_medical_records_routes(app):
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
             db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
-                'profissional_id': profissional_doc_id,
-                'profissional_nome': profissional_nome,
+                'profissional_id': profissional_doc_id, # Usando o ID do profissional corretamente obtido
+                'profissional_nome': profissional_nome, # Armazenando o nome do profissional para exibição futura
                 'data_registro': firestore.SERVER_TIMESTAMP,
                 'tipo_registro': tipo_registro,
                 'titulo': titulo,
@@ -319,6 +354,23 @@ def register_medical_records_routes(app):
         clinica_id = session['clinica_id']
         registro_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(registro_doc_id)
 
+        # Para edição, não precisamos verificar a associação novamente, pois o registro já existe
+        # mas podemos adicionar o nome do profissional ao registro se não estiver lá
+        profissional_logado_uid = session.get('user_uid')
+        profissional_nome = "Profissional Desconhecido"
+        try:
+            user_mapping_doc = db_instance.collection('User').document(profissional_logado_uid).get()
+            if user_mapping_doc.exists:
+                user_data = user_mapping_doc.to_dict()
+                profissional_doc_id = user_data.get('profissional_id')
+                if profissional_doc_id:
+                    prof_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_doc_id).get()
+                    if prof_doc.exists:
+                        profissional_nome = prof_doc.to_dict().get('nome', 'Profissional Desconhecido')
+        except Exception as e:
+            print(f"Erro ao obter nome do profissional logado para edição de registro: {e}")
+            # Não flashear erro aqui para não interromper a edição, apenas logar.
+
         try:
             titulo = request.form.get('titulo', '').strip()
             conteudo = request.form.get('conteudo', '').strip()
@@ -333,6 +385,7 @@ def register_medical_records_routes(app):
                 'titulo': titulo,
                 'conteudo': conteudo,
                 'agendamento_id_referencia': agendamento_id_referencia if agendamento_id_referencia else None,
+                'profissional_nome': profissional_nome, # Atualiza ou adiciona o nome do profissional no registro
                 'atualizado_em': firestore.SERVER_TIMESTAMP
             })
             flash(f'Registro de {tipo_registro} atualizado com sucesso!', 'success')
@@ -448,4 +501,12 @@ def register_medical_records_routes(app):
     @admin_required
     def excluir_modelo_anamnese(modelo_doc_id):
         db_instance = get_db()
-        clinica_id = session
+        clinica_id = session['clinica_id']
+        try:
+            db_instance.collection('clinicas').document(clinica_id).collection('modelos_anamnese').document(modelo_doc_id).delete()
+            flash('Modelo de anamnese excluído com sucesso!', 'success')
+        except Exception as e:
+            flash(f'Erro ao excluir modelo de anamnese: {e}', 'danger')
+            print(f"Erro delete_anamnesis_template: {e}")
+        return redirect(url_for('listar_modelos_anamnese'))
+
