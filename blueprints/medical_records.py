@@ -51,6 +51,10 @@ def _finalize_goal_transaction(transaction, pei_ref, goal_id_to_finalize):
     for goal in goals:
         if goal.get('id') == goal_id_to_finalize:
             goal['status'] = 'finalizado'
+            # Mark all active targets within this goal as completed
+            for target in goal.get('targets', []):
+                if not target.get('concluido', False):
+                    target['concluido'] = True
             goal_found = True
             break
     if not goal_found: raise Exception("Meta não encontrada para finalizar.")
@@ -123,6 +127,10 @@ def register_medical_records_routes(app):
             query = peis_ref.where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
             for pei_doc in query.stream():
                 pei = convert_doc_to_dict(pei_doc)
+                # Ensure data_criacao is formatted for consistent JS sorting
+                if 'data_criacao' in pei and isinstance(pei['data_criacao'], datetime.datetime):
+                    pei['data_criacao'] = pei['data_criacao'].strftime('%d/%m/%Y')
+
                 if pei.get('status') == 'finalizado':
                     peis_finalizados.append(pei)
                 else:
@@ -363,12 +371,43 @@ def register_medical_records_routes(app):
                 return jsonify({'success': False, 'message': 'ID do PEI não fornecido.'}), 400
             
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
-            pei_ref.update({
+            
+            # Use a transaction to ensure atomicity
+            transaction = db_instance.transaction()
+            snapshot = pei_ref.get(transaction=transaction)
+            if not snapshot.exists:
+                raise Exception("PEI não encontrado.")
+            
+            pei_data = snapshot.to_dict()
+            updated_goals = pei_data.get('goals', [])
+            
+            # Mark all active goals and their targets as finalized
+            for goal in updated_goals:
+                if goal.get('status') == 'ativo':
+                    goal['status'] = 'finalizado'
+                    for target in goal.get('targets', []):
+                        if not target.get('concluido', False):
+                            target['concluido'] = True
+
+            transaction.update(pei_ref, {
                 'status': 'finalizado', 
-                'data_finalizacao': datetime.datetime.now(SAO_PAULO_TZ)
+                'data_finalizacao': datetime.datetime.now(SAO_PAULO_TZ),
+                'goals': updated_goals # Update the goals array with finalized goals and targets
             })
-            return jsonify({'success': True, 'message': 'PEI finalizado com sucesso!'}), 200
+            transaction.commit()
+
+            # Re-fetch all PEIs to send the updated list back to the frontend
+            all_peis = []
+            peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING).stream()
+            for doc in peis_query:
+                pei_data_converted = convert_doc_to_dict(doc)
+                if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                all_peis.append(pei_data_converted)
+
+            return jsonify({'success': True, 'message': 'PEI finalizado com sucesso!', 'peis': all_peis}), 200
         except Exception as e:
+            print(f"Erro ao finalizar PEI: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_goal', methods=['POST'], endpoint='add_goal')
@@ -380,14 +419,31 @@ def register_medical_records_routes(app):
             data = request.form
             pei_id = data.get('pei_id')
             descricao_goal = data.get('descricao')
+            # Extract targets from the form, which will be a list of strings
+            targets_desc = request.form.getlist('targets[]')
+            
             if not pei_id or not descricao_goal:
                 flash('Dados insuficientes para adicionar meta.', 'danger')
             else:
                 pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+                
+                # Create target objects with unique IDs and initial status
+                new_targets = []
+                for desc in targets_desc:
+                    if desc.strip(): # Only add non-empty target descriptions
+                        new_targets.append({
+                            'id': str(uuid.uuid4()),
+                            'descricao': desc.strip(),
+                            'concluido': False # Initial status is not completed
+                        })
+
                 new_goal = {
-                    'id': str(uuid.uuid4()), 'descricao': descricao_goal.strip(),
-                    'status': 'ativo', 'targets': []
+                    'id': str(uuid.uuid4()), 
+                    'descricao': descricao_goal.strip(),
+                    'status': 'ativo',
+                    'targets': new_targets # Add the list of target objects
                 }
+                
                 pei_ref.update({'goals': firestore.ArrayUnion([new_goal])})
                 flash('Meta adicionada com sucesso ao PEI!', 'success')
         except Exception as e:
@@ -408,6 +464,7 @@ def register_medical_records_routes(app):
                 pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
                 transaction = db_instance.transaction()
                 _delete_goal_transaction(transaction, pei_ref, goal_id)
+                transaction.commit()
                 flash('Meta excluída com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao excluir meta: {e}', 'danger')
@@ -428,8 +485,20 @@ def register_medical_records_routes(app):
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
             transaction = db_instance.transaction()
             _finalize_goal_transaction(transaction, pei_ref, goal_id)
-            return jsonify({'success': True, 'message': 'Meta finalizada com sucesso!'}), 200
+            transaction.commit()
+
+            # Re-fetch all PEIs to send the updated list back to the frontend
+            all_peis = []
+            peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING).stream()
+            for doc in peis_query:
+                pei_data_converted = convert_doc_to_dict(doc)
+                if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                all_peis.append(pei_data_converted)
+            
+            return jsonify({'success': True, 'message': 'Meta finalizada com sucesso!', 'peis': all_peis}), 200
         except Exception as e:
+            print(f"Erro ao finalizar meta: {e}")
             return jsonify({'success': False, 'message': f'Erro interno ao finalizar meta: {e}'}), 500
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/update_target_status', methods=['POST'], endpoint='update_target_status')
@@ -447,6 +516,19 @@ def register_medical_records_routes(app):
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
             transaction = db_instance.transaction()
             _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, concluido)
-            return jsonify({'success': True, 'message': 'Status do alvo atualizado.'}), 200
+            transaction.commit()
+            
+            # Re-fetch all PEIs to send the updated list back to the frontend
+            all_peis = []
+            peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING).stream()
+            for doc in peis_query:
+                pei_data_converted = convert_doc_to_dict(doc)
+                if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                all_peis.append(pei_data_converted)
+
+            return jsonify({'success': True, 'message': 'Status do alvo atualizado.', 'peis': all_peis}), 200
         except Exception as e:
+            print(f"Erro ao atualizar status do alvo: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
+

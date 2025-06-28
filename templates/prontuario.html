@@ -331,7 +331,7 @@
             max-width: 1200px; /* Aumenta a largura máxima */
             height: auto; /* Altura automática baseada no conteúdo */
             max-height: 94vh; /* Previne que seja maior que a tela */
-            transform: translateY(-20px); transition: transform 0.25s ease, opacity 0.25s ease;
+            transform: translateY(-20px); transition: transform 0.3s ease, opacity 0.3s ease;
             display: flex; flex-direction: column;
         }
         .modal-overlay.active .modal-content { transform: translateY(0); }
@@ -511,6 +511,11 @@
             border-left-color: var(--primary);
             display: flex;
             flex-direction: column;
+            border-left: 8px solid var(--primary); /* Default border for PEI card */
+        }
+        .pei-card.finalizado { /* Style for finalized PEI */
+            border-left-color: var(--success);
+            opacity: 0.9;
         }
         .pei-card-header {
             display: flex;
@@ -542,6 +547,12 @@
             justify-content: flex-end;
             gap: 0.75rem;
         }
+        .pei-card-actions.disabled-actions button:not([data-close-modal]) {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
 
         .goals-section {
             margin-top: 1rem;
@@ -560,7 +571,7 @@
             margin-bottom: 1rem;
             border-left: 4px solid var(--info); /* Cor para metas ativas */
         }
-        .goal-card.completed {
+        .goal-card.finalizado { /* Corrigido de 'completed' para 'finalizado' */
             border-left-color: var(--success); /* Cor para metas finalizadas */
             opacity: 0.8;
         }
@@ -582,7 +593,7 @@
             border-radius: 4px;
         }
         .goal-status.active-status { background-color: color-mix(in srgb, var(--info) 20%, transparent); color: var(--info); }
-        .goal-status.completed-status { background-color: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
+        .goal-status.finalizado-status { background-color: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
 
         .targets-list {
             list-style: none;
@@ -596,17 +607,34 @@
             font-size: 0.9rem;
             color: var(--muted);
         }
+        .target-item i.status-icon {
+            margin-right: 0.5rem;
+            font-size: 1rem;
+            width: 18px; /* Fixed width for icon */
+            text-align: center;
+        }
+        .target-item.concluido span { /* Corrigido de 'completed' para 'concluido' */
+            text-decoration: line-through;
+            color: var(--success);
+        }
+        .target-item.concluido i.status-icon.fa-square {
+            color: var(--success);
+        }
         .target-item input[type="checkbox"] {
             margin-right: 0.75rem;
             width: 18px;
             height: 18px;
             accent-color: var(--primary);
             cursor: pointer;
+            flex-shrink: 0;
         }
-        .target-item.completed span {
-            text-decoration: line-through;
-            color: var(--success);
+        /* Style for disabled checkboxes */
+        .target-item input[type="checkbox"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            accent-color: var(--muted);
         }
+
         .add-target-group {
             display: flex;
             gap: 0.5rem;
@@ -666,6 +694,16 @@
             .paciente-info-card { padding: 1.5rem; }
             .paciente-info-grid { grid-template-columns: 1fr; }
             .prontuario-header { flex-direction: column; align-items: stretch; text-align: center; }
+            /* Mobile PEI actions to stack */
+            .pei-card-actions, .add-target-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .pei-card-actions button, .pei-card-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .pei-card-actions .btn-danger-outline { margin-top: 0.5rem; } /* Add spacing when stacked */
         }
     </style>
 </head>
@@ -782,12 +820,12 @@
 
                 <!-- MACRO for rendering a PEI card -->
                 {% macro render_pei_card(pei) %}
-                <div class="pei-card" id="pei-{{ pei.id }}">
+                <div class="pei-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" id="pei-{{ pei.id }}">
                     <div class="pei-card-header">
                         <h4>PEI: {{ pei.titulo }}</h4>
                         <div class="pei-card-meta">
                             <span><i class="fas fa-calendar-alt"></i> Criado em: {{ pei.data_criacao }}</span>
-                            <span>Status: <span class="goal-status {% if pei.status == 'ativo' %}active-status{% else %}completed-status{% endif %}">{{ pei.status | capitalize }}</span></span>
+                            <span>Status: <span class="goal-status {% if pei.status == 'ativo' %}active-status{% else %}finalizado-status{% endif %}">{{ pei.status | capitalize }}</span></span>
                         </div>
                     </div>
                     <div class="pei-card-body">
@@ -803,25 +841,22 @@
                                     </div>
                                     <ul class="targets-list" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">
                                         {% for target in goal.targets %}
-                                        <li class="target-item {% if target.concluido %}completed{% endif %}" data-target-id="{{ target.id }}">
-                                            {# Removed Jinja2 conditional for disabled attribute here #}
-                                            <input type="checkbox" class="target-checkbox" {% if target.concluido %}checked{% endif %}>
+                                        <li class="target-item {% if target.concluido %}concluido{% endif %}" data-target-id="{{ target.id }}">
+                                            <input type="checkbox" class="target-checkbox" {% if target.concluido %}checked{% endif %} {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>
+                                            <i class="status-icon fas {% if target.concluido %}fa-check-square{% else %}fa-square{% endif %}"></i>
                                             <span>{{ target.descricao }}</span>
                                         </li>
                                         {% endfor %}
                                     </ul>
                                     <div class="add-target-group">
                                         <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta">
-                                        {# Removed Jinja2 conditional for disabled attribute here #}
-                                        <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">Adicionar Alvo</button>
+                                        <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>Adicionar Alvo</button>
                                     </div>
                                     <div class="pei-card-actions" style="border-top: none; padding-top: 0.5rem; justify-content: flex-start;">
-                                        {# Removed Jinja2 conditional for disabled attribute here #}
-                                        <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">
+                                        <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if goal.status == 'finalizado' %}disabled{% endif %}>
                                             <i class="fas fa-check-circle"></i> Finalizar Meta
                                         </button>
-                                        {# Removed Jinja2 conditional for disabled attribute here #}
-                                        <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">
+                                        <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -837,15 +872,16 @@
                             {% set finalized_goals = pei.goals | selectattr('status', 'equalto', 'finalizado') | list %}
                             {% if finalized_goals %}
                                 {% for goal in finalized_goals %}
-                                <div class="goal-card completed" id="goal-{{ pei.id }}-{{ goal.id }}">
+                                <div class="goal-card finalizado" id="goal-{{ pei.id }}-{{ goal.id }}">
                                     <div class="goal-card-header">
                                         <strong>Meta: {{ goal.descricao }}</strong>
-                                        <span class="goal-status completed-status">Finalizada</span>
+                                        <span class="goal-status finalizado-status">Finalizada</span>
                                     </div>
                                     <ul class="targets-list" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">
                                         {% for target in goal.targets %}
-                                        <li class="target-item {% if target.concluido %}completed{% endif %}" data-target-id="{{ target.id }}">
+                                        <li class="target-item {% if target.concluido %}concluido{% endif %}" data-target-id="{{ target.id }}">
                                             <input type="checkbox" class="target-checkbox" {% if target.concluido %}checked{% endif %} disabled>
+                                            <i class="status-icon fas {% if target.concluido %}fa-check-square{% else %}fa-square{% endif %}"></i>
                                             <span>{{ target.descricao }}</span>
                                         </li>
                                         {% endfor %}
@@ -857,17 +893,14 @@
                             {% endif %}
                         </div>
                     </div>
-                    <div class="pei-card-actions">
-                        {# Removed Jinja2 conditional for disabled attribute here #}
-                        <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="{{ pei.id }}">
+                    <div class="pei-card-actions {% if pei.status == 'finalizado' %}disabled-actions{% endif %}">
+                        <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
                             <i class="fas fa-plus"></i> Adicionar Meta
                         </button>
-                        {# Removed Jinja2 conditional for disabled attribute here #}
-                        <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="{{ pei.id }}">
+                        <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
                             <i class="fas fa-trash"></i> Excluir PEI
                         </button>
-                        {# Removed Jinja2 conditional for disabled attribute here #}
-                        <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="{{ pei.id }}">
+                        <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
                             <i class="fas fa-check-double"></i> Finalizar PEI
                         </button>
                     </div>
@@ -889,13 +922,21 @@
                         <div class="tab-content">
                             <!-- Painel "Todos" -->
                             <div id="tab-panel-todos" class="tab-panel active">
-                                {% if registros %}
-                                    {% for registro in registros %}
+                                {# Filter out PEIs from the 'Todos' tab #}
+                                {% set filtered_registros = [] %}
+                                {% for reg in registros %}
+                                    {% if reg.tipo_registro != 'pei' %}
+                                        {% set _ = filtered_registros.append(reg) %}
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if filtered_registros %}
+                                    {% for registro in filtered_registros %}
                                         {{ render_registro_card(registro) }}
                                     {% endfor %}
                                 {% else %}
                                     <div class="empty-state">
-                                        <p>Nenhum registro encontrado para este paciente.</p>
+                                        <p>Nenhum registro encontrado para este paciente (excluindo PEIs).</p>
                                     </div>
                                 {% endif %}
                             </div>
@@ -1680,48 +1721,59 @@
                     sortedPeis.forEach(pei => {
                         // Determine if buttons should be disabled based on PEI or Goal status
                         const isPeiFinalized = pei.status === 'finalizado';
+                        const peiCardClasses = `pei-card ${isPeiFinalized ? 'finalizado' : ''}`;
+                        const peiActionClasses = `pei-card-actions ${isPeiFinalized ? 'disabled-actions' : ''}`;
+
 
                         const peiHtml = `
-                        <div class="pei-card" id="pei-${pei.id}">
+                        <div class="${peiCardClasses}" id="pei-${pei.id}">
                             <div class="pei-card-header">
                                 <h4>PEI: ${pei.titulo}</h4>
                                 <div class="pei-card-meta">
                                     <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
-                                    <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'completed-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
+                                    <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
                                 </div>
                             </div>
                             <div class="pei-card-body">
                                 <h5>Metas Ativas:</h5>
                                 <div class="goals-list active-goals-list" id="active-goals-for-pei-${pei.id}">
                                     ${pei.goals.filter(goal => goal.status === 'ativo').length > 0 ?
-                                        pei.goals.filter(goal => goal.status === 'ativo').map(goal => `
-                                            <div class="goal-card" id="goal-${pei.id}-${goal.id}">
+                                        pei.goals.filter(goal => goal.status === 'ativo').map(goal => {
+                                            const isGoalFinalized = goal.status === 'finalizado';
+                                            const goalCardClass = `goal-card ${isGoalFinalized ? 'finalizado' : ''}`;
+                                            const goalActionsDisabled = isPeiFinalized || isGoalFinalized ? 'disabled' : '';
+                                            const targetCheckboxDisabled = isPeiFinalized || isGoalFinalized ? 'disabled' : '';
+
+                                            return `
+                                            <div class="${goalCardClass}" id="goal-${pei.id}-${goal.id}">
                                                 <div class="goal-card-header">
                                                     <strong>Meta: ${goal.descricao}</strong>
                                                     <span class="goal-status active-status">Ativa</span>
                                                 </div>
                                                 <ul class="targets-list" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
                                                     ${goal.targets.map(target => `
-                                                    <li class="target-item ${target.concluido ? 'completed' : ''}" data-target-id="${target.id}">
-                                                        <input type="checkbox" class="target-checkbox" ${target.concluido ? 'checked' : ''} ${isPeiFinalized || goal.status === 'finalizado' ? 'disabled' : ''}>
+                                                    <li class="target-item ${target.concluido ? 'concluido' : ''}" data-target-id="${target.id}">
+                                                        <input type="checkbox" class="target-checkbox" ${target.concluido ? 'checked' : ''} ${targetCheckboxDisabled}>
+                                                        <i class="status-icon fas ${target.concluido ? 'fa-check-square' : 'fa-square'}"></i>
                                                         <span>${target.descricao}</span>
                                                     </li>
                                                     `).join('')}
                                                 </ul>
                                                 <div class="add-target-group">
-                                                    <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta">
-                                                    <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${isPeiFinalized || goal.status === 'finalizado' ? 'disabled' : ''}>Adicionar Alvo</button>
+                                                    <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta" ${goalActionsDisabled}>
+                                                    <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>Adicionar Alvo</button>
                                                 </div>
                                                 <div class="pei-card-actions" style="border-top: none; padding-top: 0.5rem; justify-content: flex-start;">
-                                                    <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goal.status === 'finalizado' ? 'disabled' : ''}>
+                                                    <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${isGoalFinalized ? 'disabled' : ''}>
                                                         <i class="fas fa-check-circle"></i> Finalizar Meta
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${isPeiFinalized || goal.status === 'finalizado' ? 'disabled' : ''}>
+                                                    <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </div>
                                             </div>
-                                        `).join('')
+                                        `;
+                                        }).join('')
                                     : '<div class="empty-state"><p>Nenhuma meta ativa para este PEI.</p></div>'}
                                 </div>
 
@@ -1729,15 +1781,16 @@
                                 <div class="goals-list finalized-goals-list">
                                     ${pei.goals.filter(goal => goal.status === 'finalizado').length > 0 ?
                                         pei.goals.filter(goal => goal.status === 'finalizado').map(goal => `
-                                            <div class="goal-card completed" id="goal-${pei.id}-${goal.id}">
+                                            <div class="goal-card finalizado" id="goal-${pei.id}-${goal.id}">
                                                 <div class="goal-card-header">
                                                     <strong>Meta: ${goal.descricao}</strong>
-                                                    <span class="goal-status completed-status">Finalizada</span>
+                                                    <span class="goal-status finalizado-status">Finalizada</span>
                                                 </div>
                                                 <ul class="targets-list" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
                                                     ${goal.targets.map(target => `
-                                                    <li class="target-item ${target.concluido ? 'completed' : ''}" data-target-id="${target.id}">
+                                                    <li class="target-item ${target.concluido ? 'concluido' : ''}" data-target-id="${target.id}">
                                                         <input type="checkbox" class="target-checkbox" ${target.concluido ? 'checked' : ''} disabled>
+                                                        <i class="status-icon fas ${target.concluido ? 'fa-check-square' : 'fa-square'}"></i>
                                                         <span>${target.descricao}</span>
                                                     </li>
                                                     `).join('')}
@@ -1747,7 +1800,7 @@
                                     : '<div class="empty-state"><p>Nenhuma meta finalizada para este PEI.</p></div>'}
                                 </div>
                             </div>
-                            <div class="pei-card-actions">
+                            <div class="${peiActionClasses}">
                                 <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
                                     <i class="fas fa-plus"></i> Adicionar Meta
                                 </button>
@@ -1790,8 +1843,14 @@
                         const data = await response.json();
                         if (data.success) {
                             console.log('Target status updated:', data.message);
-                            // Update the local data and re-render PEIs
-                            allPeisData = data.peis;
+                            // To get updated PEI data, you might need to re-fetch or rely on the backend to send it back
+                            // For simplicity, let's assume `data.peis` contains the updated list of PEIs from the backend
+                            // If your backend doesn't send `peis` back with the update, you'd need to re-fetch the entire PEI list.
+                            // For this example, let's assume the backend now sends the updated `allPeisData`.
+                            // If `data.peis` is not available, remove this line and uncomment the re-fetch logic below if needed.
+                            if (data.peis) {
+                                allPeisData = data.peis;
+                            }
                             renderPeis(allPeisData);
                             // Optional: show a flash message (implement a custom one, as Flask's won't show on AJAX)
                         } else {
@@ -1813,7 +1872,9 @@
                         const data = await response.json();
                         if (data.success) {
                             console.log('Goal finalized:', data.message);
-                            allPeisData = data.peis;
+                            if (data.peis) {
+                                allPeisData = data.peis;
+                            }
                             renderPeis(allPeisData);
                         } else {
                             console.error('Failed to finalize goal:', data.message);
@@ -1833,7 +1894,9 @@
                         const data = await response.json();
                         if (data.success) {
                             console.log('PEI finalized:', data.message);
-                            allPeisData = data.peis;
+                            if (data.peis) {
+                                allPeisData = data.peis;
+                            }
                             renderPeis(allPeisData);
                         } else {
                             console.error('Failed to finalize PEI:', data.message);
