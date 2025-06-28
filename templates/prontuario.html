@@ -236,23 +236,35 @@
         }
         .prontuario-header h2 { font-size: 1.75rem; color: var(--text); margin: 0; font-weight: 700; }
         
+        /* Grid for all records to be displayed as cards */
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem; /* Space from tabs */
+        }
+
         .registro-card, .pei-card, .goal-card {
             background: var(--card); padding: 1.5rem; border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            margin-bottom: 1.5rem; position: relative;
+            margin-bottom: 0; /* Managed by grid gap */
+            position: relative;
             border-left: 8px solid transparent; /* Increased border width */
+            display: flex; /* Ensure content stretches within card */
+            flex-direction: column;
         }
         .registro-header {
             display: flex; justify-content: space-between; align-items: flex-start;
             border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;
         }
         .registro-header h4 { font-size: 1.2rem; color: var(--primary); margin: 0; font-weight: 600; }
-        .registro-meta { font-size: 0.85rem; color: var(--muted); text-align: right; }
+        .registro-meta { font-size: 0.85rem; color: var(--muted); text-align: right; flex-shrink: 0;}
         .registro-meta span { display: block; }
         .registro-content {
             font-size: 1rem; color: var(--text); line-height: 1.7;
             white-space: pre-wrap; overflow-wrap: break-word;
             max-height: 250px; overflow-y: auto; padding-right: 10px;
+            flex-grow: 1; /* Allow content to grow and fill space */
         }
         /* Custom scrollbar for content */
         .registro-content::-webkit-scrollbar { width: 6px; }
@@ -678,6 +690,41 @@
             margin-top: 0.75rem;
         }
 
+        /* Global Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #loading-overlay .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
         /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
@@ -928,71 +975,81 @@
                         <div class="tab-content">
                             <!-- Painel "Todos" -->
                             <div id="tab-panel-todos" class="tab-panel active">
-                                {# Filter out PEIs from the 'Todos' tab #}
-                                {% set filtered_registros = [] %}
-                                {% for reg in registros %}
-                                    {% if reg.tipo_registro != 'pei' %}
-                                        {% set _ = filtered_registros.append(reg) %}
-                                    {% endif %}
-                                {% endfor %}
-
-                                {% if filtered_registros %}
-                                    {% for registro in filtered_registros %}
-                                        {{ render_registro_card(registro) }}
+                                <div class="records-grid">
+                                    {# Filter out PEIs from the 'Todos' tab #}
+                                    {% set filtered_registros = [] %}
+                                    {% for reg in registros %}
+                                        {% if reg.tipo_registro != 'pei' %}
+                                            {% set _ = filtered_registros.append(reg) %}
+                                        {% endif %}
                                     {% endfor %}
-                                {% else %}
-                                    <div class="empty-state">
-                                        <p>Nenhum registro encontrado para este paciente (excluindo PEIs).</p>
-                                    </div>
-                                {% endif %}
+
+                                    {% if filtered_registros %}
+                                        {% for registro in filtered_registros %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state">
+                                            <p>Nenhum registro encontrado para este paciente (excluindo PEIs).</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
 
                             <!-- Painel "Anamneses" -->
                             <div id="tab-panel-anamnese" class="tab-panel">
-                                {% set anamneses = registros | selectattr('tipo_registro', 'equalto', 'anamnese') | list %}
-                                {% if anamneses %}
-                                    {% for registro in anamneses %}
-                                        {{ render_registro_card(registro) }}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state"><p>Nenhuma anamnese encontrada.</p></div>
-                                {% endif %}
+                                <div class="records-grid">
+                                    {% set anamneses = registros | selectattr('tipo_registro', 'equalto', 'anamnese') | list %}
+                                    {% if anamneses %}
+                                        {% for registro in anamneses %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state"><p>Nenhuma anamnese encontrada.</p></div>
+                                    {% endif %}
+                                </div>
                             </div>
 
                             <!-- Painel "Laudos" -->
                             <div id="tab-panel-laudo" class="tab-panel">
-                                {% set laudos = registros | selectattr('tipo_registro', 'equalto', 'laudo') | list %}
-                                {% if laudos %}
-                                    {% for registro in laudos %}
-                                        {{ render_registro_card(registro) }}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state"><p>Nenhum laudo encontrado.</p></div>
-                                {% endif %}
+                                <div class="records-grid">
+                                    {% set laudos = registros | selectattr('tipo_registro', 'equalto', 'laudo') | list %}
+                                    {% if laudos %}
+                                        {% for registro in laudos %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state"><p>Nenhum laudo encontrado.</p></div>
+                                    {% endif %}
+                                </div>
                             </div>
 
                             <!-- Painel "Orientações" -->
                             <div id="tab-panel-orientacao" class="tab-panel">
-                                {% set orientacoes = registros | selectattr('tipo_registro', 'equalto', 'orientacao') | list %}
-                                {% if orientacoes %}
-                                    {% for registro in orientacoes %}
-                                        {{ render_registro_card(registro) }}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state"><p>Nenhuma orientação encontrada.</p></div>
-                                {% endif %}
+                                <div class="records-grid">
+                                    {% set orientacoes = registros | selectattr('tipo_registro', 'equalto', 'orientacao') | list %}
+                                    {% if orientacoes %}
+                                        {% for registro in orientacoes %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state"><p>Nenhuma orientação encontrada.</p></div>
+                                    {% endif %}
+                                </div>
                             </div>
 
                             <!-- Painel "Procedimentos" -->
                             <div id="tab-panel-procedimento" class="tab-panel">
-                                {% set procedimentos = registros | selectattr('tipo_registro', 'equalto', 'procedimento') | list %}
-                                {% if procedimentos %}
-                                    {% for registro in procedimentos %}
-                                        {{ render_registro_card(registro) }}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state"><p>Nenhum procedimento encontrado.</p></div>
-                                {% endif %}
+                                <div class="records-grid">
+                                    {% set procedimentos = registros | selectattr('tipo_registro', 'equalto', 'procedimento') | list %}
+                                    {% if procedimentos %}
+                                        {% for registro in procedimentos %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state"><p>Nenhum procedimento encontrado.</p></div>
+                                    {% endif %}
+                                </div>
                             </div>
 
                             <!-- Painel "PEI" (New Tab Panel) -->
@@ -1045,6 +1102,11 @@
                 </section>
             </main>
         </div>
+    </div>
+
+    <!-- Global Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
     </div>
 
     <!-- Modal para Conteúdo Completo do Registro (Genérico) -->
@@ -1246,6 +1308,16 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
+            const loadingOverlay = document.getElementById('loading-overlay'); // Get the loading overlay
+
+            // Function to show/hide loading overlay
+            function showLoading() {
+                loadingOverlay.classList.add('active');
+            }
+
+            function hideLoading() {
+                loadingOverlay.classList.remove('active');
+            }
             
             // --- Lógica de UI Geral (Sidebar, Tema, Logout) ---
             function setupCommonUI() {
@@ -1283,7 +1355,7 @@
                             if (window.innerWidth > 768) { // Desktop
                                 sidebar.classList.toggle('collapsed');
                                 mainContent.classList.toggle('collapsed');
-                                localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+                                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
                             } else { // Mobile
                                 sidebar.classList.toggle('open');
                             }
@@ -1432,6 +1504,7 @@
                             return;
                         }
 
+                        showLoading(); // Show loading indicator
                         generateGenericBtn.disabled = true;
                         generateGenericBtn.classList.add('loading');
                         
@@ -1463,6 +1536,7 @@
                         } catch (error) {
                             console.error('Erro na API Gemini:', error);
                         } finally {
+                            hideLoading(); // Hide loading indicator
                             generateGenericBtn.disabled = !lgpdConsentTextGeneric.classList.contains('active');
                             generateGenericBtn.classList.remove('loading');
                         }
@@ -1504,7 +1578,7 @@
                 }
 
                 // Event listener unificado para cliques no corpo do documento
-                document.body.addEventListener('click', function(e) {
+                document.body.addEventListener('click', async function(e) { // Made async here
                     const target = e.target;
                     
                     // Lógica para fechar modais
@@ -1634,7 +1708,7 @@
                                 targetStatusToggle.classList.remove('concluido');
                                 targetStatusToggle.querySelector('.status-icon').classList.replace('fa-check-square', 'fa-square');
                             }
-                            updateTargetStatus(peiId, goalId, targetId, isCompleted);
+                            await updateTargetStatus(peiId, goalId, targetId, isCompleted); // Await the async call
                         }
                         return;
                     }
@@ -1676,27 +1750,35 @@
                     // Botão de CONFIRMAR exclusão/finalização (handle based on currentDeleteAction)
                     if (target.id === 'confirmDeleteBtn') {
                         closeModalById('confirm-delete-modal'); // Close the confirmation modal first
+                        showLoading(); // Show loading indicator before starting the action
                         
-                        if (currentDeleteAction === 'delete_record') {
-                            formApagarRegistro.querySelector('#registro_id_apagar').value = currentDeleteData.id;
-                            formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}`;
-                            formApagarRegistro.submit();
-                        } else if (currentDeleteAction === 'delete_pei') {
-                            formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
-                            formApagarPei.action = `{{ url_for('delete_pei', paciente_doc_id=paciente.id) }}`;
-                            formApagarPei.submit();
-                        } else if (currentDeleteAction === 'delete_goal') {
-                            formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
-                            formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
-                            formApagarGoal.action = `{{ url_for('delete_goal', paciente_doc_id=paciente.id) }}`;
-                            formApagarGoal.submit();
-                        } else if (currentDeleteAction === 'finalize_goal') {
-                            finalizeGoal(currentDeleteData.peiId, currentDeleteData.goalId);
-                        } else if (currentDeleteAction === 'finalize_pei') {
-                            finalizePei(currentDeleteData.peiId);
+                        try {
+                            if (currentDeleteAction === 'delete_record') {
+                                formApagarRegistro.querySelector('#registro_id_apagar').value = currentDeleteData.id;
+                                formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}`;
+                                formApagarRegistro.submit(); // This will cause a full page reload
+                            } else if (currentDeleteAction === 'delete_pei') {
+                                formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
+                                formApagarPei.action = `{{ url_for('delete_pei', paciente_doc_id=paciente.id) }}`;
+                                formApagarPei.submit(); // This will cause a full page reload
+                            } else if (currentDeleteAction === 'delete_goal') {
+                                formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
+                                formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
+                                formApagarGoal.action = `{{ url_for('delete_goal', paciente_doc_id=paciente.id) }}`;
+                                formApagarGoal.submit(); // This will cause a full page reload
+                            } else if (currentDeleteAction === 'finalize_goal') {
+                                await finalizeGoal(currentDeleteData.peiId, currentDeleteData.goalId); // Await the AJAX call
+                            } else if (currentDeleteAction === 'finalize_pei') {
+                                await finalizePei(currentDeleteData.peiId); // Await the AJAX call
+                            }
+                        } catch (error) {
+                            console.error('Error during confirmation action:', error);
+                            // Optionally display a user-friendly error message
+                        } finally {
+                            hideLoading(); // Hide loading indicator after action (or after reload if not async)
+                            currentDeleteAction = null; // Reset action
+                            currentDeleteData = {}; // Clear data
                         }
-                        currentDeleteAction = null; // Reset action
-                        currentDeleteData = {}; // Clear data
                         return;
                     }
 
@@ -1710,6 +1792,7 @@
 
                 // --- Helper function for rendering PEIs (after an update from Flask) ---
                 function renderPeis(peis) {
+                    console.log('Rendering PEIs with data:', peis); // Debugging
                     const activePeisList = document.getElementById('active-peis-list');
                     const finalizedPeisList = document.getElementById('finalized-peis-list');
                     
@@ -1859,6 +1942,8 @@
 
                 // --- AJAX FUNCTIONS for PEI/Goals/Targets ---
                 async function updateTargetStatus(peiId, goalId, targetId, isCompleted) {
+                    console.log('Attempting to update target status:', { peiId, goalId, targetId, isCompleted }); // Debugging
+                    showLoading(); // Show loading indicator
                     try {
                         const response = await fetch(`{{ url_for('update_target_status', paciente_doc_id=paciente.id) }}`, {
                             method: 'POST',
@@ -1866,28 +1951,28 @@
                             body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_id: targetId, concluido: isCompleted })
                         });
                         const data = await response.json();
-                        if (data.success) {
-                            console.log('Target status updated:', data.message);
-                            // To get updated PEI data, you might need to re-fetch or rely on the backend to send it back
-                            // For simplicity, let's assume `data.peis` contains the updated list of PEIs from the backend
-                            // If your backend doesn't send `peis` back with the update, you'd need to re-fetch the entire PEI list.
-                            // For this example, let's assume the backend now sends the updated `allPeisData`.
-                            // If `data.peis` is not available, remove this line and uncomment the re-fetch logic below if needed.
+                        console.log('Update target status response:', data); // Debugging
+                        if (response.ok && data.success) {
+                            console.log('Target status updated successfully:', data.message);
                             if (data.peis) {
                                 allPeisData = data.peis;
                             }
                             renderPeis(allPeisData);
-                            // Optional: show a flash message (implement a custom one, as Flask's won't show on AJAX)
                         } else {
-                            console.error('Failed to update target status:', data.message);
-                            // Optional: show an error message
+                            console.error('Failed to update target status:', data.message || 'Unknown error');
+                            alert(`Erro ao atualizar status do alvo: ${data.message || 'Erro desconhecido.'}`); // User feedback
                         }
                     } catch (error) {
                         console.error('Error updating target status:', error);
+                        alert(`Erro de rede ou servidor ao atualizar status do alvo: ${error.message}`); // User feedback
+                    } finally {
+                        hideLoading(); // Hide loading indicator
                     }
                 }
 
                 async function finalizeGoal(peiId, goalId) {
+                    console.log('Attempting to finalize goal:', { peiId, goalId }); // Debugging
+                    showLoading(); // Show loading indicator
                     try {
                         const response = await fetch(`{{ url_for('finalize_goal', paciente_doc_id=paciente.id) }}`, {
                             method: 'POST',
@@ -1895,21 +1980,28 @@
                             body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
                         });
                         const data = await response.json();
-                        if (data.success) {
-                            console.log('Goal finalized:', data.message);
+                        console.log('Finalize goal response:', data); // Debugging
+                        if (response.ok && data.success) {
+                            console.log('Goal finalized successfully:', data.message);
                             if (data.peis) {
                                 allPeisData = data.peis;
                             }
                             renderPeis(allPeisData);
                         } else {
-                            console.error('Failed to finalize goal:', data.message);
+                            console.error('Failed to finalize goal:', data.message || 'Unknown error');
+                            alert(`Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`); // User feedback
                         }
                     } catch (error) {
                         console.error('Error finalizing goal:', error);
+                        alert(`Erro de rede ou servidor ao finalizar meta: ${error.message}`); // User feedback
+                    } finally {
+                        hideLoading(); // Hide loading indicator
                     }
                 }
 
                 async function finalizePei(peiId) {
+                    console.log('Attempting to finalize PEI:', { peiId }); // Debugging
+                    showLoading(); // Show loading indicator
                     try {
                         const response = await fetch(`{{ url_for('finalize_pei', paciente_doc_id=paciente.id) }}`, {
                             method: 'POST',
@@ -1917,17 +2009,22 @@
                             body: JSON.stringify({ pei_id: peiId })
                         });
                         const data = await response.json();
-                        if (data.success) {
-                            console.log('PEI finalized:', data.message);
+                        console.log('Finalize PEI response:', data); // Debugging
+                        if (response.ok && data.success) {
+                            console.log('PEI finalized successfully:', data.message);
                             if (data.peis) {
                                 allPeisData = data.peis;
                             }
                             renderPeis(allPeisData);
                         } else {
-                            console.error('Failed to finalize PEI:', data.message);
+                            console.error('Failed to finalize PEI:', data.message || 'Unknown error');
+                            alert(`Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`); // User feedback
                         }
                     } catch (error) {
                         console.error('Error finalizing PEI:', error);
+                        alert(`Erro de rede ou servidor ao finalizar PEI: ${error.message}`); // User feedback
+                    } finally {
+                        hideLoading(); // Hide loading indicator
                     }
                 }
 
