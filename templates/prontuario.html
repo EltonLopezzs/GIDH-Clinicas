@@ -170,6 +170,7 @@
         .btn-danger-outline:hover { background-color: var(--danger); color: white; }
 
         .topbar-actions {
+            position: relative; /* Para posicionar o dropdown */
             display: flex;
             gap: 0.75rem; /* Espaçamento entre os botões */
             flex-wrap: wrap; /* Para quebrar a linha em telas menores */
@@ -186,6 +187,57 @@
             .topbar-actions .btn {
                 width: 100%; /* Garante que cada botão ocupe a largura total */
             }
+        }
+
+        /* Estilos do Dropdown */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%; /* Posiciona abaixo do botão */
+            right: 0; /* Alinha à direita do botão */
+            background-color: var(--card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: 200px;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-menu a, .dropdown-menu button {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            color: var(--text);
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            transition: background-color 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-menu a:hover, .dropdown-menu button:hover {
+            background-color: var(--bg);
+        }
+
+        .dropdown-menu a:first-child, .dropdown-menu button:first-child {
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .dropdown-menu a:last-child, .dropdown-menu button:last-child {
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
         }
 
 
@@ -867,19 +919,27 @@
                     <h1 class="page-title">Prontuário de {{ paciente.nome if paciente else 'Paciente' }}</h1>
                 </div>
                 <div class="topbar-actions">
-                    <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Anamnese</span>
-                    </a>
-                    <!-- Novos botões para Laudo, Orientação e Procedimento -->
-                    <button type="button" class="btn btn-secondary" id="addLaudoBtn" data-record-type="laudo" data-record-title="Adicionar Laudo Médico">
-                        <i class="fas fa-file-medical"></i> <span class="btn-text-desktop">Adicionar Laudo</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="addOrientacaoBtn" data-record-type="orientacao" data-record-title="Adicionar Orientação">
-                        <i class="fas fa-notes-medical"></i> <span class="btn-text-desktop">Adicionar Orientação</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="addProcedimentoBtn" data-record-type="procedimento" data-record-title="Adicionar Procedimento">
-                        <i class="fas fa-syringe"></i> <span class="btn-text-desktop">Adicionar Procedimento</span>
-                    </button>
+                    <div class="relative inline-block text-left">
+                        <button type="button" class="btn btn-primary" id="addRecordDropdownBtn" aria-expanded="false" aria-haspopup="true">
+                            <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo Registro</span> <i class="fas fa-chevron-down ml-2"></i>
+                        </button>
+                        <div class="dropdown-menu absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="addRecordDropdownBtn" tabindex="-1">
+                            <div class="py-1" role="none">
+                                <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addAnamneseLink">
+                                    <i class="fas fa-plus"></i> Adicionar Anamnese
+                                </a>
+                                <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addLaudoBtn" data-record-type="laudo" data-record-title="Adicionar Laudo Médico">
+                                    <i class="fas fa-file-medical"></i> Adicionar Laudo
+                                </button>
+                                <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addOrientacaoBtn" data-record-type="orientacao" data-record-title="Adicionar Orientação">
+                                    <i class="fas fa-notes-medical"></i> Adicionar Orientação
+                                </button>
+                                <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addProcedimentoBtn" data-record-type="procedimento" data-record-title="Adicionar Procedimento">
+                                    <i class="fas fa-syringe"></i> Adicionar Procedimento
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -1561,9 +1621,19 @@
                 }
                 
                 // Listeners para os botões de Adicionar (Laudo, Orientação, etc.)
-                document.getElementById('addLaudoBtn')?.addEventListener('click', () => openRegistroGenericoModal('laudo', 'Adicionar Laudo Médico'));
-                document.getElementById('addOrientacaoBtn')?.addEventListener('click', () => openRegistroGenericoModal('orientacao', 'Adicionar Orientação'));
-                document.getElementById('addProcedimentoBtn')?.addEventListener('click', () => openRegistroGenericoModal('procedimento', 'Adicionar Procedimento'));
+                // Esses listeners agora são adicionados aos itens do dropdown
+                document.getElementById('addLaudoBtn')?.addEventListener('click', () => {
+                    closeAddRecordDropdown(); // Fecha o dropdown
+                    openRegistroGenericoModal('laudo', 'Adicionar Laudo Médico');
+                });
+                document.getElementById('addOrientacaoBtn')?.addEventListener('click', () => {
+                    closeAddRecordDropdown(); // Fecha o dropdown
+                    openRegistroGenericoModal('orientacao', 'Adicionar Orientação');
+                });
+                document.getElementById('addProcedimentoBtn')?.addEventListener('click', () => {
+                    closeAddRecordDropdown(); // Fecha o dropdown
+                    openRegistroGenericoModal('procedimento', 'Adicionar Procedimento');
+                });
 
 
                 // *** Lógica do Gerador Gemini ***
@@ -1678,6 +1748,39 @@
                     currentDeleteData = data;
                     confirmDeleteModal.classList.add('active');
                 }
+
+                // *** Lógica do Dropdown de Adicionar Registro ***
+                const addRecordDropdownBtn = document.getElementById('addRecordDropdownBtn');
+                const addRecordDropdownMenu = addRecordDropdownBtn?.nextElementSibling; // O próximo elemento irmão é o menu
+
+                function toggleAddRecordDropdown() {
+                    if (addRecordDropdownMenu) {
+                        addRecordDropdownMenu.classList.toggle('active');
+                        addRecordDropdownBtn.setAttribute('aria-expanded', addRecordDropdownMenu.classList.contains('active'));
+                    }
+                }
+
+                function closeAddRecordDropdown() {
+                    if (addRecordDropdownMenu) {
+                        addRecordDropdownMenu.classList.remove('active');
+                        addRecordDropdownBtn.setAttribute('aria-expanded', false);
+                    }
+                }
+
+                if (addRecordDropdownBtn) {
+                    addRecordDropdownBtn.addEventListener('click', (event) => {
+                        event.stopPropagation(); // Impede que o clique se propague para o documento
+                        toggleAddRecordDropdown();
+                    });
+
+                    // Fecha o dropdown se clicar fora dele
+                    document.addEventListener('click', (event) => {
+                        if (addRecordDropdownMenu && !addRecordDropdownBtn.contains(event.target) && !addRecordDropdownMenu.contains(event.target)) {
+                            closeAddRecordDropdown();
+                        }
+                    });
+                }
+
 
                 // Event listener unificado para cliques no corpo do documento
                 document.body.addEventListener('click', async function(e) { // Tornando assíncrono aqui
