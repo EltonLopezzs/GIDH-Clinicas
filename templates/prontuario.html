@@ -1934,7 +1934,7 @@
 
                         try {
                             // Utiliza a API Gemini para gerar conteúdo
-                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // A chave API será fornecida pelo ambiente Canvas
+                            const apiKey = ""; // A chave API será fornecida pelo ambiente Canvas
                             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                             const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
@@ -2367,18 +2367,21 @@
                         const data = await response.json();
                         console.log('Resposta de atualização do status do alvo:', data); // Depuração
                         if (response.ok && data.success) {
-                            alert(data.message);
+                            // Removido o alert() nativo aqui
+                            // Substituído por uma lógica para adicionar flash message (se o sistema Flask suportar via JS)
+                            // Ou você pode adicionar um elemento DIV temporário para exibir a mensagem na tela.
+                            displayFlashMessage('success', data.message); // Exibe a mensagem como uma flash message
                             if (data.peis) {
                                 allPeisData = data.peis; // Atualiza os dados locais
                             }
                             renderPeis(allPeisData); // Re-renderiza para refletir a mudança
                         } else {
                             console.error('Falha ao atualizar o status do alvo:', data.message || 'Erro desconhecido');
-                            alert(`Erro ao atualizar status do alvo: ${data.message || 'Erro desconhecido.'}`);
+                            displayFlashMessage('danger', `Erro ao atualizar status do alvo: ${data.message || 'Erro desconhecido.'}`); // Exibe erro como flash message
                         }
                     } catch (error) {
                         console.error('Erro ao atualizar o status do alvo:', error);
-                        alert(`Erro de rede ou servidor ao atualizar status do alvo: ${error.message}`);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao atualizar status do alvo: ${error.message}`); // Exibe erro como flash message
                     } finally {
                         hideLoading();
                     }
@@ -2397,18 +2400,18 @@
                         const data = await response.json();
                         console.log('Resposta de finalização de meta:', data); // Depuração
                         if (response.ok && data.success) {
-                            alert(data.message);
+                            displayFlashMessage('success', data.message); // Exibe a mensagem como uma flash message
                             if (data.peis) {
                                 allPeisData = data.peis; // Atualiza os dados locais
                             }
                             renderPeis(allPeisData); // Re-renderiza para refletir a mudança
                         } else {
                             console.error('Falha ao finalizar meta:', data.message || 'Erro desconhecido');
-                            alert(`Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`);
+                            displayFlashMessage('danger', `Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`); // Exibe erro como flash message
                         }
                     } catch (error) {
                         console.error('Erro ao finalizar meta:', error);
-                        alert(`Erro de rede ou servidor ao finalizar meta: ${error.message}`);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao finalizar meta: ${error.message}`); // Exibe erro como flash message
                     } finally {
                         hideLoading();
                     }
@@ -2427,18 +2430,18 @@
                         const data = await response.json();
                         console.log('Resposta de finalização do PEI:', data); // Depuração
                         if (response.ok && data.success) {
-                            alert(data.message);
+                            displayFlashMessage('success', data.message); // Exibe a mensagem como uma flash message
                             if (data.peis) {
                                 allPeisData = data.peis; // Atualiza os dados locais
                             }
                             renderPeis(allPeisData); // Re-renderiza para refletir a mudança
                         } else {
                             console.error('Falha ao finalizar PEI:', data.message || 'Erro desconhecido');
-                            alert(`Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`);
+                            displayFlashMessage('danger', `Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`); // Exibe erro como flash message
                         }
                     } catch (error) {
                         console.error('Erro ao finalizar PEI:', error);
-                        alert(`Erro de rede ou servidor ao finalizar PEI: ${error.message}`);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao finalizar PEI: ${error.message}`); // Exibe erro como flash message
                     } finally {
                         hideLoading();
                     }
@@ -2932,6 +2935,35 @@
 
                     // Salva o PDF de todos os PEIs
                     doc.save(`todos-peis-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                }
+
+                // Função para exibir mensagens flash personalizadas
+                function displayFlashMessage(type, message) {
+                    const flashMessagesContainer = document.querySelector('.flash-messages');
+                    if (!flashMessagesContainer) {
+                        // Se o container não existe, cria um temporariamente
+                        const mainElement = document.querySelector('main');
+                        if (mainElement) {
+                            const newContainer = document.createElement('div');
+                            newContainer.classList.add('flash-messages');
+                            mainElement.prepend(newContainer); // Adiciona no início do main
+                            flashMessagesContainer = newContainer;
+                        } else {
+                            console.error('Não foi possível encontrar ou criar o container de flash messages.');
+                            return;
+                        }
+                    }
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('flash-message', type);
+                    messageDiv.textContent = message;
+
+                    flashMessagesContainer.appendChild(messageDiv);
+
+                    // Remove a mensagem após alguns segundos
+                    setTimeout(() => {
+                        messageDiv.remove();
+                    }, 5000); // Mensagem visível por 5 segundos
                 }
 
 
