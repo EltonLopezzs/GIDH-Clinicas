@@ -1985,8 +1985,9 @@
                     if (addGoalButton) {
                         const peiId = addGoalButton.dataset.peiId;
                         document.getElementById('goal_pei_id').value = peiId;
-                        document.getElementById('formAddGoal').action = `{{ url_for('add_goal', paciente_doc_id=paciente.id) }}`;
+                        // Form action will be set directly in the fetch call, not on form element
                         document.getElementById('formAddGoal').reset();
+                        // Reset targets input container
                         document.getElementById('targets-input-container').innerHTML = `
                             <div class="target-input-item flex items-center space-x-2">
                                 <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
@@ -1995,7 +1996,7 @@
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
-                        `; // Reseta os alvos
+                        `;
                         document.getElementById('addGoalModal').classList.add('active');
                         return;
                     }
@@ -2159,6 +2160,30 @@
                 });
 
                 // --- Funções AJAX para PEI/Metas/Alvos ---
+                // Nova função para adicionar alvo individual
+                async function addTargetToGoal(peiId, goalId, targetDescription) {
+                    showLoading();
+                    try {
+                        const response = await fetch(`{{ url_for('add_target_to_goal', paciente_doc_id=paciente.id) }}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_description: targetDescription })
+                        });
+                        const data = await response.json();
+                        if (response.ok && data.success) {
+                            allPeisData = data.peis;
+                            renderPeis(allPeisData); // Re-renderiza os PEIs para mostrar o novo alvo
+                        } else {
+                            alert(`Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
+                        }
+                    } catch (error) {
+                        console.error('Erro ao adicionar alvo:', error);
+                        alert(`Erro de rede ou servidor ao adicionar alvo: ${error.message}`);
+                    } finally {
+                        hideLoading();
+                    }
+                }
+
                 async function updateTargetStatus(peiId, goalId, targetId, isCompleted) {
                     console.log('Tentando atualizar o status do alvo:', { peiId, goalId, targetId, isCompleted }); // Depuração
                     showLoading(); // Mostra o indicador de carregamento
@@ -2639,6 +2664,37 @@
                 // --- Renderização Inicial dos PEIs ---
                 renderPeis(allPeisData);
 
+                // Event listener para o botão "Adicionar Alvo" em cada meta
+                document.body.addEventListener('click', async function(e) {
+                    const target = e.target;
+                    // Check if the clicked element or its parent is the "Adicionar Alvo" button
+                    const addTargetBtn = target.closest('.btn-add-target');
+                    if (addTargetBtn) {
+                        e.preventDefault();
+                        const peiId = addTargetBtn.dataset.peiId;
+                        const goalId = addTargetBtn.dataset.goalId;
+                        const newTargetInput = addTargetBtn.previousElementSibling; // The input field is the previous sibling
+                        const targetDescription = newTargetInput.value.trim();
+
+                        if (!targetDescription) {
+                            alert('Por favor, digite a descrição do novo alvo.');
+                            return;
+                        }
+
+                        // Disable the button and input to prevent multiple submissions
+                        addTargetBtn.disabled = true;
+                        newTargetInput.disabled = true;
+
+                        try {
+                            await addTargetToGoal(peiId, goalId, targetDescription);
+                            newTargetInput.value = ''; // Clear the input on success
+                        } finally {
+                            // Re-enable the button and input
+                            addTargetBtn.disabled = false;
+                            newTargetInput.disabled = false;
+                        }
+                    }
+                });
 
                 // --- Inicialização ---
                 setupTabs();

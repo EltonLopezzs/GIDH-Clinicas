@@ -87,6 +87,34 @@ def _finalize_pei_transaction(transaction, pei_ref):
         'goals': updated_goals 
     })
 
+@firestore.transactional
+def _add_target_to_goal_transaction(transaction, pei_ref, goal_id, new_target_description):
+    snapshot = pei_ref.get(transaction=transaction)
+    if not snapshot.exists:
+        raise Exception("PEI não encontrado.")
+    
+    pei_data = snapshot.to_dict()
+    goals = pei_data.get('goals', [])
+    
+    goal_found = False
+    for goal in goals:
+        if goal.get('id') == goal_id:
+            goal_found = True
+            new_target = {
+                'id': str(uuid.uuid4()),
+                'descricao': new_target_description,
+                'concluido': False
+            }
+            if 'targets' not in goal:
+                goal['targets'] = []
+            goal['targets'].append(new_target)
+            break
+            
+    if not goal_found:
+        raise Exception("Meta não encontrada no PEI.")
+        
+    transaction.update(pei_ref, {'goals': goals})
+
 
 # =================================================================
 # FUNÇÃO DE REGISTO DE ROTAS
@@ -313,6 +341,7 @@ def register_medical_records_routes(app):
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
         except Exception as e:
             flash(f'Erro ao carregar anamnese: {e}', 'danger')
+            print(f"Erro ao carregar anamnese: {e}")
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/modelos_anamnese', endpoint='listar_modelos_anamnese')
@@ -383,6 +412,7 @@ def register_medical_records_routes(app):
             flash('PEI adicionado com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao adicionar PEI: {e}', 'danger')
+            print(f"Erro add_pei: {e}") # Log the error for debugging
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
     
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/delete_pei', methods=['POST'], endpoint='delete_pei')
@@ -399,6 +429,7 @@ def register_medical_records_routes(app):
                 flash('PEI excluído com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao excluir PEI: {e}', 'danger')
+            print(f"Erro delete_pei: {e}") # Log the error for debugging
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/finalize_pei', methods=['POST'], endpoint='finalize_pei')
@@ -470,7 +501,45 @@ def register_medical_records_routes(app):
                 flash('Meta adicionada com sucesso ao PEI!', 'success')
         except Exception as e:
             flash(f'Erro ao adicionar meta: {e}', 'danger')
+            print(f"Erro add_goal: {e}") # Log the error for debugging
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_target_to_goal', methods=['POST'], endpoint='add_target_to_goal')
+    @login_required
+    def add_target_to_goal(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        try:
+            data = request.get_json()
+            pei_id = data.get('pei_id')
+            goal_id = data.get('goal_id')
+            target_description = data.get('target_description')
+
+            if not all([pei_id, goal_id, target_description]):
+                return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar alvo.'}), 400
+
+            pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+            transaction = db_instance.transaction()
+            
+            _add_target_to_goal_transaction(transaction, pei_ref, goal_id, target_description)
+            transaction.commit()
+            
+            # Re-fetch all PEIs to send the updated list back to the frontend
+            all_peis = []
+            peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING).stream()
+            for doc in peis_query:
+                pei_data_converted = convert_doc_to_dict(doc)
+                if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
+                all_peis.append(pei_data_converted)
+
+            return jsonify({'success': True, 'message': 'Alvo adicionado com sucesso!', 'peis': all_peis}), 200
+
+        except Exception as e:
+            print(f"Erro ao adicionar alvo à meta: {e}")
+            return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
+
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/delete_goal', methods=['POST'], endpoint='delete_goal')
     @login_required
@@ -490,6 +559,7 @@ def register_medical_records_routes(app):
                 flash('Meta excluída com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao excluir meta: {e}', 'danger')
+            print(f"Erro delete_goal: {e}") # Log the error for debugging
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/finalize_goal', methods=['POST'], endpoint='finalize_goal')
@@ -555,3 +625,4 @@ def register_medical_records_routes(app):
         except Exception as e:
             print(f"Erro ao atualizar status do alvo: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
+
