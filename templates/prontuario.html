@@ -617,10 +617,14 @@
 
         /* Removido `grid-template-columns` para usar classes Tailwind */
         .pei-card {
-            border-left-color: var(--primary);
-            display: flex;
+            background: var(--card); padding: 1.5rem; border-radius: 16px; /* Aumentado o border-radius */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 0; /* Managed by grid gap */
+            position: relative;
+            border-left: 8px solid transparent; /* Increased border width */
+            display: flex; /* Ensure content stretches within card */
             flex-direction: column;
-            border-left: 8px solid var(--primary); /* Borda padrão para cartão PEI */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Adiciona transição */
         }
         .pei-card.finalizado { /* Estilo para PEI finalizado */
             border-left-color: var(--success);
@@ -940,6 +944,70 @@
                 display: inline; /* Mostra o título simplificado em mobile */
             }
         }
+
+        /* Styles for Activity Log/Chat within PEI card */
+        .pei-activities {
+            margin-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+        }
+        .pei-activities h5 {
+            font-size: 1rem;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        .activity-log {
+            max-height: 200px; /* Limit height for scroll */
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            background-color: var(--bg);
+            margin-bottom: 1rem;
+        }
+        .activity-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed var(--border-color);
+            font-size: 0.9rem;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-meta {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-bottom: 0.2rem;
+        }
+        .activity-content {
+            color: var(--text);
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        .activity-input-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .activity-input-group textarea {
+            flex-grow: 1;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg);
+            color: var(--text);
+            resize: vertical;
+            min-height: 40px;
+            max-height: 100px;
+        }
+        .activity-input-group textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+        }
+        .activity-input-group .btn {
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -1153,6 +1221,32 @@
                         <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
                             <i class="fas fa-check-double"></i> Finalizar PEI
                         </button>
+                    </div>
+                    <div class="pei-activities mt-4">
+                        <h5 class="flex items-center gap-2 mb-3">
+                            <i class="fas fa-comments text-gray-500"></i> Histórico de Atividades
+                        </h5>
+                        <div class="activity-log" id="activity-log-{{ pei.id }}">
+                            {% if pei.activities %}
+                                {% for activity in pei.activities %}
+                                <div class="activity-item">
+                                    <div class="activity-meta">{{ activity.user_name }} em {{ activity.timestamp_fmt }}</div>
+                                    <div class="activity-content">{{ activity.content }}</div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-state-small text-center text-gray-500">
+                                    <i class="fas fa-clipboard-list text-2xl mb-2"></i>
+                                    <p class="text-sm">Nenhuma atividade registrada para este PEI.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="activity-input-group mt-3">
+                            <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
+                            <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="{{ pei.id }}">
+                                <i class="fas fa-paper-plane"></i> Enviar
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {% endmacro %}
@@ -2184,6 +2278,31 @@
                     }
                 }
 
+                // Função para adicionar uma atividade ao PEI
+                async function addPeiActivity(peiId, activityContent) {
+                    showLoading();
+                    try {
+                        const response = await fetch(`{{ url_for('add_pei_activity', paciente_doc_id=paciente.id) }}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, content: activityContent })
+                        });
+                        const data = await response.json();
+                        if (response.ok && data.success) {
+                            allPeisData = data.peis;
+                            renderPeis(allPeisData); // Re-renderiza os PEIs para mostrar a nova atividade
+                        } else {
+                            alert(`Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
+                        }
+                    } catch (error) {
+                        console.error('Erro ao adicionar atividade:', error);
+                        alert(`Erro de rede ou servidor ao adicionar atividade: ${error.message}`);
+                    } finally {
+                        hideLoading();
+                    }
+                }
+
+
                 async function updateTargetStatus(peiId, goalId, targetId, isCompleted) {
                     console.log('Tentando atualizar o status do alvo:', { peiId, goalId, targetId, isCompleted }); // Depuração
                     showLoading(); // Mostra o indicador de carregamento
@@ -2282,8 +2401,20 @@
 
                     // Ordena os PEIs por data_criacao (mais recente primeiro)
                     const sortedPeis = [...peis].sort((a, b) => {
-                        const dateA = new Date(a.data_criacao.split('/').reverse().join('-')); // Converte DD/MM/YYYY para YYYY-MM-DD
-                        const dateB = new Date(b.data_criacao.split('/').reverse().join('-'));
+                        // Converte DD/MM/YYYY para YYYY-MM-DD para garantir comparação de data correta
+                        const parseDateString = (dateStr) => {
+                            if (!dateStr || typeof dateStr !== 'string') return new Date(0); // Handle invalid or missing dates
+                            const parts = dateStr.split('/');
+                            // Check for expected DD/MM/YYYY format
+                            if (parts.length === 3) {
+                                return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                            }
+                            // Fallback for ISO format or other unexpected string formats
+                            return new Date(dateStr);
+                        };
+
+                        const dateA = parseDateString(a.data_criacao);
+                        const dateB = parseDateString(b.data_criacao);
                         return dateB.getTime() - dateA.getTime();
                     });
 
@@ -2295,6 +2426,19 @@
                         const isPeiFinalized = pei.status === 'finalizado';
                         const peiCardClasses = `pei-card ${isPeiFinalized ? 'finalizado' : ''}`;
                         const peiActionClasses = `pei-card-actions ${isPeiFinalized ? 'disabled-actions' : ''}`;
+
+                        // Renderizar atividades
+                        const activitiesHtml = pei.activities && pei.activities.length > 0 ?
+                            pei.activities.map(activity => `
+                                <div class="activity-item">
+                                    <div class="activity-meta">${activity.user_name} em ${activity.timestamp_fmt}</div>
+                                    <div class="activity-content">${activity.content}</div>
+                                </div>
+                            `).join('')
+                            : `<div class="empty-state-small text-center text-gray-500">
+                                <i class="fas fa-clipboard-list text-2xl mb-2"></i>
+                                <p class="text-sm">Nenhuma atividade registrada para este PEI.</p>
+                               </div>`;
 
 
                         const peiHtml = `
@@ -2382,6 +2526,20 @@
                                 <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
                                     <i class="fas fa-check-double"></i> Finalizar PEI
                                 </button>
+                            </div>
+                            <div class="pei-activities mt-4">
+                                <h5 class="flex items-center gap-2 mb-3">
+                                    <i class="fas fa-comments text-gray-500"></i> Histórico de Atividades
+                                </h5>
+                                <div class="activity-log" id="activity-log-${pei.id}">
+                                    ${activitiesHtml}
+                                </div>
+                                <div class="activity-input-group mt-3">
+                                    <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
+                                    <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="${pei.id}">
+                                        <i class="fas fa-paper-plane"></i> Enviar
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         `;
@@ -2565,6 +2723,30 @@
                         yPos += contentLineHeight;
                     }
 
+                    // Seção de Atividades para PDF
+                    if (pei.activities && pei.activities.length > 0) {
+                        checkPageBreak(15);
+                        doc.setFontSize(11).setFont("helvetica", "bold").text("Histórico de Atividades:", margin, yPos);
+                        yPos += 8;
+                        doc.setLineWidth(0.1).line(margin, yPos, maxWidth + margin, yPos);
+                        yPos += 5;
+
+                        pei.activities.forEach(activity => {
+                            checkPageBreak(20); // Estimar espaço para cada atividade
+                            doc.setFontSize(8).setFont("helvetica", "italic").text(`${activity.user_name} em ${activity.timestamp_fmt}:`, margin + 5, yPos);
+                            yPos += 4;
+                            doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                            const activityTextLines = doc.splitTextToSize(activity.content, maxWidth - 10); // Recuo para o conteúdo da atividade
+                            activityTextLines.forEach(line => {
+                                checkPageBreak(contentLineHeight);
+                                doc.text(line, margin + 10, yPos);
+                                yPos += contentLineHeight;
+                            });
+                            yPos += 3; // Espaço entre atividades
+                        });
+                    }
+
+
                     doc.save(`pei-${pei.titulo.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
 
@@ -2655,6 +2837,29 @@
                             doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta definida para este PEI.', margin, yPos);
                             yPos += contentLineHeight;
                         }
+
+                        // Seção de Atividades para PDF
+                        if (pei.activities && pei.activities.length > 0) {
+                            checkPageBreak(15);
+                            doc.setFontSize(11).setFont("helvetica", "bold").text("Histórico de Atividades:", margin, yPos);
+                            yPos += 8;
+                            doc.setLineWidth(0.1).line(margin, yPos, maxWidth + margin, yPos);
+                            yPos += 5;
+
+                            pei.activities.forEach(activity => {
+                                checkPageBreak(20); // Estimar espaço para cada atividade
+                                doc.setFontSize(8).setFont("helvetica", "italic").text(`${activity.user_name} em ${activity.timestamp_fmt}:`, margin + 5, yPos);
+                                yPos += 4;
+                                doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                                const activityTextLines = doc.splitTextToSize(activity.content, maxWidth - 10); // Recuo para o conteúdo da atividade
+                                activityTextLines.forEach(line => {
+                                    checkPageBreak(contentLineHeight);
+                                    doc.text(line, margin + 10, yPos);
+                                    yPos += contentLineHeight;
+                                });
+                                yPos += 3; // Espaço entre atividades
+                            });
+                        }
                     });
 
                     doc.save(`todos-peis-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
@@ -2692,6 +2897,33 @@
                             // Re-enable the button and input
                             addTargetBtn.disabled = false;
                             newTargetInput.disabled = false;
+                        }
+                    }
+
+                    // Event listener for "Enviar" activity button
+                    const addActivityBtn = target.closest('.btn-add-activity');
+                    if (addActivityBtn) {
+                        e.preventDefault();
+                        const peiId = addActivityBtn.dataset.peiId;
+                        const activityInput = addActivityBtn.previousElementSibling; // The textarea is the previous sibling
+                        const activityContent = activityInput.value.trim();
+
+                        if (!activityContent) {
+                            alert('Por favor, digite o conteúdo da atividade.');
+                            return;
+                        }
+
+                        // Disable button and input
+                        addActivityBtn.disabled = true;
+                        activityInput.disabled = true;
+
+                        try {
+                            await addPeiActivity(peiId, activityContent);
+                            activityInput.value = ''; // Clear input on success
+                        } finally {
+                            // Re-enable button and input
+                            addActivityBtn.disabled = false;
+                            activityInput.disabled = false;
                         }
                     }
                 });

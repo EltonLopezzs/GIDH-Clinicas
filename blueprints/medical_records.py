@@ -115,6 +115,21 @@ def _add_target_to_goal_transaction(transaction, pei_ref, goal_id, new_target_de
         
     transaction.update(pei_ref, {'goals': goals})
 
+@firestore.transactional
+def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_name):
+    snapshot = pei_ref.get(transaction=transaction)
+    if not snapshot.exists:
+        raise Exception("PEI not found.")
+
+    activities = snapshot.to_dict().get('activities', [])
+    new_activity = {
+        'id': str(uuid.uuid4()),
+        'content': activity_content,
+        'timestamp': firestore.SERVER_TIMESTAMP,
+        'user_name': user_name
+    }
+    activities.append(new_activity)
+    transaction.update(pei_ref, {'activities': activities})
 
 # =================================================================
 # FUNÇÃO DE REGISTO DE ROTAS
@@ -186,19 +201,32 @@ def register_medical_records_routes(app):
                 # Ensure data_criacao is formatted for consistent JS sorting
                 if 'data_criacao' in pei and isinstance(pei['data_criacao'], datetime.datetime):
                     pei['data_criacao'] = pei['data_criacao'].strftime('%d/%m/%Y')
+                else:
+                    # If data_criacao is already a string (e.g., from request.form directly), ensure it's kept.
+                    # Or handle cases where it might be missing.
+                    pei['data_criacao'] = pei.get('data_criacao', 'N/A')
+
                 
                 # Adicionar o nome do profissional que criou o PEI
                 # Se 'profissional_nome' não estiver salvo no documento PEI, tenta da sessão (para PEIs novos)
                 # ou deixa como 'N/A' se não estiver disponível.
                 pei['profissional_nome'] = pei.get('profissional_nome', session.get('user_name', 'N/A'))
 
-
+                # Processar atividades para formatação
+                if 'activities' in pei and isinstance(pei['activities'], list):
+                    for activity in pei['activities']:
+                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
+                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        else:
+                            activity['timestamp_fmt'] = 'N/A'
+                
                 if pei.get('status') == 'finalizado':
                     peis_finalizados.append(pei)
                 else:
                     peis_ativos.append(pei)
         except Exception as e:
             flash(f'Erro ao carregar prontuário do paciente: {e}.', 'danger')
+            print(f"Erro ao carregar prontuário: {e}")
         
         all_peis = peis_ativos + peis_finalizados
 
@@ -234,6 +262,7 @@ def register_medical_records_routes(app):
                 flash(f'Registo de {tipo_registro} adicionado com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao adicionar registo: {e}', 'danger')
+            print(f"Erro ao adicionar registro genérico: {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/prontuarios/<string:paciente_doc_id>/editar_registro_generico/<string:registro_doc_id>', methods=['POST'], endpoint='editar_registro_generico')
@@ -255,6 +284,7 @@ def register_medical_records_routes(app):
                 flash(f'Registo atualizado com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao atualizar registo: {e}', 'danger')
+            print(f"Erro ao editar registro genérico: {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/prontuarios/<string:paciente_doc_id>/apagar_registro_generico', methods=['POST'], endpoint='apagar_registro_generico')
@@ -271,6 +301,7 @@ def register_medical_records_routes(app):
                 flash('Registo apagado com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao apagar registo: {e}', 'danger')
+            print(f"Erro ao apagar registro genérico: {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/prontuarios/<string:paciente_doc_id>/anamnese/novo', methods=['GET', 'POST'], endpoint='adicionar_anamnese')
@@ -292,6 +323,7 @@ def register_medical_records_routes(app):
                 modelos_anamnese.append(convert_doc_to_dict(doc))
         except Exception as e:
             flash('Erro ao carregar modelos de anamnese.', 'warning')
+            print(f"Erro ao carregar modelos de anamnese (adicionar): {e}")
 
         if request.method == 'POST':
             try:
@@ -305,6 +337,7 @@ def register_medical_records_routes(app):
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
             except Exception as e:
                 flash(f'Erro ao adicionar anamnese: {e}', 'danger')
+                print(f"Erro ao adicionar anamnese: {e}")
         
         return render_template('anamnese_form.html', paciente_id=paciente_doc_id, paciente_nome=paciente_nome, modelos_anamnese=modelos_anamnese, action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id), page_title=f"Registar Anamnese para {paciente_nome}")
 
@@ -327,6 +360,7 @@ def register_medical_records_routes(app):
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
             except Exception as e:
                 flash(f'Erro ao atualizar anamnese: {e}', 'danger')
+                print(f"Erro ao editar anamnese: {e}")
         
         try:
             anamnese_doc = anamnese_ref.get()
@@ -357,6 +391,7 @@ def register_medical_records_routes(app):
                 modelos_lista.append(convert_doc_to_dict(doc))
         except Exception as e:
             flash(f'Erro ao listar modelos de anamnese: {e}.', 'danger')
+            print(f"Erro ao listar modelos de anamnese: {e}")
         return render_template('modelos_anamnese.html', modelos=modelos_lista)
 
     @app.route('/modelos_anamnese/novo', methods=['GET', 'POST'], endpoint='adicionar_modelo_anamnese')
@@ -380,6 +415,7 @@ def register_medical_records_routes(app):
                     return redirect(url_for('listar_modelos_anamnese'))
             except Exception as e:
                 flash(f'Erro ao adicionar modelo de anamnese: {e}', 'danger')
+                print(f"Erro ao adicionar modelo de anamnese: {e}")
         return render_template('modelo_anamnese_form.html', modelo=None, action_url=url_for('adicionar_modelo_anamnese'))
 
     # =================================================================
@@ -399,13 +435,21 @@ def register_medical_records_routes(app):
                 flash('Título e data de criação do PEI são obrigatórios.', 'danger')
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
             
-            data_criacao_obj = datetime.datetime.strptime(data_criacao_str, '%Y-%m-%d')
+            # Garante que data_criacao_obj seja um objeto datetime.date ou datetime.datetime
+            # Se for uma string no formato 'YYYY-MM-DD', converte.
+            try:
+                data_criacao_obj = datetime.datetime.strptime(data_criacao_str, '%Y-%m-%d')
+            except ValueError:
+                data_criacao_obj = None # Ou alguma outra forma de tratamento de erro
+            
             peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
             
             new_pei_data = {
                 'paciente_id': paciente_doc_id, 'titulo': titulo,
                 'data_criacao': data_criacao_obj, 'status': 'ativo',
-                'goals': [], 'criado_em': datetime.datetime.now(SAO_PAULO_TZ),
+                'goals': [], 
+                'activities': [], # Initialize activities list
+                'criado_em': firestore.SERVER_TIMESTAMP,
                 'profissional_nome': session.get('user_name', 'N/A') # Adiciona o nome do profissional ao criar
             }
             peis_ref.add(new_pei_data)
@@ -456,6 +500,14 @@ def register_medical_records_routes(app):
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
                 pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
+
+                if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                    for activity in pei_data_converted['activities']:
+                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
+                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        else:
+                            activity['timestamp_fmt'] = 'N/A'
+
                 all_peis.append(pei_data_converted)
 
             return jsonify({'success': True, 'message': 'PEI finalizado com sucesso!', 'peis': all_peis}), 200
@@ -532,6 +584,15 @@ def register_medical_records_routes(app):
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
                 pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
+
+                # Processar atividades para formatação
+                if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                    for activity in pei_data_converted['activities']:
+                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
+                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        else:
+                            activity['timestamp_fmt'] = 'N/A'
+
                 all_peis.append(pei_data_converted)
 
             return jsonify({'success': True, 'message': 'Alvo adicionado com sucesso!', 'peis': all_peis}), 200
@@ -539,7 +600,6 @@ def register_medical_records_routes(app):
         except Exception as e:
             print(f"Erro ao adicionar alvo à meta: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
-
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/delete_goal', methods=['POST'], endpoint='delete_goal')
     @login_required
@@ -587,6 +647,15 @@ def register_medical_records_routes(app):
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
                 pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
+
+                # Processar atividades para formatação
+                if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                    for activity in pei_data_converted['activities']:
+                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
+                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        else:
+                            activity['timestamp_fmt'] = 'N/A'
+
                 all_peis.append(pei_data_converted)
             
             return jsonify({'success': True, 'message': 'Meta finalizada com sucesso!', 'peis': all_peis}), 200
@@ -619,10 +688,61 @@ def register_medical_records_routes(app):
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
                 pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
+
+                # Processar atividades para formatação
+                if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                    for activity in pei_data_converted['activities']:
+                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
+                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        else:
+                            activity['timestamp_fmt'] = 'N/A'
+
                 all_peis.append(pei_data_converted)
 
             return jsonify({'success': True, 'message': 'Status do alvo atualizado.', 'peis': all_peis}), 200
         except Exception as e:
             print(f"Erro ao atualizar status do alvo: {e}")
+            return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
+
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_pei_activity', methods=['POST'], endpoint='add_pei_activity')
+    @login_required
+    def add_pei_activity(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        try:
+            data = request.get_json()
+            pei_id = data.get('pei_id')
+            activity_content = data.get('content')
+
+            if not all([pei_id, activity_content]):
+                return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar atividade.'}), 400
+            
+            pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+            user_name = session.get('user_name', 'Desconhecido')
+
+            _add_pei_activity_transaction(db_instance.transaction(), pei_ref, activity_content, user_name)
+
+            # Re-fetch all PEIs to send the updated list back to the frontend
+            all_peis = []
+            peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING).stream()
+            for doc in peis_query:
+                pei_data_converted = convert_doc_to_dict(doc)
+                if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A')
+
+                if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                    for activity in pei_data_converted['activities']:
+                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
+                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        else:
+                            activity['timestamp_fmt'] = 'N/A'
+
+                all_peis.append(pei_data_converted)
+
+            return jsonify({'success': True, 'message': 'Atividade adicionada com sucesso!', 'peis': all_peis}), 200
+
+        except Exception as e:
+            print(f"Erro ao adicionar atividade ao PEI: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
