@@ -60,6 +60,34 @@ def _finalize_goal_transaction(transaction, pei_ref, goal_id_to_finalize):
     if not goal_found: raise Exception("Meta não encontrada para finalizar.")
     transaction.update(pei_ref, {'goals': goals})
 
+@firestore.transactional
+def _finalize_pei_transaction(transaction, pei_ref):
+    """
+    Finaliza um PEI, marcando-o como 'finalizado' e todas as suas metas ativas
+    e respectivos alvos como 'finalizado'/'concluido'.
+    """
+    snapshot = pei_ref.get(transaction=transaction)
+    if not snapshot.exists:
+        raise Exception("PEI não encontrado.")
+    
+    pei_data = snapshot.to_dict()
+    updated_goals = pei_data.get('goals', [])
+    
+    # Mark all active goals and their targets as finalized
+    for goal in updated_goals:
+        if goal.get('status') == 'ativo':
+            goal['status'] = 'finalizado'
+            for target in goal.get('targets', []):
+                if not target.get('concluido', False):
+                    target['concluido'] = True
+
+    transaction.update(pei_ref, {
+        'status': 'finalizado', 
+        'data_finalizacao': datetime.datetime.now(SAO_PAULO_TZ),
+        'goals': updated_goals 
+    })
+
+
 # =================================================================
 # FUNÇÃO DE REGISTO DE ROTAS
 # =================================================================
@@ -372,29 +400,8 @@ def register_medical_records_routes(app):
             
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
             
-            # Use a transaction to ensure atomicity
-            transaction = db_instance.transaction()
-            snapshot = pei_ref.get(transaction=transaction)
-            if not snapshot.exists:
-                raise Exception("PEI não encontrado.")
-            
-            pei_data = snapshot.to_dict()
-            updated_goals = pei_data.get('goals', [])
-            
-            # Mark all active goals and their targets as finalized
-            for goal in updated_goals:
-                if goal.get('status') == 'ativo':
-                    goal['status'] = 'finalizado'
-                    for target in goal.get('targets', []):
-                        if not target.get('concluido', False):
-                            target['concluido'] = True
-
-            transaction.update(pei_ref, {
-                'status': 'finalizado', 
-                'data_finalizacao': datetime.datetime.now(SAO_PAULO_TZ),
-                'goals': updated_goals # Update the goals array with finalized goals and targets
-            })
-            transaction.commit()
+            # Use the transactional helper function
+            _finalize_pei_transaction(db_instance.transaction(), pei_ref)
 
             # Re-fetch all PEIs to send the updated list back to the frontend
             all_peis = []
@@ -531,4 +538,3 @@ def register_medical_records_routes(app):
         except Exception as e:
             print(f"Erro ao atualizar status do alvo: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
-
