@@ -168,6 +168,20 @@
         .btn-warning:hover { background-color: #fca5a5; }
         .btn-danger-outline { background-color: transparent; color: var(--danger); border: 1px solid var(--danger); }
         .btn-danger-outline:hover { background-color: var(--danger); color: white; }
+        
+        /* Estilos aprimorados para o botão de sucesso no hover */
+        .btn-success {
+            background-color: var(--success); 
+            color: white; 
+            border: 1px solid var(--success);
+            transition: all 0.3s ease-in-out; /* Transição suave para todas as propriedades */
+        }
+        .btn-success:hover { 
+            background-color: color-mix(in srgb, var(--success) 80%, black); /* Escurece mais no hover */
+            box-shadow: 0 6px 12px rgba(22, 163, 74, 0.3); /* Sombra mais pronunciada */
+            transform: translateY(-2px); /* Leve elevação no hover */
+        }
+
 
         .topbar-actions {
             position: relative; /* Para posicionar o dropdown */
@@ -874,6 +888,27 @@
             .pei-list::-webkit-scrollbar {
                 display: none;
             }
+
+            /* Ajuste específico para o título do prontuário em mobile */
+            .topbar .page-title {
+                font-size: 1.1rem; /* Reduz o tamanho da fonte para caber melhor */
+                flex-grow: 1; /* Permite que o título ocupe o espaço disponível */
+                text-align: left; /* Alinha o texto à esquerda */
+                white-space: nowrap; /* Evita quebra de linha */
+                overflow: hidden; /* Esconde o texto que transborda */
+                text-overflow: ellipsis; /* Adiciona "..." se o texto for muito longo */
+            }
+            /* Ajuste para o botão "+ Novo" */
+            .topbar-actions #addRecordDropdownBtn {
+                padding: 0.6rem 1rem; /* Ajusta o padding */
+                font-size: 0.9rem; /* Ajusta o tamanho da fonte */
+            }
+            .topbar-actions #addRecordDropdownBtn .btn-text-desktop {
+                display: none; /* Esconde o texto "Adicionar Novo Registro" em mobile */
+            }
+            .topbar-actions #addRecordDropdownBtn i:last-child { /* A seta para baixo */
+                margin-left: 0; /* Remove a margem extra da seta */
+            }
         }
     </style>
 </head>
@@ -916,12 +951,12 @@
                 <div class="topbar-left">
                     <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">Prontuário de {{ paciente.nome if paciente else 'Paciente' }}</h1>
+                    <h1 class="page-title">Prontuário</h1> {# Título simplificado para mobile #}
                 </div>
                 <div class="topbar-actions">
                     <div class="relative inline-block text-left">
                         <button type="button" class="btn btn-primary" id="addRecordDropdownBtn" aria-expanded="false" aria-haspopup="true">
-                            <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo Registro</span> <i class="fas fa-chevron-down ml-2"></i>
+                            <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo Registro</span> <span class="btn-text-mobile">Novo</span> <i class="fas fa-chevron-down ml-2"></i>
                         </button>
                         <div class="dropdown-menu absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="addRecordDropdownBtn" tabindex="-1">
                             <div class="py-1" role="none">
