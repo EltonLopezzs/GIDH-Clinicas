@@ -41,7 +41,7 @@ def _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, 
             break
     if not goal_found: raise Exception("Meta não encontrada no PEI.")
     transaction.update(pei_ref, {'goals': goals})
-    
+
 @firestore.transactional
 def _finalize_goal_transaction(transaction, pei_ref, goal_id_to_finalize):
     snapshot = pei_ref.get(transaction=transaction)
@@ -176,6 +176,27 @@ def register_medical_records_routes(app):
         clinica_id = session['clinica_id']
         paciente_data, registros_prontuario, peis_ativos, peis_finalizados = None, [], [], []
         current_date_iso = datetime.date.today().isoformat()
+        
+        # Obter informações do usuário logado
+        user_role = session.get('user_role')
+        is_admin = user_role == 'admin'
+        is_professional = user_role == 'medico'
+        logged_in_professional_id = session.get('professional_id') # Assumindo que o ID do profissional está na sessão
+        
+        # Obter lista de profissionais para o dropdown
+        profissionais_lista = []
+        try:
+            profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').stream()
+            for doc in profissionais_docs:
+                prof_data = doc.to_dict()
+                if prof_data:
+                    profissionais_lista.append({'id': doc.id, 'nome': prof_data.get('nome', 'N/A')})
+            profissionais_lista.sort(key=lambda x: x['nome'].lower())
+        except Exception as e:
+            flash(f'Erro ao carregar lista de profissionais: {e}', 'warning')
+            print(f"Erro ao carregar profissionais para PEI: {e}")
+
+
         try:
             paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
             paciente_doc = paciente_ref.get()
@@ -197,21 +218,23 @@ def register_medical_records_routes(app):
             
             peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
             query = peis_ref.where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+            
+            # Filtrar PEIs por profissional associado se o usuário for um profissional
+            if is_professional and logged_in_professional_id:
+                query = query.where(filter=FieldFilter('profissional_id', '==', logged_in_professional_id))
+
             for pei_doc in query.stream():
                 pei = convert_doc_to_dict(pei_doc)
                 # Ensure data_criacao is formatted for consistent JS sorting
                 if 'data_criacao' in pei and isinstance(pei['data_criacao'], datetime.datetime):
                     pei['data_criacao'] = pei['data_criacao'].strftime('%d/%m/%Y %H:%M')
                 else:
-                    # If data_criacao is already a string (e.g., from request.form directly), ensure it's kept.
-                    # Or handle cases where it might be missing.
                     pei['data_criacao'] = pei.get('data_criacao', 'N/A')
 
-                
-                # Adicionar o nome do profissional que criou o PEI
-                # Se 'profissional_nome' não estiver salvo no documento PEI, tenta da sessão (para PEIs novos)
-                # ou deixa como 'N/A' se não estiver disponível.
-                pei['profissional_nome'] = pei.get('profissional_nome', session.get('user_name', 'N/A'))
+                # Adicionar o nome do profissional que criou o PEI ou está associado
+                # Preferir o nome do profissional_associado se existir, senão o nome do criador
+                pei['profissional_nome_associado'] = pei.get('profissional_nome_associado', 'N/A')
+                pei['profissional_id_associado'] = pei.get('profissional_id', None) # Manter o ID do profissional
 
                 # Processar atividades para formatação
                 if 'activities' in pei and isinstance(pei['activities'], list):
@@ -237,7 +260,11 @@ def register_medical_records_routes(app):
                                peis_ativos=peis_ativos, 
                                peis_finalizados=peis_finalizados, 
                                peis=all_peis,
-                               current_date_iso=current_date_iso)
+                               current_date_iso=current_date_iso,
+                               is_admin=is_admin, # Passa a flag de admin para o template
+                               is_professional=is_professional, # Passa a flag de profissional para o template
+                               all_professionals=profissionais_lista # Passa a lista de profissionais
+                               )
 
     # =================================================================
     # ROTAS DE ANAMNESE E REGISTOS GENÉRICOS
@@ -425,6 +452,7 @@ def register_medical_records_routes(app):
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_pei', methods=['POST'], endpoint='add_pei')
     @login_required
+    @admin_required # Apenas admins podem criar PEIs
     def add_pei(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
@@ -432,26 +460,37 @@ def register_medical_records_routes(app):
             data = request.form
             titulo = data.get('titulo')
             data_criacao_str = data.get('data_criacao')
-            if not titulo or not data_criacao_str:
-                flash('Título e data de criação do PEI são obrigatórios.', 'danger')
+            profissional_id_associado = data.get('profissional_associado_id') # Novo campo
+            
+            if not titulo or not data_criacao_str or not profissional_id_associado:
+                flash('Título, data de criação e profissional associado do PEI são obrigatórios.', 'danger')
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
             
             # Garante que data_criacao_obj seja um objeto datetime.date ou datetime.datetime
-            # Se for uma string no formato 'YYYY-MM-DD', converte.
             try:
                 data_criacao_obj = datetime.datetime.strptime(data_criacao_str, '%Y-%m-%d')
             except ValueError:
-                data_criacao_obj = None # Ou alguma outra forma de tratamento de erro
+                flash('Formato de data de criação inválido.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
             
+            # Obter o nome do profissional associado
+            profissional_ref = db_instance.collection(f'clinicas/{clinica_id}/profissionais').document(profissional_id_associado)
+            profissional_doc = profissional_ref.get()
+            profissional_nome_associado = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
+
             peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
             
             new_pei_data = {
-                'paciente_id': paciente_doc_id, 'titulo': titulo,
-                'data_criacao': data_criacao_obj, 'status': 'ativo',
+                'paciente_id': paciente_doc_id, 
+                'titulo': titulo,
+                'data_criacao': data_criacao_obj, 
+                'status': 'ativo',
                 'goals': [], 
                 'activities': [], # Initialize activities list
-                'criado_em': datetime.datetime.now(SAO_PAULO_TZ), # Usar datetime.now()
-                'profissional_nome': session.get('user_name', 'N/A') # Adiciona o nome do profissional ao criar
+                'criado_em': datetime.datetime.now(SAO_PAULO_TZ), 
+                'profissional_criador_nome': session.get('user_name', 'N/A'), # Quem criou (nome)
+                'profissional_id': profissional_id_associado, # ID do profissional associado
+                'profissional_nome_associado': profissional_nome_associado # Nome do profissional associado
             }
             peis_ref.add(new_pei_data)
             flash('PEI adicionado com sucesso!', 'success')
@@ -462,6 +501,7 @@ def register_medical_records_routes(app):
     
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/delete_pei', methods=['POST'], endpoint='delete_pei')
     @login_required
+    @admin_required # Apenas admins podem excluir PEIs
     def delete_pei(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
@@ -478,10 +518,13 @@ def register_medical_records_routes(app):
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/finalize_pei', methods=['POST'], endpoint='finalize_pei')
-    @login_required
+    @login_required # Admins e profissionais podem finalizar
     def finalize_pei(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
+        user_role = session.get('user_role')
+        logged_in_professional_id = session.get('professional_id')
+
         try:
             data = request.get_json()
             pei_id = data.get('pei_id')
@@ -489,7 +532,17 @@ def register_medical_records_routes(app):
                 return jsonify({'success': False, 'message': 'ID do PEI não fornecido.'}), 400
             
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
-            
+            pei_doc = pei_ref.get()
+            if not pei_doc.exists:
+                return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
+
+            # Verifica permissões: Admin sempre pode. Profissional só se for o associado ou se o PEI não tiver um profissional associado.
+            if user_role == 'medico':
+                associated_professional_id = pei_doc.to_dict().get('profissional_id')
+                if associated_professional_id and associated_professional_id != logged_in_professional_id:
+                    return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar este PEI.'}), 403
+            # Se for admin, não precisa de checagem adicional.
+
             # Use the transactional helper function
             _finalize_pei_transaction(db_instance.transaction(), pei_ref)
 
@@ -500,7 +553,8 @@ def register_medical_records_routes(app):
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
-                pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
+                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A') # Garante que o nome do profissional esteja presente
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
 
                 # Processar atividades para formatação
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
@@ -519,6 +573,7 @@ def register_medical_records_routes(app):
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_goal', methods=['POST'], endpoint='add_goal')
     @login_required
+    @admin_required # Apenas admins podem adicionar metas
     def add_goal(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
@@ -560,6 +615,7 @@ def register_medical_records_routes(app):
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_target_to_goal', methods=['POST'], endpoint='add_target_to_goal')
     @login_required
+    @admin_required # Apenas admins podem adicionar alvos
     def add_target_to_goal(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
@@ -585,7 +641,8 @@ def register_medical_records_routes(app):
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
-                pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
+                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A') # Garante que o nome do profissional esteja presente
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
 
                 # Processar atividades para formatação
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
@@ -605,6 +662,7 @@ def register_medical_records_routes(app):
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/delete_goal', methods=['POST'], endpoint='delete_goal')
     @login_required
+    @admin_required # Apenas admins podem excluir metas
     def delete_goal(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
@@ -625,10 +683,13 @@ def register_medical_records_routes(app):
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/finalize_goal', methods=['POST'], endpoint='finalize_goal')
-    @login_required
+    @login_required # Admins e profissionais podem finalizar metas
     def finalize_goal(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
+        user_role = session.get('user_role')
+        logged_in_professional_id = session.get('professional_id')
+
         try:
             data = request.get_json()
             pei_id = data.get('pei_id')
@@ -637,6 +698,16 @@ def register_medical_records_routes(app):
                 return jsonify({'success': False, 'message': 'Dados insuficientes para finalizar meta.'}), 400
 
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+            pei_doc = pei_ref.get()
+            if not pei_doc.exists:
+                return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
+
+            # Verifica permissões: Admin sempre pode. Profissional só se for o associado ou se o PEI não tiver um profissional associado.
+            if user_role == 'medico':
+                associated_professional_id = pei_doc.to_dict().get('profissional_id')
+                if associated_professional_id and associated_professional_id != logged_in_professional_id:
+                    return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar esta meta.'}), 403
+
             transaction = db_instance.transaction()
             _finalize_goal_transaction(transaction, pei_ref, goal_id)
             transaction.commit()
@@ -648,7 +719,9 @@ def register_medical_records_routes(app):
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
-                pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
+                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A') # Garante que o nome do profissional esteja presente
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
+
 
                 # Processar atividades para formatação
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
@@ -666,10 +739,13 @@ def register_medical_records_routes(app):
             return jsonify({'success': False, 'message': f'Erro interno ao finalizar meta: {e}'}), 500
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/update_target_status', methods=['POST'], endpoint='update_target_status')
-    @login_required
+    @login_required # Admins e profissionais podem atualizar status de alvos
     def update_target_status(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
+        user_role = session.get('user_role')
+        logged_in_professional_id = session.get('professional_id')
+
         try:
             data = request.get_json()
             pei_id = data.get('pei_id'); goal_id = data.get('goal_id')
@@ -678,6 +754,16 @@ def register_medical_records_routes(app):
                 return jsonify({'success': False, 'message': 'Dados insuficientes.'}), 400
 
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+            pei_doc = pei_ref.get()
+            if not pei_doc.exists:
+                return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
+
+            # Verifica permissões: Admin sempre pode. Profissional só se for o associado ou se o PEI não tiver um profissional associado.
+            if user_role == 'medico':
+                associated_professional_id = pei_doc.to_dict().get('profissional_id')
+                if associated_professional_id and associated_professional_id != logged_in_professional_id:
+                    return jsonify({'success': False, 'message': 'Você não tem permissão para atualizar o status deste alvo.'}), 403
+
             transaction = db_instance.transaction()
             _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, concluido)
             transaction.commit()
@@ -689,7 +775,8 @@ def register_medical_records_routes(app):
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
-                pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
+                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A') # Garante que o nome do profissional esteja presente
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
 
                 # Processar atividades para formatação
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
@@ -707,10 +794,13 @@ def register_medical_records_routes(app):
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_pei_activity', methods=['POST'], endpoint='add_pei_activity')
-    @login_required
+    @login_required # Admins e profissionais podem adicionar atividades/comentários
     def add_pei_activity(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
+        user_role = session.get('user_role')
+        logged_in_professional_id = session.get('professional_id')
+
         try:
             data = request.get_json()
             pei_id = data.get('pei_id')
@@ -720,6 +810,17 @@ def register_medical_records_routes(app):
                 return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar atividade.'}), 400
             
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+            pei_doc = pei_ref.get()
+            if not pei_doc.exists:
+                return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
+
+            # Verifica permissões: Admin sempre pode. Profissional só se for o associado ou se o PEI não tiver um profissional associado.
+            if user_role == 'medico':
+                associated_professional_id = pei_doc.to_dict().get('profissional_id')
+                if associated_professional_id and associated_professional_id != logged_in_professional_id:
+                    return jsonify({'success': False, 'message': 'Você não tem permissão para adicionar atividades a este PEI.'}), 403
+
+
             user_name = session.get('user_name', 'Desconhecido')
 
             _add_pei_activity_transaction(db_instance.transaction(), pei_ref, activity_content, user_name)
@@ -731,7 +832,9 @@ def register_medical_records_routes(app):
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M') # Format here
-                pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A')
+                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A')
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
+
 
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
@@ -747,4 +850,3 @@ def register_medical_records_routes(app):
         except Exception as e:
             print(f"Erro ao adicionar atividade ao PEI: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
-

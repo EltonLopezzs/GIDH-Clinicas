@@ -465,6 +465,7 @@
         .form-group label { display: block; font-size: 0.9rem; color: var(--muted); font-weight: 500; margin-bottom: 0.5rem; }
         .form-group input[type="text"],
         .form-group input[type="date"],
+        .form-group select, /* Adicionado select aqui */
         .form-group textarea {
             font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color);
             border-radius: 8px; background-color: var(--bg); color: var(--text);
@@ -472,6 +473,7 @@
         }
         .form-group input[type="text"]:focus,
         .form-group input[type="date"]:focus,
+        .form-group select:focus, /* Adicionado select aqui */
         .form-group textarea:focus {
             border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
         }
@@ -1134,12 +1136,13 @@
                 {% endmacro %}
 
                 <!-- MACRO for rendering a PEI card (MACRO para renderizar um cartão PEI) -->
-                {% macro render_pei_card(pei) %}
+                {% macro render_pei_card(pei, is_admin, is_professional, logged_in_professional_id) %}
                 <div class="pei-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" id="pei-{{ pei.id }}">
                     <div class="pei-card-header">
                         <h4>PEI: {{ pei.titulo }}</h4>
                         <div class="pei-card-meta">
                             <span><i class="fas fa-calendar-alt"></i> Criado em: {{ pei.data_criacao }}</span>
+                            <span>Profissional Associado: {{ pei.profissional_nome_associado | default('N/A') }}</span> {# Exibe o nome do profissional associado #}
                             <span>Status: <span class="goal-status {% if pei.status == 'ativo' %}active-status{% else %}finalizado-status{% endif %}">{{ pei.status | capitalize }}</span></span>
                         </div>
                     </div>
@@ -1149,6 +1152,10 @@
                             {% set active_goals = pei.goals | selectattr('status', 'equalto', 'ativo') | list %}
                             {% if active_goals %}
                                 {% for goal in active_goals %}
+                                    {# Verifica se o profissional logado é o associado OU se é admin #}
+                                    {% set can_edit_goal = is_admin or (is_professional and pei.profissional_id_associado == logged_in_professional_id) %}
+                                    {% set goal_actions_disabled = 'disabled' if pei.status == 'finalizado' or goal.status == 'finalizado' or not can_edit_goal else '' %}
+
                                 <div class="goal-card" id="goal-{{ pei.id }}-{{ goal.id }}">
                                     <div class="goal-card-header">
                                         <strong>Meta: {{ goal.descricao }}</strong>
@@ -1157,23 +1164,29 @@
                                     <ul class="targets-list" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}">
                                         {% for target in goal.targets %}
                                         <li class="target-item {% if target.concluido %}concluido{% endif %}" data-target-id="{{ target.id }}">
-                                            <input type="checkbox" class="target-checkbox" {% if target.concluido %}checked{% endif %} {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>
+                                            {# Checkbox desabilitado se PEI/Meta finalizados OU se o usuário não pode editar #}
+                                            <input type="checkbox" class="target-checkbox" {% if target.concluido %}checked{% endif %} {% if pei.status == 'finalizado' or goal.status == 'finalizado' or not can_edit_goal %}disabled{% endif %}>
                                             <i class="status-icon fas {% if target.concluido %}fa-check-square{% else %}fa-square{% endif %}"></i>
                                             <span>{{ target.descricao }}</span>
                                         </li>
                                         {% endfor %}
                                     </ul>
-                                    <div class="add-target-group">
-                                        <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>
-                                        <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>Adicionar Alvo</button>
-                                    </div>
+                                    {# Adicionar Alvo e botões de ação para metas só para admin, ou profissional associado #}
+                                    {% if is_admin %} {# Apenas admins podem adicionar alvos a metas #}
+                                        <div class="add-target-group">
+                                            <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>
+                                            <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>Adicionar Alvo</button>
+                                        </div>
+                                    {% endif %}
                                     <div class="pei-card-actions" style="border-top: none; padding-top: 0.5rem; justify-content: flex-start;">
-                                        <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if goal.status == 'finalizado' %}disabled{% endif %}>
+                                        <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if goal.status == 'finalizado' or not can_edit_goal %}disabled{% endif %}>
                                             <i class="fas fa-check-circle"></i> Finalizar Meta
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        {% if is_admin %} {# Apenas admins podem excluir metas #}
+                                            <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if pei.status == 'finalizado' or goal.status == 'finalizado' %}disabled{% endif %}>
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 {% endfor %}
@@ -1215,14 +1228,19 @@
                         </div>
                     </div>
                     <div class="pei-card-actions {% if pei.status == 'finalizado' %}disabled-actions{% endif %}">
-                        <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
-                            <i class="fas fa-plus"></i> Adicionar Meta
-                        </button>
-                        <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
-                            <i class="fas fa-trash"></i> Excluir PEI
-                        </button>
+                        {% if is_admin %} {# Apenas admins podem adicionar PEI #}
+                            <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
+                                <i class="fas fa-plus"></i> Adicionar Meta
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
+                                <i class="fas fa-trash"></i> Excluir PEI
+                            </button>
+                        {% endif %}
                         <button type="button" class="btn btn-sm btn-info btn-print-pei" data-pei-id="{{ pei.id }}"><i class="fas fa-print"></i> Imprimir PEI</button>
-                        <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
+                        
+                        {# Admins ou profissional associado podem finalizar PEI #}
+                        {% set can_finalize_pei = is_admin or (is_professional and pei.profissional_id_associado == logged_in_professional_id) %}
+                        <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' or not can_finalize_pei %}disabled{% endif %}>
                             <i class="fas fa-check-double"></i> Finalizar PEI
                         </button>
                     </div>
@@ -1245,12 +1263,20 @@
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="activity-input-group mt-3">
-                            <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
-                            <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="{{ pei.id }}">
-                                <i class="fas fa-paper-plane"></i> Enviar
-                            </button>
-                        </div>
+                        {# Campo de comentário sempre visível para admins e profissionais associados #}
+                        {% set can_add_comment = is_admin or (is_professional and pei.profissional_id_associado == logged_in_professional_id) %}
+                        {% if can_add_comment %}
+                            <div class="activity-input-group mt-3">
+                                <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
+                                <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="{{ pei.id }}">
+                                    <i class="fas fa-paper-plane"></i> Enviar
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="mt-3 text-center text-gray-500 text-sm">
+                                <p>Apenas o profissional associado ou um administrador pode adicionar comentários a este PEI.</p>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endmacro %}
@@ -1368,9 +1394,11 @@
                                         <span class="desktop-only">Planos Educacionais Individualizados (PEI)</span>
                                         <span class="mobile-only">PEI</span>
                                     </h3>
-                                    <button type="button" class="btn btn-primary" id="addPeiBtn">
-                                        <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo PEI</span><span class="btn-text-mobile"></span>
-                                    </button>
+                                    {% if is_admin %} {# Apenas admins podem adicionar novos PEIs #}
+                                        <button type="button" class="btn btn-primary" id="addPeiBtn">
+                                            <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo PEI</span><span class="btn-text-mobile"></span>
+                                        </button>
+                                    {% endif %}
                                 </div>
 
                                 <div class="pei-container">
@@ -1384,7 +1412,7 @@
                                                 {% for pei_item in active_peis %} {# Renomeado para evitar conflito com JS pei variable #}
                                                     {# Adicionado verificação para garantir que 'pei_item' não é None #}
                                                     {% if pei_item %}
-                                                        {{ render_pei_card(pei_item) }}
+                                                        {{ render_pei_card(pei_item, is_admin, is_professional, session.get('professional_id')) }}
                                                     {% endif %}
                                                 {% endfor %}
                                             {% else %}
@@ -1411,7 +1439,7 @@
                                                 {% for pei_item in finalized_peis %} {# Renomeado para evitar conflito com JS pei variable #}
                                                     {# Adicionado verificação para garantir que 'pei_item' não é None #}
                                                     {% if pei_item %}
-                                                        {{ render_pei_card(pei_item) }}
+                                                        {{ render_pei_card(pei_item, is_admin, is_professional, session.get('professional_id')) }}
                                                     {% endif %}
                                                 {% endfor %}
                                             {% else %}
@@ -1535,6 +1563,16 @@
                         <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                     </div>
+                    <div class="form-group">
+                        <label for="profissional_associado_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profissional Associado</label>
+                        <select id="profissional_associado_id" name="profissional_associado_id" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                            <option value="">Selecione um profissional</option>
+                            {% for professional in all_professionals %}
+                                <option value="{{ professional.id }}">{{ professional.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 bg-gray-50 dark:bg-gray-800">
                     <button type="button" class="btn btn-secondary inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600" data-close-modal="addPeiModal">Cancelar</button>
@@ -1652,6 +1690,12 @@
         const allRecordsData = {{ registros | tojson | safe }};
         // `allPeisData` contém todos os Planos Educacionais Individualizados (PEIs) do paciente
         let allPeisData = {{ peis | tojson | safe }} || []; // Garante que seja um array, mesmo que vazio
+
+        // Passa as variáveis de role do Python para o JavaScript
+        const IS_ADMIN = {{ is_admin | tojson }};
+        const IS_PROFESSIONAL = {{ is_professional | tojson }};
+        const LOGGED_IN_PROFESSIONAL_ID = {{ session.get('professional_id') | tojson }};
+        const ALL_PROFESSIONALS = {{ all_professionals | tojson | safe }}; // Lista de todos os profissionais
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement; // Elemento HTML raiz para manipular atributos de tema
@@ -2112,13 +2156,28 @@
                     if (target.id === 'addPeiBtn') {
                         document.getElementById('addPeiModal').classList.add('active');
                         document.getElementById('formAddPei').reset(); // Limpa o formulário do modal
-                        // current_date_iso já está definido via Jinja, então não há necessidade de JS aqui
+                        // Preenche o dropdown de profissionais
+                        const professionalSelect = document.getElementById('profissional_associado_id');
+                        if (professionalSelect) {
+                            professionalSelect.innerHTML = '<option value="">Selecione um profissional</option>'; // Limpa opções antigas
+                            ALL_PROFESSIONALS.forEach(prof => {
+                                const option = document.createElement('option');
+                                option.value = prof.id;
+                                option.textContent = prof.nome;
+                                professionalSelect.appendChild(option);
+                            });
+                        }
                         return;
                     }
 
                     // Botão Adicionar Meta (dentro de um PEI)
                     const addGoalButton = target.closest('.btn-add-goal');
                     if (addGoalButton) {
+                        // Apenas admins podem adicionar metas
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para adicionar metas a PEIs.');
+                            return;
+                        }
                         const peiId = addGoalButton.dataset.peiId;
                         document.getElementById('goal_pei_id').value = peiId; // Define o ID do PEI no campo oculto
                         document.getElementById('formAddGoal').reset(); // Limpa o formulário
@@ -2138,6 +2197,11 @@
 
                     // Botão Adicionar Outro Alvo (dentro do modal de adicionar meta)
                     if (target.matches('.add-target-button-modal')) {
+                        // Apenas admins podem adicionar alvos
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para adicionar alvos a metas.');
+                            return;
+                        }
                         const container = document.getElementById('targets-input-container');
                         const newItem = document.createElement('div');
                         newItem.classList.add('target-input-item', 'flex', 'items-center', 'space-x-2');
@@ -2159,6 +2223,11 @@
 
                     // Botão Remover Alvo (dentro do modal de adicionar meta)
                     if (target.matches('.btn-remove-target')) {
+                        // Apenas admins podem remover alvos
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para remover alvos de metas.');
+                            return;
+                        }
                         const container = target.closest('.targets-input-container');
                         if (container.children.length > 1) { // Garante que pelo menos um alvo permaneça
                             target.closest('.target-input-item').remove();
@@ -2176,11 +2245,21 @@
                         const checkbox = targetStatusToggle.querySelector('.target-checkbox');
                         // Apenas alterna se o checkbox não estiver desabilitado
                         if (checkbox && !checkbox.disabled) {
-                            checkbox.checked = !checkbox.checked; // Alterna o estado do checkbox
                             const targetId = targetStatusToggle.dataset.targetId;
                             const goalList = targetStatusToggle.closest('.targets-list');
                             const peiId = goalList.dataset.peiId;
                             const goalId = goalList.dataset.goalId;
+
+                            // Verifica permissões do PEI e do profissional associado
+                            const currentPei = allPeisData.find(p => p.id === peiId);
+                            if (currentPei && IS_PROFESSIONAL) {
+                                if (currentPei.profissional_id_associado && currentPei.profissional_id_associado !== LOGGED_IN_PROFESSIONAL_ID) {
+                                    displayFlashMessage('danger', 'Você não tem permissão para atualizar este PEI.');
+                                    return;
+                                }
+                            }
+                            
+                            checkbox.checked = !checkbox.checked; // Alterna o estado do checkbox
                             const isCompleted = checkbox.checked;
 
                             // Atualiza visualmente imediatamente
@@ -2209,6 +2288,11 @@
                     // Botão Excluir Meta
                     const deleteGoalButton = target.closest('.btn-delete-goal');
                     if (deleteGoalButton) {
+                        // Apenas admins podem excluir metas
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para excluir metas.');
+                            return;
+                        }
                         const peiId = deleteGoalButton.dataset.peiId;
                         const goalId = deleteGoalButton.dataset.goalId;
                         // Abre o modal de confirmação para excluir a meta
@@ -2219,6 +2303,11 @@
                     // Botão Excluir PEI
                     const deletePeiButton = target.closest('.btn-delete-pei');
                     if (deletePeiButton) {
+                        // Apenas admins podem excluir PEIs
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para excluir PEIs.');
+                            return;
+                        }
                         const peiId = deletePeiButton.dataset.peiId;
                         // Abre o modal de confirmação para excluir o PEI
                         openConfirmDeleteModal('Confirmar Exclusão do PEI', 'Tem certeza que deseja apagar este PEI e todas as suas metas e alvos? Esta ação não pode ser desfeita.', 'delete_pei', { peiId: peiId });
@@ -2265,7 +2354,7 @@
                             }
                         } catch (error) {
                             console.error('Erro durante a ação de confirmação:', error);
-                            alert(`Ocorreu um erro ao processar a solicitação: ${error.message}`); // Feedback ao usuário
+                            displayFlashMessage('danger', `Ocorreu um erro ao processar a solicitação: ${error.message}`); // Feedback ao usuário
                         } finally {
                             hideLoading(); // Oculta o indicador de carregamento
                             currentDeleteAction = null; // Reseta a ação
@@ -2318,13 +2407,13 @@
                         if (response.ok && data.success) {
                             allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
                             renderPeis(allPeisData); // Re-renderiza os PEIs para mostrar o novo alvo
-                            alert(data.message); // Exibe mensagem de sucesso
+                            displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
                         } else {
-                            alert(`Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
+                            displayFlashMessage('danger', `Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
                         }
                     } catch (error) {
                         console.error('Erro ao adicionar alvo:', error);
-                        alert(`Erro de rede ou servidor ao adicionar alvo: ${error.message}`);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao adicionar alvo: ${error.message}`);
                     } finally {
                         hideLoading();
                     }
@@ -2343,13 +2432,13 @@
                         if (response.ok && data.success) {
                             allPeisData = data.peis; // Atualiza os dados locais
                             renderPeis(allPeisData); // Re-renderiza para exibir a nova atividade
-                            alert(data.message);
+                            displayFlashMessage('success', data.message);
                         } else {
-                            alert(`Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
+                            displayFlashMessage('danger', `Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
                         }
                     } catch (error) {
                         console.error('Erro ao adicionar atividade:', error);
-                        alert(`Erro de rede ou servidor ao adicionar atividade: ${error.message}`);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao adicionar atividade: ${error.message}`);
                     } finally {
                         hideLoading();
                     }
@@ -2486,6 +2575,9 @@
                         const peiCardClasses = `pei-card ${isPeiFinalized ? 'finalizado' : ''}`;
                         const peiActionClasses = `pei-card-actions ${isPeiFinalized ? 'disabled-actions' : ''}`;
 
+                        // Lógica de permissão para o profissional associado
+                        const canModifyPeiContent = IS_ADMIN || (IS_PROFESSIONAL && pei.profissional_id_associado === LOGGED_IN_PROFESSIONAL_ID);
+
                         // Renderiza as atividades do PEI
                         const activitiesHtml = pei.activities && pei.activities.length > 0 ?
                             pei.activities.map(activity => {
@@ -2501,6 +2593,22 @@
                                 <i class="fas fa-clipboard-list text-2xl mb-2"></i>
                                 <p class="text-sm">Nenhuma atividade registrada para este PEI.</p>
                                </div>`;
+                        
+                        const commentInputHtml = `
+                            ${canModifyPeiContent ? `
+                            <div class="activity-input-group mt-3">
+                                <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
+                                <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="${pei.id}">
+                                    <i class="fas fa-paper-plane"></i> Enviar
+                                </button>
+                            </div>
+                            ` : `
+                            <div class="mt-3 text-center text-gray-500 text-sm">
+                                <p>Apenas o profissional associado ou um administrador pode adicionar comentários a este PEI.</p>
+                            </div>
+                            `}
+                        `;
+
 
                         // Constrói o HTML para um único card de PEI
                         const peiHtml = `
@@ -2509,6 +2617,7 @@
                                 <h4>PEI: ${pei.titulo}</h4>
                                 <div class="pei-card-meta">
                                     <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
+                                    <span>Profissional Associado: ${pei.profissional_nome_associado || 'N/A'}</span>
                                     <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
                                 </div>
                             </div>
@@ -2518,8 +2627,8 @@
                                     ${pei.goals.filter(goal => goal.status === 'ativo').length > 0 ?
                                         pei.goals.filter(goal => goal.status === 'ativo').map(goal => {
                                             const isGoalFinalized = goal.status === 'finalizado';
-                                            const goalActionsDisabled = isPeiFinalized || isGoalFinalized ? 'disabled' : '';
-                                            const targetCheckboxDisabled = isPeiFinalized || isGoalFinalized ? 'disabled' : '';
+                                            const goalActionsDisabled = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
+                                            const targetCheckboxDisabled = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
 
                                             return `
                                             <div class="goal-card" id="goal-${pei.id}-${goal.id}">
@@ -2536,17 +2645,21 @@
                                                     </li>
                                                     `).join('')}
                                                 </ul>
+                                                ${IS_ADMIN ? `
                                                 <div class="add-target-group">
                                                     <input type="text" class="new-target-input" placeholder="Novo alvo para esta meta" ${goalActionsDisabled}>
                                                     <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>Adicionar Alvo</button>
                                                 </div>
+                                                ` : ''}
                                                 <div class="pei-card-actions" style="border-top: none; padding-top: 0.5rem; justify-content: flex-start;">
-                                                    <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${isGoalFinalized ? 'disabled' : ''}>
+                                                    <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${isGoalFinalized || !canModifyPeiContent ? 'disabled' : ''}>
                                                         <i class="fas fa-check-circle"></i> Finalizar Meta
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
+                                                    ${IS_ADMIN ? `
+                                                        <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    ` : ''}
                                                 </div>
                                             </div>
                                         `;
@@ -2578,14 +2691,16 @@
                                 </div>
                             </div>
                             <div class="${peiActionClasses}">
+                                ${IS_ADMIN ? `
                                 <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
                                     <i class="fas fa-plus"></i> Adicionar Meta
                                 </button>
                                 <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
                                     <i class="fas fa-trash"></i> Excluir PEI
                                 </button>
+                                ` : ''}
                                 <button type="button" class="btn btn-sm btn-info btn-print-pei" data-pei-id="${pei.id}"><i class="fas fa-print"></i> Imprimir PEI</button>
-                                <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
+                                <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="${pei.id}" ${isPeiFinalized || !canModifyPeiContent ? 'disabled' : ''}>
                                     <i class="fas fa-check-double"></i> Finalizar PEI
                                 </button>
                             </div>
@@ -2596,12 +2711,7 @@
                                 <div class="activity-log" id="activity-log-${pei.id}">
                                     ${activitiesHtml}
                                 </div>
-                                <div class="activity-input-group mt-3">
-                                    <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
-                                    <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="${pei.id}">
-                                        <i class="fas fa-paper-plane"></i> Enviar
-                                    </button>
-                                </div>
+                                ${commentInputHtml}
                             </div>
                         </div>
                         `;
@@ -2758,7 +2868,7 @@
 
                     // Metadados do PEI
                     checkPageBreak(10);
-                    doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissional: ${pei.profissional_nome || 'N/A'}`, margin, yPos);
+                    doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissional: ${pei.profissional_nome_associado || 'N/A'}`, margin, yPos);
                     yPos += 6;
                     doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
                     yPos += 8;
@@ -2873,7 +2983,7 @@
 
                         // Metadados do PEI
                         checkPageBreak(10);
-                        doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissional: ${pei.profissional_nome || 'N/A'}`, margin, yPos);
+                        doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissional: ${pei.profissional_nome_associado || 'N/A'}`, margin, yPos);
                         yPos += 6;
                         doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
                         yPos += 8;
@@ -2984,7 +3094,13 @@
                         const targetDescription = newTargetInput.value.trim();
 
                         if (!targetDescription) {
-                            alert('Por favor, digite a descrição do novo alvo.');
+                            displayFlashMessage('danger', 'Por favor, digite a descrição do novo alvo.');
+                            return;
+                        }
+                        
+                        // Verificar permissão novamente (redundante mas seguro)
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para adicionar alvos.');
                             return;
                         }
 
@@ -3011,7 +3127,7 @@
                         const activityContent = activityInput.value.trim();
 
                         if (!activityContent) {
-                            alert('Por favor, digite o conteúdo da atividade.');
+                            displayFlashMessage('danger', 'Por favor, digite o conteúdo da atividade.');
                             return;
                         }
 
