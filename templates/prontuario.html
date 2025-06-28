@@ -1562,7 +1562,8 @@
             function setupCommonUI() {
                 const sidebar = document.querySelector('.sidebar');
                 const mainContent = document.querySelector('.main-content');
-                const toggleButtons = document.querySelectorAll('.toggle-btn');
+                const menuBtnMobile = document.querySelector('.menu-btn-mobile'); // Get mobile menu button
+                const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop'); // Get desktop toggle button
                 const themeToggle = document.getElementById('theme-toggle');
                 const logoutButton = document.getElementById('logoutButton');
 
@@ -1583,23 +1584,73 @@
                 }
 
                 // 2. Lógica da Sidebar (Expandir/Recolher)
-                if (sidebar && mainContent && toggleButtons.length > 0) {
-                    if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
-                        sidebar.classList.add('collapsed');
-                        mainContent.classList.add('collapsed');
+                if (sidebar && mainContent) { // Removed toggleButtons.length > 0 check here, replaced with specific buttons
+                    const updateDesktopToggleIcon = () => {
+                        if (!toggleBtnDesktop) return; // Ensure button exists
+                        const icon = toggleBtnDesktop.querySelector('i');
+                        icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
+                    };
+
+                    const applyInitialState = () => {
+                        if (window.innerWidth > 768) { // Desktop view
+                            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                                sidebar.classList.add('collapsed');
+                                mainContent.classList.add('collapsed');
+                            } else {
+                                sidebar.classList.remove('collapsed');
+                                mainContent.classList.remove('collapsed');
+                            }
+                            sidebar.classList.remove('open'); // Ensure mobile 'open' class is removed on desktop
+                            // Update desktop toggle icon on initial load/resize
+                            updateDesktopToggleIcon();
+                        } else { // Mobile view
+                            sidebar.classList.remove('open', 'collapsed'); // Start fresh, not open or collapsed
+                            mainContent.classList.remove('collapsed');
+                        }
+                    };
+
+                    // Desktop toggle button logic
+                    if (toggleBtnDesktop) {
+                        toggleBtnDesktop.addEventListener('click', () => {
+                            sidebar.classList.toggle('collapsed');
+                            mainContent.classList.toggle('collapsed');
+                            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                            updateDesktopToggleIcon(); // Update icon on click
+                        });
                     }
-                    
-                    toggleButtons.forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            if (window.innerWidth > 768) { // Desktop
-                                sidebar.classList.toggle('collapsed');
-                                mainContent.classList.toggle('collapsed');
-                                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                            } else { // Mobile
-                                sidebar.classList.toggle('open');
+
+                    // Mobile menu button logic
+                    if (menuBtnMobile) {
+                        menuBtnMobile.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Prevent document click from closing it immediately
+                            sidebar.classList.toggle('open');
+                            const icon = menuBtnMobile.querySelector('i');
+                            if (sidebar.classList.contains('open')) {
+                                icon.classList.replace('fa-bars', 'fa-times'); // Change to 'x' icon
+                            } else {
+                                icon.classList.replace('fa-times', 'fa-bars'); // Change back to 'bars'
                             }
                         });
+                    }
+
+                    // Close sidebar on outside click for mobile
+                    document.addEventListener('click', (e) => {
+                        // Only apply this on mobile and if sidebar is open
+                        if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+                            // Check if the click is outside the sidebar AND not on the mobile menu button itself
+                            if (!sidebar.contains(e.target) && (!menuBtnMobile || !menuBtnMobile.contains(e.target))) {
+                                sidebar.classList.remove('open');
+                                if (menuBtnMobile) { // Update icon back to bars
+                                    const icon = menuBtnMobile.querySelector('i');
+                                    icon.classList.replace('fa-times', 'fa-bars');
+                                }
+                            }
+                        }
                     });
+
+                    // Apply initial state on load and resize
+                    applyInitialState();
+                    window.addEventListener('resize', applyInitialState);
                 }
                 
                 // 3. Lógica de Logout
