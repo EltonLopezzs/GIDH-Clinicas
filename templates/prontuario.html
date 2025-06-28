@@ -821,11 +821,17 @@
         /* Responsive (Responsividade) */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
+        /* Classes para mostrar/esconder texto em desktop/mobile */
+        .desktop-only { display: inline; }
+        .mobile-only { display: none; }
+
 
         @media(min-width: 769px) {
             .toggle-btn-desktop { display: grid; }
             .menu-btn-mobile { display: none; }
             span.btn-text-desktop { display: inline; }
+            .desktop-only { display: inline; }
+            .mobile-only { display: none; }
 
             /* Reverte para grid em desktop */
             .records-grid, .pei-list {
@@ -906,8 +912,18 @@
             .topbar-actions #addRecordDropdownBtn .btn-text-desktop {
                 display: none; /* Esconde o texto "Adicionar Novo Registro" em mobile */
             }
+            .topbar-actions #addRecordDropdownBtn .btn-text-mobile {
+                display: inline; /* Mostra o texto "Novo" em mobile */
+            }
             .topbar-actions #addRecordDropdownBtn i:last-child { /* A seta para baixo */
                 margin-left: 0; /* Remove a margem extra da seta */
+            }
+            /* Ajuste para o título da seção PEI em mobile */
+            .pei-section-header h3 .desktop-only {
+                display: none; /* Esconde o título completo em mobile */
+            }
+            .pei-section-header h3 .mobile-only {
+                display: inline; /* Mostra o título simplificado em mobile */
             }
         }
     </style>
@@ -956,7 +972,7 @@
                 <div class="topbar-actions">
                     <div class="relative inline-block text-left">
                         <button type="button" class="btn btn-primary" id="addRecordDropdownBtn" aria-expanded="false" aria-haspopup="true">
-                            <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo Registro</span> <span class="btn-text-mobile">Novo</span> <i class="fas fa-chevron-down ml-2"></i>
+                            <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo Registro</span> <span class="btn-text-mobile">Novo</span>
                         </button>
                         <div class="dropdown-menu absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="addRecordDropdownBtn" tabindex="-1">
                             <div class="py-1" role="none">
@@ -1235,9 +1251,12 @@
                             <!-- Painel "PEI" (New Tab Panel) -->
                             <div id="tab-panel-pei" class="tab-panel">
                                 <div class="pei-section-header">
-                                    <h3>Planos Educacionais Individualizados (PEI)</h3>
+                                    <h3>
+                                        <span class="desktop-only">Planos Educacionais Individualizados (PEI)</span>
+                                        <span class="mobile-only">PEI</span>
+                                    </h3>
                                     <button type="button" class="btn btn-primary" id="addPeiBtn">
-                                        <i class="fas fa-plus"></i> Adicionar Novo PEI
+                                        <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo PEI</span><span class="btn-text-mobile"></span>
                                     </button>
                                 </div>
                                 
