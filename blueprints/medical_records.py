@@ -125,11 +125,12 @@ def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_n
     new_activity = {
         'id': str(uuid.uuid4()),
         'content': activity_content,
-        'timestamp': firestore.SERVER_TIMESTAMP,
+        'timestamp': datetime.datetime.now(SAO_PAULO_TZ), # Use datetime.now() instead of SERVER_TIMESTAMP
         'user_name': user_name
     }
     activities.append(new_activity)
     transaction.update(pei_ref, {'activities': activities})
+
 
 # =================================================================
 # FUNÇÃO DE REGISTO DE ROTAS
@@ -200,7 +201,7 @@ def register_medical_records_routes(app):
                 pei = convert_doc_to_dict(pei_doc)
                 # Ensure data_criacao is formatted for consistent JS sorting
                 if 'data_criacao' in pei and isinstance(pei['data_criacao'], datetime.datetime):
-                    pei['data_criacao'] = pei['data_criacao'].strftime('%d/%m/%Y')
+                    pei['data_criacao'] = pei['data_criacao'].strftime('%d/%m/%Y %H:%M')
                 else:
                     # If data_criacao is already a string (e.g., from request.form directly), ensure it's kept.
                     # Or handle cases where it might be missing.
@@ -449,7 +450,7 @@ def register_medical_records_routes(app):
                 'data_criacao': data_criacao_obj, 'status': 'ativo',
                 'goals': [], 
                 'activities': [], # Initialize activities list
-                'criado_em': firestore.SERVER_TIMESTAMP,
+                'criado_em': datetime.datetime.now(SAO_PAULO_TZ), # Usar datetime.now()
                 'profissional_nome': session.get('user_name', 'N/A') # Adiciona o nome do profissional ao criar
             }
             peis_ref.add(new_pei_data)
@@ -498,9 +499,10 @@ def register_medical_records_routes(app):
             for doc in peis_query:
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
-                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
                 pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
 
+                # Processar atividades para formatação
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
                         if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
@@ -582,7 +584,7 @@ def register_medical_records_routes(app):
             for doc in peis_query:
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
-                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
                 pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
 
                 # Processar atividades para formatação
@@ -645,7 +647,7 @@ def register_medical_records_routes(app):
             for doc in peis_query:
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
-                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
                 pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
 
                 # Processar atividades para formatação
@@ -686,7 +688,7 @@ def register_medical_records_routes(app):
             for doc in peis_query:
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
-                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
                 pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A') # Garante que o nome do profissional esteja presente
 
                 # Processar atividades para formatação
@@ -728,7 +730,7 @@ def register_medical_records_routes(app):
             for doc in peis_query:
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
-                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y')
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M') # Format here
                 pei_data_converted['profissional_nome'] = pei_data_converted.get('profissional_nome', 'N/A')
 
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
@@ -736,7 +738,7 @@ def register_medical_records_routes(app):
                         if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
                             activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
                         else:
-                            activity['timestamp_fmt'] = 'N/A'
+                            activity['timestamp_fmt'] = 'N/A' # Fallback for activities with no timestamp or invalid type
 
                 all_peis.append(pei_data_converted)
 
