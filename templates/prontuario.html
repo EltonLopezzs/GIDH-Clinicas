@@ -1137,6 +1137,7 @@
 
                 <!-- MACRO for rendering a PEI card (MACRO para renderizar um cartão PEI) -->
                 {% macro render_pei_card(pei, is_admin, is_professional, logged_in_professional_id) %}
+                {% set can_modify_pei_content = is_admin or (is_professional and (pei.profissional_id_associado == logged_in_professional_id or pei.profissional_id_associado is none)) %}
                 <div class="pei-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" id="pei-{{ pei.id }}">
                     <div class="pei-card-header">
                         <h4>PEI: {{ pei.titulo }}</h4>
@@ -1152,9 +1153,9 @@
                             {% set active_goals = pei.goals | selectattr('status', 'equalto', 'ativo') | list %}
                             {% if active_goals %}
                                 {% for goal in active_goals %}
-                                    {# Verifica se o profissional logado é o associado OU se é admin #}
-                                    {% set can_edit_goal = is_admin or (is_professional and pei.profissional_id_associado == logged_in_professional_id) %}
-                                    {% set goal_actions_disabled = 'disabled' if pei.status == 'finalizado' or goal.status == 'finalizado' or not can_edit_goal else '' %}
+                                    {# Verifica se o profissional logado é o associado OU se é admin OU se o PEI não tem profissional associado #}
+                                    {% set can_edit_goal_item = is_admin or (is_professional and (pei.profissional_id_associado == logged_in_professional_id or pei.profissional_id_associado is none)) %}
+                                    {% set goal_actions_disabled = 'disabled' if pei.status == 'finalizado' or goal.status == 'finalizado' or not can_edit_goal_item else '' %}
 
                                 <div class="goal-card" id="goal-{{ pei.id }}-{{ goal.id }}">
                                     <div class="goal-card-header">
@@ -1165,7 +1166,7 @@
                                         {% for target in goal.targets %}
                                         <li class="target-item {% if target.concluido %}concluido{% endif %}" data-target-id="{{ target.id }}">
                                             {# Checkbox desabilitado se PEI/Meta finalizados OU se o usuário não pode editar #}
-                                            <input type="checkbox" class="target-checkbox" {% if target.concluido %}checked{% endif %} {% if pei.status == 'finalizado' or goal.status == 'finalizado' or not can_edit_goal %}disabled{% endif %}>
+                                            <input type="checkbox" class="target-checkbox" {% if target.concluido %}checked{% endif %} {% if pei.status == 'finalizado' or goal.status == 'finalizado' or not can_edit_goal_item %}disabled{% endif %}>
                                             <i class="status-icon fas {% if target.concluido %}fa-check-square{% else %}fa-square{% endif %}"></i>
                                             <span>{{ target.descricao }}</span>
                                         </li>
@@ -1179,7 +1180,7 @@
                                         </div>
                                     {% endif %}
                                     <div class="pei-card-actions" style="border-top: none; padding-top: 0.5rem; justify-content: flex-start;">
-                                        <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if goal.status == 'finalizado' or not can_edit_goal %}disabled{% endif %}>
+                                        <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="{{ pei.id }}" data-goal-id="{{ goal.id }}" {% if goal.status == 'finalizado' or not can_edit_goal_item %}disabled{% endif %}>
                                             <i class="fas fa-check-circle"></i> Finalizar Meta
                                         </button>
                                         {% if is_admin %} {# Apenas admins podem excluir metas #}
@@ -1239,8 +1240,7 @@
                         <button type="button" class="btn btn-sm btn-info btn-print-pei" data-pei-id="{{ pei.id }}"><i class="fas fa-print"></i> Imprimir PEI</button>
                         
                         {# Admins ou profissional associado podem finalizar PEI #}
-                        {% set can_finalize_pei = is_admin or (is_professional and pei.profissional_id_associado == logged_in_professional_id) %}
-                        <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' or not can_finalize_pei %}disabled{% endif %}>
+                        <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' or not can_modify_pei_content %}disabled{% endif %}>
                             <i class="fas fa-check-double"></i> Finalizar PEI
                         </button>
                     </div>
@@ -1264,8 +1264,7 @@
                             {% endif %}
                         </div>
                         {# Campo de comentário sempre visível para admins e profissionais associados #}
-                        {% set can_add_comment = is_admin or (is_professional and pei.profissional_id_associado == logged_in_professional_id) %}
-                        {% if can_add_comment %}
+                        {% if can_modify_pei_content %}
                             <div class="activity-input-group mt-3">
                                 <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
                                 <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="{{ pei.id }}">
@@ -1412,7 +1411,7 @@
                                                 {% for pei_item in active_peis %} {# Renomeado para evitar conflito com JS pei variable #}
                                                     {# Adicionado verificação para garantir que 'pei_item' não é None #}
                                                     {% if pei_item %}
-                                                        {{ render_pei_card(pei_item, is_admin, is_professional, session.get('professional_id')) }}
+                                                        {{ render_pei_card(pei_item, is_admin, is_professional, logged_in_professional_id) }}
                                                     {% endif %}
                                                 {% endfor %}
                                             {% else %}
@@ -1439,7 +1438,7 @@
                                                 {% for pei_item in finalized_peis %} {# Renomeado para evitar conflito com JS pei variable #}
                                                     {# Adicionado verificação para garantir que 'pei_item' não é None #}
                                                     {% if pei_item %}
-                                                        {{ render_pei_card(pei_item, is_admin, is_professional, session.get('professional_id')) }}
+                                                        {{ render_pei_card(pei_item, is_admin, is_professional, logged_in_professional_id) }}
                                                     {% endif %}
                                                 {% endfor %}
                                             {% else %}
@@ -1694,12 +1693,21 @@
         // Passa as variáveis de role do Python para o JavaScript
         const IS_ADMIN = {{ is_admin | tojson }};
         const IS_PROFESSIONAL = {{ is_professional | tojson }};
-        const LOGGED_IN_PROFESSIONAL_ID = {{ session.get('professional_id') | tojson }};
+        const LOGGED_IN_PROFESSIONAL_ID = {{ logged_in_professional_id | tojson }}; // Agora passa o ID do profissional logado
         const ALL_PROFESSIONALS = {{ all_professionals | tojson | safe }}; // Lista de todos os profissionais
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement; // Elemento HTML raiz para manipular atributos de tema
             const loadingOverlay = document.getElementById('loading-overlay'); // Obtém o overlay de carregamento
+
+            // ** DEBUG LOGS **
+            console.log('--- Configurações de Permissão (Frontend) ---');
+            console.log('É Administrador (IS_ADMIN):', IS_ADMIN);
+            console.log('É Profissional (IS_PROFESSIONAL):', IS_PROFESSIONAL);
+            console.log('ID do Profissional Logado (LOGGED_IN_PROFESSIONAL_ID):', LOGGED_IN_PROFESSIONAL_ID);
+            console.log('Todos os PEIs carregados:', allPeisData);
+            console.log('-------------------------------------------');
+
 
             // Função para mostrar o overlay de carregamento
             function showLoading() {
@@ -2250,13 +2258,14 @@
                             const peiId = goalList.dataset.peiId;
                             const goalId = goalList.dataset.goalId;
 
-                            // Verifica permissões do PEI e do profissional associado
+                            // Verificar permissões do PEI e do profissional associado
                             const currentPei = allPeisData.find(p => p.id === peiId);
-                            if (currentPei && IS_PROFESSIONAL) {
-                                if (currentPei.profissional_id_associado && currentPei.profissional_id_associado !== LOGGED_IN_PROFESSIONAL_ID) {
-                                    displayFlashMessage('danger', 'Você não tem permissão para atualizar este PEI.');
-                                    return;
-                                }
+                            // Permite se for admin OU (se for profissional E (se for o associado OU se não houver profissional associado))
+                            const canModify = IS_ADMIN || (IS_PROFESSIONAL && (currentPei?.profissional_id_associado === LOGGED_IN_PROFESSIONAL_ID || currentPei?.profissional_id_associado === null));
+
+                            if (!canModify) {
+                                displayFlashMessage('danger', 'Você não tem permissão para atualizar este PEI.');
+                                return;
                             }
                             
                             checkbox.checked = !checkbox.checked; // Alterna o estado do checkbox
@@ -2547,8 +2556,24 @@
                     activePeisList.innerHTML = ''; // Limpa as listas atuais
                     finalizedPeisList.innerHTML = '';
 
+                    // Filtrar PEIs para profissionais, se aplicável
+                    const filteredPeis = peis.filter(pei => {
+                        console.log(`Processando PEI ${pei.id}:`);
+                        console.log(`  PEI.profissional_id_associado: ${pei.profissional_id_associado}`);
+                        console.log(`  LOGGED_IN_PROFESSIONAL_ID: ${LOGGED_IN_PROFESSIONAL_ID}`);
+
+                        if (IS_PROFESSIONAL && !IS_ADMIN) { // Se for profissional e NÃO admin
+                            // Mostra PEI se o profissional logado é o associado OU se não há profissional associado
+                            const shouldShow = (pei.profissional_id_associado === LOGGED_IN_PROFESSIONAL_ID || pei.profissional_id_associado === null);
+                            console.log(`  Resultado do filtro para profissional: ${shouldShow}`);
+                            return shouldShow;
+                        }
+                        console.log('  Não é profissional ou é admin, mostrando todos os PEIs.');
+                        return true; // Admins ou outros veem todos
+                    });
+                    
                     // Ordena os PEIs por data_criacao (mais recente primeiro)
-                    const sortedPeis = [...peis].sort((a, b) => {
+                    const sortedPeis = [...filteredPeis].sort((a, b) => {
                         // Converte DD/MM/YYYY para ISO 8601 para garantir comparação de data correta
                         const parseDateString = (dateStr) => {
                             if (!dateStr || typeof dateStr !== 'string') return new Date(0); // Trata datas inválidas ou ausentes
@@ -2576,7 +2601,8 @@
                         const peiActionClasses = `pei-card-actions ${isPeiFinalized ? 'disabled-actions' : ''}`;
 
                         // Lógica de permissão para o profissional associado
-                        const canModifyPeiContent = IS_ADMIN || (IS_PROFESSIONAL && pei.profissional_id_associado === LOGGED_IN_PROFESSIONAL_ID);
+                        // Permite modificar se for ADMIN OU (se for PROFISSIONAL E (o PEI está associado a ele OU o PEI não tem profissional associado))
+                        const canModifyPeiContent = IS_ADMIN || (IS_PROFESSIONAL && (pei.profissional_id_associado === LOGGED_IN_PROFESSIONAL_ID || pei.profissional_id_associado === null));
 
                         // Renderiza as atividades do PEI
                         const activitiesHtml = pei.activities && pei.activities.length > 0 ?
@@ -2707,6 +2733,7 @@
                             <div class="pei-activities mt-4">
                                 <h5 class="flex items-center gap-2 mb-3">
                                     <i class="fas fa-comments text-gray-500"></i> Histórico de Atividades
+                                    
                                 </h5>
                                 <div class="activity-log" id="activity-log-${pei.id}">
                                     ${activitiesHtml}
@@ -2726,11 +2753,17 @@
                     });
 
                     // Atualiza os estados vazios se necessário
-                    if (!hasActivePeis && peis.length > 0) {
+                    if (!hasActivePeis && filteredPeis.length > 0) { // Verifica filteredPeis para o empty-state
                          activePeisList.innerHTML = '<div class="empty-state col-span-full"><i class="fas fa-child-reaching"></i><p>Nenhum PEI ativo para este paciente.</p></div>';
                     }
-                     if (!hasFinalizedPeis && peis.length > 0) {
+                     if (!hasFinalizedPeis && filteredPeis.length > 0) { // Verifica filteredPeis para o empty-state
                          finalizedPeisList.innerHTML = '<div class="empty-state col-span-full"><i class="fas fa-check-circle"></i><p>Nenhum PEI finalizado para este paciente.</p></div>';
+                    }
+
+                    // Se não houver PEIs após a filtragem para o profissional, exibe mensagem geral
+                    if (filteredPeis.length === 0 && IS_PROFESSIONAL && !IS_ADMIN) {
+                         document.getElementById('active-peis-list').innerHTML = '<div class="empty-state col-span-full"><i class="fas fa-child-reaching"></i><p>Nenhum PEI associado a você para este paciente.</p></div>';
+                         document.getElementById('finalized-peis-list').innerHTML = ''; // Limpa a lista de finalizados para evitar duplicidade
                     }
                 }
 
@@ -2955,8 +2988,17 @@
                             yPos = margin;
                         }
                     };
+                    
+                    // Filtrar PEIs para profissionais, se aplicável, antes de gerar o PDF
+                    const filteredPeisForPdf = peis.filter(pei => {
+                        if (IS_PROFESSIONAL && !IS_ADMIN) {
+                            return pei.profissional_id_associado === LOGGED_IN_PROFESSIONAL_ID || pei.profissional_id_associado === null;
+                        }
+                        return true;
+                    });
 
-                    peis.forEach((pei, peiIndex) => {
+
+                    filteredPeisForPdf.forEach((pei, peiIndex) => {
                         if (peiIndex > 0) { // Adiciona uma nova página para cada PEI após o primeiro
                             doc.addPage();
                             yPos = margin;
