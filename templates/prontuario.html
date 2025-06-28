@@ -57,6 +57,8 @@
             min-height: 100vh;
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-y: auto; /* Garante rolagem vertical */
+            scroll-behavior: smooth; /* Rolagem suave */
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
@@ -185,12 +187,17 @@
         .paciente-info-card {
             background: var(--card);
             padding: 1.5rem 2rem;
-            border-radius: 12px;
+            border-radius: 16px; /* Aumentado um pouco */
             box-shadow: 0 4px 12px -2px rgba(0,0,0,0.1), 0 2px 8px -2px rgba(0,0,0,0.06);
             margin-bottom: 2rem;
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
+            transition: box-shadow 0.3s ease, transform 0.3s ease; /* Adiciona transição */
+        }
+        .paciente-info-card:hover {
+            transform: translateY(-3px); /* Efeito de elevação sutil */
+            box-shadow: 0 8px 16px -4px rgba(0,0,0,0.15), 0 4px 8px -4px rgba(0,0,0,0.08);
         }
         .paciente-info-card::before {
             content: '';
@@ -200,7 +207,7 @@
             width: 100%;
             height: 8px;
             background: linear-gradient(to right, var(--primary), var(--primary-dark));
-            border-radius: 12px 12px 0 0;
+            border-radius: 16px 16px 0 0; /* Ajusta o border-radius superior */
         }
         .paciente-info-card h3 {
             font-size: 1.75rem; /* Increased font size */
@@ -243,14 +250,20 @@
         /* Estilos para os cartões de registro e PEI */
         /* Removido `grid-template-columns` para usar classes Tailwind */
         .registro-card, .pei-card, .goal-card {
-            background: var(--card); padding: 1.5rem; border-radius: 12px;
+            background: var(--card); padding: 1.5rem; border-radius: 16px; /* Aumentado o border-radius */
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             margin-bottom: 0; /* Managed by grid gap */
             position: relative;
             border-left: 8px solid transparent; /* Increased border width */
             display: flex; /* Ensure content stretches within card */
             flex-direction: column;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Adiciona transição */
         }
+        .registro-card:hover, .pei-card:hover, .goal-card:hover {
+            transform: translateY(-3px); /* Efeito de elevação sutil no hover */
+            box-shadow: 0 8px 16px -4px rgba(0,0,0,0.15), 0 4px 8px -4px rgba(0,0,0,0.08); /* Sombra mais proeminente no hover */
+        }
+
         .registro-header {
             display: flex; justify-content: space-between; align-items: flex-start;
             border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;
@@ -277,6 +290,20 @@
         .empty-state {
             text-align: center; padding: 2rem; color: var(--muted);
             background: var(--card); border-radius: 12px;
+            /* Adicionado um ícone e texto mais amigável */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        .empty-state p {
+            font-size: 1.1rem;
+            font-weight: 500;
         }
 
         /* --- Custom Record Card Colors (Cores Personalizadas do Cartão de Registro) --- */
@@ -317,9 +344,13 @@
         }
         .tab-panel {
             display: none;
+            /* Adiciona uma transição para quando o painel fica ativo */
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
         }
         .tab-panel.active {
             display: block;
+            opacity: 1;
         }
 
         /* --- Modal --- */
@@ -905,7 +936,10 @@
                                 </div>
                                 {% endfor %}
                             {% else %}
-                                <div class="empty-state"><p>Nenhuma meta ativa para este PEI.</p></div>
+                                <div class="empty-state">
+                                    <i class="fas fa-bullseye"></i>
+                                    <p>Nenhuma meta ativa para este PEI.</p>
+                                </div>
                             {% endif %}
                         </div>
 
@@ -931,7 +965,10 @@
                                 </div>
                                 {% endfor %}
                             {% else %}
-                                <div class="empty-state"><p>Nenhuma meta finalizada para este PEI.</p></div>
+                                <div class="empty-state">
+                                    <i class="fas fa-check-double"></i>
+                                    <p>Nenhuma meta finalizada para este PEI.</p>
+                                </div>
                             {% endif %}
                         </div>
                     </div>
@@ -980,6 +1017,7 @@
                                         {% endfor %}
                                     {% else %}
                                         <div class="empty-state col-span-full">
+                                            <i class="fas fa-file-medical"></i>
                                             <p>Nenhum registro encontrado para este paciente (excluindo PEIs).</p>
                                         </div>
                                     {% endif %}
@@ -995,7 +1033,10 @@
                                             {{ render_registro_card(registro) }}
                                         {% endfor %}
                                     {% else %}
-                                        <div class="empty-state col-span-full"><p>Nenhuma anamnese encontrada.</p></div>
+                                        <div class="empty-state col-span-full">
+                                            <i class="fas fa-clipboard-question"></i>
+                                            <p>Nenhuma anamnese encontrada.</p>
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -1009,7 +1050,10 @@
                                             {{ render_registro_card(registro) }}
                                         {% endfor %}
                                     {% else %}
-                                        <div class="empty-state col-span-full"><p>Nenhum laudo encontrado.</p></div>
+                                        <div class="empty-state col-span-full">
+                                            <i class="fas fa-file-invoice"></i>
+                                            <p>Nenhum laudo encontrado.</p>
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -1023,7 +1067,10 @@
                                             {{ render_registro_card(registro) }}
                                         {% endfor %}
                                     {% else %}
-                                        <div class="empty-state col-span-full"><p>Nenhuma orientação encontrada.</p></div>
+                                        <div class="empty-state col-span-full">
+                                            <i class="fas fa-lightbulb"></i>
+                                            <p>Nenhuma orientação encontrada.</p>
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -1037,7 +1084,10 @@
                                             {{ render_registro_card(registro) }}
                                         {% endfor %}
                                     {% else %}
-                                        <div class="empty-state col-span-full"><p>Nenhum procedimento encontrado.</p></div>
+                                        <div class="empty-state col-span-full">
+                                            <i class="fas fa-syringe"></i>
+                                            <p>Nenhum procedimento encontrado.</p>
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -1059,14 +1109,23 @@
                                         {% if peis %}
                                             {% set active_peis = peis | selectattr('status', 'equalto', 'ativo') | list %}
                                             {% if active_peis %}
-                                                {% for pei in active_peis %}
-                                                    {{ render_pei_card(pei) }}
+                                                {% for pei_item in active_peis %} {# Renomeado para evitar conflito com JS pei variable #}
+                                                    {# Adicionado verificação para garantir que 'pei_item' não é None #}
+                                                    {% if pei_item %}
+                                                        {{ render_pei_card(pei_item) }}
+                                                    {% endif %}
                                                 {% endfor %}
                                             {% else %}
-                                                <div class="empty-state col-span-full"><p>Nenhum PEI ativo para este paciente.</p></div>
+                                                <div class="empty-state col-span-full">
+                                                    <i class="fas fa-child-reaching"></i>
+                                                    <p>Nenhum PEI ativo para este paciente.</p>
+                                                </div>
                                             {% endif %}
                                         {% else %}
-                                            <div class="empty-state col-span-full"><p>Nenhum PEI para este paciente.</p></div>
+                                            <div class="empty-state col-span-full">
+                                                <i class="fas fa-child-reaching"></i>
+                                                <p>Nenhum PEI para este paciente.</p>
+                                            </div>
                                         {% endif %}
                                     </div>
 
@@ -1077,11 +1136,17 @@
                                         {% if peis %}
                                             {% set finalized_peis = peis | selectattr('status', 'equalto', 'finalizado') | list %}
                                             {% if finalized_peis %}
-                                                {% for pei in finalized_peis %}
-                                                    {{ render_pei_card(pei) }}
+                                                {% for pei_item in finalized_peis %} {# Renomeado para evitar conflito com JS pei variable #}
+                                                    {# Adicionado verificação para garantir que 'pei_item' não é None #}
+                                                    {% if pei_item %}
+                                                        {{ render_pei_card(pei_item) }}
+                                                    {% endif %}
                                                 {% endfor %}
                                             {% else %}
-                                                <div class="empty-state col-span-full"><p>Nenhum PEI finalizado para este paciente.</p></div>
+                                                <div class="empty-state col-span-full">
+                                                    <i class="fas fa-check-circle"></i>
+                                                    <p>Nenhum PEI finalizado para este paciente.</p>
+                                                </div>
                                             {% endif %}
                                         {% else %}
                                             <!-- Já coberto pelo primeiro empty-state se não houver PEIs. -->
@@ -1880,8 +1945,8 @@
                     finalizedPeisList.innerHTML = '';
 
                     if (peis.length === 0) {
-                        activePeisList.innerHTML = '<div class="empty-state col-span-full"><p>Nenhum PEI ativo para este paciente.</p></div>';
-                        finalizedPeisList.innerHTML = '<div class="empty-state col-span-full"><p>Nenhum PEI finalizado para este paciente.</p></div>';
+                        activePeisList.innerHTML = '<div class="empty-state col-span-full"><i class="fas fa-child-reaching"></i><p>Nenhum PEI ativo para este paciente.</p></div>';
+                        finalizedPeisList.innerHTML = '<div class="empty-state col-span-full"><i class="fas fa-check-circle"></i><p>Nenhum PEI finalizado para este paciente.</p></div>';
                         return;
                     }
 
@@ -1928,12 +1993,11 @@
                                     ${pei.goals.filter(goal => goal.status === 'ativo').length > 0 ?
                                         pei.goals.filter(goal => goal.status === 'ativo').map(goal => {
                                             const isGoalFinalized = goal.status === 'finalizado';
-                                            const goalCardClass = `goal-card ${isGoalFinalized ? 'finalizado' : ''}`;
                                             const goalActionsDisabled = isPeiFinalized || isGoalFinalized ? 'disabled' : '';
                                             const targetCheckboxDisabled = isPeiFinalized || isGoalFinalized ? 'disabled' : '';
 
                                             return `
-                                            <div class="${goalCardClass}" id="goal-${pei.id}-${goal.id}">
+                                            <div class="goal-card ${isGoalFinalized ? 'finalizado' : ''}" id="goal-${pei.id}-${goal.id}">
                                                 <div class="goal-card-header">
                                                     <strong>Meta: ${goal.descricao}</strong>
                                                     <span class="goal-status active-status">Ativa</span>
@@ -1962,7 +2026,7 @@
                                             </div>
                                         `;
                                         }).join('')
-                                    : '<div class="empty-state"><p>Nenhuma meta ativa para este PEI.</p></div>'}
+                                    : '<div class="empty-state"><i class="fas fa-bullseye"></i><p>Nenhuma meta ativa para este PEI.</p></div>'}
                                 </div>
 
                                 <h5>Metas Finalizadas:</h5>
@@ -1985,7 +2049,7 @@
                                                 </ul>
                                             </div>
                                         `).join('')
-                                    : '<div class="empty-state"><p>Nenhuma meta finalizada para este PEI.</p></div>'}
+                                    : '<div class="empty-state"><i class="fas fa-check-double"></i><p>Nenhuma meta finalizada para este PEI.</p></div>'}
                                 </div>
                             </div>
                             <div class="${peiActionClasses}">
@@ -2012,10 +2076,10 @@
 
                     // Atualiza os estados vazios se necessário
                     if (!hasActivePeis && peis.length > 0) {
-                         activePeisList.innerHTML = '<div class="empty-state col-span-full"><p>Nenhum PEI ativo para este paciente.</p></div>';
+                         activePeisList.innerHTML = '<div class="empty-state col-span-full"><i class="fas fa-child-reaching"></i><p>Nenhum PEI ativo para este paciente.</p></div>';
                     }
                      if (!hasFinalizedPeis && peis.length > 0) {
-                         finalizedPeisList.innerHTML = '<div class="empty-state col-span-full"><p>Nenhum PEI finalizado para este paciente.</p></div>';
+                         finalizedPeisList.innerHTML = '<div class="empty-state col-span-full"><i class="fas fa-check-circle"></i><p>Nenhum PEI finalizado para este paciente.</p></div>';
                     }
                 }
 
