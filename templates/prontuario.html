@@ -653,8 +653,9 @@
             border-top: 1px solid var(--border-color);
             padding-top: 1.5rem;
             display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
+            flex-wrap: wrap; /* Permite que os botões quebrem linha */
+            justify-content: center; /* Centraliza os botões */
+            gap: 0.75rem; /* Espaçamento entre os botões */
         }
         .pei-card-actions.disabled-actions button:not([data-close-modal]) {
             opacity: 0.6;
@@ -681,7 +682,7 @@
             border-left: 4px solid var(--info); /* Cor para metas ativas */
         }
         .goal-card.finalizado { /* Corrigido de 'completed' para 'finalizado' */
-            border-left-color: var(--success); /* Cor para metas finalizadas */
+            border-left-color: var(--success);
             opacity: 0.8;
         }
         .goal-card-header {
@@ -860,7 +861,7 @@
             .paciente-info-grid { grid-template-columns: 1fr; }
             .prontuario-header { flex-direction: column; align-items: stretch; text-align: center; }
             /* Ações do PEI móvel para empilhar */
-            .pei-card-actions, .add-target-group {
+            .pei-card-actions {
                 flex-direction: column;
                 align-items: stretch;
             }
@@ -869,6 +870,19 @@
                 justify-content: center;
             }
             .pei-card-actions .btn-danger-outline { margin-top: 0.5rem; } /* Adiciona espaçamento quando empilhado */
+
+            /* Novo: Ajusta o grupo de adicionar alvo em mobile para empilhar se necessário */
+            .add-target-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .add-target-group input {
+                width: 100%;
+            }
+            .add-target-group button {
+                width: 100%;
+                justify-content: center;
+            }
 
             /* Estilos para scroll lateral de cards em mobile */
             .records-grid, .pei-list {
@@ -1135,6 +1149,7 @@
                         <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
                             <i class="fas fa-trash"></i> Excluir PEI
                         </button>
+                        <button type="button" class="btn btn-sm btn-info btn-print-pei" data-pei-id="{{ pei.id }}"><i class="fas fa-print"></i> Imprimir PEI</button>
                         <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="{{ pei.id }}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
                             <i class="fas fa-check-double"></i> Finalizar PEI
                         </button>
@@ -1431,33 +1446,41 @@
 
     <!-- NOVO MODAL: Adicionar Meta ao PEI -->
     <div id="addGoalModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Adicionar Nova Meta ao PEI</h3>
-                <button type="button" class="modal-close-btn" data-close-modal="addGoalModal">&times;</button>
+        <div class="modal-content p-6 rounded-lg shadow-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+            <div class="modal-header border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Adicionar Nova Meta ao PEI</h3>
+                <button type="button" class="modal-close-btn text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl leading-none" data-close-modal="addGoalModal">&times;</button>
             </div>
-            <form id="formAddGoal" method="POST" action=""> {# Ação será definida pelo JS #}
+            <form id="formAddGoal" method="POST" action="" class="space-y-4"> {# Ação será definida pelo JS #}
                 <input type="hidden" name="pei_id" id="goal_pei_id">
                 <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
-                <div class="modal-body">
+                <div class="modal-body overflow-y-auto max-h-[60vh] pr-2">
                     <div class="form-group">
-                        <label for="goal_descricao">Descrição da Meta</label>
-                        <input type="text" id="goal_descricao" name="descricao" required placeholder="Ex: Desenvolver a coordenação olho-mão">
+                        <label for="goal_descricao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição da Meta</label>
+                        <input type="text" id="goal_descricao" name="descricao" required placeholder="Ex: Desenvolver a coordenação olho-mão"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                     </div>
                     <div class="form-group">
-                        <label>Alvos da Meta</label>
-                        <div id="targets-input-container">
-                            <div class="target-input-item">
-                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required>
-                                <button type="button" class="btn btn-danger-outline btn-remove-target" style="display: none;"><i class="fas fa-trash"></i></button>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alvos da Meta</label>
+                        <div id="targets-input-container" class="space-y-3">
+                            <div class="target-input-item flex items-center space-x-2">
+                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
+                                       class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-secondary btn-sm add-target-button-modal"><i class="fas fa-plus"></i> Adicionar Outro Alvo</button>
+                        <button type="button" class="btn btn-secondary btn-sm add-target-button-modal mt-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600">
+                            <i class="fas fa-plus mr-2"></i> Adicionar Outro Alvo
+                        </button>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal="addGoalModal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Adicionar Meta</button>
+                <div class="modal-footer flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 bg-gray-50 dark:bg-gray-800">
+                    <button type="button" class="btn btn-secondary inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600" data-close-modal="addGoalModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition duration-150 ease-in-out">
+                        <i class="fas fa-save mr-2"></i> Adicionar Meta
+                    </button>
                 </div>
             </form>
         </div>
@@ -1641,8 +1664,7 @@
                 document.querySelectorAll('#modalRegistroGenerico .editor-toolbar button').forEach(button => {
                     button.addEventListener('click', (e) => {
                         e.preventDefault();
-                        const command = e.currentTarget.dataset.command;
-                        document.execCommand(command, false, null);
+                        document.execCommand(e.currentTarget.dataset.command, false, null);
                         conteudoRegistroGenericoEditor.focus();
                         if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
                     });
@@ -1915,9 +1937,12 @@
                         document.getElementById('formAddGoal').action = `{{ url_for('add_goal', paciente_doc_id=paciente.id) }}`;
                         document.getElementById('formAddGoal').reset();
                         document.getElementById('targets-input-container').innerHTML = `
-                            <div class="target-input-item">
-                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required>
-                                <button type="button" class="btn btn-danger-outline btn-remove-target" style="display: none;"><i class="fas fa-trash"></i></button>
+                            <div class="target-input-item flex items-center space-x-2">
+                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
+                                       class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         `; // Reseta os alvos
                         document.getElementById('addGoalModal').classList.add('active');
@@ -1928,21 +1953,33 @@
                     if (target.matches('.add-target-button-modal')) {
                         const container = document.getElementById('targets-input-container');
                         const newItem = document.createElement('div');
-                        newItem.classList.add('target-input-item');
+                        newItem.classList.add('target-input-item', 'flex', 'items-center', 'space-x-2');
                         const targetCount = container.children.length + 1;
                         newItem.innerHTML = `
-                            <input type="text" name="targets[]" placeholder="Descrição do Alvo ${targetCount}" required>
-                            <button type="button" class="btn btn-danger-outline btn-remove-target"><i class="fas fa-trash"></i></button>
+                            <input type="text" name="targets[]" placeholder="Descrição do Alvo ${targetCount}" required
+                                   class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                            <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         `;
                         container.appendChild(newItem);
+                        // Show remove button for all targets if there's more than one
+                        container.querySelectorAll('.btn-remove-target').forEach(btn => {
+                            btn.style.display = container.children.length > 1 ? 'block' : 'none';
+                        });
                         return;
                     }
 
                     // Botão Remover Alvo (dentro do modal de adicionar meta)
                     if (target.matches('.btn-remove-target')) {
-                        if (target.closest('.targets-input-container').children.length > 1) { // Garante que pelo menos um alvo permaneça
+                        const container = target.closest('.targets-input-container');
+                        if (container.children.length > 1) { // Garante que pelo menos um alvo permaneça
                             target.closest('.target-input-item').remove();
                         }
+                        // Hide remove button if only one target remains
+                        container.querySelectorAll('.btn-remove-target').forEach(btn => {
+                            btn.style.display = container.children.length > 1 ? 'block' : 'none';
+                        });
                         return;
                     }
 
@@ -2047,6 +2084,27 @@
                          generatePdfForRecord(printButton);
                          return;
                      }
+
+                    // Botão de IMPRIMIR PEI
+                    const printPeiButton = target.closest('.btn-print-pei');
+                    if (printPeiButton) {
+                        const peiId = printPeiButton.dataset.peiId;
+                        const peiToPrint = allPeisData.find(p => p.id === peiId);
+                        if (peiToPrint) {
+                            generatePdfForPei(peiToPrint);
+                        } else {
+                            console.error('PEI não encontrado para impressão:', peiId);
+                            alert('PEI não encontrado para impressão.');
+                        }
+                        return;
+                    }
+
+                    // Botão para imprimir todos os PEIs
+                    const printAllPeisButton = target.closest('#printAllPeisBtn'); // Assuming you'd add a button with this ID
+                    if (printAllPeisButton) {
+                        generatePdfForAllPeis(allPeisData);
+                        return;
+                    }
                 });
 
                 // --- Funções AJAX para PEI/Metas/Alvos ---
@@ -2146,32 +2204,15 @@
                     activePeisList.innerHTML = '';
                     finalizedPeisList.innerHTML = '';
 
-                    if (peis.length === 0) {
-                        activePeisList.innerHTML = '<div class="empty-state col-span-full"><i class="fas fa-child-reaching"></i><p>Nenhum PEI ativo para este paciente.</p></div>';
-                        finalizedPeisList.innerHTML = '<div class="empty-state col-span-full"><i class="fas fa-check-circle"></i><p>Nenhum PEI finalizado para este paciente.</p></div>';
-                        return;
-                    }
+                    // Ordena os PEIs por data_criacao (mais recente primeiro)
+                    const sortedPeis = [...peis].sort((a, b) => {
+                        const dateA = new Date(a.data_criacao.split('/').reverse().join('-')); // Converte DD/MM/YYYY para YYYY-MM-DD
+                        const dateB = new Date(b.data_criacao.split('/').reverse().join('-'));
+                        return dateB.getTime() - dateA.getTime();
+                    });
 
                     let hasActivePeis = false;
                     let hasFinalizedPeis = false;
-
-                    // Ordena os PEIs por data_criacao_timestamp (se disponível, caso contrário, fallback)
-                    const sortedPeis = [...peis].sort((a, b) => {
-                        // Garante que data_criacao esteja em um formato que Date possa analisar de forma confiável, por exemplo, 'YYYY-MM-DD'
-                        // Se já for uma string formatada como 'DD/MM/YYYY', analise corretamente.
-                        // Supondo que seja 'DD/MM/YYYY' com base na formatação de medical_records.py para exibição.
-                        const parseDate = (dateString) => {
-                            if (!dateString) return new Date(0); // Fallback para datas inválidas
-                            const parts = dateString.split('/');
-                            // new Date(ano, índiceMes, dia)
-                            return new Date(parts[2], parts[1] - 1, parts[0]);
-                        };
-
-                        const dateA = parseDate(a.data_criacao);
-                        const dateB = parseDate(b.data_criacao);
-                        return dateB.getTime() - dateA.getTime(); // Ordem decrescente (mais recente primeiro)
-                    });
-
 
                     sortedPeis.forEach(pei => {
                         // Determina se os botões devem ser desabilitados com base no status do PEI ou da Meta
@@ -2261,6 +2302,7 @@
                                 <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
                                     <i class="fas fa-trash"></i> Excluir PEI
                                 </button>
+                                <button type="button" class="btn btn-sm btn-info btn-print-pei" data-pei-id="${pei.id}"><i class="fas fa-print"></i> Imprimir PEI</button>
                                 <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
                                     <i class="fas fa-check-double"></i> Finalizar PEI
                                 </button>
@@ -2370,6 +2412,176 @@
                      });
 
                      doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                }
+
+                function generatePdfForPei(pei) {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+
+                    let yPos = 20;
+                    const margin = 15;
+                    const contentLineHeight = 5;
+                    const contentFontSize = 9;
+                    const maxWidth = doc.internal.pageSize.width - margin * 2;
+
+                    // Cabeçalho da Clínica
+                    doc.setFontSize(12).setFont("helvetica", "bold").text("{{ session.clinica_nome_display or 'Clínica On' }}", margin, yPos);
+                    yPos += 8; 
+                    doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
+                    yPos += 8;
+
+                    // Informações do Paciente
+                    const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
+                    const patientCpf = "{{ paciente.cpf or 'N/A' }}";
+                    const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
+
+                    doc.setFontSize(10).setFont("helvetica", "normal");
+                    doc.text(`Paciente: ${patientName}`, margin, yPos);
+                    yPos += 6;
+                    doc.text(`CPF: ${patientCpf}`, margin, yPos);
+                    doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
+                    yPos += 8;
+
+                    // Título do PEI
+                    doc.setFontSize(14).setFont("helvetica", "bold").text(`Plano Educacional Individualizado (PEI): ${pei.titulo}`, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                    yPos += 8;
+
+                    // Metadados do PEI
+                    doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissional: ${pei.profissional_nome || 'N/A'}`, margin, yPos);
+                    yPos += 6;
+                    doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
+                    yPos += 8;
+
+                    // Metas e Alvos
+                    doc.setFontSize(11).setFont("helvetica", "bold").text("Metas:", margin, yPos);
+                    yPos += 8;
+
+                    if (pei.goals && pei.goals.length > 0) {
+                        pei.goals.forEach((goal, goalIndex) => {
+                            // Nova página se não houver espaço suficiente para a próxima meta
+                            if (yPos > doc.internal.pageSize.height - margin - 30) { // 30 para ter uma margem inferior para o rodapé
+                                doc.addPage();
+                                yPos = margin;
+                            }
+                            
+                            doc.setFontSize(10).setFont("helvetica", "bold").text(`- Meta ${goalIndex + 1}: ${goal.descricao} (Status: ${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)})`, margin + 5, yPos);
+                            yPos += 7;
+
+                            if (goal.targets && goal.targets.length > 0) {
+                                doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                                goal.targets.forEach((target, targetIndex) => {
+                                    if (yPos > doc.internal.pageSize.height - margin - contentLineHeight) {
+                                        doc.addPage();
+                                        yPos = margin;
+                                    }
+                                    const targetStatus = target.concluido ? '[X] Concluído' : '[ ] Pendente';
+                                    doc.text(`  ${targetStatus} ${target.descricao}`, margin + 10, yPos);
+                                    yPos += contentLineHeight;
+                                });
+                            } else {
+                                doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('  Nenhum alvo definido para esta meta.', margin + 10, yPos);
+                                yPos += contentLineHeight;
+                            }
+                            yPos += 5; // Espaço após cada meta
+                        });
+                    } else {
+                        doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta definida para este PEI.', margin, yPos);
+                        yPos += contentLineHeight;
+                    }
+
+                    doc.save(`pei-${pei.titulo.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                }
+
+                // Função para imprimir todos os PEIs
+                function generatePdfForAllPeis(peis) {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
+                    const patientCpf = "{{ paciente.cpf or 'N/A' }}";
+                    const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
+                    const clinicName = "{{ session.clinica_nome_display or 'Clinica On' }}";
+
+                    let yPos = 20;
+                    const margin = 15;
+                    const contentLineHeight = 5;
+                    const contentFontSize = 9;
+                    const maxWidth = doc.internal.pageSize.width - margin * 2;
+
+                    // Helper function to add page and reset yPos if needed
+                    const checkPageBreak = (heightNeeded) => {
+                        if (yPos + heightNeeded > doc.internal.pageSize.height - margin) {
+                            doc.addPage();
+                            yPos = margin;
+                        }
+                    };
+
+                    peis.forEach((pei, peiIndex) => {
+                        if (peiIndex > 0) { // Add a new page for each PEI after the first one
+                            doc.addPage();
+                            yPos = margin;
+                        }
+
+                        // Cabeçalho da Clínica
+                        doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, margin, yPos);
+                        yPos += 8; 
+                        doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
+                        yPos += 8;
+
+                        // Informações do Paciente
+                        doc.setFontSize(10).setFont("helvetica", "normal");
+                        doc.text(`Paciente: ${patientName}`, margin, yPos);
+                        yPos += 6;
+                        doc.text(`CPF: ${patientCpf}`, margin, yPos);
+                        doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
+                        yPos += 8;
+
+                        // Título do PEI
+                        checkPageBreak(20);
+                        doc.setFontSize(14).setFont("helvetica", "bold").text(`Plano Educacional Individualizado (PEI): ${pei.titulo}`, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                        yPos += 8;
+
+                        // Metadados do PEI
+                        checkPageBreak(10);
+                        doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissional: ${pei.profissional_nome || 'N/A'}`, margin, yPos);
+                        yPos += 6;
+                        doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
+                        yPos += 8;
+
+                        // Metas e Alvos
+                        checkPageBreak(10);
+                        doc.setFontSize(11).setFont("helvetica", "bold").text("Metas:", margin, yPos);
+                        yPos += 8;
+
+                        if (pei.goals && pei.goals.length > 0) {
+                            pei.goals.forEach((goal, goalIndex) => {
+                                checkPageBreak(20); // Check space for goal header and first target
+                                doc.setFontSize(10).setFont("helvetica", "bold").text(`- Meta ${goalIndex + 1}: ${goal.descricao} (Status: ${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)})`, margin + 5, yPos);
+                                yPos += 7;
+
+                                if (goal.targets && goal.targets.length > 0) {
+                                    doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                                    goal.targets.forEach((target, targetIndex) => {
+                                        checkPageBreak(contentLineHeight);
+                                        const targetStatus = target.concluido ? '[X] Concluído' : '[ ] Pendente';
+                                        doc.text(`  ${targetStatus} ${target.descricao}`, margin + 10, yPos);
+                                        yPos += contentLineHeight;
+                                    });
+                                } else {
+                                    checkPageBreak(contentLineHeight);
+                                    doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('  Nenhum alvo definido para esta meta.', margin + 10, yPos);
+                                    yPos += contentLineHeight;
+                                }
+                                yPos += 5; // Espaço após cada meta
+                            });
+                        } else {
+                            checkPageBreak(contentLineHeight);
+                            doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta definida para este PEI.', margin, yPos);
+                            yPos += contentLineHeight;
+                        }
+                    });
+
+                    doc.save(`todos-peis-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
 
 
