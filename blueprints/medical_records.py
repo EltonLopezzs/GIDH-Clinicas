@@ -961,4 +961,4 @@ def register_medical_records_routes(app):
         except Exception as e:
             print(f"Erro ao adicionar atividade ao PEI: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
-" from the Canvas and want to make the following edits: "está faltando a hora que eu adicionei na atividad
+ 
