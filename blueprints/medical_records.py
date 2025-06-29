@@ -184,7 +184,7 @@ def register_medical_records_routes(app):
         is_professional = user_role == 'medico'
         logged_in_professional_id = None # Inicializa como Nulo
 
-        # CORREÇÃO: Se o usuário for um profissional (e não admin), busca o ID do profissional associado no banco de dados.
+        # Se o usuário for um profissional (e não admin), busca o ID do profissional associado no banco de dados.
         if is_professional and not is_admin and user_uid:
             try:
                 user_doc = db_instance.collection('User').document(user_uid).get()
@@ -240,7 +240,7 @@ def register_medical_records_routes(app):
             # Construir a query de PEIs baseada na função do usuário
             peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', paciente_doc_id))
             
-            # CORREÇÃO: Aplica o filtro para usuários que são profissionais mas não administradores.
+            # Aplica o filtro para usuários que são profissionais mas não administradores.
             if is_professional and not is_admin:
                 if logged_in_professional_id:
                     # Filtra para mostrar apenas os PEIs associados a este profissional
@@ -562,7 +562,17 @@ def register_medical_records_routes(app):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         user_role = session.get('user_role')
-        logged_in_professional_id = session.get('professional_id')
+        user_uid = session.get('user_uid')
+        is_admin = user_role == 'admin'
+        logged_in_professional_id = None
+
+        if not is_admin and user_uid:
+            try:
+                user_doc = db_instance.collection('User').document(user_uid).get()
+                if user_doc.exists:
+                    logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+            except Exception as e:
+                return jsonify({'success': False, 'message': f'Erro ao verificar permissões: {e}'}), 500
 
         try:
             data = request.get_json()
@@ -575,44 +585,32 @@ def register_medical_records_routes(app):
             if not pei_doc.exists:
                 return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
 
-            # Verifica permissões: Admin sempre pode. Profissional só se for o associado ou se o PEI não tiver um profissional associado.
-            if user_role == 'medico':
+            if not is_admin:
                 associated_professional_id = pei_doc.to_dict().get('profissional_id')
-                # Permite se for o profissional associado OU se não houver profissional associado (para PEIs legados/sem vínculo)
                 if associated_professional_id and associated_professional_id != logged_in_professional_id:
                     return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar este PEI.'}), 403
-            # Se for admin, não precisa de checagem adicional.
-
-            # Use the transactional helper function
-            _finalize_pei_transaction(db_instance.transaction(), pei_ref)
-
-            # Re-fetch all PEIs to send the updated list back to the frontend
-            all_peis = []
             
-            # Re-aplicar a lógica de filtragem para a resposta AJAX
+            _finalize_pei_transaction(db_instance.transaction(), pei_ref)
+            
+            all_peis = []
             peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
-            if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id: # Se for profissional e não admin
+            if not is_admin and logged_in_professional_id:
                 peis_query = peis_query.where(filter=FieldFilter('profissional_id', '==', logged_in_professional_id))
-            print(f"DEBUG: Re-fetching PEIs para finalize_pei. Query filter applied: {peis_query._query.filters}")
-
 
             for doc in peis_query.stream():
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
-                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A') # Garante que o nome do profissional esteja presente
-                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
+                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A')
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None)
 
-                # Processar atividades para formatação
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
                         if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
                             activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
                         else:
                             activity['timestamp_fmt'] = 'N/A'
-
                 all_peis.append(pei_data_converted)
-            print(f"DEBUG: Total de PEIs encontrados no re-fetch (finalize_pei): {len(all_peis)}")
 
             return jsonify({'success': True, 'message': 'PEI finalizado com sucesso!', 'peis': all_peis}), 200
         except Exception as e:
@@ -629,36 +627,31 @@ def register_medical_records_routes(app):
             data = request.form
             pei_id = data.get('pei_id')
             descricao_goal = data.get('descricao')
-            # Extract targets from the form, which will be a list of strings
             targets_desc = request.form.getlist('targets[]')
             
             if not pei_id or not descricao_goal:
                 flash('Dados insuficientes para adicionar meta.', 'danger')
             else:
                 pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
-                
-                # Create target objects with unique IDs and initial status
                 new_targets = []
                 for desc in targets_desc:
-                    if desc.strip(): # Only add non-empty target descriptions
+                    if desc.strip():
                         new_targets.append({
                             'id': str(uuid.uuid4()),
                             'descricao': desc.strip(),
-                            'concluido': False # Initial status is not completed
+                            'concluido': False
                         })
-
                 new_goal = {
                     'id': str(uuid.uuid4()), 
                     'descricao': descricao_goal.strip(),
                     'status': 'ativo',
-                    'targets': new_targets # Add the list of target objects
+                    'targets': new_targets
                 }
-                
                 pei_ref.update({'goals': firestore.ArrayUnion([new_goal])})
                 flash('Meta adicionada com sucesso ao PEI!', 'success')
         except Exception as e:
             flash(f'Erro ao adicionar meta: {e}', 'danger')
-            print(f"Erro add_goal: {e}") # Log the error for debugging
+            print(f"Erro add_goal: {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_target_to_goal', methods=['POST'], endpoint='add_target_to_goal')
@@ -682,35 +675,27 @@ def register_medical_records_routes(app):
             _add_target_to_goal_transaction(transaction, pei_ref, goal_id, target_description)
             transaction.commit()
             
-            # Re-fetch all PEIs to send the updated list back to the frontend
             all_peis = []
-            
-            # Re-aplicar a lógica de filtragem para a resposta AJAX
             user_role = session.get('user_role')
             logged_in_professional_id = session.get('professional_id')
             peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
-            if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id: # Se for profissional e não admin
+            if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id:
                 peis_query = peis_query.where(filter=FieldFilter('profissional_id', '==', logged_in_professional_id))
-            print(f"DEBUG: Re-fetching PEIs para add_target_to_goal. Query filter applied: {peis_query._query.filters}")
-
 
             for doc in peis_query.stream():
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
-                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A') # Garante que o nome do profissional esteja presente
-                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
+                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A')
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None)
 
-                # Processar atividades para formatação
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
                         if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
                             activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
                         else:
                             activity['timestamp_fmt'] = 'N/A'
-
                 all_peis.append(pei_data_converted)
-            print(f"DEBUG: Total de PEIs encontrados no re-fetch (add_target_to_goal): {len(all_peis)}")
 
             return jsonify({'success': True, 'message': 'Alvo adicionado com sucesso!', 'peis': all_peis}), 200
 
@@ -737,16 +722,26 @@ def register_medical_records_routes(app):
                 flash('Meta excluída com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao excluir meta: {e}', 'danger')
-            print(f"Erro delete_goal: {e}") # Log the error for debugging
+            print(f"Erro delete_goal: {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/finalize_goal', methods=['POST'], endpoint='finalize_goal')
-    @login_required # Admins e profissionais podem finalizar metas
+    @login_required
     def finalize_goal(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         user_role = session.get('user_role')
-        logged_in_professional_id = session.get('professional_id')
+        user_uid = session.get('user_uid')
+        is_admin = user_role == 'admin'
+        logged_in_professional_id = None
+        
+        if not is_admin and user_uid:
+            try:
+                user_doc = db_instance.collection('User').document(user_uid).get()
+                if user_doc.exists:
+                    logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+            except Exception as e:
+                return jsonify({'success': False, 'message': f'Erro ao verificar permissões: {e}'}), 500
 
         try:
             data = request.get_json()
@@ -760,10 +755,8 @@ def register_medical_records_routes(app):
             if not pei_doc.exists:
                 return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
 
-            # Verifica permissões: Admin sempre pode. Profissional só se for o associado ou se o PEI não tiver um profissional associado.
-            if user_role == 'medico':
+            if not is_admin:
                 associated_professional_id = pei_doc.to_dict().get('profissional_id')
-                # Permite se for o profissional associado OU se não houver profissional associado
                 if associated_professional_id and associated_professional_id != logged_in_professional_id:
                     return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar esta meta.'}), 403
 
@@ -771,33 +764,25 @@ def register_medical_records_routes(app):
             _finalize_goal_transaction(transaction, pei_ref, goal_id)
             transaction.commit()
 
-            # Re-fetch all PEIs to send the updated list back to the frontend
             all_peis = []
-            # Re-aplicar a lógica de filtragem para a resposta AJAX
             peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
-            if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id: # Se for profissional e não admin
+            if not is_admin and logged_in_professional_id:
                 peis_query = peis_query.where(filter=FieldFilter('profissional_id', '==', logged_in_professional_id))
-            print(f"DEBUG: Re-fetching PEIs para finalize_goal. Query filter applied: {peis_query._query.filters}")
-
 
             for doc in peis_query.stream():
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
-                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A') # Garante que o nome do profissional esteja presente
-                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
+                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A')
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None)
 
-
-                # Processar atividades para formatação
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
                         if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
                             activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
                         else:
                             activity['timestamp_fmt'] = 'N/A'
-
                 all_peis.append(pei_data_converted)
-            print(f"DEBUG: Total de PEIs encontrados no re-fetch (finalize_goal): {len(all_peis)}")
 
             return jsonify({'success': True, 'message': 'Meta finalizada com sucesso!', 'peis': all_peis}), 200
         except Exception as e:
@@ -805,12 +790,22 @@ def register_medical_records_routes(app):
             return jsonify({'success': False, 'message': f'Erro interno ao finalizar meta: {e}'}), 500
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/update_target_status', methods=['POST'], endpoint='update_target_status')
-    @login_required # Admins e profissionais podem atualizar status de alvos
+    @login_required
     def update_target_status(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         user_role = session.get('user_role')
-        logged_in_professional_id = session.get('professional_id')
+        user_uid = session.get('user_uid')
+        is_admin = user_role == 'admin'
+        logged_in_professional_id = None
+
+        if not is_admin and user_uid:
+            try:
+                user_doc = db_instance.collection('User').document(user_uid).get()
+                if user_doc.exists:
+                    logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+            except Exception as e:
+                return jsonify({'success': False, 'message': f'Erro ao verificar permissões: {e}'}), 500
 
         try:
             data = request.get_json()
@@ -824,10 +819,8 @@ def register_medical_records_routes(app):
             if not pei_doc.exists:
                 return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
 
-            # Verifica permissões: Admin sempre pode. Profissional só se for o associado ou se o PEI não tiver um profissional associado.
-            if user_role == 'medico':
+            if not is_admin:
                 associated_professional_id = pei_doc.to_dict().get('profissional_id')
-                # Permite se for o profissional associado OU se não houver profissional associado
                 if associated_professional_id and associated_professional_id != logged_in_professional_id:
                     return jsonify({'success': False, 'message': 'Você não tem permissão para atualizar o status deste alvo.'}), 403
 
@@ -835,32 +828,25 @@ def register_medical_records_routes(app):
             _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, concluido)
             transaction.commit()
             
-            # Re-fetch all PEIs to send the updated list back to the frontend
             all_peis = []
-            # Re-aplicar a lógica de filtragem para a resposta AJAX
             peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
-            if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id: # Se for profissional e não admin
+            if not is_admin and logged_in_professional_id:
                 peis_query = peis_query.where(filter=FieldFilter('profissional_id', '==', logged_in_professional_id))
-            print(f"DEBUG: Re-fetching PEIs para update_target_status. Query filter applied: {peis_query._query.filters}")
-
 
             for doc in peis_query.stream():
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
                     pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
-                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A') # Garante que o nome do profissional esteja presente
-                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
+                pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A')
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None)
 
-                # Processar atividades para formatação
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
                         if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
                             activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
                         else:
                             activity['timestamp_fmt'] = 'N/A'
-
                 all_peis.append(pei_data_converted)
-            print(f"DEBUG: Total de PEIs encontrados no re-fetch (update_target_status): {len(all_peis)}")
 
             return jsonify({'success': True, 'message': 'Status do alvo atualizado.', 'peis': all_peis}), 200
         except Exception as e:
@@ -868,12 +854,23 @@ def register_medical_records_routes(app):
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
     @app.route('/pacientes/<string:paciente_doc_id>/prontuario/add_pei_activity', methods=['POST'], endpoint='add_pei_activity')
-    @login_required # Admins e profissionais podem adicionar atividades/comentários
+    @login_required
     def add_pei_activity(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         user_role = session.get('user_role')
-        logged_in_professional_id = session.get('professional_id')
+        user_uid = session.get('user_uid')
+        is_admin = user_role == 'admin'
+        logged_in_professional_id = None
+        
+        # CORREÇÃO: Busca o ID do profissional associado se o usuário for 'medico'
+        if not is_admin and user_uid:
+            try:
+                user_doc = db_instance.collection('User').document(user_uid).get()
+                if user_doc.exists:
+                    logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+            except Exception as e:
+                return jsonify({'success': False, 'message': f'Erro ao verificar permissões: {e}'}), 500
 
         try:
             data = request.get_json()
@@ -888,44 +885,34 @@ def register_medical_records_routes(app):
             if not pei_doc.exists:
                 return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
 
-            # Verifica permissões: Admin sempre pode. Profissional só se for o associado ou se o PEI não tiver um profissional associado.
-            if user_role == 'medico':
+            # CORREÇÃO: Lógica de permissão corrigida
+            if not is_admin:
                 associated_professional_id = pei_doc.to_dict().get('profissional_id')
-                # Permite se for o profissional associado OU se não houver profissional associado
                 if associated_professional_id and associated_professional_id != logged_in_professional_id:
                     return jsonify({'success': False, 'message': 'Você não tem permissão para adicionar atividades a este PEI.'}), 403
 
-
             user_name = session.get('user_name', 'Desconhecido')
-
             _add_pei_activity_transaction(db_instance.transaction(), pei_ref, activity_content, user_name)
-
-            # Re-fetch all PEIs to send the updated list back to the frontend
+            
             all_peis = []
-            # Re-aplicar a lógica de filtragem para a resposta AJAX
             peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
-            if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id: # Se for profissional e não admin
+            if not is_admin and logged_in_professional_id:
                 peis_query = peis_query.where(filter=FieldFilter('profissional_id', '==', logged_in_professional_id))
-            print(f"DEBUG: Re-fetching PEIs para add_pei_activity. Query filter applied: {peis_query._query.filters}")
-
-
+            
             for doc in peis_query.stream():
                 pei_data_converted = convert_doc_to_dict(doc)
                 if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
-                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M') # Format here
+                    pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
                 pei_data_converted['profissional_nome_associado'] = pei_data_converted.get('profissional_nome_associado', 'N/A')
-                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None) # Manter o ID do profissional
-
+                pei_data_converted['profissional_id_associado'] = pei_data_converted.get('profissional_id', None)
 
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
                         if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
                             activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
                         else:
-                            activity['timestamp_fmt'] = 'N/A' # Fallback for activities with no timestamp or invalid type
-
+                            activity['timestamp_fmt'] = 'N/A'
                 all_peis.append(pei_data_converted)
-            print(f"DEBUG: Total de PEIs encontrados no re-fetch (add_pei_activity): {len(all_peis)}")
 
             return jsonify({'success': True, 'message': 'Atividade adicionada com sucesso!', 'peis': all_peis}), 200
 
