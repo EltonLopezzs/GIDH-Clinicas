@@ -35,6 +35,7 @@ def _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, 
             for target in goal.get('targets', []):
                 if target.get('id') == target_id:
                     target['concluido'] = concluido
+                    target_found = True # Corrigido: a flag deve ser setada aqui
                     break
             if not target_found: raise Exception("Alvo não encontrado na meta.")
             break
@@ -178,17 +179,29 @@ def register_medical_records_routes(app):
         
         # Obter informações do usuário logado
         user_role = session.get('user_role')
+        user_uid = session.get('user_uid') # Obter o UID do usuário da sessão
         is_admin = user_role == 'admin'
         is_professional = user_role == 'medico'
-        logged_in_professional_id = session.get('professional_id')
+        logged_in_professional_id = None # Inicializa como Nulo
+
+        # CORREÇÃO: Se o usuário for um profissional (e não admin), busca o ID do profissional associado no banco de dados.
+        if is_professional and not is_admin and user_uid:
+            try:
+                user_doc = db_instance.collection('User').document(user_uid).get()
+                if user_doc.exists:
+                    logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+            except Exception as e:
+                print(f"Erro ao buscar ID do profissional para o usuário {user_uid}: {e}")
+                flash("Ocorreu um erro ao verificar as suas permissões de profissional.", "danger")
         
         # DEBUG: Logar informações da sessão
-        print(f"\n--- DEBUG: ver_prontuario ---")
+        print(f"\n--- DEBUG: ver_prontuario (CORRIGIDO) ---")
         print(f"User Role: {user_role}")
         print(f"Is Admin: {is_admin}")
         print(f"Is Professional: {is_professional}")
-        print(f"Logged-in Professional ID (from session): {logged_in_professional_id}")
-        print(f"---------------------------\n")
+        print(f"Logged-in User UID: {user_uid}")
+        print(f"Logged-in Professional ID (Buscado do DB): {logged_in_professional_id}")
+        print(f"-----------------------------------------\n")
 
         # Obter lista de profissionais para o dropdown no modal de criação de PEI
         profissionais_lista = []
@@ -227,28 +240,20 @@ def register_medical_records_routes(app):
             # Construir a query de PEIs baseada na função do usuário
             peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', paciente_doc_id))
             
-            if is_professional and not is_admin and logged_in_professional_id:
-                # Se for profissional e NÃO admin, filtra por profissional_id OU por PEIs sem profissional associado
-                peis_query = peis_query.where(
-                    filter=firestore.FieldFilter('profissional_id', '==', logged_in_professional_id)
-                )
-                print(f"DEBUG: Aplicando filtro de PEI para profissional: profissional_id == {logged_in_professional_id}")
-            elif is_professional and not is_admin and logged_in_professional_id is None:
-                # Se for profissional e NÃO admin, mas o professional_id não está na sessão,
-                # pode ser um PEI sem profissional associado (o caso 'is none')
-                # O Firestore não tem um filtro direto para 'is none' em um OR,
-                # então buscaremos apenas os que têm o ID e o frontend filtrará os nulos
-                # Ou, se for necessário, teríamos que buscar todos e filtrar em Python, o que pode ser ineficiente para muitos PEIs.
-                # Por ora, mantemos o filtro apenas para o ID, se o ID estiver faltando na sessão, o PEI não aparecerá.
-                # A menos que o PEI não tenha profissional_id definido e o professional_id logado seja None,
-                # que é o caso da condição original: `pei.profissional_id_associado === null` no JS.
-                # Para atender a isso no backend, precisaríamos de uma segunda query ou buscar todos e filtrar.
-                # Dado que a instrução foi "somente o pei do medico associado caso ele não seja administrador",
-                # a primeira condição (profissional_id == logged_in_professional_id) é a mais estrita.
-                # Se a intenção é que um profissional sem 'professional_id' na sessão veja PEIs sem associação,
-                # o filtro deve ser menos restritivo no backend.
-                # Vamos manter o filtro estrito e logar o caso para depuração.
-                print("DEBUG: Profissional sem professional_id na sessão. PEIs podem não aparecer se não tiverem profissional_id.")
+            # CORREÇÃO: Aplica o filtro para usuários que são profissionais mas não administradores.
+            if is_professional and not is_admin:
+                if logged_in_professional_id:
+                    # Filtra para mostrar apenas os PEIs associados a este profissional
+                    peis_query = peis_query.where(
+                        filter=firestore.FieldFilter('profissional_id', '==', logged_in_professional_id)
+                    )
+                    print(f"DEBUG: Aplicando filtro de PEI para profissional: profissional_id == {logged_in_professional_id}")
+                else:
+                    # Se o usuário é 'medico' mas não está associado a nenhum perfil profissional,
+                    # ele não deve ver nenhum PEI. Criamos uma consulta que não retornará nada.
+                    print("DEBUG: Usuário 'medico' sem associação a um profissional. Nenhum PEI será exibido.")
+                    peis_query = peis_query.where(filter=FieldFilter('profissional_id', '==', 'ID_INVALIDO_PARA_NAO_RETORNAR_NADA'))
+
 
             peis_query = peis_query.order_by('data_criacao', direction=firestore.Query.DESCENDING)
 
@@ -588,8 +593,6 @@ def register_medical_records_routes(app):
             peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
             if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id: # Se for profissional e não admin
                 peis_query = peis_query.where(filter=FieldFilter('profissional_id', '==', logged_in_professional_id))
-            
-            # DEBUG: Log do filtro aplicado no re-fetch
             print(f"DEBUG: Re-fetching PEIs para finalize_pei. Query filter applied: {peis_query._query.filters}")
 
 
