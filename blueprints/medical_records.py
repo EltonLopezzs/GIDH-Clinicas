@@ -275,8 +275,15 @@ def register_medical_records_routes(app):
                 # Processar atividades para formatação
                 if 'activities' in pei and isinstance(pei['activities'], list):
                     for activity in pei['activities']:
-                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
-                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        activity_ts = activity.get('timestamp')
+                        if isinstance(activity_ts, datetime.datetime):
+                            activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        elif isinstance(activity_ts, str):
+                            try:
+                                naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                                activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                            except (ValueError, TypeError):
+                                activity['timestamp_fmt'] = 'Data Inválida'
                         else:
                             activity['timestamp_fmt'] = 'N/A'
                 
@@ -606,8 +613,15 @@ def register_medical_records_routes(app):
 
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
-                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
-                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        activity_ts = activity.get('timestamp')
+                        if isinstance(activity_ts, datetime.datetime):
+                            activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        elif isinstance(activity_ts, str):
+                            try:
+                                naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                                activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                            except (ValueError, TypeError):
+                                activity['timestamp_fmt'] = 'Data Inválida'
                         else:
                             activity['timestamp_fmt'] = 'N/A'
                 all_peis.append(pei_data_converted)
@@ -691,8 +705,15 @@ def register_medical_records_routes(app):
 
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
-                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
-                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        activity_ts = activity.get('timestamp')
+                        if isinstance(activity_ts, datetime.datetime):
+                            activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        elif isinstance(activity_ts, str):
+                            try:
+                                naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                                activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                            except (ValueError, TypeError):
+                                activity['timestamp_fmt'] = 'Data Inválida'
                         else:
                             activity['timestamp_fmt'] = 'N/A'
                 all_peis.append(pei_data_converted)
@@ -778,8 +799,15 @@ def register_medical_records_routes(app):
 
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
-                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
-                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        activity_ts = activity.get('timestamp')
+                        if isinstance(activity_ts, datetime.datetime):
+                            activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        elif isinstance(activity_ts, str):
+                            try:
+                                naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                                activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                            except (ValueError, TypeError):
+                                activity['timestamp_fmt'] = 'Data Inválida'
                         else:
                             activity['timestamp_fmt'] = 'N/A'
                 all_peis.append(pei_data_converted)
@@ -842,8 +870,15 @@ def register_medical_records_routes(app):
 
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
-                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
-                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        activity_ts = activity.get('timestamp')
+                        if isinstance(activity_ts, datetime.datetime):
+                            activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        elif isinstance(activity_ts, str):
+                            try:
+                                naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                                activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                            except (ValueError, TypeError):
+                                activity['timestamp_fmt'] = 'Data Inválida'
                         else:
                             activity['timestamp_fmt'] = 'N/A'
                 all_peis.append(pei_data_converted)
@@ -908,8 +943,15 @@ def register_medical_records_routes(app):
 
                 if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
                     for activity in pei_data_converted['activities']:
-                        if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
-                            activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        activity_ts = activity.get('timestamp')
+                        if isinstance(activity_ts, datetime.datetime):
+                            activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                        elif isinstance(activity_ts, str):
+                            try:
+                                naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                                activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                            except (ValueError, TypeError):
+                                activity['timestamp_fmt'] = 'Data Inválida'
                         else:
                             activity['timestamp_fmt'] = 'N/A'
                 all_peis.append(pei_data_converted)
@@ -919,3 +961,4 @@ def register_medical_records_routes(app):
         except Exception as e:
             print(f"Erro ao adicionar atividade ao PEI: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
+" from the Canvas and want to make the following edits: "está faltando a hora que eu adicionei na atividad
