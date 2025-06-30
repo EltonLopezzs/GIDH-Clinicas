@@ -20,7 +20,7 @@ from blueprints.covenants import register_covenants_routes
 from blueprints.schedules import register_schedules_routes
 from blueprints.appointments import register_appointments_routes
 from blueprints.medical_records import register_medical_records_routes
-
+from blueprints.estoque import register_estoque_routes # Importar o novo blueprint
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -438,6 +438,7 @@ register_covenants_routes(app)
 register_schedules_routes(app)
 register_appointments_routes(app)
 register_medical_records_routes(app)
+register_estoque_routes(app)  
 
 
 if __name__ == '__main__':
