@@ -7,7 +7,16 @@ from google.cloud import firestore # Necessário para firestore.SERVER_TIMESTAMP
 # Esta variável será inicializada por app.py
 _db_instance = None 
 
-SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
+# Garante que SAO_PAULO_TZ seja um objeto de fuso horário válido.
+# Se houver qualquer problema com pytz.timezone, ele será capturado aqui.
+try:
+    SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
+except pytz.UnknownTimeZoneError:
+    print("ERRO: Fuso horário 'America/Sao_Paulo' não encontrado. Usando UTC como fallback.")
+    SAO_PAULO_TZ = pytz.utc # Fallback para UTC se o fuso horário não for encontrado
+except Exception as e:
+    print(f"ERRO: Não foi possível inicializar o fuso horário: {e}. Usando UTC como fallback.")
+    SAO_PAULO_TZ = pytz.utc # Fallback genérico
 
 def set_db(db_client):
     """Define a instância do Firestore Client para ser acessível globalmente."""
@@ -19,8 +28,22 @@ def get_db():
     return _db_instance
 
 def format_firestore_timestamp(timestamp):
+    """
+    Formata um timestamp do Firestore para uma string no fuso horário de São Paulo.
+    Lida com datetimes com e sem tzinfo.
+    """
     if isinstance(timestamp, datetime.datetime):
-        return timestamp.astimezone(SAO_PAULO_TZ).strftime('%Y-%m-%dT%H:%M:%S')
+        # Se o datetime não tiver informações de fuso horário (naive), localize-o primeiro
+        if timestamp.tzinfo is None:
+            # Assumimos que datetimes sem tzinfo do Firestore são UTC, ou o fuso horário do servidor
+            # É mais seguro localizá-los para o fuso horário de São Paulo se eles representam a hora de lá.
+            # Se eles são UTC e você quer convertê-los, primeiro localize para UTC e depois converta.
+            # Para este caso, vamos assumir que são "naive" e representam a hora de SP.
+            localized_timestamp = SAO_PAULO_TZ.localize(timestamp)
+        else:
+            # Se já tem tzinfo, converte diretamente para o fuso horário de São Paulo
+            localized_timestamp = timestamp.astimezone(SAO_PAULO_TZ)
+        return localized_timestamp.strftime('%Y-%m-%dT%H:%M:%S')
     return None
 
 def convert_doc_to_dict(doc_snapshot):
@@ -32,7 +55,13 @@ def convert_doc_to_dict(doc_snapshot):
 
     def _convert_value(value):
         if isinstance(value, datetime.datetime):
-            return format_firestore_timestamp(value)
+            # Garante que o datetime tenha informações de fuso horário antes de formatar
+            if value.tzinfo is None:
+                # Se o datetime é naive, localize-o para o fuso horário padrão (SAO_PAULO_TZ)
+                # ou para UTC se você souber que o Firestore salva em UTC por padrão.
+                # Aqui, estamos localizando para SAO_PAULO_TZ para consistência.
+                return SAO_PAULO_TZ.localize(value).strftime('%Y-%m-%dT%H:%M:%S')
+            return value.astimezone(SAO_PAULO_TZ).strftime('%Y-%m-%dT%H:%M:%S')
         elif isinstance(value, dict):
             return {k: _convert_value(v) for k, v in value.items()}
         elif isinstance(value, list):
@@ -42,23 +71,27 @@ def convert_doc_to_dict(doc_snapshot):
     return {k: _convert_value(v) for k, v in data.items()}
 
 def parse_date_input(date_string):
+    """
+    Converte uma string de data (YYYY-MM-DD ou DD/MM/YYYY) para um objeto datetime.datetime
+    localizado no fuso horário de São Paulo.
+    """
     if not date_string:
         return None
     
     parsed_date = None
     try:
-        parsed_date = datetime.datetime.strptime(date_string, '%Y-%m-%d').date()
+        # Tenta YYYY-MM-DD (formato de input type="date")
+        parsed_date = datetime.datetime.strptime(date_string, '%Y-%m-%d')
     except ValueError:
-        pass
-
-    if parsed_date is None:
         try:
-            parsed_date = datetime.datetime.strptime(date_string, '%d/%m/%Y').date()
+            # Tenta DD/MM/YYYY
+            parsed_date = datetime.datetime.strptime(date_string, '%d/%m/%Y')
         except ValueError:
-            pass
+            pass # Se nenhum formato funcionar, parsed_date permanece None
     
     if parsed_date:
-        return SAO_PAULO_TZ.localize(datetime.datetime(parsed_date.year, parsed_date.month, parsed_date.day, 0, 0, 0))
+        # Localiza o datetime para o fuso horário de São Paulo
+        return SAO_PAULO_TZ.localize(parsed_date)
     
     return None
 
