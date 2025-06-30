@@ -462,7 +462,7 @@
             gap: 8px; /* Increased gap */
             border-bottom: 2px solid var(--border-color);
             margin-bottom: 1.5rem;
-            flex-wrap: wrap; /* Keep wrap for desktop, but override for mobile */
+            flex-wrap: wrap;
             padding-bottom: 4px; /* Space above border */
         }
         .tab-nav-item {
@@ -998,18 +998,11 @@
             .records-grid > .registro-card,
             .pei-list > .pei-card {
                 flex-shrink: 0;
-                /* Ajuste para que o card ocupe mais largura, mas ainda permita scroll */
-                width: calc(100% - 3rem); /* 100% menos o padding lateral de main (1rem * 2) */
-                max-width: 400px; /* Um pouco maior para melhor visualização */
+                width: 85%;
+                max-width: 350px;
                 margin-right: 1.5rem;
                 scroll-snap-align: start;
             }
-            /* Ajuste para o primeiro card para que não tenha margin-left extra */
-            .records-grid > .registro-card:first-child,
-            .pei-list > .pei-card:first-child {
-                margin-left: 0; /* Remove margin-left para o primeiro item */
-            }
-
 
             /* Esconde a scrollbar para uma estética mais limpa, mas mantém a funcionalidade */
             .records-grid::-webkit-scrollbar,
@@ -1046,40 +1039,6 @@
             }
             .pei-section-header h3 .mobile-only {
                 display: inline;
-            }
-
-            /* Ajustes para o cabeçalho da seção PEI em mobile */
-            .pei-section-header {
-                flex-direction: column;
-                align-items: flex-start; /* Alinha à esquerda */
-                gap: 0.75rem;
-            }
-            .pei-section-header .flex.gap-2 {
-                width: 100%; /* Faz os botões ocuparem a largura total */
-                flex-direction: column; /* Empilha os botões */
-            }
-            .pei-section-header .flex.gap-2 .btn {
-                width: 100%; /* Botões ocupam a largura total */
-                justify-content: center; /* Centraliza o texto/ícone */
-            }
-
-            /* Ajustes para as abas em mobile */
-            .tab-nav {
-                flex-wrap: nowrap; /* Impede que as abas quebrem a linha */
-                overflow-x: auto; /* Permite rolagem horizontal */
-                -webkit-overflow-scrolling: touch; /* Rolagem suave em iOS */
-                padding-bottom: 8px; /* Espaçamento para a scrollbar (se visível) */
-            }
-            .tab-nav-item {
-                flex-shrink: 0; /* Impede que os itens encolham */
-            }
-            /* Esconde a scrollbar das abas */
-            .tab-nav::-webkit-scrollbar {
-                display: none;
-            }
-            .tab-nav {
-                -ms-overflow-style: none;  /* IE and Edge */
-                scrollbar-width: none;  /* Firefox */
             }
         }
 
@@ -2820,15 +2779,15 @@
                             </div>
                             <div class="${peiActionClasses}">
                                 ${IS_ADMIN ? `
-                                <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="${pei.id}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
+                                <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
                                     <i class="fas fa-plus"></i> Adicionar Meta
                                 </button>
-                                <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="${pei.id}" {% if pei.status == 'finalizado' %}disabled{% endif %}>
+                                <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
                                     <i class="fas fa-trash"></i> Excluir PEI
                                 </button>
                                 ` : ''}
                                 <button type="button" class="btn btn-sm btn-info btn-print-pei" data-pei-id="${pei.id}"><i class="fas fa-print"></i> Imprimir PEI</button>
-                                <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="${pei.id}" {% if pei.status == 'finalizado' or not can_modify_pei_content %}disabled{% endif %}>
+                                <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="${pei.id}" ${isPeiFinalized || !canModifyPeiContent ? 'disabled' : ''}>
                                     <i class="fas fa-check-double"></i> Finalizar PEI
                                 </button>
                             </div>
