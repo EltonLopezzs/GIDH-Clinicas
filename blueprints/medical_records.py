@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from flask import render_template, session, flash, redirect, url_for, request, jsonify
 import datetime
 import uuid
@@ -492,6 +490,61 @@ def register_medical_records_routes(app):
                 print(f"Erro ao adicionar modelo de anamnese: {e}")
         return render_template('modelo_anamnese_form.html', modelo=None, action_url=url_for('adicionar_modelo_anamnese'))
 
+    @app.route('/modelos_anamnese/editar/<string:modelo_doc_id>', methods=['GET', 'POST'], endpoint='editar_modelo_anamnese')
+    @login_required
+    @admin_required
+    def editar_modelo_anamnese(modelo_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        modelo_ref = db_instance.collection('clinicas').document(clinica_id).collection('modelos_anamnese').document(modelo_doc_id)
+
+        if request.method == 'POST':
+            try:
+                identificacao = request.form['identificacao'].strip()
+                conteudo_modelo = request.form['conteudo_modelo']
+                if not identificacao:
+                    flash('A identificação do modelo é obrigatória.', 'danger')
+                else:
+                    modelo_ref.update({
+                        'identificacao': identificacao,
+                        'conteudo_modelo': conteudo_modelo,
+                        'atualizado_em': datetime.datetime.now(SAO_PAULO_TZ)
+                    })
+                    flash('Modelo de anamnese atualizado com sucesso!', 'success')
+                    return redirect(url_for('listar_modelos_anamnese'))
+            except Exception as e:
+                flash(f'Erro ao atualizar modelo de anamnese: {e}', 'danger')
+                print(f"Erro ao atualizar modelo de anamnese: {e}")
+
+        try:
+            modelo_doc = modelo_ref.get()
+            if modelo_doc.exists:
+                modelo = modelo_doc.to_dict()
+                if modelo:
+                    modelo['id'] = modelo_doc.id
+                    return render_template('modelo_anamnese_form.html', modelo=modelo, action_url=url_for('editar_modelo_anamnese', modelo_doc_id=modelo_doc_id))
+            else:
+                flash('Modelo de anamnese não encontrado.', 'danger')
+                return redirect(url_for('listar_modelos_anamnese'))
+        except Exception as e:
+            flash(f'Erro ao carregar modelo de anamnese para edição: {e}', 'danger')
+            print(f"Erro ao carregar modelo de anamnese para edição: {e}")
+            return redirect(url_for('listar_modelos_anamnese'))
+
+    @app.route('/modelos_anamnese/excluir/<string:modelo_doc_id>', methods=['POST'], endpoint='excluir_modelo_anamnese')
+    @login_required
+    @admin_required
+    def excluir_modelo_anamnese(modelo_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        try:
+            db_instance.collection('clinicas').document(clinica_id).collection('modelos_anamnese').document(modelo_doc_id).delete()
+            flash('Modelo de anamnese excluído com sucesso!', 'success')
+        except Exception as e:
+            flash(f'Erro ao excluir modelo de anamnese: {e}.', 'danger')
+            print(f"Erro ao excluir modelo de anamnese: {e}")
+        return redirect(url_for('listar_modelos_anamnese'))
+
     # =================================================================
     # ROTAS DO PEI (Plano Educacional Individualizado)
     # =================================================================
@@ -961,4 +1014,3 @@ def register_medical_records_routes(app):
         except Exception as e:
             print(f"Erro ao adicionar atividade ao PEI: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
- 
