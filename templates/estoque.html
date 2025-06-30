@@ -9,6 +9,8 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
     <style>
         :root {
@@ -505,7 +507,7 @@
                                             <td>
                                                 {% if not produto.ativo %}
                                                     <span class="status-badge inactive">Inativo</span>
-                                                {% elif produto.data_validade and produto.data_validade < now().date() %} {# Check for expired #}
+                                                {% elif produto.data_validade_obj and produto.data_validade_obj < now %} {# Check for expired #}
                                                     <span class="status-badge expired">Vencido</span>
                                                 {% elif produto.quantidade_atual <= produto.estoque_minimo %}
                                                     <span class="status-badge low-stock">Estoque Baixo</span>
@@ -551,7 +553,7 @@
                                         <h4>{{ produto.nome }}</h4>
                                         {% if not produto.ativo %}
                                             <span class="status-badge inactive">Inativo</span>
-                                        {% elif produto.data_validade and produto.data_validade < now().date() %}
+                                        {% elif produto.data_validade_obj and produto.data_validade_obj < now %}
                                             <span class="status-badge expired">Vencido</span>
                                         {% elif produto.quantidade_atual <= produto.estoque_minimo %}
                                             <span class="status-badge low-stock">Estoque Baixo</span>
@@ -833,11 +835,24 @@
                 const toggleCheckbox = document.getElementById('criar_conta_pagar');
                 const tabNavItems = document.querySelectorAll('.tab-nav-item');
                 const searchForm = document.getElementById('searchForm');
+                const dataVencimentoInput = document.getElementById('data_vencimento');
+
+
+                // Initialize Flatpickr for data_vencimento
+                if (dataVencimentoInput) {
+                    flatpickr(dataVencimentoInput, {
+                        dateFormat: "Y-m-d",
+                        altInput: true,
+                        altFormat: "d/m/Y",
+                        locale: "pt",
+                        disableMobile: true
+                    });
+                }
 
                 // Populate product select for movimentation modal
                 async function populateProductSelect() {
                     try {
-                        const response = await fetch('/api/estoque/produtos_ativos'); 
+                        const response = await fetch('{{ url_for("api_produtos_ativos") }}'); 
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
                         }
