@@ -315,9 +315,48 @@
         /* Movimentação Modal Specific Styles */
         .movimentacao-modal-content {
             max-width: 600px; /* Adjust max-width for this specific modal */
+            padding: 0; /* Remove padding from here, add to body/footer */
+            text-align: left; /* Align text left */
         }
+        .movimentacao-modal-content .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg);
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .movimentacao-modal-content .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+        .movimentacao-modal-content .modal-header h3 i {
+            margin-right: 0.75rem;
+            color: var(--primary);
+        }
+        .movimentacao-modal-content .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: var(--muted);
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s ease;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+        .movimentacao-modal-content .modal-close-btn:hover {
+            color: var(--danger);
+            background-color: rgba(var(--danger-rgb), 0.1); /* Assuming danger-rgb is defined or use a direct rgba */
+        }
+
         .movimentacao-modal-content .modal-body {
             padding: 1.5rem;
+            overflow-y: auto;
+            flex-grow: 1;
         }
         .movimentacao-modal-content .form-group {
             margin-bottom: 1rem;
@@ -328,24 +367,54 @@
             gap: 1rem;
         }
         .movimentacao-modal-content .form-group label {
+            display: block;
             font-size: 0.85rem;
+            color: var(--muted);
+            font-weight: 500;
             margin-bottom: 0.3rem;
         }
         .movimentacao-modal-content .form-group input,
         .movimentacao-modal-content .form-group select {
+            width: 100%;
             padding: 0.6rem 0.8rem;
             font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
+        .movimentacao-modal-content .form-group input:focus,
+        .movimentacao-modal-content .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+        }
+
         .movimentacao-modal-content .modal-footer {
-            justify-content: flex-end; /* Align buttons to the right */
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            flex-shrink: 0;
+            background-color: var(--bg);
+            border-radius: 0 0 12px 12px;
         }
         .movimentacao-modal-content .modal-footer .btn-secondary {
             margin-right: auto; /* Push Cancel to the left */
         }
-        .movimentacao-modal-content .modal-footer .btn-primary {
-            margin-left: 0.75rem; /* Space between Save and other buttons */
-        }
+        
         /* Style for the toggle switch */
+        .toggle-switch-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+            font-weight: 500;
+            cursor: pointer; /* Make the whole label clickable */
+        }
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -354,7 +423,7 @@
             background-color: var(--muted);
             border-radius: 12px;
             transition: background-color 0.3s;
-            cursor: pointer;
+            flex-shrink: 0; /* Prevent it from shrinking */
         }
         .toggle-switch.active {
             background-color: var(--primary);
@@ -393,13 +462,35 @@
             -ms-transform: translateX(16px);
             transform: translateX(16px);
         }
-        .toggle-switch-label {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.9rem;
-            color: var(--muted);
-            font-weight: 500;
+
+        /* Loading indicator for product select */
+        .product-select-loading {
+            position: relative;
+        }
+        .product-select-loading:after {
+            content: "\f110"; /* Font Awesome spinner icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+        .product-select-error {
+            border-color: var(--danger) !important;
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 20%, transparent);
+        }
+        .product-select-error + .error-message {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: block;
         }
     </style>
 </head>
@@ -635,10 +726,12 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="produto_id">Produto</label>
-                        <select id="produto_id" name="produto_id" required>
-                            <option value="">Selecione um produto</option>
-                            {# Produtos serão preenchidos via JS #}
-                        </select>
+                        <div class="product-select-loading"> {# Added loading class here #}
+                            <select id="produto_id" name="produto_id" required>
+                                <option value="">Carregando produtos...</option>
+                            </select>
+                        </div>
+                        <span id="product-select-error-message" class="error-message" style="display:none;"></span>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -836,6 +929,8 @@
                 const tabNavItems = document.querySelectorAll('.tab-nav-item');
                 const searchForm = document.getElementById('searchForm');
                 const dataVencimentoInput = document.getElementById('data_vencimento');
+                const productSelectLoadingDiv = document.querySelector('.product-select-loading');
+                const productSelectErrorMessageSpan = document.getElementById('product-select-error-message');
 
 
                 // Initialize Flatpickr for data_vencimento
@@ -851,32 +946,42 @@
 
                 // Populate product select for movimentation modal
                 async function populateProductSelect() {
+                    produtoSelect.innerHTML = '<option value="">Carregando produtos...</option>';
+                    produtoSelect.classList.remove('product-select-error');
+                    productSelectErrorMessageSpan.style.display = 'none';
+                    if (productSelectLoadingDiv) productSelectLoadingDiv.classList.add('product-select-loading');
+
                     try {
                         const response = await fetch('{{ url_for("api_produtos_ativos") }}'); 
                         if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                            const errorText = await response.text(); // Get raw error text
+                            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
                         }
                         const products = await response.json(); 
                         console.log("Produtos ativos para modal:", products); // Debugging
 
                         produtoSelect.innerHTML = '<option value="">Selecione um produto</option>';
-                        products.forEach(product => {
-                            const option = document.createElement('option');
-                            option.value = product.id;
-                            option.textContent = `${product.nome} (Atual: ${product.quantidade_atual} ${product.unidade_medida || ''})`;
-                            produtoSelect.appendChild(option);
-                        });
+                        if (products.length === 0) {
+                            produtoSelect.innerHTML += '<option value="">Nenhum produto ativo encontrado</option>';
+                            produtoSelect.disabled = true; // Disable if no products
+                        } else {
+                            products.forEach(product => {
+                                const option = document.createElement('option');
+                                option.value = product.id;
+                                option.textContent = `${product.nome} (Atual: ${product.quantidade_atual} ${product.unidade_medida || ''})`;
+                                produtoSelect.appendChild(option);
+                            });
+                            produtoSelect.disabled = false;
+                        }
                     } catch (error) {
                         console.error('Erro ao carregar produtos para o modal de movimentação:', error);
-                        // Display a user-friendly message in the modal or main page
-                        const flashMessagesContainer = document.querySelector('.flash-messages');
-                        if (flashMessagesContainer) {
-                            const messageDiv = document.createElement('div');
-                            messageDiv.classList.add('flash-message', 'danger');
-                            messageDiv.innerHTML = `<i class="fas fa-times-circle"></i> Erro ao carregar produtos para movimentação: ${error.message}`;
-                            flashMessagesContainer.appendChild(messageDiv);
-                            setTimeout(() => messageDiv.remove(), 5000);
-                        }
+                        produtoSelect.innerHTML = '<option value="">Erro ao carregar produtos</option>';
+                        produtoSelect.disabled = true;
+                        produtoSelect.classList.add('product-select-error');
+                        productSelectErrorMessageSpan.textContent = `Erro: ${error.message}. Tente recarregar a página.`;
+                        productSelectErrorMessageSpan.style.display = 'block';
+                    } finally {
+                        if (productSelectLoadingDiv) productSelectLoadingDiv.classList.remove('product-select-loading');
                     }
                 }
 
