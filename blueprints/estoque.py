@@ -25,7 +25,8 @@ def register_estoque_routes(app):
 
         try:
             docs = query.stream()
-            hoje = datetime.datetime.now(SAO_PAULO_TZ).date() # Data atual para comparação de vencimento
+            # Obtenha a data atual uma vez, já no fuso horário correto
+            hoje_data = datetime.datetime.now(SAO_PAULO_TZ).date() 
 
             for doc in docs:
                 produto = doc.to_dict()
@@ -48,7 +49,7 @@ def register_estoque_routes(app):
                             produtos_lista.append(produto)
                     elif filter_type == 'vencidos':
                         # Verifica se a data de validade existe e é anterior à data atual
-                        if produto.get('data_validade_obj') and produto['data_validade_obj'] < hoje:
+                        if produto.get('data_validade_obj') and produto['data_validade_obj'] < hoje_data:
                             produtos_lista.append(produto)
                     else: # 'todos' ou qualquer outro filtro padrão
                         produtos_lista.append(produto)
@@ -62,10 +63,10 @@ def register_estoque_routes(app):
 
         except Exception as e:
             flash(f'Erro ao listar produtos do estoque: {e}. Verifique seus índices do Firestore.', 'danger')
-            print(f"Erro list_estoque: {e}")
+            print(f"Erro list_estoque: {e}") # Log mais detalhado
         
         # Passar a data atual para o template para a lógica de "Vencidos" no frontend
-        return render_template('estoque.html', produtos=produtos_lista, search_query=search_query, filter_type=filter_type, now=hoje)
+        return render_template('estoque.html', produtos=produtos_lista, search_query=search_query, filter_type=filter_type, now=hoje_data)
 
     @app.route('/estoque/novo', methods=['GET', 'POST'], endpoint='adicionar_produto_estoque')
     @login_required
@@ -261,9 +262,12 @@ def register_estoque_routes(app):
                 
                 data_vencimento = None
                 if data_vencimento_str:
-                    # Parse a data e localize-a para datetime.datetime
-                    parsed_date = datetime.datetime.strptime(data_vencimento_str, '%Y-%m-%d')
-                    data_vencimento = SAO_PAULO_TZ.localize(parsed_date)
+                    try:
+                        # Armazena como datetime.datetime para consistência com outros campos de data
+                        data_vencimento = datetime.datetime.strptime(data_vencimento_str, '%Y-%m-%d')
+                    except ValueError:
+                        flash('Formato de data de vencimento inválido. Use AAAA-MM-DD.', 'danger')
+                        return redirect(url_for('listar_estoque'))
 
                 produto_ref = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').document(produto_id)
                 produto_doc = produto_ref.get()
