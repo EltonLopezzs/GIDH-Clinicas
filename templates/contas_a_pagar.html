@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas a Pagar - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+    
+    <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #0f172a;
+            --primary: #0d9488; /* Teal-600 */
+            --primary-dark: #115e59;
+            --secondary: #f59e0b; /* Amber-500 */
+            --danger: #dc2626; /* Red-600 */
+            --success: #16a34a; /* Green-600 */
+            --warning: #f59e0b;
+            --info: #0ea5e9; /* Sky-500 */
+            --border-color: #e2e8f0;
+            
+            --dark-bg: #0f172a;
+            --dark-card: #1e293b;
+            --dark-text: #f1f5f9;
+            --dark-muted: #94a3b8;
+            --dark-border-color: #334155;
+            
+            color-scheme: light;
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
+            color-scheme: dark;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; overflow-x: hidden; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .layout { display: flex; min-height: 100vh; width: 100%; }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--primary), var(--accent));
+            color: white;
+            position: fixed;
+            top: 0; left: 0; height: 100vh;
+            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 1000; display: flex; flex-direction: column;
+        }
+        .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
+        .sidebar-header {
+            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
+        }
+        .sidebar-header .logo {
+            font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
+            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
+        }
+        .sidebar-header .logo i { font-size: 1.8rem; }
+        .sidebar.collapsed { width: 78px; }
+        .sidebar.collapsed .sidebar-header .logo span { display: none; }
+        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+        .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
+        .sidebar nav ul { list-style: none; padding: 0; }
+        .sidebar nav ul li { margin-bottom: 0.5rem; }
+        .sidebar nav ul li a {
+            color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
+            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
+            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
+        }
+        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+        .sidebar.collapsed nav ul li a span { display: none; }
+        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
+        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
+        .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
+        .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
+        .sidebar-footer button, .sidebar-footer a {
+            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
+            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
+            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
+            font-size: 0.95rem; text-decoration: none;
+        }
+        .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .sidebar.collapsed .sidebar-footer span { display: none; }
+        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+        
+        /* --- Main Content & Topbar --- */
+        .main-content {
+            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 260px);
+        }
+        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
+        .topbar {
+            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
+            position: sticky; top: 0; z-index: 900;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
+        .toggle-btn {
+            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
+            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+        
+        /* --- Buttons --- */
+        .btn {
+            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
+            font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
+        }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+        .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
+        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
+        [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .btn-warning { background-color: var(--warning); color: #854d0e; }
+        [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
+        .btn-warning:hover { background-color: #fcd34d; }
+        .btn-info { background-color: var(--info); color: white; }
+        .btn-info:hover { background-color: #0369a1; }
+        .btn-toggle-inactive { background-color: #4b5563; color: white; }
+        .btn-toggle-inactive:hover { background-color: #374151; }
+
+        /* --- Table --- */
+        .table-container {
+            width: 100%; overflow-x: auto; background: var(--card);
+            border-radius: 12px; padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 800px; }
+        th, td {
+            padding: 0.9rem 1rem; font-size: 0.9rem; text-align: left; vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+        }
+        thead th {
+            font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.8rem;
+            background-color: var(--bg); border-bottom-width: 2px;
+        }
+        thead th:first-child { border-top-left-radius: 8px; }
+        thead th:last-child { border-top-right-radius: 8px; }
+        tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+        tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+        .table-actions { display: flex; gap: 0.5rem; }
+        .no-results td { text-align: center; padding: 2rem; color: var(--muted); }
+        .status-badge {
+            padding: 0.4em 0.8em; border-radius: 20px; font-size: 0.75em;
+            font-weight: 600; text-transform: uppercase; color: white;
+        }
+        .status-badge.pendente { background-color: var(--danger); }
+        .status-badge.paga { background-color: var(--success); }
+        .status-badge.vencida { background-color: var(--warning); color: #854d0e; }
+        [data-theme="dark"] .status-badge.vencida { color: var(--dark-bg); }
+
+        /* --- Mobile Cards --- */
+        .mobile-cards-wrapper { display: none; }
+        @media (max-width: 768px) {
+            .table-container { display: none; }
+            .mobile-cards-wrapper { display: block; }
+        }
+
+        .conta-card-mobile {
+            background-color: var(--card); border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 1rem; overflow: hidden;
+        }
+        .card-header-conta {
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between;
+            background-color: var(--bg);
+        }
+        .card-header-conta h4 { font-weight: 600; font-size: 1.1rem; margin: 0; }
+        .card-details-body { padding: 0.5rem 0; }
+        .card-detail-item {
+            display: flex; justify-content: space-between; padding: 0.7rem 1.5rem; font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .card-detail-item:last-child { border-bottom: none; }
+        .card-detail-item-label { color: var(--muted); font-weight: 500; }
+        .card-detail-item-value { font-weight: 600; }
+        .card-actions-footer {
+            padding: 1rem 1.5rem; background-color: var(--bg); display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Ajustado para 3 colunas */
+            gap: 0.75rem;
+        }
+        .card-actions-footer .btn, .card-actions-footer form { width: 100%; }
+        .card-actions-footer .btn { justify-content: center; }
+        .card-actions-footer .btn i { margin-right: 0.5rem; }
+
+
+        /* Custom styles for the topbar actions */
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Espaçamento entre os elementos */
+            flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha em telas pequenas */
+            justify-content: flex-end; /* Alinha à direita por padrão */
+        }
+
+        .topbar-actions .search-form {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden; /* Garante que o input e o botão fiquem dentro do border-radius */
+            background-color: var(--bg);
+            flex-grow: 1; /* Permite que o formulário de busca ocupe espaço disponível */
+            max-width: 300px; /* Limita a largura em telas maiores */
+        }
+        [data-theme="dark"] .topbar-actions .search-form {
+            background-color: var(--dark-bg);
+            border-color: var(--dark-border-color);
+        }
+
+        .topbar-actions .search-input {
+            border: none;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            background-color: transparent;
+            color: var(--text);
+            flex-grow: 1;
+            outline: none; /* Remove o contorno de foco padrão */
+        }
+        .topbar-actions .search-input::placeholder {
+            color: var(--muted);
+        }
+
+        .topbar-actions .search-form .btn {
+            border-radius: 0; /* Remove border-radius para se juntar ao input */
+            padding: 0.6rem 1rem;
+            height: 100%; /* Garante que o botão tenha a mesma altura do input */
+        }
+        .topbar-actions .search-form .btn i {
+            margin: 0; /* Remove margin extra do ícone */
+        }
+
+        /* Responsividade para a topbar-actions */
+        @media (max-width: 768px) {
+            .topbar-actions {
+                width: 100%;
+                justify-content: center; /* Centraliza os itens em telas menores */
+                margin-top: 1rem; /* Adiciona espaço acima dos botões/busca */
+            }
+            .topbar-actions .search-form {
+                max-width: 100%; /* Ocupa a largura total em telas pequenas */
+                margin-bottom: 0.5rem; /* Espaço entre a busca e os botões */
+            }
+            .topbar-actions .btn {
+                flex-grow: 1; /* Faz os botões ocuparem a largura total */
+            }
+            .topbar-actions select { /* Estilo para o select de filtro */
+                flex-grow: 1;
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+        }
+        @media (min-width: 769px) {
+            .topbar-actions {
+                flex-wrap: nowrap; /* Impede que os itens quebrem a linha */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-inner-content">
+                <div class="sidebar-header">
+                    <a href="{{ url_for('index') }}" class="logo">
+                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
+                    </a>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        {% if session.user_role == 'admin' %}
+                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
+                        <li class="active"><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="theme-toggle" aria-label="Alternar tema">
+                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
+                    </button>
+                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
+                    <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
+                    <h1 class="page-title">Contas a Pagar</h1>
+                </div>
+                <div class="topbar-actions">
+                    <form action="{{ url_for('listar_contas_a_pagar') }}" method="GET" class="search-form" id="searchForm">
+                        <input type="text" name="search" placeholder="Buscar conta..." class="search-input" value="{{ search_query or '' }}">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                    </form>
+                    <select name="status" id="filterStatus" class="btn btn-secondary">
+                        <option value="todas" {% if filter_status == 'todas' %}selected{% endif %}>Todos os Status</option>
+                        <option value="pendente" {% if filter_status == 'pendente' %}selected{% endif %}>Pendentes</option>
+                        <option value="paga" {% if filter_status == 'paga' %}selected{% endif %}>Pagas</option>
+                        <option value="vencida" {% if filter_status == 'vencida' %}selected{% endif %}>Vencidas</option>
+                    </select>
+                    <a href="{{ url_for('adicionar_conta_a_pagar') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Conta</span>
+                    </a>
+                </div>
+            </header>
+
+            <main>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    <div class="flash-messages">
+                      {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Produto (se vinculado)</th>
+                                <th>Valor</th>
+                                <th>Vencimento</th>
+                                <th>Status</th>
+                                <th>Lançamento</th>
+                                <th>Responsável</th>
+                                <th style="width: 150px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for conta in contas %}
+                            <tr>
+                                <td>{{ conta.descricao }}</td>
+                                <td>{{ conta.produto_nome or 'N/A' }}</td>
+                                <td>R$ {{ "%.2f"|format(conta.valor) }}</td>
+                                <td>{{ conta.data_vencimento_fmt or 'N/A' }}</td>
+                                <td>
+                                    {% if conta.status == 'pendente' %}
+                                        {% if conta.data_vencimento and conta.data_vencimento < now %}
+                                            <span class="status-badge vencida">Vencida</span>
+                                        {% else %}
+                                            <span class="status-badge pendente">Pendente</span>
+                                        {% endif %}
+                                    {% elif conta.status == 'paga' %}
+                                        <span class="status-badge paga">Paga</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ conta.data_lancamento.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M') if conta.data_lancamento else 'N/A' }}</td>
+                                <td>{{ conta.usuario_responsavel or 'N/A' }}</td>
+                                <td class="table-actions">
+                                    {% if conta.status == 'pendente' %}
+                                    <form action="{{ url_for('marcar_conta_paga', conta_doc_id=conta.id) }}" method="post" class="form-confirm-action">
+                                        <button type="button" class="btn btn-sm btn-success btn-confirm-trigger" title="Marcar como Paga">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    <a href="{{ url_for('editar_conta_a_pagar', conta_doc_id=conta.id) }}" class="btn btn-sm btn-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="{{ url_for('excluir_conta_a_pagar', conta_doc_id=conta.id) }}" method="post" class="form-confirm-action">
+                                        <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger" title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr class="no-results">
+                                <td colspan="8">Nenhuma conta a pagar encontrada.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mobile-cards-wrapper">
+                    {% for conta in contas %}
+                    <div class="conta-card-mobile">
+                        <div class="card-header-conta">
+                            <h4>{{ conta.descricao }}</h4>
+                            {% if conta.status == 'pendente' %}
+                                {% if conta.data_vencimento and conta.data_vencimento < now %}
+                                    <span class="status-badge vencida">Vencida</span>
+                                {% else %}
+                                    <span class="status-badge pendente">Pendente</span>
+                                {% endif %}
+                            {% elif conta.status == 'paga' %}
+                                <span class="status-badge paga">Paga</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-details-body">
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Produto</span>
+                                <span class="card-detail-item-value">{{ conta.produto_nome or 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Valor</span>
+                                <span class="card-detail-item-value">R$ {{ "%.2f"|format(conta.valor) }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Vencimento</span>
+                                <span class="card-detail-item-value">{{ conta.data_vencimento_fmt or 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Lançamento</span>
+                                <span class="card-detail-item-value">{{ conta.data_lancamento.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M') if conta.data_lancamento else 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Responsável</span>
+                                <span class="card-detail-item-value">{{ conta.usuario_responsavel or 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="card-actions-footer">
+                            {% if conta.status == 'pendente' %}
+                            <form action="{{ url_for('marcar_conta_paga', conta_doc_id=conta.id) }}" method="post" class="form-confirm-action">
+                                <button type="button" class="btn btn-sm btn-success btn-confirm-trigger"><i class="fas fa-check"></i> Paga</button>
+                            </form>
+                            {% endif %}
+                            <a href="{{ url_for('editar_conta_a_pagar', conta_doc_id=conta.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Editar</a>
+                            <form action="{{ url_for('excluir_conta_a_pagar', conta_doc_id=conta.id) }}" method="post" class="form-confirm-action">
+                                <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger"><i class="fas fa-trash"></i> Excluir</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                        <div class="table-container" style="text-align: center; padding: 2rem;">Nenhuma conta a pagar encontrada.</div>
+                    {% endfor %}
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Modal de Confirmação (Reutilizado) -->
+    <div class="modal-overlay" id="customConfirmModal">
+        <div class="modal-content">
+            <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="modal-title" id="customConfirmTitle">Confirmar Ação</h3>
+            <p class="modal-text" id="customConfirmMessage"></p>
+            <div class="modal-actions">
+                <button id="customConfirmCancel" class="btn btn-secondary">Cancelar</button>
+                <button id="customConfirmOk" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Placeholder for Firebase - adjust with your actual config
+        const FAKE_FIREBASE = {
+            initializeApp: () => ({}),
+            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
+        };
+        const { initializeApp } = FAKE_FIREBASE;
+        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        let auth = getAuth(initializeApp(firebaseConfig));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+            const themeToggle = document.querySelector('#theme-toggle');
+            const logoutButton = document.getElementById('logoutButton');
+            const searchForm = document.getElementById('searchForm');
+            const filterStatusSelect = document.getElementById('filterStatus');
+            const customConfirmModal = document.getElementById('customConfirmModal');
+            const customConfirmOkBtn = document.getElementById('customConfirmOk');
+            const customConfirmCancelBtn = document.getElementById('customConfirmCancel');
+            const customConfirmTitle = document.getElementById('customConfirmTitle');
+            const customConfirmMessage = document.getElementById('customConfirmMessage');
+            let formToSubmit = null;
+
+
+            // --- Sidebar Logic ---
+            function setupSidebar() {
+                if (!sidebar || !mainContent) return;
+                const updateDesktopToggleIcon = () => {
+                    if (!toggleBtnDesktop) return;
+                    const icon = toggleBtnDesktop.querySelector('i');
+                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
+                };
+                const applyInitialState = () => {
+                    if (window.innerWidth > 768) {
+                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                            sidebar.classList.add('collapsed');
+                            mainContent.classList.add('collapsed');
+                        }
+                    } else {
+                        sidebar.classList.remove('open', 'collapsed');
+                        mainContent.classList.remove('collapsed');
+                    }
+                    updateDesktopToggleIcon();
+                };
+                if (toggleBtnDesktop) {
+                    toggleBtnDesktop.addEventListener('click', () => {
+                        sidebar.classList.toggle('collapsed');
+                        mainContent.classList.toggle('collapsed');
+                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                        updateDesktopToggleIcon();
+                    });
+                }
+                if (menuBtnMobile) {
+                    menuBtnMobile.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        sidebar.classList.toggle('open');
+                    });
+                }
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+                applyInitialState();
+                window.addEventListener('resize', applyInitialState);
+            }
+
+            // --- Theme Logic ---
+            function setupTheme() {
+                if (!themeToggle) return;
+                const updateThemeUI = (theme) => {
+                    htmlEl.setAttribute('data-theme', theme);
+                    const icon = themeToggle.querySelector('i');
+                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                };
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                updateThemeUI(currentTheme);
+                themeToggle.addEventListener('click', () => {
+                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeUI(newTheme);
+                });
+            }
+
+            // --- Logout Logic ---
+            function setupLogout() {
+                if (!logoutButton) return;
+                logoutButton.addEventListener('click', async (event) => {
+                    event.preventDefault();
+                    fetch("{{ url_for('logout') }}", { method: 'POST' })
+                        .then(() => window.location.href = "{{ url_for('login_page') }}")
+                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
+                });
+            }
+
+            // --- Confirmation Modal Logic ---
+            function setupConfirmationModal() {
+                if (!customConfirmModal) return;
+                
+                document.querySelectorAll('.btn-confirm-trigger').forEach(button => {
+                    button.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        formToSubmit = this.closest('form.form-confirm-action');
+                        
+                        let action = 'Confirmar';
+                        let message = 'Tem certeza que deseja continuar?';
+
+                        if(this.title && this.title.includes('Paga')){
+                            action = 'Marcar como Paga';
+                            message = 'Tem certeza que deseja marcar esta conta como paga?';
+                        } else if(this.title && this.title.includes('Excluir')){
+                             action = 'Excluir';
+                             message = 'Tem certeza que deseja excluir esta conta? Esta ação não pode ser desfeita.';
+                        }
+
+                        customConfirmTitle.textContent = `${action} Ação`;
+                        customConfirmMessage.textContent = message;
+
+                        customConfirmModal.classList.add('active');
+                    });
+                });
+
+                customConfirmOkBtn.addEventListener('click', () => {
+                    if (formToSubmit) {
+                        formToSubmit.submit();
+                    }
+                });
+
+                customConfirmCancelBtn.addEventListener('click', () => customConfirmModal.classList.remove('active'));
+                customConfirmModal.addEventListener('click', (e) => {
+                    if(e.target === customConfirmModal) customConfirmModal.classList.remove('active');
+                });
+            }
+
+            // --- Filter and Search Logic ---
+            if (filterStatusSelect) {
+                filterStatusSelect.addEventListener('change', () => {
+                    searchForm.submit(); // Submete o formulário quando o filtro de status muda
+                });
+            }
+
+            // --- Initialization ---
+            setupSidebar();
+            setupTheme();
+            setupLogout();
+            setupConfirmationModal();
+        });
+    </script>
+</body>
+</html>

@@ -263,8 +263,9 @@ def register_estoque_routes(app):
                 quantidade = int(quantidade_str)
                 if quantidade <= 0:
                     flash('A quantidade deve ser um número positivo.', 'danger')
-                    return redirect(url_for('listar_estoque'))
-
+                    return redirect(url_for('listar_estoque') + '#movimentacaoEstoqueModal') # Redireciona para o modal
+                
+                # Certifica que preco_total é um float, mesmo que vazio
                 preco_total = float(preco_total_str.replace(',', '.')) if preco_total_str else 0.0
                 
                 data_vencimento = None
@@ -272,9 +273,11 @@ def register_estoque_routes(app):
                     try:
                         # Armazena como datetime.datetime para consistência com outros campos de data
                         data_vencimento = datetime.datetime.strptime(data_vencimento_str, '%Y-%m-%d')
+                        # Localiza a data para o fuso horário correto antes de salvar
+                        data_vencimento = SAO_PAULO_TZ.localize(data_vencimento)
                     except ValueError:
                         flash('Formato de data de vencimento inválido. Use AAAA-MM-DD.', 'danger')
-                        return redirect(url_for('listar_estoque'))
+                        return redirect(url_for('listar_estoque') + '#movimentacaoEstoqueModal') # Redireciona para o modal
 
                 produto_ref = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').document(produto_id)
                 produto_doc = produto_ref.get()
@@ -291,7 +294,7 @@ def register_estoque_routes(app):
                 elif tipo_movimentacao == 'saida':
                     if quantidade_atual < quantidade:
                         flash('Quantidade em estoque insuficiente para esta saída.', 'danger')
-                        return redirect(url_for('listar_estoque'))
+                        return redirect(url_for('listar_estoque') + '#movimentacaoEstoqueModal') # Redireciona para o modal
                     nova_quantidade = quantidade_atual - quantidade
                 else:
                     flash('Tipo de movimentação inválido.', 'danger')
@@ -315,14 +318,39 @@ def register_estoque_routes(app):
                     'usuario_responsavel': session.get('user_name', 'N/A')
                 })
 
+                # Lógica para criar Conta a Pagar
+                if tipo_movimentacao == 'entrada' and criar_conta_pagar:
+                    if preco_total <= 0 and not data_vencimento:
+                        flash('Para criar uma Conta a Pagar, o Preço Total ou a Data de Vencimento são obrigatórios.', 'warning')
+                        # Não impede a movimentação de estoque, apenas avisa sobre a conta a pagar
+                    else:
+                        try:
+                            db_instance.collection('clinicas').document(clinica_id).collection('contas_a_pagar').add({
+                                'descricao': f'Compra de estoque: {produto_nome} (Qtd: {quantidade})',
+                                'produto_id': produto_id,
+                                'produto_nome': produto_nome,
+                                'valor': preco_total,
+                                'data_vencimento': data_vencimento if data_vencimento else None,
+                                'status': 'pendente', # Ou 'aberto', 'a_pagar'
+                                'data_lancamento': datetime.datetime.now(SAO_PAULO_TZ),
+                                'usuario_responsavel': session.get('user_name', 'N/A')
+                            })
+                            flash('Conta a Pagar criada com sucesso!', 'info')
+                        except Exception as e:
+                            flash(f'Erro ao criar Conta a Pagar: {e}', 'danger')
+                            print(f"ERRO: [movimentar_estoque POST] Erro ao criar Conta a Pagar: {e}")
+
+
                 flash(f'Movimentação de estoque de {produto_nome} ({tipo_movimentacao}) registrada com sucesso!', 'success')
                 return redirect(url_for('listar_estoque'))
 
             except ValueError:
                 flash('Quantidade e preço devem ser números válidos.', 'danger')
+                return redirect(url_for('listar_estoque') + '#movimentacaoEstoqueModal') # Redireciona para o modal
             except Exception as e:
                 flash(f'Erro ao movimentar estoque: {e}', 'danger')
                 print(f"ERRO: [movimentar_estoque POST] {e}")
+                return redirect(url_for('listar_estoque') + '#movimentacaoEstoqueModal') # Redireciona para o modal
         
         return render_template('movimentacao_estoque_form.html', produtos=produtos_ativos_lista, action_url=url_for('movimentar_estoque'))
 

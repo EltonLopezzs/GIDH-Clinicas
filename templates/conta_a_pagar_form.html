@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Adicionar' if not conta else 'Editar' }} Conta a Pagar - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+    
+    <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #0f172a;
+            --primary: #0d9488; /* Teal-600 */
+            --primary-dark: #115e59;
+            --secondary: #f59e0b; /* Amber-500 */
+            --danger: #dc2626; /* Red-600 */
+            --success: #16a34a; /* Green-600 */
+            --warning: #f59e0b;
+            --info: #0ea5e9; /* Sky-500 */
+            --border-color: #e2e8f0;
+            
+            --dark-bg: #0f172a;
+            --dark-card: #1e293b;
+            --dark-text: #f1f5f9;
+            --dark-muted: #94a3b8;
+            --dark-border-color: #334155;
+            
+            color-scheme: light;
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
+            color-scheme: dark;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; overflow-x: hidden; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .layout { display: flex; min-height: 100vh; width: 100%; }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--primary), var(--accent));
+            color: white;
+            position: fixed;
+            top: 0; left: 0; height: 100vh;
+            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 1000; display: flex; flex-direction: column;
+        }
+        .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
+        .sidebar-header {
+            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
+        }
+        .sidebar-header .logo {
+            font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
+            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
+        }
+        .sidebar-header .logo i { font-size: 1.8rem; }
+        .sidebar.collapsed { width: 78px; }
+        .sidebar.collapsed .sidebar-header .logo span { display: none; }
+        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+        .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
+        .sidebar nav ul { list-style: none; padding: 0; }
+        .sidebar nav ul li { margin-bottom: 0.5rem; }
+        .sidebar nav ul li a {
+            color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
+            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
+            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
+        }
+        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+        .sidebar.collapsed nav ul li a span { display: none; }
+        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
+        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
+        .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
+        .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
+        .sidebar-footer button, .sidebar-footer a {
+            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
+            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
+            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
+            font-size: 0.95rem; text-decoration: none;
+        }
+        .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .sidebar.collapsed .sidebar-footer span { display: none; }
+        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+        
+        /* --- Main Content & Topbar --- */
+        .main-content {
+            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 260px);
+        }
+        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
+        .topbar {
+            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
+            position: sticky; top: 0; z-index: 900;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
+        .toggle-btn {
+            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
+            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+        
+        /* --- Buttons --- */
+        .btn {
+            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
+            font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
+        }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+        .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
+        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
+        [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .btn-warning { background-color: var(--warning); color: #854d0e; }
+        [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
+        .btn-warning:hover { background-color: #fcd34d; }
+        .btn-info { background-color: var(--info); color: white; }
+        .btn-info:hover { background-color: #0369a1; }
+        .btn-toggle-inactive { background-color: #4b5563; color: white; }
+        .btn-toggle-inactive:hover { background-color: #374151; }
+
+        /* --- Form Card --- */
+        .form-card {
+            background-color: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 2rem;
+            max-width: 700px; /* Limita a largura do formulário */
+            margin: 2rem auto; /* Centraliza o formulário na página */
+        }
+        .form-card-header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .form-card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--muted);
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="date"],
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        .form-actions .btn {
+            min-width: 120px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        .checkbox-group label {
+            margin: 0;
+            font-size: 0.95rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-content { margin-left: 0; width: 100%; }
+            main { padding: 1rem; }
+            .topbar { padding: 0 1rem; flex-wrap: wrap; height: auto; row-gap: 1rem; padding-top: 1rem; padding-bottom: 1rem;}
+            .topbar-left { width: 100%; justify-content: space-between; }
+            .topbar-actions { width: 100%; justify-content: flex-end; }
+            .form-card { padding: 1rem; margin: 1rem auto; }
+            .form-row { grid-template-columns: 1fr; }
+            .form-actions { flex-direction: column; gap: 0.5rem; }
+            .form-actions .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-inner-content">
+                <div class="sidebar-header">
+                    <a href="{{ url_for('index') }}" class="logo">
+                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
+                    </a>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        {% if session.user_role == 'admin' %}
+                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
+                        <li class="active"><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="theme-toggle" aria-label="Alternar tema">
+                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
+                    </button>
+                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
+                    <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
+                    <h1 class="page-title">{{ 'Adicionar' if not conta else 'Editar' }} Conta a Pagar</h1>
+                </div>
+            </header>
+
+            <main>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    <div class="flash-messages">
+                      {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">{{ message }}</div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <h2>{{ 'Nova' if not conta else 'Editar' }} Conta a Pagar</h2>
+                        <a href="{{ url_for('listar_contas_a_pagar') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                    <form action="{{ action_url }}" method="POST">
+                        <div class="form-group">
+                            <label for="descricao">Descrição</label>
+                            <textarea id="descricao" name="descricao" rows="3" required>{{ conta.descricao or request.form.get('descricao', '') }}</textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="valor">Valor (R$)</label>
+                                <input type="text" id="valor" name="valor" placeholder="Ex: 150,00" pattern="^\d+([,.]\d{1,2})?$" title="Use vírgula ou ponto para centavos (ex: 150,00 ou 150.00)" value="{{ '%.2f'|format(conta.valor) if conta and conta.valor is not none else request.form.get('valor', '') }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="data_vencimento">Data de Vencimento</label>
+                                <input type="date" id="data_vencimento" name="data_vencimento" value="{{ conta.data_vencimento_input or request.form.get('data_vencimento', '') }}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="status">Status</label>
+                                <select id="status" name="status" required>
+                                    <option value="pendente" {% if (conta and conta.status == 'pendente') or (not conta and request.form.get('status', 'pendente') == 'pendente') %}selected{% endif %}>Pendente</option>
+                                    <option value="paga" {% if (conta and conta.status == 'paga') or (request.form.get('status') == 'paga') %}selected{% endif %}>Paga</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="produto_id">Vincular a Produto (Opcional)</label>
+                                <select id="produto_id" name="produto_id">
+                                    <option value="">Nenhum produto</option>
+                                    {% for produto in produtos_ativos %}
+                                        <option value="{{ produto.id }}" {% if conta and conta.produto_id == produto.id %}selected{% endif %}>{{ produto.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <a href="{{ url_for('listar_contas_a_pagar') }}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ 'Salvar' if conta else 'Adicionar' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        // Placeholder for Firebase - adjust with your actual config
+        const FAKE_FIREBASE = {
+            initializeApp: () => ({}),
+            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
+        };
+        const { initializeApp } = FAKE_FIREBASE;
+        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        let auth = getAuth(initializeApp(firebaseConfig));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+            const themeToggle = document.querySelector('#theme-toggle');
+            const logoutButton = document.getElementById('logoutButton');
+            const dataVencimentoInput = document.getElementById('data_vencimento');
+
+            // Initialize Flatpickr for data_vencimento
+            if (dataVencimentoInput) {
+                flatpickr(dataVencimentoInput, {
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    locale: "pt",
+                    disableMobile: true
+                });
+            }
+
+            // --- Sidebar Logic ---
+            function setupSidebar() {
+                if (!sidebar || !mainContent) return;
+                const updateDesktopToggleIcon = () => {
+                    if (!toggleBtnDesktop) return;
+                    const icon = toggleBtnDesktop.querySelector('i');
+                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
+                };
+                const applyInitialState = () => {
+                    if (window.innerWidth > 768) {
+                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                            sidebar.classList.add('collapsed');
+                            mainContent.classList.add('collapsed');
+                        }
+                    } else {
+                        sidebar.classList.remove('open', 'collapsed');
+                        mainContent.classList.remove('collapsed');
+                    }
+                    updateDesktopToggleIcon();
+                };
+                if (toggleBtnDesktop) {
+                    toggleBtnDesktop.addEventListener('click', () => {
+                        sidebar.classList.toggle('collapsed');
+                        mainContent.classList.toggle('collapsed');
+                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                        updateDesktopToggleIcon();
+                    });
+                }
+                if (menuBtnMobile) {
+                    menuBtnMobile.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        sidebar.classList.toggle('open');
+                    });
+                }
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+                applyInitialState();
+                window.addEventListener('resize', applyInitialState);
+            }
+
+            // --- Theme Logic ---
+            function setupTheme() {
+                if (!themeToggle) return;
+                const updateThemeUI = (theme) => {
+                    htmlEl.setAttribute('data-theme', theme);
+                    const icon = themeToggle.querySelector('i');
+                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                };
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                updateThemeUI(currentTheme);
+                themeToggle.addEventListener('click', () => {
+                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeUI(newTheme);
+                });
+            }
+
+            // --- Logout Logic ---
+            function setupLogout() {
+                if (!logoutButton) return;
+                logoutButton.addEventListener('click', async (event) => {
+                    event.preventDefault();
+                    fetch("{{ url_for('logout') }}", { method: 'POST' })
+                        .then(() => window.location.href = "{{ url_for('login_page') }}")
+                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
+                });
+            }
+
+            // --- Initialization ---
+            setupSidebar();
+            setupTheme();
+            setupLogout();
+        });
+    </script>
+</body>
+</html>
