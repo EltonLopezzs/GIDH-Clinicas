@@ -19,15 +19,16 @@ def register_estoque_routes(app):
         search_query = request.args.get('search', '').strip()
         filter_type = request.args.get('filter', 'todos').strip() # 'todos', 'estoque_baixo', 'vencidos'
 
-        # A consulta inicial pode ser mais ampla e o filtro aplicado em Python
-        # para lidar com 'vencidos' que compara com a data atual.
-        query = produtos_ref.order_by('nome')
-
-        print(f"DEBUG: Iniciando listagem de estoque para clinica_id: {clinica_id}")
-        print(f"DEBUG: Search Query: '{search_query}', Filter Type: '{filter_type}'")
+        print(f"DEBUG: [listar_estoque] Iniciando listagem de estoque para clinica_id: {clinica_id}")
+        print(f"DEBUG: [listar_estoque] Search Query: '{search_query}', Filter Type: '{filter_type}'")
 
         try:
-            docs = query.stream()
+            # A consulta inicial pode ser mais ampla e o filtro aplicado em Python
+            # para lidar com 'vencidos' que compara com a data atual.
+            # Não adicione order_by aqui se não for estritamente necessário para evitar índices extras
+            # O order_by('nome') já está no final para a lista Python
+            docs = produtos_ref.stream() 
+            
             # Obtenha a data atual uma vez, já no fuso horário correto
             hoje_data = datetime.datetime.now(SAO_PAULO_TZ).date() 
 
@@ -37,7 +38,6 @@ def register_estoque_routes(app):
                     produto['id'] = doc.id
                     
                     # Formatar data de validade para exibição no frontend
-                    # Garante que seja um objeto datetime.datetime antes de formatar
                     if 'data_validade' in produto and isinstance(produto['data_validade'], datetime.datetime):
                         produto['data_validade_fmt'] = produto['data_validade'].strftime('%d/%m/%Y')
                         produto['data_validade_obj'] = produto['data_validade'].date() # Para comparação no Jinja
@@ -57,7 +57,7 @@ def register_estoque_routes(app):
                     else: # 'todos' ou qualquer outro filtro padrão
                         produtos_lista.append(produto)
                 else:
-                    print(f"DEBUG: Documento vazio encontrado: {doc.id}")
+                    print(f"DEBUG: [listar_estoque] Documento vazio encontrado: {doc.id}")
 
             # Se houver uma query de busca, filtre a lista final (após os filtros de aba)
             if search_query:
@@ -66,14 +66,11 @@ def register_estoque_routes(app):
             # Ordenar a lista final por nome para consistência
             produtos_lista.sort(key=lambda x: x.get('nome', '').lower())
 
-            print(f"DEBUG: Produtos encontrados após filtros e busca: {len(produtos_lista)}")
-            # Opcional: printar os nomes dos produtos para depuração
-            # for p in produtos_lista:
-            #     print(f"  - {p.get('nome')} (Qtd: {p.get('quantidade_atual')}, Ativo: {p.get('ativo')})")
+            print(f"DEBUG: [listar_estoque] Produtos encontrados após filtros e busca: {len(produtos_lista)}")
 
         except Exception as e:
             flash(f'Erro ao listar produtos do estoque: {e}. Verifique seus índices do Firestore.', 'danger')
-            print(f"ERRO: list_estoque: {e}") # Log mais detalhado
+            print(f"ERRO: [listar_estoque] {e}") # Log mais detalhado
         
         # Passar a data atual para o template para a lógica de "Vencidos" no frontend
         return render_template('estoque.html', produtos=produtos_lista, search_query=search_query, filter_type=filter_type, now=hoje_data)
@@ -118,7 +115,7 @@ def register_estoque_routes(app):
                 flash('Estoque mínimo deve ser um número válido.', 'danger')
             except Exception as e:
                 flash(f'Erro ao adicionar produto ao estoque: {e}', 'danger')
-                print(f"ERRO: add_produto_estoque: {e}")
+                print(f"ERRO: [adicionar_produto_estoque] {e}")
         return render_template('estoque_form.html', produto=None, action_url=url_for('adicionar_produto_estoque'))
 
     @app.route('/estoque/editar/<string:produto_doc_id>', methods=['GET', 'POST'], endpoint='editar_produto_estoque')
@@ -164,7 +161,7 @@ def register_estoque_routes(app):
                 flash('Estoque mínimo deve ser um número válido.', 'danger')
             except Exception as e:
                 flash(f'Erro ao atualizar produto do estoque: {e}', 'danger')
-                print(f"ERRO: edit_produto_estoque (POST): {e}")
+                print(f"ERRO: [editar_produto_estoque POST] {e}")
 
         try:
             produto_doc = produto_ref.get()
@@ -183,7 +180,7 @@ def register_estoque_routes(app):
                 return redirect(url_for('listar_estoque'))
         except Exception as e:
             flash(f'Erro ao carregar produto do estoque para edição: {e}', 'danger')
-            print(f"ERRO: edit_produto_estoque (GET): {e}")
+            print(f"ERRO: [editar_produto_estoque GET] {e}")
             return redirect(url_for('listar_estoque'))
 
     @app.route('/estoque/ativar_desativar/<string:produto_doc_id>', methods=['POST'], endpoint='ativar_desativar_produto_estoque')
@@ -208,7 +205,7 @@ def register_estoque_routes(app):
                 flash('Produto não encontrado.', 'danger')
         except Exception as e:
             flash(f'Erro ao alterar o status do produto: {e}', 'danger')
-            print(f"ERRO: activate_deactivate_estoque_product: {e}")
+            print(f"ERRO: [ativar_desativar_produto_estoque] {e}")
         return redirect(url_for('listar_estoque'))
 
     @app.route('/estoque/excluir/<string:produto_doc_id>', methods=['POST'], endpoint='excluir_produto_estoque')
@@ -230,7 +227,7 @@ def register_estoque_routes(app):
             flash('Produto do estoque excluído com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao excluir produto do estoque: {e}.', 'danger')
-            print(f"ERRO: delete_estoque_product: {e}")
+            print(f"ERRO: [excluir_produto_estoque] {e}")
         return redirect(url_for('listar_estoque'))
 
     @app.route('/estoque/movimentar', methods=['GET', 'POST'], endpoint='movimentar_estoque')
@@ -247,7 +244,7 @@ def register_estoque_routes(app):
                 if p_data: produtos_ativos_lista.append({'id': doc.id, 'nome': p_data.get('nome', doc.id), 'quantidade_atual': p_data.get('quantidade_atual', 0)})
         except Exception as e:
             flash('Erro ao carregar produtos ativos para movimentação.', 'danger')
-            print(f"ERRO: ao carregar produtos (movimentar_estoque GET): {e}")
+            print(f"ERRO: [movimentar_estoque GET] ao carregar produtos: {e}")
 
         if request.method == 'POST':
             try:
@@ -325,7 +322,7 @@ def register_estoque_routes(app):
                 flash('Quantidade e preço devem ser números válidos.', 'danger')
             except Exception as e:
                 flash(f'Erro ao movimentar estoque: {e}', 'danger')
-                print(f"ERRO: movimentar_estoque: {e}")
+                print(f"ERRO: [movimentar_estoque POST] {e}")
         
         return render_template('movimentacao_estoque_form.html', produtos=produtos_ativos_lista, action_url=url_for('movimentar_estoque'))
 
@@ -361,7 +358,7 @@ def register_estoque_routes(app):
                     movimentacoes_lista.append(mov)
         except Exception as e:
             flash(f'Erro ao listar histórico de movimentações: {e}.', 'danger')
-            print(f"ERRO: historico_movimentacoes: {e}")
+            print(f"ERRO: [historico_movimentacoes] {e}")
         
         return render_template('estoque_movimentacoes.html', movimentacoes=movimentacoes_lista, search_query=search_query, filter_type=filter_type)
 
@@ -370,10 +367,18 @@ def register_estoque_routes(app):
     @login_required
     def api_produtos_ativos():
         db_instance = get_db()
-        clinica_id = session['clinica_id']
+        clinica_id = session.get('clinica_id') # Use .get() para evitar KeyError se não existir
+
+        if not clinica_id:
+            print("ERRO: [api_produtos_ativos] clinica_id não encontrado na sessão.")
+            return jsonify({'error': 'ID da clínica não encontrado na sessão. Faça login novamente.'}), 401
+
         produtos_ativos = []
         try:
+            print(f"DEBUG: [api_produtos_ativos] Buscando produtos ativos para clinica_id: {clinica_id}")
+            # Esta é a consulta que provavelmente requer um índice composto
             docs = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+            
             for doc in docs:
                 p_data = doc.to_dict()
                 if p_data:
@@ -383,8 +388,11 @@ def register_estoque_routes(app):
                         'quantidade_atual': p_data.get('quantidade_atual', 0),
                         'unidade_medida': p_data.get('unidade_medida', '')
                     })
+            print(f"DEBUG: [api_produtos_ativos] {len(produtos_ativos)} produtos ativos encontrados.")
+            return jsonify(produtos_ativos)
         except Exception as e:
-            print(f"ERRO: ao buscar produtos ativos para API: {e}")
-            return jsonify({'error': 'Erro ao carregar produtos ativos.'}), 500
-        return jsonify(produtos_ativos)
+            # Imprime o erro completo no console do servidor
+            print(f"ERRO CRÍTICO: [api_produtos_ativos] Erro ao buscar produtos ativos: {e}")
+            # Retorna uma mensagem de erro genérica para o frontend
+            return jsonify({'error': 'Erro ao carregar produtos ativos. Consulte os logs do servidor para mais detalhes.'}), 500
 
