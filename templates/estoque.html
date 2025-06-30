@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.tailwindcss.com"></script> {# Adicionado Tailwind CSS #}
 
     <style>
         :root {
@@ -492,6 +493,74 @@
             margin-top: 0.5rem;
             display: block;
         }
+
+        /* Custom styles for the topbar actions */
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Espaçamento entre os elementos */
+            flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha em telas pequenas */
+            justify-content: flex-end; /* Alinha à direita por padrão */
+        }
+
+        .topbar-actions .search-form {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden; /* Garante que o input e o botão fiquem dentro do border-radius */
+            background-color: var(--bg);
+            flex-grow: 1; /* Permite que o formulário de busca ocupe espaço disponível */
+            max-width: 300px; /* Limita a largura em telas maiores */
+        }
+        [data-theme="dark"] .topbar-actions .search-form {
+            background-color: var(--dark-bg);
+            border-color: var(--dark-border-color);
+        }
+
+        .topbar-actions .search-input {
+            border: none;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            background-color: transparent;
+            color: var(--text);
+            flex-grow: 1;
+            outline: none; /* Remove o contorno de foco padrão */
+        }
+        .topbar-actions .search-input::placeholder {
+            color: var(--muted);
+        }
+
+        .topbar-actions .search-form .btn {
+            border-radius: 0; /* Remove border-radius para se juntar ao input */
+            padding: 0.6rem 1rem;
+            height: 100%; /* Garante que o botão tenha a mesma altura do input */
+        }
+        .topbar-actions .search-form .btn i {
+            margin: 0; /* Remove margin extra do ícone */
+        }
+
+        /* Responsividade para a topbar-actions */
+        @media (max-width: 768px) {
+            .topbar-actions {
+                width: 100%;
+                justify-content: center; /* Centraliza os itens em telas menores */
+                margin-top: 1rem; /* Adiciona espaço acima dos botões/busca */
+            }
+            .topbar-actions .search-form {
+                max-width: 100%; /* Ocupa a largura total em telas pequenas */
+                margin-bottom: 0.5rem; /* Espaço entre a busca e os botões */
+            }
+            .topbar-actions .btn {
+                flex-grow: 1; /* Faz os botões ocuparem a largura total */
+            }
+        }
+        @media (min-width: 769px) {
+            .topbar-actions {
+                flex-wrap: nowrap; /* Impede que os itens quebrem a linha */
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -1060,4 +1129,3 @@
     </script>
 </body>
 </html>
-
