@@ -73,7 +73,8 @@ def register_contas_a_pagar_routes(app):
             flash(f'Erro ao listar contas a pagar: {e}. Verifique seus índices do Firestore.', 'danger')
             print(f"ERRO: [listar_contas_a_pagar] {e}")
         
-        return render_template('contas_a_pagar.html', contas=contas_lista, search_query=search_query, filter_status=filter_status, now=hoje_dt)
+        # Passa SAO_PAULO_TZ para o template
+        return render_template('contas_a_pagar.html', contas=contas_lista, search_query=search_query, filter_status=filter_status, now=hoje_dt, SAO_PAULO_TZ=SAO_PAULO_TZ)
 
     @app.route('/contas_a_pagar/nova', methods=['GET', 'POST'], endpoint='adicionar_conta_a_pagar')
     @login_required
