@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import pytz
 
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth_admin
@@ -259,12 +260,14 @@ def index():
         profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').order_by('nome').stream()
         for doc in profissionais_docs:
             prof_data = doc.to_dict()
-            profissionais_lista.append({'id': doc.id, 'nome': prof_data.get('nome')})
+            if prof_data:
+                profissionais_lista.append({'id': doc.id, 'nome': prof_data.get('nome')})
         
         convenios_docs = db_instance.collection(f'clinicas/{clinica_id}/convenios').order_by('nome').stream()
         for doc in convenios_docs:
             conv_data = doc.to_dict()
-            convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome')})
+            if conv_data:
+                convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome')})
     except Exception as e:
         flash(f"Erro ao carregar dados para os filtros: {e}", "danger")
 
@@ -277,186 +280,206 @@ def index():
             user_doc = db_instance.collection('User').document(user_uid).get()
             if user_doc.exists:
                 profissional_id_logado = user_doc.to_dict().get('profissional_id')
-            
-            if not profissional_id_logado:
-                flash("Sua conta de usuário não está corretamente associada a um perfil de profissional. Contate o administrador.", "warning")
+                session['profissional_id_logado'] = profissional_id_logado
         except Exception as e:
             flash(f"Erro ao buscar informações do profissional: {e}", "danger")
             return render_template('dashboard.html', kpi={}, proximos_agendamentos=[], profissionais=[], convenios=[], filtros_atuais=filtros_atuais)
 
     agendamentos_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos')
     pacientes_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')
-    current_year = datetime.datetime.now(SAO_PAULO_TZ).year
     
     hoje_dt = datetime.datetime.now(SAO_PAULO_TZ)
     mes_atual_nome = hoje_dt.strftime('%B').capitalize()
-    
-    # Define o período de análise padrão (mês anterior e atual) se não houver filtro de data
+
+    # Define as datas de início e fim da consulta
+    dt_inicio_filtro = None
     if filtros_atuais['data_inicio']:
-        inicio_mes_analise_dt = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_inicio'], '%Y-%m-%d'))
-    else:
-        inicio_mes_analise_dt = hoje_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    
-    fim_mes_anterior_dt = inicio_mes_analise_dt - datetime.timedelta(seconds=1)
-    inicio_mes_anterior_dt = fim_mes_anterior_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-    # Construir a query base para agendamentos
-    query_analise = agendamentos_ref
-
-    # Aplicar filtros
-    if filtros_atuais['status']:
-        query_analise = query_analise.where(filter=FieldFilter('status', '==', filtros_atuais['status']))
-    else:
-        # Se nenhum status for selecionado, busca apenas os concluídos e confirmados para os KPIs
-        query_analise = query_analise.where(filter=FieldFilter('status', 'in', ['confirmado', 'concluido']))
-    
-    if filtros_atuais['data_inicio']:
-        query_analise = query_analise.where(filter=FieldFilter('data_agendamento_ts', '>=', inicio_mes_analise_dt.astimezone(pytz.utc)))
-    
-    if filtros_atuais['data_fim']:
-        dt_fim = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_fim'], '%Y-%m-%d')).replace(hour=23, minute=59, second=59)
-        query_analise = query_analise.where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim.astimezone(pytz.utc)))
-
-    if user_role == 'admin' and filtros_atuais['profissional_id']:
-        query_analise = query_analise.where(filter=FieldFilter('profissional_id', '==', filtros_atuais['profissional_id']))
-    elif user_role != 'admin':
-        if profissional_id_logado:
-            query_analise = query_analise.where(filter=FieldFilter('profissional_id', '==', profissional_id_logado))
-        else:
-            query_analise = query_analise.where(filter=FieldFilter('profissional_id', '==', 'ID_INVALIDO_PARA_NAO_RETORNAR_NADA'))
-            
-    # Lógica de filtro por convênio (requer busca adicional de pacientes)
-    pacientes_com_convenio = []
-    if filtros_atuais['convenio_id']:
         try:
-            pacientes_query = pacientes_ref.where(filter=FieldFilter('convenio_id', '==', filtros_atuais['convenio_id'])).stream()
-            pacientes_com_convenio = [doc.id for doc in pacientes_query]
-            if pacientes_com_convenio:
-                 # Limitação: A consulta 'in' suporta no máximo 30 itens.
-                query_analise = query_analise.where(filter=FieldFilter('paciente_id', 'in', pacientes_com_convenio[:30]))
-            else:
-                 # Se nenhum paciente tem o convênio, a query não retornará nada
-                query_analise = query_analise.where(filter=FieldFilter('paciente_id', '==', 'ID_INVALIDO_PARA_NAO_RETORNAR_NADA'))
-        except Exception as e:
-            print(f"Erro ao filtrar por convênio: {e}")
-            flash("Não foi possível aplicar o filtro por convênio.", "warning")
+            dt_inicio_filtro = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_inicio'], '%Y-%m-%d'))
+        except ValueError:
+            flash("Formato de data de início inválido. Use AAAA-MM-DD.", "warning")
+
+    dt_fim_filtro = None
+    if filtros_atuais['data_fim']:
+        try:
+            dt_fim_filtro = SAO_PAULO_TZ.localize(datetime.datetime.strptime(filtros_atuais['data_fim'], '%Y-%m-%d')).replace(hour=23, minute=59, second=59)
+        except ValueError:
+            flash("Formato de data de fim inválido. Use AAAA-MM-DD.", "warning")
+
+    # Se não houver filtro de data, define o padrão para os últimos 30 dias
+    if not dt_inicio_filtro and not dt_fim_filtro:
+        dt_fim_filtro = hoje_dt
+        dt_inicio_filtro = hoje_dt - datetime.timedelta(days=30)
+        filtros_atuais['data_inicio'] = dt_inicio_filtro.strftime('%Y-%m-%d')
+        filtros_atuais['data_fim'] = dt_fim_filtro.strftime('%Y-%m-%d')
+    elif not dt_inicio_filtro and dt_fim_filtro:
+        dt_inicio_filtro = dt_fim_filtro - datetime.timedelta(days=30)
+        filtros_atuais['data_inicio'] = dt_inicio_filtro.strftime('%Y-%m-%d')
+    elif dt_inicio_filtro and not dt_fim_filtro:
+        dt_fim_filtro = dt_inicio_filtro + datetime.timedelta(days=30)
+        filtros_atuais['data_fim'] = dt_fim_filtro.strftime('%Y-%m-%d')
 
 
-    # Executar a query
-    agendamentos_para_analise = []
+    # Construir a query base para agendamentos, apenas por data para evitar indices complexos
+    query_base = agendamentos_ref.where(filter=FieldFilter('data_agendamento_ts', '>=', dt_inicio_filtro.astimezone(pytz.utc))).where(filter=FieldFilter('data_agendamento_ts', '<=', dt_fim_filtro.astimezone(pytz.utc)))
+
+    # Executar a query e filtrar o resto em Python
+    all_appointments_in_range = []
     try:
-        docs_analise = query_analise.stream()
-        for doc in docs_analise:
+        docs_in_range = query_base.stream()
+        for doc in docs_in_range:
             ag_data = doc.to_dict()
-            if ag_data:
-                agendamentos_para_analise.append(ag_data)
+            ag_data['id'] = doc.id
+            all_appointments_in_range.append(ag_data)
     except Exception as e:
-        print(f"Erro na consulta de agendamentos para o painel: {e}")
-        flash("Erro ao calcular estatísticas do painel. Verifique seus índices do Firestore.", "danger")
+        print(f"Erro na consulta base de agendamentos: {e}")
+        flash("Erro ao buscar dados do painel. Verifique as permissões e índices do Firestore.", "danger")
+
+    # Filtros em Python
+    agendamentos_para_analise = []
+    patient_convenio_cache = {} # Cache para evitar múltiplas leituras do mesmo paciente
+
+    for ag in all_appointments_in_range:
+        # Filtro de Status
+        if filtros_atuais['status'] and ag.get('status') != filtros_atuais['status']:
+            continue
+        
+        # Filtro de Profissional
+        profissional_matches = False
+        if user_role == 'admin':
+            if not filtros_atuais['profissional_id'] or ag.get('profissional_id') == filtros_atuais['profissional_id']:
+                profissional_matches = True
+        elif profissional_id_logado and ag.get('profissional_id') == profissional_id_logado:
+            profissional_matches = True
+        
+        if not profissional_matches:
+            continue
+
+        # Filtro de Convênio
+        if filtros_atuais['convenio_id']:
+            paciente_id = ag.get('paciente_id')
+            if not paciente_id: continue
+            
+            if paciente_id not in patient_convenio_cache:
+                try:
+                    paciente_doc = pacientes_ref.document(paciente_id).get()
+                    patient_convenio_cache[paciente_id] = paciente_doc.to_dict().get('convenio_id') if paciente_doc.exists else None
+                except Exception as e:
+                    print(f"Erro ao buscar convênio do paciente {paciente_id}: {e}")
+                    patient_convenio_cache[paciente_id] = None
+
+            if patient_convenio_cache[paciente_id] != filtros_atuais['convenio_id']:
+                continue
+        
+        agendamentos_para_analise.append(ag)
 
     # --- Cálculo de KPIs com dados filtrados ---
-    receita_mes_atual = sum(float(ag.get('servico_procedimento_preco', 0)) for ag in agendamentos_para_analise if ag.get('data_agendamento_ts') and ag['data_agendamento_ts'] >= inicio_mes_analise_dt)
-    atendimentos_mes_atual = len([ag for ag in agendamentos_para_analise if ag.get('data_agendamento_ts') and ag['data_agendamento_ts'] >= inicio_mes_analise_dt])
-    
-    # Para comparação, precisamos de uma query separada para o mês anterior se o filtro de data estiver ativo
-    receita_mes_anterior = 0.0
-    atendimentos_mes_anterior = 0
-    # (A lógica de comparação do mês anterior pode ser simplificada ou removida quando há filtros de data)
+    status_validos_kpi = ['confirmado', 'concluido'] if not filtros_atuais['status'] else [filtros_atuais['status']]
+    agendamentos_kpi = [ag for ag in agendamentos_para_analise if ag.get('status') in status_validos_kpi]
 
-    novos_pacientes_mes = 0
-    if filtros_atuais['data_inicio']:
-        try:
-            novos_pacientes_mes_query = pacientes_ref.where(filter=FieldFilter('data_cadastro', '>=', inicio_mes_analise_dt))
-            if filtros_atuais['data_fim']:
-                novos_pacientes_mes_query = novos_pacientes_mes_query.where(filter=FieldFilter('data_cadastro', '<=', dt_fim))
-            novos_pacientes_mes = novos_pacientes_mes_query.count().get()[0][0].value
-        except Exception as e:
-            print(f"Erro ao contar novos pacientes: {e}")
-            novos_pacientes_mes = 'N/A'
+    receita_periodo = sum(float(ag.get('servico_procedimento_preco', 0)) for ag in agendamentos_kpi)
+    atendimentos_periodo = len(agendamentos_kpi)
+
+    novos_pacientes_periodo = 0
+    try:
+        pacientes_query = pacientes_ref.where(filter=FieldFilter('data_cadastro', '>=', dt_inicio_filtro.astimezone(pytz.utc)))
+        if dt_fim_filtro:
+            pacientes_query = pacientes_query.where(filter=FieldFilter('data_cadastro', '<=', dt_fim_filtro.astimezone(pytz.utc)))
+        count_query = pacientes_query.count()
+        novos_pacientes_periodo = count_query.get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar novos pacientes: {e}")
 
     kpi_cards = {
-        'receita_mes_atual': receita_mes_atual,
-        'atendimentos_mes_atual': atendimentos_mes_atual,
-        'variacao_receita': 0, # Simplificado quando há filtro de data
-        'variacao_atendimentos': 0, # Simplificado quando há filtro de data
-        'novos_pacientes_mes': novos_pacientes_mes,
+        'receita_mes_atual': receita_periodo,
+        'atendimentos_mes_atual': atendimentos_periodo,
+        'novos_pacientes_mes': novos_pacientes_periodo,
     }
     
     # --- Cálculo dos Gráficos com dados filtrados ---
     atendimentos_por_dia = Counter()
     receita_por_dia = Counter()
     
-    data_loop_inicial = inicio_mes_analise_dt.date()
-    data_loop_final = dt_fim.date() if filtros_atuais['data_fim'] else hoje_dt.date()
-    dias_no_intervalo = (data_loop_final - data_loop_inicial).days + 1
+    dias_labels = []
+    if dt_inicio_filtro and dt_fim_filtro:
+        dias_no_intervalo = (dt_fim_filtro.date() - dt_inicio_filtro.date()).days + 1
+        dias_labels = [(dt_inicio_filtro.date() + datetime.timedelta(days=i)).strftime('%d/%m') for i in range(dias_no_intervalo)]
+        for dia in dias_labels:
+            atendimentos_por_dia[dia] = 0
+            receita_por_dia[dia] = 0
 
-    dias_labels = [(data_loop_inicial + datetime.timedelta(days=i)).strftime('%d/%m') for i in range(dias_no_intervalo)]
-    for dia in dias_labels:
-        atendimentos_por_dia[dia] = 0
-        receita_por_dia[dia] = 0
-
-    for ag in agendamentos_para_analise:
-        ag_ts = ag.get('data_agendamento_ts')
-        if ag_ts:
-            dia_str = ag_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m')
-            if dia_str in atendimentos_por_dia:
-                atendimentos_por_dia[dia_str] += 1
-                receita_por_dia[dia_str] += float(ag.get('servico_procedimento_preco', 0))
+        for ag in agendamentos_kpi:
+            ag_ts = ag.get('data_agendamento_ts')
+            if isinstance(ag_ts, datetime.datetime):
+                dia_str = ag_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m')
+                if dia_str in atendimentos_por_dia:
+                    atendimentos_por_dia[dia_str] += 1
+                    try:
+                        receita_por_dia[dia_str] += float(ag.get('servico_procedimento_preco', 0))
+                    except (ValueError, TypeError):
+                        pass
 
     dados_atendimento_vs_receita = {
         "labels": dias_labels,
-        "atendimentos": [atendimentos_por_dia[label] for label in dias_labels],
-        "receitas": [receita_por_dia[label] for label in dias_labels]
+        "atendimentos": [atendimentos_por_dia.get(label, 0) for label in dias_labels],
+        "receitas": [receita_por_dia.get(label, 0) for label in dias_labels]
     }
 
-    receita_por_procedimento = Counter(ag.get('servico_procedimento_nome', 'Desconhecido') for ag in agendamentos_para_analise)
+    receita_por_procedimento = Counter()
+    for ag in agendamentos_kpi:
+        nome_proc = ag.get('servico_procedimento_nome', 'Desconhecido')
+        receita_por_procedimento[nome_proc] += float(ag.get('servico_procedimento_preco', 0))
     top_5_procedimentos = receita_por_procedimento.most_common(5)
     dados_receita_procedimento = {
         "labels": [item[0] for item in top_5_procedimentos],
         "valores": [item[1] for item in top_5_procedimentos]
     }
 
-    atendimentos_por_profissional = Counter(ag.get('profissional_nome', 'Desconhecido') for ag in agendamentos_para_analise)
+    atendimentos_por_profissional = Counter(ag.get('profissional_nome', 'Desconhecido') for ag in agendamentos_kpi)
     top_5_profissionais = atendimentos_por_profissional.most_common(5)
     dados_desempenho_profissional = {
         "labels": [item[0] for item in top_5_profissionais],
         "valores": [item[1] for item in top_5_profissionais]
     }
 
-    # Próximos agendamentos não são afetados pelos filtros do dashboard
+    # Próximos agendamentos (não afetados pelos filtros do dashboard)
     proximos_agendamentos_lista = []
     try:
-        query_proximos = db_instance.collection(f'clinicas/{clinica_id}/agendamentos').where(
-            filter=FieldFilter('status', '==', 'confirmado')
-        ).where(
+        query_proximos_base = db_instance.collection(f'clinicas/{clinica_id}/agendamentos')
+        query_proximos = query_proximos_base.where(
             filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt.replace(hour=0, minute=0, second=0, microsecond=0))
-        )
-        
-        if user_role != 'admin' and profissional_id_logado:
-            query_proximos = query_proximos.where(
-                filter=FieldFilter('profissional_id', '==', profissional_id_logado)
-            )
+        ).order_by('data_agendamento_ts').limit(50)
 
-        docs_proximos = query_proximos.order_by('data_agendamento_ts').limit(10).stream()
+        docs_proximos = query_proximos.stream()
+        
+        count = 0
         for doc in docs_proximos:
+            if count >= 10: break
+            
             ag_data = doc.to_dict()
-            if ag_data and ag_data.get('data_agendamento_ts'):
-                proximos_agendamentos_lista.append({
-                    'id_profissional': ag_data.get('profissional_id'),
-                    'data_agendamento': ag_data.get('data_agendamento_ts').strftime('%d/%m/%Y'),
-                    'hora_agendamento': ag_data.get('hora_agendamento', "N/A"),
-                    'cliente_nome': ag_data.get('paciente_nome', "N/A"),
-                    'profissional_nome': ag_data.get('profissional_nome', "N/A"),
-                    'servico_procedimento_nome': ag_data.get('servico_procedimento_nome', "N/A"),
-                    'preco': float(ag_data.get('servico_procedimento_preco', 0.0))
-                })
+            if ag_data.get('status') != 'confirmado':
+                continue
+            
+            if user_role != 'admin' and profissional_id_logado and ag_data.get('profissional_id') != profissional_id_logado:
+                continue
+
+            proximos_agendamentos_lista.append({
+                'id_profissional': ag_data.get('profissional_id'),
+                'data_agendamento': ag_data.get('data_agendamento_ts').astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y'),
+                'hora_agendamento': ag_data.get('hora_agendamento', "N/A"),
+                'cliente_nome': ag_data.get('paciente_nome', "N/A"),
+                'profissional_nome': ag_data.get('profissional_nome', "N/A"),
+                'servico_procedimento_nome': ag_data.get('servico_procedimento_nome', "N/A"),
+                'preco': float(ag_data.get('servico_procedimento_preco', 0.0))
+            })
+            count += 1
     except Exception as e:
         print(f"ERRO ao buscar próximos agendamentos: {e}")
         flash("Erro ao carregar próximos agendamentos.", "danger")
 
     return render_template(
         'dashboard.html',
-        current_year=current_year,
+        current_year=hoje_dt.year,
         mes_atual_nome=mes_atual_nome,
         kpi=kpi_cards,
         proximos_agendamentos=proximos_agendamentos_lista,

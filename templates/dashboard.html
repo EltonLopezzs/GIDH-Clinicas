@@ -348,7 +348,7 @@
     .modal-body { overflow-y: auto; padding: 1.5rem; }
     .form-group { margin-bottom: 1.25rem; }
     .form-group label { display: block; font-size: 0.9rem; color: var(--muted); font-weight: 500; margin-bottom: 0.5rem; }
-    .form-group input, .form-group select { font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--card); color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .form-group input, .form-group select { font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg); color: var(--text); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
     .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
     .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.75rem; flex-shrink: 0; background-color: var(--bg); }
@@ -464,7 +464,7 @@
 
         <section class="charts-section-split">
             <div class="graph-card">
-                <h3 class="chart-title">Top 5 Procedimentos por Receita</h3>
+                <h3 class="chart-title">Top 5 Serviços por Receita</h3>
                 <div class="chart-container">
                     <canvas id="receitaPorProcedimentoChart"></canvas>
                 </div>
@@ -489,13 +489,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% set items_rendered = namespace(count=0) %}
-                        {% for agendamento in proximos_agendamentos %}
-                            {# --- LÓGICA DE VISUALIZAÇÃO --- #}
-                            {# Condição: mostra o agendamento se o usuário for 'admin' OU se o agendamento pertencer ao usuário logado. #}
-                            {# IMPORTANTE: Certifique-se que 'agendamento.id_profissional' e 'session.user_id' correspondem aos nomes das variáveis no seu backend #}
-                            {% if session.user_role == 'admin' or agendamento.id_profissional == session.user_id %}
-                                {% set items_rendered.count = items_rendered.count + 1 %}
+                        {% if proximos_agendamentos %}
+                            {% for agendamento in proximos_agendamentos %}
                                 <tr>
                                     <td>{{ agendamento.data_agendamento }}</td>
                                     <td>{{ agendamento.hora_agendamento }}</td>
@@ -504,11 +499,8 @@
                                     <td>{{ agendamento.servico_procedimento_nome }}</td>
                                     <td>R$ {{ "%.2f"|format(agendamento.preco|float) | replace('.', ',') }}</td>
                                 </tr>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {# Mensagem se, após o filtro, nenhum agendamento for exibido #}
-                        {% if items_rendered.count == 0 %}
+                            {% endfor %}
+                        {% else %}
                             <tr><td colspan="6" style="text-align: center; padding: 2rem;">Nenhum próximo agendamento para exibir.</td></tr>
                         {% endif %}
                     </tbody>
@@ -517,10 +509,8 @@
             
             <div class="mobile-cards-wrapper">
                 <div class="appointments-container-mobile">
-                    {% set mobile_items_rendered = namespace(count=0) %}
-                    {% for agendamento in proximos_agendamentos %}
-                        {% if session.user_role == 'admin' or agendamento.id_profissional == session.user_id %}
-                            {% set mobile_items_rendered.count = mobile_items_rendered.count + 1 %}
+                    {% if proximos_agendamentos %}
+                        {% for agendamento in proximos_agendamentos %}
                             <div class="agendamento-card-mobile">
                                 <div class="card-transfer-header">
                                     <div class="card-transfer-party">{{ agendamento.cliente_nome }}</div>
@@ -533,21 +523,21 @@
                                     <div class="card-detail-item"><span class="card-detail-item-label">Preço</span> <span class="card-detail-item-value">R$ {{ "%.2f"|format(agendamento.preco|float) | replace('.', ',') }}</span></div>
                                 </div>
                             </div>
+                        {% endfor %}
+                        
+                        {% if proximos_agendamentos|length > 1 %}
+                        <button class="card-nav-btn" id="prev-card-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button class="card-nav-btn" id="next-card-btn"><i class="fa-solid fa-chevron-right"></i></button>
                         {% endif %}
-                    {% endfor %}
-                    
-                    {% if mobile_items_rendered.count > 0 %}
-                    <button class="card-nav-btn" id="prev-card-btn"><i class="fa-solid fa-chevron-left"></i></button>
-                    <button class="card-nav-btn" id="next-card-btn"><i class="fa-solid fa-chevron-right"></i></button>
                     {% endif %}
                 </div>
                 
-                {% if mobile_items_rendered.count > 0 %}
+                {% if proximos_agendamentos|length > 1 %}
                 <div class="card-slider-controls">
                     <span id="card-counter"></span>
                     <button class="btn-link" id="toggle-view-btn">Ver Todos</button>
                 </div>
-                {% else %}
+                {% elif not proximos_agendamentos %}
                 <div style="text-align: center; padding: 2rem; background: var(--card); border-radius: 12px; margin-top: 1rem;">
                     Nenhum próximo agendamento para exibir.
                 </div>
@@ -562,7 +552,6 @@
     </div>
   </div>
 
-  <!-- Modal de Filtros -->
   <div class="modal-overlay" id="filterModal">
     <div class="modal-content">
         <div class="modal-header">
@@ -584,7 +573,7 @@
                  <div class="form-group">
                     <label for="filter_status">Status do Agendamento</label>
                     <select id="filter_status" name="status">
-                        <option value="">Todos (Confirmados e Concluídos)</option>
+                        <option value="">Todos (Status Válidos)</option>
                         <option value="confirmado" {% if filtros_atuais.status == 'confirmado' %}selected{% endif %}>Confirmado</option>
                         <option value="concluido" {% if filtros_atuais.status == 'concluido' %}selected{% endif %}>Concluído</option>
                         <option value="pendente" {% if filtros_atuais.status == 'pendente' %}selected{% endif %}>Pendente</option>
@@ -796,21 +785,26 @@
             const receitaProcedimentoCtx = document.getElementById('receitaPorProcedimentoChart')?.getContext('2d');
             if (receitaProcedimentoCtx && dadosReceitaProc.labels?.length) {
                 charts.receitaPorProcedimento = new Chart(receitaProcedimentoCtx, {
-                    type: 'bar',
+                    type: 'doughnut',
                     data: {
                         labels: dadosReceitaProc.labels,
                         datasets: [{
                             label: 'Receita Gerada',
                             data: dadosReceitaProc.valores,
                             backgroundColor: [getCssVar('--primary'), getCssVar('--secondary'), '#3b82f6', '#8b5cf6', '#ec4899'],
-                            borderRadius: 6,
+                            borderColor: themeColors.cardBg,
+                            borderWidth: 2,
                         }]
                     },
                     options: {
-                        indexAxis: 'y', maintainAspectRatio: false, responsive: true,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { ticks: { callback: (value) => `R$ ${value}` } }
+                        maintainAspectRatio: false, responsive: true,
+                        plugins: { 
+                            legend: { 
+                                position: 'right',
+                                labels: {
+                                  boxWidth: 20
+                                }
+                            } 
                         }
                     }
                 });
@@ -819,20 +813,27 @@
             const desempenhoProfissionalCtx = document.getElementById('desempenhoProfissionalChart')?.getContext('2d');
             if (desempenhoProfissionalCtx && dadosDesempenhoProf.labels?.length) {
                 charts.desempenhoProfissional = new Chart(desempenhoProfissionalCtx, {
-                    type: 'bar',
+                    type: 'doughnut',
                     data: {
                         labels: dadosDesempenhoProf.labels,
                         datasets: [{
                             label: 'Nº de Atendimentos',
                             data: dadosDesempenhoProf.valores,
                             backgroundColor: [getCssVar('--primary'), getCssVar('--secondary'), '#3b82f6', '#8b5cf6', '#ec4899'],
-                            borderRadius: 6,
+                            borderColor: themeColors.cardBg,
+                            borderWidth: 2,
                         }]
                     },
                     options: {
-                        indexAxis: 'y', maintainAspectRatio: false, responsive: true,
-                        plugins: { legend: { display: false } },
-                        scales: { x: { ticks: { precision: 0, beginAtZero: true } } }
+                        maintainAspectRatio: false, responsive: true,
+                        plugins: { 
+                             legend: { 
+                                position: 'right',
+                                labels: {
+                                  boxWidth: 20
+                                }
+                            } 
+                        }
                     }
                 });
             }
@@ -850,7 +851,14 @@
       const counter = document.getElementById('card-counter');
       const toggleBtn = document.getElementById('toggle-view-btn');
       
-      if (cards.length === 0) return;
+      if (cards.length === 0) {
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (counter) counter.style.display = 'none';
+        if (toggleBtn) toggleBtn.style.display = 'none';
+        return;
+      }
+
 
       let currentIndex = 0;
       let isExpanded = false;
@@ -899,10 +907,18 @@
     
     // --- LÓGICA DO MODAL DE FILTROS ---
     function setupFilterModal() {
+        const scriptEl = document.getElementById('dashboard-script');
+        if (!scriptEl) return;
+
         const filterModal = document.getElementById('filterModal');
         const openBtn = document.getElementById('openFilterModalBtn');
-        const closeBtn = filterModal.querySelector('.modal-close-btn');
-        const filterForm = document.getElementById('filterForm');
+        const closeBtn = filterModal?.querySelector('[data-close-modal="filterModal"]');
+        
+        if(!filterModal || !openBtn || !closeBtn) {
+            console.error("Elementos do modal de filtro não encontrados.");
+            return;
+        }
+
         const filtrosAtuais = JSON.parse(scriptEl.dataset.filtrosAtuais || '{}');
         
         openBtn.addEventListener('click', () => filterModal.classList.add('active'));
@@ -915,8 +931,14 @@
 
         // Verifica se há filtros para mudar a cor do botão principal
         let hasActiveFilters = false;
+        const defaultStartDate = new Date();
+        defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+        
         for (const key in filtrosAtuais) {
-            if(filtrosAtuais[key]) {
+            if(filtrosAtuais[key] && filtrosAtuais[key].trim() !== '') {
+                if (key === 'data_inicio' && filtrosAtuais[key] === defaultStartDate.toISOString().split('T')[0]) continue;
+                if (key === 'data_fim' && filtrosAtuais[key] === new Date().toISOString().split('T')[0]) continue;
+                
                 hasActiveFilters = true;
                 break;
             }
@@ -948,3 +970,4 @@
 </script>
 </body>
 </html>
+
