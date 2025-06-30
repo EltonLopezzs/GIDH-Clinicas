@@ -5,7 +5,7 @@ import datetime
 import pytz
 
 # Importar utils
-from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_doc_to_dict
+from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_doc_to_dict, parse_date_input
 
 def register_estoque_routes(app):
     @app.route('/estoque', endpoint='listar_estoque')
@@ -21,33 +21,38 @@ def register_estoque_routes(app):
 
         query = produtos_ref.order_by('nome')
 
-        if search_query:
-            query = query.where(filter=FieldFilter('nome', '>=', search_query)).where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
-        
-        # Note: 'vencidos' filter would require storing expiration dates and checking them
-        # For simplicity, I'll implement 'estoque_baixo' and 'todos' for now.
-        # 'vencidos' would require a more complex query or client-side filtering after fetching.
-
         try:
             docs = query.stream()
+            hoje = datetime.datetime.now(SAO_PAULO_TZ).date() # Data atual para comparação de vencimento
+
             for doc in docs:
                 produto = doc.to_dict()
                 if produto:
                     produto['id'] = doc.id
                     
-                    # Convert timestamps if necessary (e.g., for expiration dates if added later)
-                    if 'data_vencimento' in produto and isinstance(produto['data_vencimento'], datetime.datetime):
-                        produto['data_vencimento_fmt'] = produto['data_vencimento'].strftime('%d/%m/%Y')
-                    
-                    # Apply 'estoque_baixo' filter
+                    # Formatar data de validade para exibição no frontend
+                    if 'data_validade' in produto and isinstance(produto['data_validade'], datetime.date):
+                        produto['data_validade_fmt'] = produto['data_validade'].strftime('%d/%m/%Y')
+                    else:
+                        produto['data_validade_fmt'] = 'N/A' # Se não houver data ou formato inválido
+
+                    # Aplicar filtros
                     if filter_type == 'estoque_baixo':
                         if produto.get('quantidade_atual', 0) <= produto.get('estoque_minimo', 0):
                             produtos_lista.append(produto)
-                    else: # 'todos' or any other filter type
+                    elif filter_type == 'vencidos':
+                        # Verifica se a data de validade existe e é anterior à data atual
+                        if 'data_validade' in produto and isinstance(produto['data_validade'], datetime.date) and produto['data_validade'] < hoje:
+                            produtos_lista.append(produto)
+                    else: # 'todos' ou qualquer outro filtro padrão
                         produtos_lista.append(produto)
 
-            # For 'vencidos' tab, you'd filter here if not using a complex Firestore query
-            # or add a specific index for it. For now, it's a placeholder.
+            # Se houver uma query de busca, filtre a lista final (após os filtros de aba)
+            if search_query:
+                produtos_lista = [p for p in produtos_lista if search_query.lower() in p.get('nome', '').lower()]
+            
+            # Ordenar a lista final por nome para consistência
+            produtos_lista.sort(key=lambda x: x.get('nome', '').lower())
 
         except Exception as e:
             flash(f'Erro ao listar produtos do estoque: {e}. Verifique seus índices do Firestore.', 'danger')
@@ -65,6 +70,7 @@ def register_estoque_routes(app):
             nome = request.form['nome'].strip()
             estoque_minimo_str = request.form.get('estoque_minimo', '0').strip()
             unidade_medida = request.form.get('unidade_medida', '').strip()
+            data_validade_str = request.form.get('data_validade', '').strip() # Novo campo
             ativo = 'ativo' in request.form
 
             if not nome:
@@ -73,11 +79,19 @@ def register_estoque_routes(app):
             try:
                 estoque_minimo = int(estoque_minimo_str)
                 
+                data_validade_dt = None
+                if data_validade_str:
+                    data_validade_dt = parse_date_input(data_validade_str)
+                    if data_validade_dt is None:
+                        flash('Formato de data de validade inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
+                        return render_template('estoque_form.html', produto=request.form, action_url=url_for('adicionar_produto_estoque'))
+
                 db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').add({
                     'nome': nome,
                     'estoque_minimo': estoque_minimo,
                     'unidade_medida': unidade_medida if unidade_medida else None,
                     'quantidade_atual': 0, # Novo produto começa com 0 em estoque
+                    'data_validade': data_validade_dt.date() if data_validade_dt else None, # Armazena apenas a data
                     'ativo': ativo,
                     'criado_em': firestore.SERVER_TIMESTAMP
                 })
@@ -102,17 +116,32 @@ def register_estoque_routes(app):
             nome = request.form['nome'].strip()
             estoque_minimo_str = request.form.get('estoque_minimo', '0').strip()
             unidade_medida = request.form.get('unidade_medida', '').strip()
+            data_validade_str = request.form.get('data_validade', '').strip() # Novo campo
             ativo = 'ativo' in request.form
             try:
                 estoque_minimo = int(estoque_minimo_str)
                 
-                produto_ref.update({
+                data_validade_dt = None
+                if data_validade_str:
+                    data_validade_dt = parse_date_input(data_validade_str)
+                    if data_validade_dt is None:
+                        flash('Formato de data de validade inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
+                        return render_template('estoque_form.html', produto=request.form, action_url=url_for('editar_produto_estoque', produto_doc_id=produto_doc_id))
+                
+                update_data = {
                     'nome': nome,
                     'estoque_minimo': estoque_minimo,
                     'unidade_medida': unidade_medida if unidade_medida else None,
                     'ativo': ativo,
                     'atualizado_em': firestore.SERVER_TIMESTAMP
-                })
+                }
+                # Atualiza ou remove o campo data_validade
+                if data_validade_dt:
+                    update_data['data_validade'] = data_validade_dt.date()
+                else:
+                    update_data['data_validade'] = firestore.DELETE_FIELD # Remove o campo se estiver vazio
+
+                produto_ref.update(update_data)
                 flash('Produto do estoque atualizado com sucesso!', 'success')
                 return redirect(url_for('listar_estoque'))
             except ValueError:
@@ -127,6 +156,11 @@ def register_estoque_routes(app):
                 produto = produto_doc.to_dict()
                 if produto:
                     produto['id'] = produto_doc.id
+                    # Formata a data de validade para o campo input type="date"
+                    if 'data_validade' in produto and isinstance(produto['data_validade'], datetime.date):
+                        produto['data_validade_input'] = produto['data_validade'].strftime('%Y-%m-%d')
+                    else:
+                        produto['data_validade_input'] = '' # Garante que o campo esteja vazio se não houver data
                     return render_template('estoque_form.html', produto=produto, action_url=url_for('editar_produto_estoque', produto_doc_id=produto_doc_id))
             else:
                 flash('Produto do estoque não encontrado.', 'danger')
@@ -222,11 +256,11 @@ def register_estoque_routes(app):
                 
                 data_vencimento = None
                 if data_vencimento_str:
-                    try:
-                        data_vencimento = datetime.datetime.strptime(data_vencimento_str, '%Y-%m-%d').date()
-                    except ValueError:
-                        flash('Formato de data de vencimento inválido. Use AAAA-MM-DD.', 'danger')
+                    data_vencimento_dt = parse_date_input(data_vencimento_str)
+                    if data_vencimento_dt is None:
+                        flash('Formato de data de vencimento inválido. Use AAAA-MM-DD ou DD/MM/YYYY.', 'danger')
                         return redirect(url_for('listar_estoque'))
+                    data_vencimento = data_vencimento_dt.date() # Armazena apenas a data
 
                 produto_ref = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').document(produto_id)
                 produto_doc = produto_ref.get()
@@ -312,7 +346,7 @@ def register_estoque_routes(app):
         
         return render_template('estoque_movimentacoes.html', movimentacoes=movimentacoes_lista, search_query=search_query, filter_type=filter_type)
 
-# Adicione esta rota dentro da função register_estoque_routes(app):
+    # Adicione esta rota dentro da função register_estoque_routes(app):
     @app.route('/api/estoque/produtos_ativos', methods=['GET'], endpoint='api_produtos_ativos')
     @login_required
     def api_produtos_ativos():

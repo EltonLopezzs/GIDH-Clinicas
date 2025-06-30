@@ -180,6 +180,7 @@
         .status-badge.inactive { background-color: var(--danger); }
         .status-badge.low-stock { background-color: var(--warning); color: #854d0e; }
         [data-theme="dark"] .status-badge.low-stock { color: var(--dark-bg); }
+        .status-badge.expired { background-color: var(--danger); }
 
 
         /* --- Modal --- */
@@ -476,8 +477,8 @@
                     </div>
 
                     <div class="tab-content">
-                        <!-- Painel "Todos" e "Estoque Baixo" (renderizados pela mesma tabela, filtrados no backend) -->
-                        <div id="tab-panel-todos" class="tab-panel {% if filter_type == 'todos' or filter_type == 'estoque_baixo' %}active{% endif %}">
+                        <!-- Painel "Todos", "Estoque Baixo" e "Vencidos" (renderizados pela mesma tabela, filtrados no backend) -->
+                        <div id="tab-panel-produtos" class="tab-panel {% if filter_type in ['todos', 'estoque_baixo', 'vencidos'] %}active{% endif %}">
                             <div class="table-container">
                                 <table>
                                     <thead>
@@ -487,6 +488,7 @@
                                             <th>Quantidade Mínima</th>
                                             <th>Quantidade Atual</th>
                                             <th>Unidade Medida</th>
+                                            <th>Data Validade</th> {# NEW COLUMN #}
                                             <th>Status</th>
                                             <th style="width: 150px;">Ações</th>
                                         </tr>
@@ -499,9 +501,12 @@
                                             <td>{{ produto.estoque_minimo }}</td>
                                             <td>{{ produto.quantidade_atual }}</td>
                                             <td>{{ produto.unidade_medida or 'N/A' }}</td>
+                                            <td>{{ produto.data_validade_fmt or 'N/A' }}</td> {# DISPLAY NEW COLUMN #}
                                             <td>
                                                 {% if not produto.ativo %}
                                                     <span class="status-badge inactive">Inativo</span>
+                                                {% elif produto.data_validade and produto.data_validade < now().date() %} {# Check for expired #}
+                                                    <span class="status-badge expired">Vencido</span>
                                                 {% elif produto.quantidade_atual <= produto.estoque_minimo %}
                                                     <span class="status-badge low-stock">Estoque Baixo</span>
                                                 {% else %}
@@ -532,7 +537,7 @@
                                         </tr>
                                         {% else %}
                                         <tr class="no-results">
-                                            <td colspan="7">Nenhum produto encontrado.</td>
+                                            <td colspan="8">Nenhum produto encontrado.</td> {# Updated colspan #}
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -546,6 +551,8 @@
                                         <h4>{{ produto.nome }}</h4>
                                         {% if not produto.ativo %}
                                             <span class="status-badge inactive">Inativo</span>
+                                        {% elif produto.data_validade and produto.data_validade < now().date() %}
+                                            <span class="status-badge expired">Vencido</span>
                                         {% elif produto.quantidade_atual <= produto.estoque_minimo %}
                                             <span class="status-badge low-stock">Estoque Baixo</span>
                                         {% else %}
@@ -564,6 +571,10 @@
                                         <div class="card-detail-item">
                                             <span class="card-detail-item-label">Unidade</span>
                                             <span class="card-detail-item-value">{{ produto.unidade_medida or 'N/A' }}</span>
+                                        </div>
+                                        <div class="card-detail-item">
+                                            <span class="card-detail-item-label">Data Validade</span>
+                                            <span class="card-detail-item-value">{{ produto.data_validade_fmt or 'N/A' }}</span>
                                         </div>
                                     </div>
                                     <div class="card-actions-footer">
@@ -588,18 +599,9 @@
 
                         <!-- Painel "Movimento" -->
                         <div id="tab-panel-movimento" class="tab-panel {% if filter_type == 'movimento' %}active{% endif %}">
-                            <!-- Este conteúdo será carregado via JavaScript ou redirecionado para outra rota -->
                             <p style="text-align: center; padding: 2rem; color: var(--muted);">
-                                <i class="fas fa-spinner fa-spin"></i> Carregando histórico de movimentações...
+                                <i class="fas fa-spinner fa-spin"></i> Redirecionando para o histórico de movimentações...
                             </p>
-                        </div>
-
-                        <!-- Painel "Vencidos" (Placeholder) -->
-                        <div id="tab-panel-vencidos" class="tab-panel {% if filter_type == 'vencidos' %}active{% endif %}">
-                            <div class="empty-state" style="text-align: center; padding: 2rem; background: var(--bg); border-radius: 8px;">
-                                <i class="fas fa-calendar-times" style="font-size: 3rem; color: var(--muted); margin-bottom: 1rem;"></i>
-                                <p style="color: var(--muted);">Funcionalidade de produtos vencidos em desenvolvimento.</p>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -835,12 +837,12 @@
                 // Populate product select for movimentation modal
                 async function populateProductSelect() {
                     try {
-                        // Fetch active products from the backend (or pass them via Jinja if preferred)
-                        // For simplicity, let's assume a new endpoint or direct data access if possible
-                        // For now, hardcode some dummy data or ensure your Flask route passes it.
-                        // In a real app, you'd fetch this from a Flask endpoint like /api/estoque/produtos_ativos
-                        const response = await fetch('/api/estoque/produtos_ativos'); // You'd need to create this API endpoint
+                        const response = await fetch('/api/estoque/produtos_ativos'); 
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
                         const products = await response.json(); 
+                        console.log("Produtos ativos para modal:", products); // Debugging
 
                         produtoSelect.innerHTML = '<option value="">Selecione um produto</option>';
                         products.forEach(product => {
@@ -851,7 +853,15 @@
                         });
                     } catch (error) {
                         console.error('Erro ao carregar produtos para o modal de movimentação:', error);
-                        // Fallback or display error message
+                        // Display a user-friendly message in the modal or main page
+                        const flashMessagesContainer = document.querySelector('.flash-messages');
+                        if (flashMessagesContainer) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.classList.add('flash-message', 'danger');
+                            messageDiv.innerHTML = `<i class="fas fa-times-circle"></i> Erro ao carregar produtos para movimentação: ${error.message}`;
+                            flashMessagesContainer.appendChild(messageDiv);
+                            setTimeout(() => messageDiv.remove(), 5000);
+                        }
                     }
                 }
 
@@ -891,9 +901,11 @@
                     tab.addEventListener('click', () => {
                         const filter = tab.dataset.filter;
                         const currentUrl = new URL(window.location.href);
-                        currentUrl.searchParams.set('filter', filter);
+                        
                         // Preserve search query if it exists
-                        const currentSearch = searchForm.querySelector('input[name="search"]').value;
+                        const currentSearchInput = searchForm.querySelector('input[name="search"]');
+                        const currentSearch = currentSearchInput ? currentSearchInput.value : '';
+
                         if (currentSearch) {
                             currentUrl.searchParams.set('search', currentSearch);
                         } else {
@@ -904,6 +916,7 @@
                         if (filter === 'movimento') {
                             window.location.href = "{{ url_for('historico_movimentacoes') }}";
                         } else {
+                            currentUrl.searchParams.set('filter', filter);
                             window.location.href = currentUrl.toString();
                         }
                     });
