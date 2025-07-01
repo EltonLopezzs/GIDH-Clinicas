@@ -13,6 +13,15 @@ from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_
 
 @firestore.transactional
 def _delete_goal_transaction(transaction, pei_ref, goal_id_to_delete):
+    """
+    Deleta uma meta específica de um PEI.
+    Args:
+        transaction: Objeto de transação do Firestore.
+        pei_ref: Referência do documento PEI.
+        goal_id_to_delete: ID da meta a ser deletada.
+    Raises:
+        Exception: Se o PEI ou a meta não forem encontrados.
+    """
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists: raise Exception("PEI não encontrado.")
     goals = snapshot.to_dict().get('goals', [])
@@ -22,6 +31,18 @@ def _delete_goal_transaction(transaction, pei_ref, goal_id_to_delete):
 
 @firestore.transactional
 def _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, concluido):
+    """
+    Atualiza o status 'concluido' de um alvo específico dentro de uma meta do PEI.
+    Se o alvo for marcado como concluído, todas as ajudas associadas também são finalizadas.
+    Args:
+        transaction: Objeto de transação do Firestore.
+        pei_ref: Referência do documento PEI.
+        goal_id: ID da meta que contém o alvo.
+        target_id: ID do alvo a ser atualizado.
+        concluido: Booleano indicando se o alvo está concluído.
+    Raises:
+        Exception: Se o PEI, a meta ou o alvo não forem encontrados.
+    """
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists: raise Exception("PEI não encontrado.")
     goals = snapshot.to_dict().get('goals', [])
@@ -46,6 +67,16 @@ def _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, 
 
 @firestore.transactional
 def _finalize_goal_transaction(transaction, pei_ref, goal_id_to_finalize):
+    """
+    Finaliza uma meta específica dentro de um PEI, marcando-a como 'finalizado'
+    e todos os seus alvos e ajudas como concluídos/finalizados.
+    Args:
+        transaction: Objeto de transação do Firestore.
+        pei_ref: Referência do documento PEI.
+        goal_id_to_finalize: ID da meta a ser finalizada.
+    Raises:
+        Exception: Se o PEI ou a meta não forem encontrados.
+    """
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists: raise Exception("PEI não encontrado.")
     goals = snapshot.to_dict().get('goals', [])
@@ -53,11 +84,11 @@ def _finalize_goal_transaction(transaction, pei_ref, goal_id_to_finalize):
     for goal in goals:
         if goal.get('id') == goal_id_to_finalize:
             goal['status'] = 'finalizado'
-            # Mark all active targets within this goal as completed
+            # Marca todos os alvos ativos dentro desta meta como concluídos
             for target in goal.get('targets', []):
                 if not target.get('concluido', False):
                     target['concluido'] = True
-                # Mark all aids within this target as finalized
+                # Marca todas as ajudas dentro deste alvo como finalizadas
                 if 'aids' in target:
                     for aid in target['aids']:
                         aid['status'] = 'finalizada'
@@ -71,6 +102,11 @@ def _finalize_pei_transaction(transaction, pei_ref):
     """
     Finaliza um PEI, marcando-o como 'finalizado' e todas as suas metas ativas
     e respectivos alvos como 'finalizado'/'concluido'.
+    Args:
+        transaction: Objeto de transação do Firestore.
+        pei_ref: Referência do documento PEI.
+    Raises:
+        Exception: Se o PEI não for encontrado.
     """
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists:
@@ -79,14 +115,14 @@ def _finalize_pei_transaction(transaction, pei_ref):
     pei_data = snapshot.to_dict()
     updated_goals = pei_data.get('goals', [])
     
-    # Mark all active goals and their targets as finalized
+    # Marca todas as metas ativas e seus alvos como finalizados
     for goal in updated_goals:
         if goal.get('status') == 'ativo':
             goal['status'] = 'finalizado'
             for target in goal.get('targets', []):
                 if not target.get('concluido', False):
                     target['concluido'] = True
-                # Mark all aids within this target as finalized
+                # Marca todas as ajudas dentro deste alvo como finalizadas
                 if 'aids' in target:
                     for aid in target['aids']:
                         aid['status'] = 'finalizada'
@@ -99,6 +135,16 @@ def _finalize_pei_transaction(transaction, pei_ref):
 
 @firestore.transactional
 def _add_target_to_goal_transaction(transaction, pei_ref, goal_id, new_target_description):
+    """
+    Adiciona um novo alvo a uma meta existente dentro de um PEI.
+    Args:
+        transaction: Objeto de transação do Firestore.
+        pei_ref: Referência do documento PEI.
+        goal_id: ID da meta à qual o alvo será adicionado.
+        new_target_description: Descrição do novo alvo.
+    Raises:
+        Exception: Se o PEI ou a meta não forem encontrados.
+    """
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists:
         raise Exception("PEI não encontrado.")
@@ -138,6 +184,16 @@ def _add_target_to_goal_transaction(transaction, pei_ref, goal_id, new_target_de
 
 @firestore.transactional
 def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_name):
+    """
+    Adiciona uma nova atividade ao histórico de atividades de um PEI.
+    Args:
+        transaction: Objeto de transação do Firestore.
+        pei_ref: Referência do documento PEI.
+        activity_content: Conteúdo da atividade.
+        user_name: Nome do usuário que registrou a atividade.
+    Raises:
+        Exception: Se o PEI não for encontrado.
+    """
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists:
         raise Exception("PEI not found.")
@@ -154,6 +210,21 @@ def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_n
 
 @firestore.transactional
 def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, target_id, aid_id=None, new_attempts_count=None, new_help_content=None, new_target_status=None):
+    """
+    Atualiza os dados de um alvo específico ou de uma ajuda dentro de um alvo no PEI.
+    Pode atualizar a contagem de tentativas de uma ajuda ou o status geral de um alvo.
+    Args:
+        transaction: Objeto de transação do Firestore.
+        pei_ref: Referência do documento PEI.
+        goal_id: ID da meta que contém o alvo.
+        target_id: ID do alvo a ser atualizado.
+        aid_id: Opcional. ID da ajuda específica a ser atualizada.
+        new_attempts_count: Opcional. Nova contagem de tentativas para a ajuda.
+        new_help_content: Opcional. Conteúdo de ajuda (não usado na estrutura atual para aids fixas).
+        new_target_status: Opcional. Novo status geral do alvo.
+    Raises:
+        Exception: Se o PEI, a meta, o alvo ou a ajuda não forem encontrados, ou se houver erro de tipo.
+    """
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists:
         raise Exception("PEI não encontrado.")
@@ -173,11 +244,12 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
                     # Atualiza o status geral do alvo, se fornecido
                     if new_target_status is not None:
                         target['status'] = new_target_status
-                        # Se o alvo for finalizado, todas as ajudas devem ser finalizadas
+                        # Se o alvo for marcado como finalizado, todas as ajudas devem ser finalizadas
                         if new_target_status == 'finalizada' and 'aids' in target:
                             for aid in target['aids']:
                                 aid['status'] = 'finalizada'
-                                aid['attempts_count'] = aid.get('attempts_count', 0) # Garante que attempts_count exista
+                                # Garante que attempts_count exista e seja um número
+                                aid['attempts_count'] = int(aid.get('attempts_count', 0))
 
                     # Atualiza dados de uma ajuda específica, se aid_id for fornecido
                     if aid_id is not None and 'aids' in target:
@@ -186,17 +258,18 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
                             if aid.get('id') == aid_id:
                                 aid_found = True
                                 if new_attempts_count is not None:
-                                    aid['attempts_count'] = new_attempts_count
-                                # if new_help_content is not None: # help_content agora é a descrição da ajuda
-                                #     aid['description'] = new_help_content # A descrição da ajuda é fixa, não é um campo de ajuda editável.
+                                    try:
+                                        # CORREÇÃO: Converte new_attempts_count para int
+                                        aid['attempts_count'] = int(new_attempts_count)
+                                    except (ValueError, TypeError) as e:
+                                        raise Exception(f"Valor inválido para tentativas: {new_attempts_count}. Erro: {e}")
+                                # new_help_content não é usado aqui, pois 'description' é fixa
                                 break
                         if not aid_found:
                             raise Exception("Ajuda (Aid) não encontrada no alvo.")
                     elif new_help_content is not None:
-                        # Se new_help_content for passado sem aid_id, assumimos que é um campo de ajuda geral do alvo.
-                        # No entanto, na nova estrutura, a ajuda está nas sub-itens 'aids'.
-                        # Isso indica que a lógica de frontend precisa ser ajustada para não enviar help_content sem aid_id.
-                        # Por enquanto, vamos ignorar se não houver aid_id para help_content.
+                        # Este bloco pode ser removido se 'new_help_content' não for mais usado para atualização.
+                        # Na estrutura atual, a descrição da ajuda é fixa e não editável via este endpoint.
                         pass
 
                     break
@@ -1134,6 +1207,10 @@ def register_medical_records_routes(app):
             new_attempts_count = data.get('new_attempts_count')
             new_help_content = data.get('new_help_content') # Conteúdo de ajuda (se for para uma ajuda específica)
             new_target_status = data.get('new_target_status') # Novo: Status geral do alvo
+
+            # DEBUG: Logar os dados recebidos
+            print(f"DEBUG (update_target_and_aid_data): Dados recebidos: pei_id={pei_id}, goal_id={goal_id}, target_id={target_id}, aid_id={aid_id}, new_attempts_count={new_attempts_count} (type: {type(new_attempts_count)}), new_help_content={new_help_content}, new_target_status={new_target_status} (type: {type(new_target_status)})")
+
 
             if not all([pei_id, goal_id, target_id]):
                 return jsonify({'success': False, 'message': 'Dados insuficientes para atualizar alvo.'}), 400

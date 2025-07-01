@@ -1926,6 +1926,8 @@
             console.log('É Profissional (IS_PROFESSIONAL):', IS_PROFESSIONAL);
             console.log('ID do Profissional Logado (LOGGED_IN_PROFESSIONAL_ID):', LOGGED_IN_PROFESSIONAL_ID);
             console.log('Todos os PEIs carregados:', allPeisData);
+            // Adicione este log para ver o PACIENTE_DOC_ID
+            console.log('PACIENTE_DOC_ID:', PACIENTE_DOC_ID);
             console.log('-------------------------------------------');
 
 
@@ -2224,7 +2226,7 @@
 
                         try {
                             // Utiliza a API Gemini para gerar conteúdo
-                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // A chave API será fornecida pelo ambiente Canvas
+                            const apiKey = "SUA_API_KEY"; // A chave API será fornecida pelo ambiente Canvas
 
                             // Check if apiKey is valid (simple check, not exhaustive)
                             if (!apiKey || apiKey === "SUA_API_KEY") {
@@ -2571,18 +2573,18 @@
                             if (currentDeleteAction === 'delete_record') {
                                 // Define os valores e submete o formulário de exclusão de registro
                                 formApagarRegistro.querySelector('#registro_id_apagar').value = currentDeleteData.id;
-                                formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}`;
+                                formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=PACIENTE_DOC_ID) }}`;
                                 formApagarRegistro.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'delete_pei') {
                                 // Define os valores e submete o formulário de exclusão de PEI
                                 formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
-                                formApagarPei.action = `{{ url_for('delete_pei', paciente_doc_id=paciente.id) }}`;
+                                formApagarPei.action = `{{ url_for('delete_pei', paciente_doc_id=PACIENTE_DOC_ID) }}`;
                                 formApagarPei.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'delete_goal') {
                                 // Define os valores e submete o formulário de exclusão de meta
                                 formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
                                 formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
-                                formApagarGoal.action = `{{ url_for('delete_goal', paciente_doc_id=paciente.id) }}`;
+                                formApagarGoal.action = `{{ url_for('delete_goal', paciente_doc_id=PACIENTE_DOC_ID) }}`;
                                 formApagarGoal.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'finalize_goal') {
                                 // Chama a função assíncrona para finalizar a meta via AJAX
@@ -2662,6 +2664,8 @@
                         attemptsSpan.textContent = currentAttempts; // Atualiza visualmente
                         
                         console.log(`Updating aid attempts: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, Aid=${aidId}, Attempts=${currentAttempts}`);
+                        // Adicione este log para ver a URL sendo chamada
+                        console.log('URL para update_target_and_aid_data:', `{{ url_for('update_target_and_aid_data', paciente_doc_id=PACIENTE_DOC_ID) }}`);
                         // Envia a atualização para o backend, incluindo o aid_id
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, currentAttempts, null, null);
                         return;
@@ -2689,6 +2693,8 @@
                             return;
                         }
                         console.log(`Updating target status: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, New Status=${newStatus}`);
+                        // Adicione este log para ver a URL sendo chamada
+                        console.log('URL para update_target_and_aid_data:', `{{ url_for('update_target_and_aid_data', paciente_doc_id=PACIENTE_DOC_ID) }}`);
                         // Envia apenas o novo status do alvo
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, null, newStatus);
                         return;
