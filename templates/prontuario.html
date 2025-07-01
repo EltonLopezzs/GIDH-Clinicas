@@ -21,11 +21,11 @@
             --text: #0f172a; /* Tailwind Slate-900 */
             --muted: #64748b; /* Tailwind Slate-500 */
             --accent: #0f172a;
-            --primary: #0d9488; /* Tailwind Teal-600 */
-            --primary-dark: #115e59; /* Tailwind Teal-700 */
-            --secondary: #f59e0b; /* Tailwind Amber-500 */
-            --danger: #dc2626; /* Tailwind Red-600 */
-            --success: #16a34a; /* Tailwind Green-600 */
+            --primary: #0d9488; /* Teal-600 */
+            --primary-dark: #115e59; /* Teal-700 */
+            --secondary: #f59e0b; /* Amber-500 */
+            --danger: #dc2626; /* Red-600 */
+            --success: #16a34a; /* Green-600 */
             --warning: #f59e0b; /* Tailwind Amber-500 */
             --info: #0ea5e9; /* Tailwind Sky-500 */
             --border-color: #e2e8f0;
@@ -837,13 +837,12 @@
         .target-item {
             display: flex;
             flex-wrap: wrap; /* Allow content to wrap */
-            align-items: center; /* Align items vertically in the center */
+            align-items: flex-start; /* Align items vertically to the start */
             margin-bottom: 0.7rem;
             font-size: 0.9rem;
             color: var(--text);
             transition: color 0.2s ease;
             position: relative;
-            padding-right: 30px; /* Space for help button */
             cursor: pointer; /* Make the whole item clickable */
             border: 1px solid transparent; /* Subtle border for click effect */
             border-radius: 8px;
@@ -878,19 +877,20 @@
         }
         .target-item .target-main-content {
             display: flex;
-            align-items: center;
+            align-items: flex-start; /* Align items to the start of the line */
             flex-grow: 1;
             width: 100%; /* Take full width on top */
             margin-bottom: 0.5rem; /* Space between main content and details */
         }
         .target-item .target-text-content {
             flex-grow: 1;
+            padding-right: 30px; /* Space for help button */
         }
         .target-item .attempts-counter {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            margin-left: 1rem;
+            margin-left: auto; /* Push to the right */
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--primary-dark);
@@ -927,7 +927,7 @@
         .target-item .help-toggle-btn:hover {
             background-color: color-mix(in srgb, var(--info) 15%, transparent);
         }
-        .target-item .target-details {
+        .target-item .target-details-expanded {
             display: none; /* Hidden by default */
             flex-direction: column;
             width: 100%;
@@ -935,7 +935,7 @@
             border-top: 1px dashed var(--border-color);
             margin-top: 0.5rem;
         }
-        .target-item.expanded .target-details {
+        .target-item.expanded .target-details-expanded {
             display: flex; /* Show when expanded */
         }
         .target-item .help-content-container {
@@ -947,11 +947,7 @@
             font-size: 0.85rem;
             color: var(--text);
             line-height: 1.5;
-            display: none; /* Hidden by default */
             width: 100%;
-        }
-        .target-item .help-content-container.active {
-            display: block;
         }
         .target-item .help-content-container textarea {
             width: 100%;
@@ -975,9 +971,9 @@
             padding: 0.3rem 0.6rem;
             border-radius: 6px;
             font-size: 0.85rem;
-            background-color: var(--primary-light);
-            color: var(--primary-dark);
-            border: 1px solid var(--primary);
+            background-color: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border-color);
             margin-top: 0.5rem;
             align-self: flex-start; /* Align to start of the column */
         }
@@ -2172,7 +2168,7 @@
 
                         } catch (error) {
                             console.error('Erro na API Gemini:', error);
-                            displayFlashMessage('danger', 'Ocorreu um erro ao se comunicar com a IA. Por favor, tente novamente mais tarde.');
+                            displayFlashMessage('danger', 'Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.');
                         } finally {
                             hideLoading(); // Oculta o indicador de carregamento
                             // Restaura o estado do botão com base no consentimento LGPD
@@ -2418,38 +2414,12 @@
                         return;
                     }
 
-                    // Checkbox/Icon para alvo do PEI (alterna status de conclusão)
-                    const targetStatusToggle = target.closest('.target-item'); // Clicou em qualquer lugar do item do alvo
-                    if (targetStatusToggle) {
-                        const checkbox = targetStatusToggle.querySelector('.target-checkbox');
-                        // Apenas alterna se o checkbox não estiver desabilitado
-                        if (checkbox && !checkbox.disabled) {
-                            const targetId = targetStatusToggle.dataset.targetId;
-                            const goalList = targetStatusToggle.closest('.targets-list');
-                            const peiId = goalList.dataset.peiId;
-                            const goalId = goalList.dataset.goalId;
-
-                            // Verificar permissões do PEI e do profissional associado
-                            const currentPei = allPeisData.find(p => p.id === peiId);
-                            const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
-
-                            if (!canModify) {
-                                displayFlashMessage('danger', 'Você não tem permissão para atualizar este PEI.');
-                                return;
-                            }
-
-                            // Perform local toggle for immediate visual feedback
-                            checkbox.checked = !checkbox.checked;
-                            if (checkbox.checked) {
-                                targetStatusToggle.classList.add('concluido');
-                                targetStatusToggle.querySelector('.status-icon').classList.replace('fa-square', 'fa-check-square');
-                            } else {
-                                targetStatusToggle.classList.remove('concluido');
-                                targetStatusToggle.querySelector('.status-icon').classList.replace('fa-check-square', 'fa-square');
-                            }
-
-                            await updateTargetStatus(peiId, goalId, targetId, checkbox.checked); // Chama a função assíncrona para atualizar no backend
-                        }
+                    // NOVO: Evento de clique no item do alvo para expandir/colapsar
+                    const targetItem = target.closest('.target-item');
+                    if (targetItem && !target.closest('.attempts-counter') && !target.closest('.help-actions') && !target.matches('.target-status-select')) {
+                        const isExpanded = targetItem.dataset.targetExpanded === 'true';
+                        targetItem.dataset.targetExpanded = !isExpanded;
+                        targetItem.classList.toggle('expanded', !isExpanded);
                         return;
                     }
 
@@ -2595,18 +2565,7 @@
                             currentAttempts = Math.max(0, currentAttempts - 1); // Não permite tentativas negativas
                         }
                         attemptsSpan.textContent = currentAttempts; // Atualiza visualmente
-                        await updateTargetAttempts(peiId, goalId, targetId, currentAttempts, null);
-                        return;
-                    }
-
-                    // NOVO: Botão de ajuda (revelar/esconder)
-                    const helpToggleBtn = target.closest('.help-toggle-btn');
-                    if (helpToggleBtn) {
-                        const targetItem = helpToggleBtn.closest('.target-item');
-                        const helpContentContainer = targetItem.querySelector('.help-content-container');
-                        helpContentContainer.classList.toggle('active'); // Mostra/esconde o container
-                        const isHelpActive = helpContentContainer.classList.contains('active');
-                        helpToggleBtn.querySelector('i').className = isHelpActive ? 'fas fa-eye-slash' : 'fas fa-question-circle';
+                        await updateTargetStatusAndAttempts(peiId, goalId, targetId, currentAttempts, null, null);
                         return;
                     }
 
@@ -2628,10 +2587,9 @@
                             return;
                         }
 
-                        await updateTargetAttempts(peiId, goalId, targetId, null, newHelpContent);
+                        await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, newHelpContent, null);
                         // Opcional: fechar o editor após salvar
-                        helpContentTextarea.closest('.help-content-container').classList.remove('active');
-                        helpToggleBtn.querySelector('i').className = 'fas fa-question-circle';
+                        targetItem.classList.remove('expanded'); // Fecha a expansão do alvo
                         return;
                     }
 
@@ -2639,8 +2597,6 @@
                     const cancelHelpBtn = target.closest('.btn-cancel-help');
                     if (cancelHelpBtn) {
                         const targetItem = cancelHelpBtn.closest('.target-item');
-                        const helpContentContainer = targetItem.querySelector('.help-content-container');
-                        const helpToggleBtn = targetItem.querySelector('.help-toggle-btn');
                         // Reverte o conteúdo para o original (se houver)
                         const peiId = targetItem.dataset.peiId;
                         const goalId = targetItem.dataset.goalId;
@@ -2651,8 +2607,7 @@
                         if (currentTarget) {
                             targetItem.querySelector('.help-content-textarea').value = currentTarget.help_content || '';
                         }
-                        helpContentContainer.classList.remove('active');
-                        helpToggleBtn.querySelector('i').className = 'fas fa-question-circle';
+                        targetItem.classList.remove('expanded'); // Fecha a expansão do alvo
                         return;
                     }
 
@@ -3093,6 +3048,12 @@
                     let targetsHtml = '';
                     if (goal.targets && goal.targets.length > 0) {
                         goal.targets.forEach(target => {
+                            // Determine a classe de cor para o status do alvo
+                            let statusClass = '';
+                            if (target.status === 'pendente') statusClass = 'pendente';
+                            else if (target.status === 'andamento') statusClass = 'andamento';
+                            else if (target.status === 'finalizada') statusClass = 'finalizada';
+
                             targetsHtml += `
                                 <li class="target-item ${target.concluido ? 'concluido' : ''} ${targetItemDisabledClass}" 
                                     data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}"
@@ -3106,13 +3067,11 @@
                                             <button type="button" class="btn-increment-attempts" ${goalActionsDisabled}>+</button>
                                         </div>
                                     </div>
-                                    <div class="target-details">
+                                    <div class="target-details-expanded">
                                         <div class="form-group">
                                             <label for="target-status-${target.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status do Alvo</label>
                                             <select id="target-status-${target.id}" class="target-status-select w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out
-                                                ${target.status === 'pendente' ? 'pendente' : ''}
-                                                ${target.status === 'andamento' ? 'andamento' : ''}
-                                                ${target.status === 'finalizada' ? 'finalizada' : ''}
+                                                ${statusClass}
                                                 " ${goalActionsDisabled}>
                                                 <option value="pendente" ${target.status === 'pendente' ? 'selected' : ''}>Pendente</option>
                                                 <option value="andamento" ${target.status === 'andamento' ? 'selected' : ''}>Em Andamento</option>
@@ -3121,7 +3080,7 @@
                                         </div>
                                         <div class="form-group">
                                             <label for="help-content-${target.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Conteúdo de Ajuda</label>
-                                            <textarea id="help-content-${target.id}" class="help-content-textarea w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicione conteúdo de ajuda aqui..." rows="3" ${goalActionsDisabled}>${target.help_content || ''}</textarea>
+                                            <textarea id="help-content-${target.id}" class="help-content-textarea w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicione conteúdo de ajuda aqui..." rows="3" ${goalActionsDisabled}>${target.help_content || ''}</textarea>
                                             <div class="help-actions">
                                                 <button type="button" class="btn btn-sm btn-secondary btn-cancel-help" ${goalActionsDisabled}>Cancelar</button>
                                                 <button type="button" class="btn btn-sm btn-primary btn-save-help" ${goalActionsDisabled}>Salvar Ajuda</button>

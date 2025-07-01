@@ -33,6 +33,10 @@ def _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, 
             for target in goal.get('targets', []):
                 if target.get('id') == target_id:
                     target['concluido'] = concluido
+                    # Se o alvo for marcado como concluído, todas as ajudas também devem ser.
+                    if concluido and 'aids' in target:
+                        for aid in target['aids']:
+                            aid['status'] = 'finalizada'
                     target_found = True
                     break
             if not target_found: raise Exception("Alvo não encontrado na meta.")
@@ -53,6 +57,10 @@ def _finalize_goal_transaction(transaction, pei_ref, goal_id_to_finalize):
             for target in goal.get('targets', []):
                 if not target.get('concluido', False):
                     target['concluido'] = True
+                # Mark all aids within this target as finalized
+                if 'aids' in target:
+                    for aid in target['aids']:
+                        aid['status'] = 'finalizada'
             goal_found = True
             break
     if not goal_found: raise Exception("Meta não encontrada para finalizar.")
@@ -78,6 +86,10 @@ def _finalize_pei_transaction(transaction, pei_ref):
             for target in goal.get('targets', []):
                 if not target.get('concluido', False):
                     target['concluido'] = True
+                # Mark all aids within this target as finalized
+                if 'aids' in target:
+                    for aid in target['aids']:
+                        aid['status'] = 'finalizada'
 
     transaction.update(pei_ref, {
         'status': 'finalizado', 
@@ -94,6 +106,15 @@ def _add_target_to_goal_transaction(transaction, pei_ref, goal_id, new_target_de
     pei_data = snapshot.to_dict()
     goals = pei_data.get('goals', [])
     
+    # Definindo as ajudas fixas para cada novo alvo
+    fixed_aids = [
+        {'id': str(uuid.uuid4()), 'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente'},
+        {'id': str(uuid.uuid4()), 'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente'},
+        {'id': str(uuid.uuid4()), 'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente'},
+        {'id': str(uuid.uuid4()), 'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente'},
+        {'id': str(uuid.uuid4()), 'description': 'Independente', 'attempts_count': 0, 'status': 'pendente'},
+    ]
+
     goal_found = False
     for goal in goals:
         if goal.get('id') == goal_id:
@@ -102,8 +123,8 @@ def _add_target_to_goal_transaction(transaction, pei_ref, goal_id, new_target_de
                 'id': str(uuid.uuid4()),
                 'descricao': new_target_description,
                 'concluido': False,
-                'tentativas_count': 0, # Novo campo
-                'help_content': '' # Novo campo
+                'status': 'pendente', # Novo campo de status para o alvo
+                'aids': fixed_aids # Adiciona as ajudas fixas
             }
             if 'targets' not in goal:
                 goal['targets'] = []
@@ -132,7 +153,7 @@ def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_n
     transaction.update(pei_ref, {'activities': activities})
 
 @firestore.transactional
-def _update_target_attempts_transaction(transaction, pei_ref, goal_id, target_id, new_attempts_count=None, new_help_content=None):
+def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, target_id, aid_id=None, new_attempts_count=None, new_help_content=None, new_target_status=None):
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists:
         raise Exception("PEI não encontrado.")
@@ -148,10 +169,36 @@ def _update_target_attempts_transaction(transaction, pei_ref, goal_id, target_id
             for target in goal.get('targets', []):
                 if target.get('id') == target_id:
                     target_found = True
-                    if new_attempts_count is not None:
-                        target['tentativas_count'] = new_attempts_count
-                    if new_help_content is not None:
-                        target['help_content'] = new_help_content
+                    
+                    # Atualiza o status geral do alvo, se fornecido
+                    if new_target_status is not None:
+                        target['status'] = new_target_status
+                        # Se o alvo for finalizado, todas as ajudas devem ser finalizadas
+                        if new_target_status == 'finalizada' and 'aids' in target:
+                            for aid in target['aids']:
+                                aid['status'] = 'finalizada'
+                                aid['attempts_count'] = aid.get('attempts_count', 0) # Garante que attempts_count exista
+
+                    # Atualiza dados de uma ajuda específica, se aid_id for fornecido
+                    if aid_id is not None and 'aids' in target:
+                        aid_found = False
+                        for aid in target['aids']:
+                            if aid.get('id') == aid_id:
+                                aid_found = True
+                                if new_attempts_count is not None:
+                                    aid['attempts_count'] = new_attempts_count
+                                # if new_help_content is not None: # help_content agora é a descrição da ajuda
+                                #     aid['description'] = new_help_content # A descrição da ajuda é fixa, não é um campo de ajuda editável.
+                                break
+                        if not aid_found:
+                            raise Exception("Ajuda (Aid) não encontrada no alvo.")
+                    elif new_help_content is not None:
+                        # Se new_help_content for passado sem aid_id, assumimos que é um campo de ajuda geral do alvo.
+                        # No entanto, na nova estrutura, a ajuda está nas sub-itens 'aids'.
+                        # Isso indica que a lógica de frontend precisa ser ajustada para não enviar help_content sem aid_id.
+                        # Por enquanto, vamos ignorar se não houver aid_id para help_content.
+                        pass
+
                     break
             if not target_found:
                 raise Exception("Alvo não encontrado na meta.")
@@ -740,14 +787,22 @@ def register_medical_records_routes(app):
             else:
                 pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
                 new_targets = []
+                # Definindo as ajudas fixas para cada novo alvo
+                fixed_aids_template = [
+                    {'id': str(uuid.uuid4()), 'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente'},
+                    {'id': str(uuid.uuid4()), 'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente'},
+                    {'id': str(uuid.uuid4()), 'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente'},
+                    {'id': str(uuid.uuid4()), 'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente'},
+                    {'id': str(uuid.uuid4()), 'description': 'Independente', 'attempts_count': 0, 'status': 'pendente'},
+                ]
                 for desc in targets_desc:
                     if desc.strip():
                         new_targets.append({
                             'id': str(uuid.uuid4()),
                             'descricao': desc.strip(),
                             'concluido': False,
-                            'tentativas_count': 0, # Novo campo
-                            'help_content': '' # Novo campo
+                            'status': 'pendente', # Status inicial do alvo
+                            'aids': [aid.copy() for aid in fixed_aids_template] # Adiciona cópias das ajudas fixas
                         })
                 new_goal = {
                     'id': str(uuid.uuid4()), 
@@ -1052,9 +1107,9 @@ def register_medical_records_routes(app):
             print(f"Erro ao adicionar atividade ao PEI: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
-    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/update_target_attempts', methods=['POST'], endpoint='update_target_attempts')
+    @app.route('/pacientes/<string:paciente_doc_id>/prontuario/update_target_and_aid_data', methods=['POST'], endpoint='update_target_and_aid_data')
     @login_required
-    def update_target_attempts(paciente_doc_id):
+    def update_target_and_aid_data(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         user_role = session.get('user_role')
@@ -1075,10 +1130,12 @@ def register_medical_records_routes(app):
             pei_id = data.get('pei_id')
             goal_id = data.get('goal_id')
             target_id = data.get('target_id')
-            new_attempts_count = data.get('new_attempts_count') # Pode ser None se for só para atualizar help_content
-            new_help_content = data.get('new_help_content') # Pode ser None se for só para atualizar tentativas
+            aid_id = data.get('aid_id') # Novo: ID da ajuda específica
+            new_attempts_count = data.get('new_attempts_count')
+            new_help_content = data.get('new_help_content') # Conteúdo de ajuda (se for para uma ajuda específica)
+            new_target_status = data.get('new_target_status') # Novo: Status geral do alvo
 
-            if not all([pei_id, goal_id, target_id]) or (new_attempts_count is None and new_help_content is None):
+            if not all([pei_id, goal_id, target_id]):
                 return jsonify({'success': False, 'message': 'Dados insuficientes para atualizar alvo.'}), 400
 
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
@@ -1092,7 +1149,7 @@ def register_medical_records_routes(app):
                     return jsonify({'success': False, 'message': 'Você não tem permissão para atualizar este alvo.'}), 403
 
             transaction = db_instance.transaction()
-            _update_target_attempts_transaction(transaction, pei_ref, goal_id, target_id, new_attempts_count, new_help_content)
+            _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, target_id, aid_id, new_attempts_count, new_help_content, new_target_status)
             transaction.commit()
             
             all_peis = []
@@ -1123,6 +1180,6 @@ def register_medical_records_routes(app):
 
             return jsonify({'success': True, 'message': 'Alvo atualizado com sucesso!', 'peis': all_peis}), 200
         except Exception as e:
-            print(f"Erro ao atualizar tentativas do alvo: {e}")
+            print(f"Erro ao atualizar tentativas/ajuda/status do alvo: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
