@@ -1914,7 +1914,7 @@
         const IS_PROFESSIONAL = {{ is_professional | tojson }};
         const LOGGED_IN_PROFESSIONAL_ID = {{ logged_in_professional_id | tojson }}; // Agora passa o ID do profissional logado
         const ALL_PROFESSIONALS = {{ all_professionals | tojson | safe }}; // Lista de todos os profissionais
-        const PACIENTE_DOC_ID = "{{ paciente.id if paciente else '' }}";
+        const PACIENTE_DOC_ID = "{{ paciente_doc_id }}"; 
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement; // Elemento HTML raiz para manipular atributos de tema
@@ -1926,6 +1926,8 @@
             console.log('É Profissional (IS_PROFESSIONAL):', IS_PROFESSIONAL);
             console.log('ID do Profissional Logado (LOGGED_IN_PROFESSIONAL_ID):', LOGGED_IN_PROFESSIONAL_ID);
             console.log('Todos os PEIs carregados:', allPeisData);
+            // Adicione este log para ver o PACIENTE_DOC_ID
+            console.log('PACIENTE_DOC_ID:', PACIENTE_DOC_ID);
             console.log('-------------------------------------------');
 
 
@@ -2224,7 +2226,7 @@
 
                         try {
                             // Utiliza a API Gemini para gerar conteúdo
-                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // A chave API será fornecida pelo ambiente Canvas
+                            const apiKey = "SUA_API_KEY"; // A chave API será fornecida pelo ambiente Canvas
 
                             // Check if apiKey is valid (simple check, not exhaustive)
                             if (!apiKey || apiKey === "SUA_API_KEY") {
@@ -2571,18 +2573,18 @@
                             if (currentDeleteAction === 'delete_record') {
                                 // Define os valores e submete o formulário de exclusão de registro
                                 formApagarRegistro.querySelector('#registro_id_apagar').value = currentDeleteData.id;
-                                formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=paciente.id) }}`;
+                                formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=PACIENTE_DOC_ID) }}`;
                                 formApagarRegistro.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'delete_pei') {
                                 // Define os valores e submete o formulário de exclusão de PEI
                                 formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
-                                formApagarPei.action = `{{ url_for('delete_pei', paciente_doc_id=paciente.id) }}`;
+                                formApagarPei.action = `{{ url_for('delete_pei', paciente_doc_id=PACIENTE_DOC_ID) }}`;
                                 formApagarPei.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'delete_goal') {
                                 // Define os valores e submete o formulário de exclusão de meta
                                 formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
                                 formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
-                                formApagarGoal.action = `{{ url_for('delete_goal', paciente_doc_id=paciente.id) }}`;
+                                formApagarGoal.action = `{{ url_for('delete_goal', paciente_doc_id=PACIENTE_DOC_ID) }}`;
                                 formApagarGoal.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'finalize_goal') {
                                 // Chama a função assíncrona para finalizar a meta via AJAX
@@ -2662,6 +2664,8 @@
                         attemptsSpan.textContent = currentAttempts; // Atualiza visualmente
                         
                         console.log(`Updating aid attempts: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, Aid=${aidId}, Attempts=${currentAttempts}`);
+                        // Adicione este log para ver a URL sendo chamada
+                        console.log('URL para update_target_and_aid_data:', `{{ url_for('update_target_and_aid_data', paciente_doc_id=PACIENTE_DOC_ID) }}`);
                         // Envia a atualização para o backend, incluindo o aid_id
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, currentAttempts, null, null);
                         return;
@@ -2689,6 +2693,8 @@
                             return;
                         }
                         console.log(`Updating target status: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, New Status=${newStatus}`);
+                        // Adicione este log para ver a URL sendo chamada
+                        console.log('URL para update_target_and_aid_data:', `{{ url_for('update_target_and_aid_data', paciente_doc_id=PACIENTE_DOC_ID) }}`);
                         // Envia apenas o novo status do alvo
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, null, newStatus);
                         return;
@@ -2705,14 +2711,22 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_description: targetDescription })
                         });
-                        const data = await response.json();
-                        if (response.ok && data.success) {
-                            allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
-                            renderPeis(allPeisData); // Re-renderiza os PEIs para mostrar o novo alvo
-                            displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
-                            closeModalById('addGoalModal'); // Fecha o modal de adicionar meta
+
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            if (response.ok && data.success) {
+                                allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
+                                renderPeis(allPeisData); // Re-renderiza os PEIs para mostrar o novo alvo
+                                displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
+                                closeModalById('addGoalModal'); // Fecha o modal de adicionar meta
+                            } else {
+                                displayFlashMessage('danger', `Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
+                            }
                         } else {
-                            displayFlashMessage('danger', `Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao adicionar alvo: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao adicionar alvo. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao adicionar alvo:', error);
@@ -2731,17 +2745,24 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, content: activityContent })
                         });
-                        const data = await response.json();
-                        if (response.ok && data.success) {
-                            allPeisData = data.peis; // Atualiza os dados locais
-                            // Re-renderiza o modal de detalhes do PEI para exibir a nova atividade
-                            const currentPei = allPeisData.find(p => p.id === peiId);
-                            if (currentPei) {
-                                openPeiDetailsModal(currentPei);
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            if (response.ok && data.success) {
+                                allPeisData = data.peis; // Atualiza os dados locais
+                                // Re-renderiza o modal de detalhes do PEI para exibir a nova atividade
+                                const currentPei = allPeisData.find(p => p.id === peiId);
+                                if (currentPei) {
+                                    openPeiDetailsModal(currentPei);
+                                }
+                                displayFlashMessage('success', data.message);
+                            } else {
+                                displayFlashMessage('danger', `Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
                             }
-                            displayFlashMessage('success', data.message);
                         } else {
-                            displayFlashMessage('danger', `Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao adicionar atividade: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao adicionar atividade. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao adicionar atividade:', error);
@@ -2776,21 +2797,28 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
-                        const data = await response.json();
-                        console.log('Response from backend:', data);
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            console.log('Response from backend:', data);
 
-                        if (response.ok && data.success) {
-                            displayFlashMessage('success', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
-                            }
-                            // Re-renderiza o modal de detalhes do PEI para refletir a mudança
-                            const currentPei = allPeisData.find(p => p.id === peiId);
-                            if (currentPei) {
-                                openPeiDetailsModal(currentPei);
+                            if (response.ok && data.success) {
+                                displayFlashMessage('success', data.message);
+                                if (data.peis) {
+                                    allPeisData = data.peis;
+                                }
+                                // Re-renderiza o modal de detalhes do PEI para refletir a mudança
+                                const currentPei = allPeisData.find(p => p.id === peiId);
+                                if (currentPei) {
+                                    openPeiDetailsModal(currentPei);
+                                }
+                            } else {
+                                displayFlashMessage('danger', `Erro ao atualizar alvo: ${data.message || 'Erro desconhecido.'}`);
                             }
                         } else {
-                            displayFlashMessage('danger', `Erro ao atualizar alvo: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao atualizar tentativas/ajuda/status do alvo: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao atualizar alvo. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao atualizar tentativas/ajuda/status do alvo:', error);
@@ -2811,21 +2839,28 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
                         });
-                        const data = await response.json();
-                        console.log('Resposta de finalização de meta:', data);
-                        if (response.ok && data.success) {
-                            displayFlashMessage('success', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
-                            }
-                            // Re-renderiza o modal de detalhes do PEI para refletir a mudança
-                            const currentPei = allPeisData.find(p => p.id === peiId);
-                            if (currentPei) {
-                                openPeiDetailsModal(currentPei);
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            console.log('Resposta de finalização de meta:', data);
+                            if (response.ok && data.success) {
+                                displayFlashMessage('success', data.message);
+                                if (data.peis) {
+                                    allPeisData = data.peis;
+                                }
+                                // Re-renderiza o modal de detalhes do PEI para refletir a mudança
+                                const currentPei = allPeisData.find(p => p.id === peiId);
+                                if (currentPei) {
+                                    openPeiDetailsModal(currentPei);
+                                }
+                            } else {
+                                console.error('Falha ao finalizar meta:', data.message || 'Erro desconhecido');
+                                displayFlashMessage('danger', `Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`);
                             }
                         } else {
-                            console.error('Falha ao finalizar meta:', data.message || 'Erro desconhecido');
-                            displayFlashMessage('danger', `Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao finalizar meta: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao finalizar meta. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao finalizar meta:', error);
@@ -2845,18 +2880,25 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId })
                         });
-                        const data = await response.json();
-                        console.log('Resposta de finalização do PEI:', data);
-                        if (response.ok && data.success) {
-                            displayFlashMessage('success', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            console.log('Resposta de finalização do PEI:', data);
+                            if (response.ok && data.success) {
+                                displayFlashMessage('success', data.message);
+                                if (data.peis) {
+                                    allPeisData = data.peis;
+                                }
+                                renderPeis(allPeisData); // Re-renderiza os cartões de resumo do PEI
+                                closeModalById('pei-details-modal'); // Fecha o modal de detalhes do PEI
+                            } else {
+                                console.error('Falha ao finalizar PEI:', data.message || 'Erro desconhecido');
+                                displayFlashMessage('danger', `Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`);
                             }
-                            renderPeis(allPeisData); // Re-renderiza os cartões de resumo do PEI
-                            closeModalById('pei-details-modal'); // Fecha o modal de detalhes do PEI
                         } else {
-                            console.error('Falha ao finalizar PEI:', data.message || 'Erro desconhecido');
-                            displayFlashMessage('danger', `Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao finalizar PEI: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao finalizar PEI. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao finalizar PEI:', error);
@@ -3199,7 +3241,7 @@
 
                      const title = recordCard.querySelector('.registro-header h4').textContent.trim();
                      const date = recordCard.querySelector('.registro-meta span:first-child').textContent.trim().replace('📅 ', '');
-                     const professional = recordCard.querySelector('.registro-meta span:last-child').textContent.trim().replace('👩‍⚕️ ', '');
+                     const professional = recordCard.querySelector('.registro-meta span:last-child').textContent.trim().replace('�‍⚕️ ', '');
                      const contentHtml = recordCard.querySelector('.registro-content').innerHTML;
 
                      const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
