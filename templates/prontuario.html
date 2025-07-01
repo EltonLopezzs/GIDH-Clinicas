@@ -2711,14 +2711,22 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_description: targetDescription })
                         });
-                        const data = await response.json();
-                        if (response.ok && data.success) {
-                            allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
-                            renderPeis(allPeisData); // Re-renderiza os PEIs para mostrar o novo alvo
-                            displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
-                            closeModalById('addGoalModal'); // Fecha o modal de adicionar meta
+
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            if (response.ok && data.success) {
+                                allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
+                                renderPeis(allPeisData); // Re-renderiza os PEIs para mostrar o novo alvo
+                                displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
+                                closeModalById('addGoalModal'); // Fecha o modal de adicionar meta
+                            } else {
+                                displayFlashMessage('danger', `Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
+                            }
                         } else {
-                            displayFlashMessage('danger', `Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao adicionar alvo: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao adicionar alvo. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao adicionar alvo:', error);
@@ -2737,17 +2745,24 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, content: activityContent })
                         });
-                        const data = await response.json();
-                        if (response.ok && data.success) {
-                            allPeisData = data.peis; // Atualiza os dados locais
-                            // Re-renderiza o modal de detalhes do PEI para exibir a nova atividade
-                            const currentPei = allPeisData.find(p => p.id === peiId);
-                            if (currentPei) {
-                                openPeiDetailsModal(currentPei);
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            if (response.ok && data.success) {
+                                allPeisData = data.peis; // Atualiza os dados locais
+                                // Re-renderiza o modal de detalhes do PEI para exibir a nova atividade
+                                const currentPei = allPeisData.find(p => p.id === peiId);
+                                if (currentPei) {
+                                    openPeiDetailsModal(currentPei);
+                                }
+                                displayFlashMessage('success', data.message);
+                            } else {
+                                displayFlashMessage('danger', `Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
                             }
-                            displayFlashMessage('success', data.message);
                         } else {
-                            displayFlashMessage('danger', `Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao adicionar atividade: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao adicionar atividade. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao adicionar atividade:', error);
@@ -2782,21 +2797,28 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
-                        const data = await response.json();
-                        console.log('Response from backend:', data);
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            console.log('Response from backend:', data);
 
-                        if (response.ok && data.success) {
-                            displayFlashMessage('success', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
-                            }
-                            // Re-renderiza o modal de detalhes do PEI para refletir a mudança
-                            const currentPei = allPeisData.find(p => p.id === peiId);
-                            if (currentPei) {
-                                openPeiDetailsModal(currentPei);
+                            if (response.ok && data.success) {
+                                displayFlashMessage('success', data.message);
+                                if (data.peis) {
+                                    allPeisData = data.peis;
+                                }
+                                // Re-renderiza o modal de detalhes do PEI para refletir a mudança
+                                const currentPei = allPeisData.find(p => p.id === peiId);
+                                if (currentPei) {
+                                    openPeiDetailsModal(currentPei);
+                                }
+                            } else {
+                                displayFlashMessage('danger', `Erro ao atualizar alvo: ${data.message || 'Erro desconhecido.'}`);
                             }
                         } else {
-                            displayFlashMessage('danger', `Erro ao atualizar alvo: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao atualizar tentativas/ajuda/status do alvo: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao atualizar alvo. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao atualizar tentativas/ajuda/status do alvo:', error);
@@ -2817,21 +2839,28 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
                         });
-                        const data = await response.json();
-                        console.log('Resposta de finalização de meta:', data);
-                        if (response.ok && data.success) {
-                            displayFlashMessage('success', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
-                            }
-                            // Re-renderiza o modal de detalhes do PEI para refletir a mudança
-                            const currentPei = allPeisData.find(p => p.id === peiId);
-                            if (currentPei) {
-                                openPeiDetailsModal(currentPei);
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            console.log('Resposta de finalização de meta:', data);
+                            if (response.ok && data.success) {
+                                displayFlashMessage('success', data.message);
+                                if (data.peis) {
+                                    allPeisData = data.peis;
+                                }
+                                // Re-renderiza o modal de detalhes do PEI para refletir a mudança
+                                const currentPei = allPeisData.find(p => p.id === peiId);
+                                if (currentPei) {
+                                    openPeiDetailsModal(currentPei);
+                                }
+                            } else {
+                                console.error('Falha ao finalizar meta:', data.message || 'Erro desconhecido');
+                                displayFlashMessage('danger', `Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`);
                             }
                         } else {
-                            console.error('Falha ao finalizar meta:', data.message || 'Erro desconhecido');
-                            displayFlashMessage('danger', `Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao finalizar meta: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao finalizar meta. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao finalizar meta:', error);
@@ -2851,18 +2880,25 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId })
                         });
-                        const data = await response.json();
-                        console.log('Resposta de finalização do PEI:', data);
-                        if (response.ok && data.success) {
-                            displayFlashMessage('success', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            console.log('Resposta de finalização do PEI:', data);
+                            if (response.ok && data.success) {
+                                displayFlashMessage('success', data.message);
+                                if (data.peis) {
+                                    allPeisData = data.peis;
+                                }
+                                renderPeis(allPeisData); // Re-renderiza os cartões de resumo do PEI
+                                closeModalById('pei-details-modal'); // Fecha o modal de detalhes do PEI
+                            } else {
+                                console.error('Falha ao finalizar PEI:', data.message || 'Erro desconhecido');
+                                displayFlashMessage('danger', `Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`);
                             }
-                            renderPeis(allPeisData); // Re-renderiza os cartões de resumo do PEI
-                            closeModalById('pei-details-modal'); // Fecha o modal de detalhes do PEI
                         } else {
-                            console.error('Falha ao finalizar PEI:', data.message || 'Erro desconhecido');
-                            displayFlashMessage('danger', `Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`);
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao finalizar PEI: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao finalizar PEI. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
                         console.error('Erro ao finalizar PEI:', error);
@@ -3205,7 +3241,7 @@
 
                      const title = recordCard.querySelector('.registro-header h4').textContent.trim();
                      const date = recordCard.querySelector('.registro-meta span:first-child').textContent.trim().replace('📅 ', '');
-                     const professional = recordCard.querySelector('.registro-meta span:last-child').textContent.trim().replace('👩‍⚕️ ', '');
+                     const professional = recordCard.querySelector('.registro-meta span:last-child').textContent.trim().replace('�‍⚕️ ', '');
                      const contentHtml = recordCard.querySelector('.registro-content').innerHTML;
 
                      const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
