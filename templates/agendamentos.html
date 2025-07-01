@@ -14,9 +14,9 @@
     
     <style>
         /* ============================================
-         --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
-         ============================================
-        */
+          --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
+          ============================================
+         */
         :root {
             --bg: #f1f5f9;
             --card: #ffffff;
@@ -66,7 +66,7 @@
 
         /* Reset básico e box-sizing */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; overflow-x: hidden; }
+        html, body { height: 100%; } /* Removido overflow-x: hidden; */
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
@@ -74,13 +74,14 @@
             min-height: 100vh;
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
+            overflow: hidden; /* Adicionado overflow: hidden; para desativar o scroll da página */
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
         /* ============================================
-         --- SIDEBAR ---
-         ============================================
-        */
+          --- SIDEBAR ---
+          ============================================
+         */
         .sidebar {
             width: 260px;
             background: linear-gradient(180deg, var(--primary), var(--accent));
@@ -140,12 +141,14 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         
         /* ============================================
-         --- CONTEÚDO PRINCIPAL & TOPBAR ---
-         ============================================
-        */
+          --- CONTEÚDO PRINCIPAL & TOPBAR ---
+          ============================================
+         */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
             display: flex; flex-direction: column; width: calc(100% - 260px);
+            height: calc(100vh - 2px); /* Definindo a altura do main-content */
+            overflow: hidden; /* Garante que o main-content não tenha scroll próprio */
         }
         .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
 
@@ -204,15 +207,16 @@
         main { 
             flex-grow: 1; 
             padding: 1.5rem; 
-            overflow: hidden; 
+            overflow: hidden; /* Adicionado para evitar scroll no main, deixando o scroll para o calendário */
             display: flex; 
             gap: 1.5rem; /* Espaçamento entre o calendário principal e o mini-calendário */
+            height: 100%; /* Ocupa a altura total do main-content */
         }
 
         /* ============================================
-         --- CALENDÁRIO SEMANAL (NOVO) ---
-         ============================================
-        */
+          --- CALENDÁRIO SEMANAL (NOVO) ---
+          ============================================
+         */
         .weekly-calendar-container {
             background-color: var(--card);
             border-radius: 12px;
@@ -272,17 +276,18 @@
             overflow: hidden; /* Contains children within rounded corners */
             flex-grow: 1;
             overflow-y: auto; /* Adiciona rolagem vertical para o calendário */
-            max-height: calc(100vh - 2px); /* Ajuste a altura máxima conforme necessário */
+            /* Ajustado para preencher o espaço disponível dentro do weekly-calendar-container */
+            /*height: calc(100% - 90px); /* Altura do cabeçalho do calendário */
         }
 
         .time-column-header, .day-header-week {
-            padding: 0.75rem 0.5rem;
+            padding: 1rem 0.5rem; /* Aumentado o padding vertical */
             font-weight: 600;
             text-align: center;
             background-color: var(--bg);
             border-bottom: 1px solid var(--border-color);
             border-right: 1px solid var(--border-color);
-            font-size: 0.85rem;
+            font-size: 0.85rem; /* Mantido o tamanho da fonte para não impactar layout */
             color: var(--muted);
             display: flex;
             flex-direction: column; /* Para empilhar dia da semana e número */
@@ -384,9 +389,9 @@
         .appointment-event.status-confirmado { background-color: color-mix(in srgb, var(--status-confirmado) 15%, transparent); color: var(--status-confirmado); border-left-color: var(--status-confirmado); }
 
         /* ============================================
-         --- MODAIS (REUTILIZADOS) ---
-         ============================================
-        */
+          --- MODAIS (REUTILIZADOS) ---
+          ============================================
+         */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.25s ease; }
         .modal-overlay.active { opacity: 1; display: flex; }
         .modal-content { 
@@ -439,9 +444,9 @@
         .info-card .info-item-content .value { font-size: 1rem; font-weight: 600; color: var(--text); }
 
         /* ============================================
-         --- BOTÕES ---
-         ============================================
-        */
+          --- BOTÕES ---
+          ============================================
+         */
         .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
         .btn-primary { background-color: var(--primary); color: white; }
         .btn-primary:hover { background-color: var(--primary-dark); }
@@ -452,9 +457,9 @@
         [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
         
         /* ============================================
-         --- RESPONSIVIDADE ---
-         ============================================
-        */
+          --- RESPONSIVIDADE ---
+          ============================================
+         */
         @media (max-width: 992px) { /* Ajuste para telas menores que 992px */
             main { flex-direction: column; overflow: auto; }
             .weekly-calendar-container { padding: 1rem; } /* Reduz o padding do container principal */
@@ -483,9 +488,9 @@
         }
 
         /* ============================================
-         --- MINI CALENDÁRIO LATERAL (NOVO) ---
-         ============================================
-        */
+          --- MINI CALENDÁRIO LATERAL (NOVO) ---
+          ============================================
+         */
         .mini-calendar-wrapper {
             width: 350px; 
             height: 250px; 
@@ -694,6 +699,83 @@
             to { width: 0%; }
         }
 
+        /* Novas Regras para a Modal de Notificações */
+        .notification-modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 2100; /* Higher than other modals */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .notification-modal.active {
+            opacity: 1;
+            display: flex;
+        }
+        .notification-modal-content {
+            background-color: var(--card);
+            color: var(--text);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 500px;
+            transform: translateY(-20px);
+            transition: transform 0.25s ease;
+            position: relative;
+            text-align: center;
+        }
+        .notification-modal.active .notification-modal-content {
+            transform: translateY(0);
+        }
+        .notification-modal-close-button {
+            color: var(--muted);
+            font-size: 1.8rem;
+            font-weight: bold;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .notification-modal-close-button:hover,
+        .notification-modal-close-button:focus {
+            color: var(--danger);
+            text-decoration: none;
+        }
+        .notification-modal-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary); /* Cor do título da notificação */
+        }
+        .notification-modal-message {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .notification-modal-button {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .notification-modal-button:hover {
+            background-color: var(--primary-dark);
+        }
     </style>
 </head>
 <body>
@@ -892,6 +974,16 @@
         <input type="hidden" name="agendamento_id" id="agendamento_id_apagar">
     </form>
 
+    <!-- The Notification Modal -->
+    <div id="notificationModal" class="notification-modal">
+        <!-- Modal content -->
+        <div class="notification-modal-content">
+            <span class="notification-modal-close-button">&times;</span>
+            <h3 id="notificationModalTitle" class="notification-modal-title"></h3>
+            <p id="notificationModalMessage" class="notification-modal-message"></p>
+            <button onclick="closeNotificationModal()" class="notification-modal-button">Fechar</button>
+        </div>
+    </div>
 
     <script type="module">
         // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
@@ -914,7 +1006,7 @@
             const themeToggle = document.querySelector('#theme-toggle');
             const logoutButton = document.getElementById('logoutButton');
 
-            // --- Lógica para Notificações Toast ---
+            // --- Lógica para Notificações Toast (mantida, mas não usada para flash messages) ---
             const toastContainer = document.getElementById('toast-container');
             function showToast(message, category = 'info') {
                 if (!toastContainer) return;
@@ -963,10 +1055,61 @@
                 }, 5000); // A notificação desaparece após 5 segundos
             }
 
-            // --- Processa mensagens flash do backend e as exibe como toasts ---
+            // --- Lógica para a Nova Modal de Notificações ---
+            const notificationModal = document.getElementById("notificationModal");
+            const notificationModalTitle = document.getElementById("notificationModalTitle");
+            const notificationModalMessage = document.getElementById("notificationModalMessage");
+            const notificationModalCloseButton = document.querySelector(".notification-modal-close-button");
+
+            // Function to open the notification modal with a specific message and title
+            window.openNotificationModal = function(title, message, category = 'info') {
+                notificationModalTitle.innerText = title;
+                notificationModalMessage.innerText = message;
+                
+                // Set title color based on category
+                if (category === 'success') {
+                    notificationModalTitle.style.color = 'var(--success)';
+                } else if (category === 'danger') {
+                    notificationModalTitle.style.color = 'var(--danger)';
+                } else if (category === 'warning') {
+                    notificationModalTitle.style.color = 'var(--warning)';
+                } else {
+                    notificationModalTitle.style.color = 'var(--primary)'; // Default or info
+                }
+
+                notificationModal.classList.add('active');
+            }
+
+            // Function to close the notification modal
+            window.closeNotificationModal = function() {
+                notificationModal.classList.remove('active');
+            }
+
+            // When the user clicks on <span> (x), close the modal
+            if (notificationModalCloseButton) {
+                notificationModalCloseButton.onclick = function() {
+                    closeNotificationModal();
+                }
+            }
+
+            // When the user clicks anywhere outside of the modal, close it
+            if (notificationModal) {
+                notificationModal.addEventListener('click', function(event) {
+                    if (event.target === notificationModal) {
+                        closeNotificationModal();
+                    }
+                });
+            }
+
+            // --- Processa mensagens flash do backend e as exibe na MODAL ---
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% for category, message in messages %}
-                    showToast({{ message|tojson|safe }}, "{{ category }}");
+                    // Use a nova função openNotificationModal para as mensagens flash
+                    openNotificationModal(
+                        "{{ 'Sucesso!' if category == 'success' else ('Erro!' if category == 'error' else ('Atenção!' if category == 'warning' else 'Informação')) }}",
+                        {{ message|tojson|safe }},
+                        "{{ category }}"
+                    );
                 {% endfor %}
             {% endwith %}
 
@@ -1091,11 +1234,6 @@
                 calendarGridWeek.style.gridAutoRows = 'minmax(40px, auto)'; // Altura mínima para cada slot
 
                 // Cria o cabeçalho da grade (dias da semana)
-                const headerRow = document.createElement('div');
-                headerRow.className = 'grid grid-cols-8 sticky top-0 bg-white dark:bg-gray-800 z-20 border-b border-r border-l border-gray-200 dark:border-gray-700'; // Tailwind classes for row
-                headerRow.style.gridColumn = '1 / -1'; // Ocupa todas as 8 colunas
-
-                // Canto superior esquerdo vazio
                 const cornerHeader = document.createElement('div');
                 cornerHeader.className = 'time-column-header border-none';
                 calendarGridWeek.appendChild(cornerHeader);
@@ -1130,13 +1268,13 @@
                         days.forEach(day => {
                             const eventCell = document.createElement('div');
                             eventCell.className = 'event-cell';
-                            const dateString = day.toISOString().split('T')[0]; // Formato yyyy-MM-dd
+                            const dateString = day.toISOString().split('T')[0]; // Formato-MM-dd
                             eventCell.dataset.date = dateString;
                             eventCell.dataset.time = timeStr;
 
                             // Filtra agendamentos para este slot específico
                             const appointmentsInSlot = allAppointments.filter(app => {
-                                const appDate = app.data_agendamento; // Já no formato yyyy-MM-dd
+                                const appDate = app.data_agendamento; // Já no formato-MM-dd
                                 const appTime = app.hora_agendamento; // Já no formato HH:MM
 
                                 const matchesDate = appDate === dateString;
@@ -1291,11 +1429,28 @@
                 };
 
                 btnApagar.onclick = () => {
-                    if (confirm('Tem certeza que deseja apagar este agendamento? Esta ação não pode ser desfeita.')) {
+                    // Substituído o confirm nativo pela nova modal de notificação para confirmação
+                    openNotificationModal(
+                        "Confirmação de Exclusão",
+                        "Tem certeza que deseja apagar este agendamento? Esta ação não pode ser desfeita.",
+                        "warning"
+                    );
+                    // Adiciona um listener temporário ao botão de fechar da modal de notificação para a ação de exclusão
+                    const confirmDeleteButton = document.querySelector(".notification-modal-button");
+                    confirmDeleteButton.onclick = () => {
+                        closeNotificationModal(); // Fecha a modal de notificação
                         formApagar.action = "{{ url_for('apagar_agendamento') }}";
                         document.getElementById('agendamento_id_apagar').value = agendamento.id;
                         formApagar.submit();
-                    }
+                    };
+                    // Se o usuário clicar no 'x' ou fora da modal, ela apenas fecha sem ação
+                    notificationModalCloseButton.onclick = () => {
+                        closeNotificationModal();
+                        // Restaura o onclick original do botão de fechar da modal de notificação
+                        notificationModalCloseButton.onclick = function() {
+                            closeNotificationModal();
+                        };
+                    };
                 };
 
                 modalDetalhes.classList.add('active');
