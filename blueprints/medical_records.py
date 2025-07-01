@@ -249,6 +249,7 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
                             for aid in target['aids']:
                                 aid['status'] = 'finalizada'
                                 # Garante que attempts_count exista e seja um número
+                                # CORREÇÃO: Garante que attempts_count seja um número, ou 0 se não for
                                 aid['attempts_count'] = int(aid.get('attempts_count', 0))
 
                     # Atualiza dados de uma ajuda específica, se aid_id for fornecido
@@ -259,7 +260,7 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
                                 aid_found = True
                                 if new_attempts_count is not None:
                                     try:
-                                        # CORREÇÃO: Converte new_attempts_count para int
+                                        # CORREÇÃO: Converte new_attempts_count para int APENAS se não for None
                                         aid['attempts_count'] = int(new_attempts_count)
                                     except (ValueError, TypeError) as e:
                                         raise Exception(f"Valor inválido para tentativas: {new_attempts_count}. Erro: {e}")
