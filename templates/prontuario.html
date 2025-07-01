@@ -21,11 +21,11 @@
             --text: #0f172a; /* Tailwind Slate-900 */
             --muted: #64748b; /* Tailwind Slate-500 */
             --accent: #0f172a;
-            --primary: #0d9488; /* Tailwind Teal-600 */
-            --primary-dark: #115e59; /* Tailwind Teal-700 */
-            --secondary: #f59e0b; /* Tailwind Amber-500 */
-            --danger: #dc2626; /* Tailwind Red-600 */
-            --success: #16a34a; /* Tailwind Green-600 */
+            --primary: #0d9488; /* Teal-600 */
+            --primary-dark: #115e59; /* Teal-700 */
+            --secondary: #f59e0b; /* Amber-500 */
+            --danger: #dc2626; /* Red-600 */
+            --success: #16a34a; /* Green-600 */
             --warning: #f59e0b; /* Tailwind Amber-500 */
             --info: #0ea5e9; /* Tailwind Sky-500 */
             --border-color: #e2e8f0;
@@ -836,18 +836,15 @@
         }
         .target-item {
             display: flex;
-            flex-wrap: wrap; /* Allow content to wrap */
-            align-items: center; /* Align items vertically in the center */
+            flex-direction: column; /* Changed to column for stacking main content and details */
             margin-bottom: 0.7rem;
             font-size: 0.9rem;
             color: var(--text);
-            transition: color 0.2s ease;
             position: relative;
-            padding-right: 30px; /* Space for help button */
-            cursor: pointer; /* Make the whole item clickable */
-            border: 1px solid transparent; /* Subtle border for click effect */
+            cursor: pointer;
+            border: 1px solid transparent;
             border-radius: 8px;
-            padding: 0.5rem; /* Padding for clickable area */
+            padding: 0.5rem;
             transition: background-color 0.2s ease, border-color 0.2s ease;
         }
         .target-item:hover {
@@ -859,7 +856,7 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
         }
-        .target-item.concluido span {
+        .target-item.concluido .target-text-content { /* Apply strikethrough only to the main text */
             text-decoration: line-through;
             color: var(--muted);
         }
@@ -871,7 +868,6 @@
             flex-shrink: 0;
             color: var(--muted);
             transition: color 0.2s ease;
-            cursor: pointer; /* Torna o ícone clicável */
         }
         .target-item.concluido i.status-icon.fa-check-square {
             color: var(--success);
@@ -879,9 +875,9 @@
         .target-item .target-main-content {
             display: flex;
             align-items: center;
-            flex-grow: 1;
-            width: 100%; /* Take full width on top */
-            margin-bottom: 0.5rem; /* Space between main content and details */
+            width: 100%;
+            padding-right: 10px; /* Space for the expand icon */
+            position: relative; /* For expand icon positioning */
         }
         .target-item .target-text-content {
             flex-grow: 1;
@@ -890,14 +886,15 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            margin-left: 1rem;
+            margin-left: auto;
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--primary-dark);
-            background-color: var(--primary-light);
+            background-color: var(--bg); /* Changed from primary-light */
             padding: 0.2rem 0.6rem;
             border-radius: 15px;
             flex-shrink: 0;
+            border: 1px solid var(--border-color); /* Added border */
         }
         .target-item .attempts-counter button {
             background: none;
@@ -911,23 +908,20 @@
         .target-item .attempts-counter button:hover {
             color: var(--primary);
         }
-        .target-item .help-toggle-btn {
-            background: none;
-            border: none;
-            color: var(--info);
-            font-size: 1.1rem;
-            cursor: pointer;
+        .target-item .expand-icon {
             position: absolute;
             right: 0;
-            top: 0;
-            padding: 5px;
-            border-radius: 50%;
-            transition: background-color 0.2s ease;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            color: var(--muted);
+            transition: transform 0.2s ease;
         }
-        .target-item .help-toggle-btn:hover {
-            background-color: color-mix(in srgb, var(--info) 15%, transparent);
+        .target-item.expanded .expand-icon {
+            transform: translateY(-50%) rotate(90deg);
         }
-        .target-item .target-details {
+
+        .target-details-expanded {
             display: none; /* Hidden by default */
             flex-direction: column;
             width: 100%;
@@ -935,56 +929,80 @@
             border-top: 1px dashed var(--border-color);
             margin-top: 0.5rem;
         }
-        .target-item.expanded .target-details {
+        .target-item.expanded .target-details-expanded {
             display: flex; /* Show when expanded */
         }
-        .target-item .help-content-container {
-            background-color: var(--bg);
+        .target-details-expanded .form-group {
+            margin-bottom: 0.75rem;
+        }
+        .target-details-expanded .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Styles for individual aids */
+        .aids-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 0.75rem;
+            background-color: var(--card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 0.75rem;
-            margin-top: 0.5rem;
-            font-size: 0.85rem;
-            color: var(--text);
-            line-height: 1.5;
-            display: none; /* Hidden by default */
-            width: 100%;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
         }
-        .target-item .help-content-container.active {
-            display: block;
-        }
-        .target-item .help-content-container textarea {
-            width: 100%;
-            min-height: 80px;
-            padding: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background-color: var(--card);
-            color: var(--text);
-            resize: vertical;
-            font-size: 0.9rem;
-        }
-        .target-item .help-content-container .help-actions {
+        .aid-item {
             display: flex;
-            justify-content: flex-end;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed var(--border-color);
+            font-size: 0.9rem;
+            color: var(--text);
         }
-        .target-item .target-status-select {
-            width: auto; /* Allow select to size to content */
-            padding: 0.3rem 0.6rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            background-color: var(--primary-light);
+        .aid-item:last-child {
+            border-bottom: none;
+        }
+        .aid-item-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-grow: 1;
+        }
+        .aid-item-left .aid-status-icon {
+            font-size: 1.1rem;
+            color: var(--muted);
+        }
+        .aid-item.finalizada .aid-status-icon {
+            color: var(--success);
+        }
+        .aid-item.finalizada .aid-description {
+            text-decoration: line-through;
+            color: var(--muted);
+        }
+        .aid-item .aid-attempts-counter {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+            font-weight: 600;
             color: var(--primary-dark);
-            border: 1px solid var(--primary);
-            margin-top: 0.5rem;
-            align-self: flex-start; /* Align to start of the column */
+            background-color: var(--bg);
+            padding: 0.1rem 0.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
-        .target-item .target-status-select.pendente { background-color: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); border-color: var(--danger); }
-        .target-item .target-status-select.andamento { background-color: color-mix(in srgb, var(--info) 15%, transparent); color: var(--info); border-color: var(--info); }
-        .target-item .target-status-select.finalizada { background-color: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); border-color: var(--success); }
-
+        .aid-item .aid-attempts-counter button {
+            background: none;
+            border: none;
+            color: var(--primary-dark);
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 0 2px;
+            transition: color 0.2s ease;
+        }
+        .aid-item .aid-attempts-counter button:hover {
+            color: var(--primary);
+        }
 
         .add-target-group {
             display: flex;
@@ -1825,13 +1843,47 @@
     <!-- Script da biblioteca jsPDF para geração de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module">
+        // Function to display custom flash messages (moved to global scope)
+        function displayFlashMessage(type, message) {
+            let flashMessagesContainer = document.querySelector('.flash-messages');
+            if (!flashMessagesContainer) {
+                const mainElement = document.querySelector('main');
+                if (mainElement) {
+                    const newContainer = document.createElement('div');
+                    newContainer.classList.add('flash-messages');
+                    mainElement.prepend(newContainer);
+                    flashMessagesContainer = newContainer;
+                } else {
+                    console.error('Não foi possível encontrar ou criar o container de flash messages.');
+                    return;
+                }
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('flash-message', type);
+            let iconClass = '';
+            if (type === 'success') iconClass = 'fas fa-check-circle';
+            else if (type === 'danger') iconClass = 'fas fa-times-circle';
+            else if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
+            else iconClass = 'fas fa-info-circle';
+
+            messageDiv.innerHTML = `<i class="${iconClass}"></i> ${message}`;
+
+            flashMessagesContainer.appendChild(messageDiv);
+
+            // Remove the message after a few seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
         // Importa funções do Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-        import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+        import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js"; // Corrected .s to .js
 
         // Configuração do Firebase. ATENÇÃO: Substitua pelos dados do seu projeto Firebase.
         const firebaseConfig = {
-            apiKey: "SUA_API_KEY",
+            apiKey: "SUA_API_KEY", // Make sure this is replaced with a valid API key
             authDomain: "SEU_AUTH_DOMAIN",
             projectId: "SEU_PROJECT_ID",
             storageBucket: "SEU_STORAGE_BUCKET",
@@ -1839,9 +1891,17 @@
             appId: "SEU_APP_ID"
         };
 
-        // Inicializa o aplicativo Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        let app;
+        let auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            console.log('Firebase app initialized successfully.');
+        } catch (error) {
+            console.error('Error initializing Firebase app:', error);
+            displayFlashMessage('danger', 'Erro ao inicializar o Firebase. Verifique sua configuração no código e se a chave de API é válida.');
+        }
+
 
         // Variáveis globais para dados, vindos do Jinja2
         // `allRecordsData` contém todos os registros do paciente (anamnese, laudo, etc.)
@@ -1997,25 +2057,42 @@
                 // *** Lógica das Abas (Tabs) ***
                 function setupTabs() {
                     const tabContainer = document.querySelector('.tabs-container');
-                    if (!tabContainer) return;
+                    if (!tabContainer) {
+                        console.log('Tab container not found, skipping tab setup.');
+                        return;
+                    }
 
                     const tabNavItems = tabContainer.querySelectorAll('.tab-nav-item');
                     const tabPanels = tabContainer.querySelectorAll('.tab-panel');
 
+                    console.log('Tab nav items found:', tabNavItems.length);
+                    console.log('Tab panels found:', tabPanels.length);
+
                     tabNavItems.forEach(tab => {
                         tab.addEventListener('click', () => {
+                            console.log('Tab clicked:', tab.dataset.tab);
                             // Remove a classe 'active' de todas as abas e painéis
-                            tabNavItems.forEach(item => item.classList.remove('active'));
-                            tabPanels.forEach(panel => panel.classList.remove('active'));
+                            tabNavItems.forEach(item => {
+                                item.classList.remove('active');
+                                console.log('Removed active from:', item.dataset.tab);
+                            });
+                            tabPanels.forEach(panel => {
+                                panel.classList.remove('active');
+                                console.log('Removed active from panel:', panel.id);
+                            });
 
                             // Adiciona a classe 'active' à aba clicada
                             tab.classList.add('active');
+                            console.log('Added active to clicked tab:', tab.dataset.tab);
 
                             // Ativa o painel correspondente
                             const targetPanelId = 'tab-panel-' + tab.dataset.tab;
                             const targetPanel = document.getElementById(targetPanelId);
                             if(targetPanel) {
                                 targetPanel.classList.add('active');
+                                console.log('Added active to target panel:', targetPanel.id);
+                            } else {
+                                console.error('Target panel not found for:', targetPanelId);
                             }
                         });
                     });
@@ -2148,6 +2225,12 @@
                         try {
                             // Utiliza a API Gemini para gerar conteúdo
                             const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // A chave API será fornecida pelo ambiente Canvas
+
+                            // Check if apiKey is valid (simple check, not exhaustive)
+                            if (!apiKey || apiKey === "SUA_API_KEY") {
+                                throw new Error("API Key not configured. Please replace 'SUA_API_KEY' with a valid key.");
+                            }
+
                             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                             const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
@@ -2172,7 +2255,7 @@
 
                         } catch (error) {
                             console.error('Erro na API Gemini:', error);
-                            displayFlashMessage('danger', 'Ocorreu um erro ao se comunicar com a IA. Por favor, tente novamente mais tarde.');
+                            displayFlashMessage('danger', 'Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.');
                         } finally {
                             hideLoading(); // Oculta o indicador de carregamento
                             // Restaura o estado do botão com base no consentimento LGPD
@@ -2418,38 +2501,16 @@
                         return;
                     }
 
-                    // Checkbox/Icon para alvo do PEI (alterna status de conclusão)
-                    const targetStatusToggle = target.closest('.target-item'); // Clicou em qualquer lugar do item do alvo
-                    if (targetStatusToggle) {
-                        const checkbox = targetStatusToggle.querySelector('.target-checkbox');
-                        // Apenas alterna se o checkbox não estiver desabilitado
-                        if (checkbox && !checkbox.disabled) {
-                            const targetId = targetStatusToggle.dataset.targetId;
-                            const goalList = targetStatusToggle.closest('.targets-list');
-                            const peiId = goalList.dataset.peiId;
-                            const goalId = goalList.dataset.goalId;
-
-                            // Verificar permissões do PEI e do profissional associado
-                            const currentPei = allPeisData.find(p => p.id === peiId);
-                            const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
-
-                            if (!canModify) {
-                                displayFlashMessage('danger', 'Você não tem permissão para atualizar este PEI.');
-                                return;
-                            }
-
-                            // Perform local toggle for immediate visual feedback
-                            checkbox.checked = !checkbox.checked;
-                            if (checkbox.checked) {
-                                targetStatusToggle.classList.add('concluido');
-                                targetStatusToggle.querySelector('.status-icon').classList.replace('fa-square', 'fa-check-square');
-                            } else {
-                                targetStatusToggle.classList.remove('concluido');
-                                targetStatusToggle.querySelector('.status-icon').classList.replace('fa-check-square', 'fa-square');
-                            }
-
-                            await updateTargetStatus(peiId, goalId, targetId, checkbox.checked); // Chama a função assíncrona para atualizar no backend
-                        }
+                    // NOVO: Evento de clique no item do alvo para expandir/colapsar
+                    // This is the main fix for the collapsing issue.
+                    // Only trigger collapse/expand if the click is directly on the main content area of the target,
+                    // not on any interactive elements inside the expanded details.
+                    const clickedTargetMainContent = target.closest('.target-main-content');
+                    if (clickedTargetMainContent) {
+                        const targetItem = clickedTargetMainContent.closest('.target-item');
+                        const isExpanded = targetItem.dataset.targetExpanded === 'true';
+                        targetItem.dataset.targetExpanded = !isExpanded;
+                        targetItem.classList.toggle('expanded', !isExpanded);
                         return;
                     }
 
@@ -2570,15 +2631,19 @@
                         return;
                     }
 
-                    // NOVO: Botões de tentativas (incrementar/decrementar)
-                    const incrementBtn = target.closest('.btn-increment-attempts');
-                    const decrementBtn = target.closest('.btn-decrement-attempts');
-                    if (incrementBtn || decrementBtn) {
-                        const targetItem = target.closest('.target-item');
+                    // NOVO: Botões de tentativas (incrementar/decrementar) para UMA AJUDA ESPECÍFICA
+                    const aidIncrementBtn = target.closest('.btn-increment-aid-attempts');
+                    const aidDecrementBtn = target.closest('.btn-decrement-aid-attempts');
+                    if (aidIncrementBtn || aidDecrementBtn) {
+                        const aidItem = target.closest('.aid-item');
+                        const targetItem = aidItem.closest('.target-item');
+
                         const peiId = targetItem.dataset.peiId;
                         const goalId = targetItem.dataset.goalId;
                         const targetId = targetItem.dataset.targetId;
-                        const attemptsSpan = targetItem.querySelector('.attempts-count');
+                        const aidId = aidItem.dataset.aidId;
+
+                        const attemptsSpan = aidItem.querySelector('.aid-attempts-count');
                         let currentAttempts = parseInt(attemptsSpan.textContent);
 
                         const currentPei = allPeisData.find(p => p.id === peiId);
@@ -2589,74 +2654,20 @@
                             return;
                         }
 
-                        if (incrementBtn) {
+                        if (aidIncrementBtn) {
                             currentAttempts++;
-                        } else if (decrementBtn) {
+                        } else if (aidDecrementBtn) {
                             currentAttempts = Math.max(0, currentAttempts - 1); // Não permite tentativas negativas
                         }
                         attemptsSpan.textContent = currentAttempts; // Atualiza visualmente
-                        await updateTargetAttempts(peiId, goalId, targetId, currentAttempts, null);
+                        
+                        console.log(`Updating aid attempts: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, Aid=${aidId}, Attempts=${currentAttempts}`);
+                        // Envia a atualização para o backend, incluindo o aid_id
+                        await updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, currentAttempts, null, null);
                         return;
                     }
 
-                    // NOVO: Botão de ajuda (revelar/esconder)
-                    const helpToggleBtn = target.closest('.help-toggle-btn');
-                    if (helpToggleBtn) {
-                        const targetItem = helpToggleBtn.closest('.target-item');
-                        const helpContentContainer = targetItem.querySelector('.help-content-container');
-                        helpContentContainer.classList.toggle('active'); // Mostra/esconde o container
-                        const isHelpActive = helpContentContainer.classList.contains('active');
-                        helpToggleBtn.querySelector('i').className = isHelpActive ? 'fas fa-eye-slash' : 'fas fa-question-circle';
-                        return;
-                    }
-
-                    // NOVO: Botão Salvar Ajuda
-                    const saveHelpBtn = target.closest('.btn-save-help');
-                    if (saveHelpBtn) {
-                        const targetItem = saveHelpBtn.closest('.target-item');
-                        const peiId = targetItem.dataset.peiId;
-                        const goalId = targetItem.dataset.goalId;
-                        const targetId = targetItem.dataset.targetId;
-                        const helpContentTextarea = targetItem.querySelector('.help-content-textarea');
-                        const newHelpContent = helpContentTextarea.value.trim();
-
-                        const currentPei = allPeisData.find(p => p.id === peiId);
-                        const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
-
-                        if (!canModify) {
-                            displayFlashMessage('danger', 'Você não tem permissão para editar a ajuda neste PEI.');
-                            return;
-                        }
-
-                        await updateTargetAttempts(peiId, goalId, targetId, null, newHelpContent);
-                        // Opcional: fechar o editor após salvar
-                        helpContentTextarea.closest('.help-content-container').classList.remove('active');
-                        helpToggleBtn.querySelector('i').className = 'fas fa-question-circle';
-                        return;
-                    }
-
-                    // NOVO: Botão Cancelar Ajuda
-                    const cancelHelpBtn = target.closest('.btn-cancel-help');
-                    if (cancelHelpBtn) {
-                        const targetItem = cancelHelpBtn.closest('.target-item');
-                        const helpContentContainer = targetItem.querySelector('.help-content-container');
-                        const helpToggleBtn = targetItem.querySelector('.help-toggle-btn');
-                        // Reverte o conteúdo para o original (se houver)
-                        const peiId = targetItem.dataset.peiId;
-                        const goalId = targetItem.dataset.goalId;
-                        const targetId = targetItem.dataset.targetId;
-                        const currentPei = allPeisData.find(p => p.id === peiId);
-                        const currentGoal = currentPei?.goals.find(g => g.id === goalId);
-                        const currentTarget = currentGoal?.targets.find(t => t.id === targetId);
-                        if (currentTarget) {
-                            targetItem.querySelector('.help-content-textarea').value = currentTarget.help_content || '';
-                        }
-                        helpContentContainer.classList.remove('active');
-                        helpToggleBtn.querySelector('i').className = 'fas fa-question-circle';
-                        return;
-                    }
-
-                    // NOVO: Manipular mudança de status do alvo
+                    // NOVO: Manipular mudança de status do alvo (dropdown)
                     const targetStatusSelect = target.closest('.target-status-select');
                     if (targetStatusSelect) {
                         const targetItem = targetStatusSelect.closest('.target-item');
@@ -2677,6 +2688,8 @@
                             }
                             return;
                         }
+                        console.log(`Updating target status: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, New Status=${newStatus}`);
+                        // Envia apenas o novo status do alvo
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, null, newStatus);
                         return;
                     }
@@ -2738,45 +2751,14 @@
                     }
                 }
 
-                // Atualiza o status de conclusão de um alvo específico
-                async function updateTargetStatus(peiId, goalId, targetId, isCompleted) {
-                    console.log('Tentando atualizar o status do alvo:', { peiId, goalId, targetId, isCompleted });
-                    showLoading();
-                    try {
-                        const response = await fetch(`{{ url_for('update_target_status', paciente_doc_id=PACIENTE_DOC_ID) }}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_id: targetId, concluido: isCompleted })
-                        });
-                        const data = await response.json();
-                        console.log('Resposta de atualização do status do alvo:', data);
-                        if (response.ok && data.success) {
-                            displayFlashMessage('success', data.message);
-                            if (data.peis) {
-                                allPeisData = data.peis;
-                            }
-                            // Re-renderiza o modal de detalhes do PEI para refletir a mudança
-                            const currentPei = allPeisData.find(p => p.id === peiId);
-                            if (currentPei) {
-                                openPeiDetailsModal(currentPei);
-                            }
-                        } else {
-                            console.error('Falha ao atualizar o status do alvo:', data.message || 'Erro desconhecido');
-                            displayFlashMessage('danger', `Erro ao atualizar status do alvo: ${data.message || 'Erro desconhecido.'}`);
-                        }
-                    } catch (error) {
-                        console.error('Erro ao atualizar o status do alvo:', error);
-                        displayFlashMessage('danger', `Erro de rede ou servidor ao atualizar status do alvo: ${error.message}`);
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
                 // NOVO: Atualiza o contador de tentativas, o conteúdo de ajuda ou o status do alvo
-                async function updateTargetStatusAndAttempts(peiId, goalId, targetId, newAttemptsCount, newHelpContent, newStatus) {
+                async function updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, newAttemptsCount, newHelpContent, newStatus) {
                     showLoading();
                     try {
                         const payload = { pei_id: peiId, goal_id: goalId, target_id: targetId };
+                        if (aidId !== null) {
+                            payload.aid_id = aidId;
+                        }
                         if (newAttemptsCount !== null) {
                             payload.new_attempts_count = newAttemptsCount;
                         }
@@ -2784,15 +2766,19 @@
                             payload.new_help_content = newHelpContent;
                         }
                         if (newStatus !== null) {
-                            payload.new_status = newStatus; // Envia o novo status
+                            payload.new_target_status = newStatus; // Envia o novo status geral do alvo
                         }
 
-                        const response = await fetch(`{{ url_for('update_target_attempts', paciente_doc_id=PACIENTE_DOC_ID) }}`, {
+                        console.log('Sending payload to backend:', payload);
+
+                        const response = await fetch(`{{ url_for('update_target_and_aid_data', paciente_doc_id=PACIENTE_DOC_ID) }}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
                         const data = await response.json();
+                        console.log('Response from backend:', data);
+
                         if (response.ok && data.success) {
                             displayFlashMessage('success', data.message);
                             if (data.peis) {
@@ -3093,26 +3079,50 @@
                     let targetsHtml = '';
                     if (goal.targets && goal.targets.length > 0) {
                         goal.targets.forEach(target => {
+                            // Determine a classe de cor para o status geral do alvo
+                            let targetStatusClass = '';
+                            if (target.status === 'pendente') targetStatusClass = 'pendente';
+                            else if (target.status === 'andamento') targetStatusClass = 'andamento';
+                            else if (target.status === 'finalizada') targetStatusClass = 'finalizada';
+
+                            let aidsListHtml = '';
+                            if (target.aids && target.aids.length > 0) {
+                                aidsListHtml += '<ul class="aids-list">';
+                                target.aids.forEach(aid => {
+                                    const aidStatusClass = aid.status === 'finalizada' ? 'finalizada' : '';
+                                    aidsListHtml += `
+                                        <li class="aid-item ${aidStatusClass}" data-aid-id="${aid.id}" data-target-id="${target.id}" data-goal-id="${goal.id}" data-pei-id="${pei.id}">
+                                            <div class="aid-item-left">
+                                                <i class="aid-status-icon fas ${aid.status === 'finalizada' ? 'fa-check-circle' : 'fa-circle'}"></i>
+                                                <span class="aid-description">${aid.description}</span>
+                                            </div>
+                                            <div class="aid-attempts-counter">
+                                                <button type="button" class="btn-decrement-aid-attempts" ${goalActionsDisabled}>-</button>
+                                                Tentativas: <span class="aid-attempts-count">${aid.attempts_count || 0}</span>
+                                                <button type="button" class="btn-increment-aid-attempts" ${goalActionsDisabled}>+</button>
+                                            </div>
+                                        </li>
+                                    `;
+                                });
+                                aidsListHtml += '</ul>';
+                            } else {
+                                aidsListHtml = '<div class="empty-state-small"><i class="fas fa-question-circle"></i><p>Nenhuma ajuda definida para este alvo.</p></div>';
+                            }
+
                             targetsHtml += `
                                 <li class="target-item ${target.concluido ? 'concluido' : ''} ${targetItemDisabledClass}" 
                                     data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}"
                                     data-target-expanded="false">
-                                    <div class="target-main-content">
+                                    <div class="target-main-content target-expand-trigger">
                                         <i class="status-icon fas ${target.concluido ? 'fa-check-square' : 'fa-square'}"></i>
                                         <span class="target-text-content">${target.descricao}</span>
-                                        <div class="attempts-counter ml-auto">
-                                            <button type="button" class="btn-decrement-attempts" ${goalActionsDisabled}>-</button>
-                                            Tentativas: <span class="attempts-count">${target.tentativas_count || 0}</span>
-                                            <button type="button" class="btn-increment-attempts" ${goalActionsDisabled}>+</button>
-                                        </div>
+                                        <i class="expand-icon fas fa-chevron-right"></i>
                                     </div>
-                                    <div class="target-details">
+                                    <div class="target-details-expanded">
                                         <div class="form-group">
                                             <label for="target-status-${target.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status do Alvo</label>
                                             <select id="target-status-${target.id}" class="target-status-select w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out
-                                                ${target.status === 'pendente' ? 'pendente' : ''}
-                                                ${target.status === 'andamento' ? 'andamento' : ''}
-                                                ${target.status === 'finalizada' ? 'finalizada' : ''}
+                                                ${targetStatusClass}
                                                 " ${goalActionsDisabled}>
                                                 <option value="pendente" ${target.status === 'pendente' ? 'selected' : ''}>Pendente</option>
                                                 <option value="andamento" ${target.status === 'andamento' ? 'selected' : ''}>Em Andamento</option>
@@ -3120,12 +3130,8 @@
                                             </select>
                                         </div>
                                         <div class="form-group">
-                                            <label for="help-content-${target.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Conteúdo de Ajuda</label>
-                                            <textarea id="help-content-${target.id}" class="help-content-textarea w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicione conteúdo de ajuda aqui..." rows="3" ${goalActionsDisabled}>${target.help_content || ''}</textarea>
-                                            <div class="help-actions">
-                                                <button type="button" class="btn btn-sm btn-secondary btn-cancel-help" ${goalActionsDisabled}>Cancelar</button>
-                                                <button type="button" class="btn btn-sm btn-primary btn-save-help" ${goalActionsDisabled}>Salvar Ajuda</button>
-                                            </div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ajudas e Tentativas</label>
+                                            ${aidsListHtml}
                                         </div>
                                     </div>
                                 </li>
@@ -3318,19 +3324,23 @@
                                 doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
                                 goal.targets.forEach((target) => {
                                     checkPageBreak(contentLineHeight);
-                                    const targetStatus = target.concluido ? '[X] Concluído' : '[ ] Pendente';
-                                    const attempts = target.tentativas_count !== undefined ? ` (Tentativas: ${target.tentativas_count})` : '';
-                                    doc.text(`  ${targetStatus} ${target.descricao}${attempts}`, margin + 10, yPos);
+                                    const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
+                                    doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
                                     yPos += contentLineHeight;
-                                    if (target.help_content) {
-                                        const helpLines = doc.splitTextToSize(`Ajuda: ${target.help_content}`, maxWidth - 20);
-                                        helpLines.forEach(line => {
+
+                                    if (target.aids && target.aids.length > 0) {
+                                        target.aids.forEach(aid => {
                                             checkPageBreak(contentLineHeight);
-                                            doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text(line, margin + 15, yPos);
+                                            const aidStatus = aid.status === 'finalizada' ? '[X]' : '[ ]';
+                                            doc.setFontSize(contentFontSize - 1).setFont("helvetica", "normal").text(`    ${aidStatus} ${aid.description} (Tentativas: ${aid.attempts_count || 0})`, margin + 15, yPos);
                                             yPos += contentLineHeight - 1;
                                         });
-                                        doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
+                                    } else {
+                                        checkPageBreak(contentLineHeight);
+                                        doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text('    Nenhuma ajuda definida para este alvo.', margin + 15, yPos);
+                                        yPos += contentLineHeight - 1;
                                     }
+                                    doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
                                 });
                             } else {
                                 checkPageBreak(contentLineHeight);
@@ -3452,19 +3462,23 @@
                                     doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
                                     goal.targets.forEach((target) => {
                                         checkPageBreak(contentLineHeight);
-                                        const targetStatus = target.concluido ? '[X] Concluído' : '[ ] Pendente';
-                                        const attempts = target.tentativas_count !== undefined ? ` (Tentativas: ${target.tentativas_count})` : '';
-                                        doc.text(`  ${targetStatus} ${target.descricao}${attempts}`, margin + 10, yPos);
+                                        const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
+                                        doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
                                         yPos += contentLineHeight;
-                                        if (target.help_content) {
-                                            const helpLines = doc.splitTextToSize(`Ajuda: ${target.help_content}`, maxWidth - 20);
-                                            helpLines.forEach(line => {
+
+                                        if (target.aids && target.aids.length > 0) {
+                                            target.aids.forEach(aid => {
                                                 checkPageBreak(contentLineHeight);
-                                                doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text(line, margin + 15, yPos);
+                                                const aidStatus = aid.status === 'finalizada' ? '[X]' : '[ ]';
+                                                doc.setFontSize(contentFontSize - 1).setFont("helvetica", "normal").text(`    ${aidStatus} ${aid.description} (Tentativas: ${aid.attempts_count || 0})`, margin + 15, yPos);
                                                 yPos += contentLineHeight - 1;
                                             });
-                                            doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
+                                        } else {
+                                            checkPageBreak(contentLineHeight);
+                                            doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text('    Nenhuma ajuda definida para este alvo.', margin + 15, yPos);
+                                            yPos += contentLineHeight - 1;
                                         }
+                                        doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
                                     });
                                 } else {
                                     checkPageBreak(contentLineHeight);
