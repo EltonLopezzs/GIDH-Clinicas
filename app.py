@@ -445,4 +445,4 @@ register_contas_a_pagar_routes(app)
 app.register_blueprint(peis_bp) # NOVO: Registrar o blueprint de PEIs
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True) 

@@ -378,8 +378,10 @@ def ver_peis_paciente(paciente_doc_id):
         flash(f'Erro ao carregar PEIs do paciente: {e}.', 'danger')
         print(f"Erro ao carregar PEIs: {e}")
 
+    # CORREÇÃO: Adicionando paciente_doc_id ao contexto do template
     return render_template('pei_page.html',
                            paciente=paciente_data,
+                           paciente_doc_id=paciente_doc_id, # <-- LINHA CORRIGIDA
                            peis=all_peis,
                            current_date_iso=current_date_iso,
                            is_admin=is_admin,
