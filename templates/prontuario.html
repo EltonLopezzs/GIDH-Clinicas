@@ -1,17 +1,14 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PEI de {{ paciente.nome if paciente else 'Paciente' }} - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+    <title>Prontuário de {{ paciente.nome if paciente else 'Paciente' }} - {{ session.clinica_nome_display or 'Clínica On' }}</title>
 
-    <!-- Favicon para a aba do navegador -->
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
 
-    <!-- Fontes e ícones externos: Inter e Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Tailwind CSS CDN para facilitar o estilo -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Define as variáveis de cores para os temas claro e escuro */
@@ -213,72 +210,57 @@
             }
         }
 
-        /* --- Modal System --- */
-        .modal-overlay {
-            display: none; /* Hidden by default */
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-            animation: fadeIn 0.3s ease;
-        }
-        .modal-overlay.active {
-            display: flex; /* Show modal */
-        }
-        .modal-content {
+        /* Estilos do Dropdown */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
             background-color: var(--card);
-            color: var(--text);
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 900px; /* Default max-width */
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            animation: slideInUp 0.3s ease;
-        }
-        .modal-header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        .modal-header h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 0;
-        }
-        .modal-close-btn {
-            background: none; border: none; font-size: 2rem;
-            color: var(--muted); cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .modal-close-btn:hover { color: var(--text); }
-        .modal-body {
-            padding: 1.5rem;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-        .modal-footer {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-            background-color: var(--bg);
-            border-bottom-left-radius: 12px;
-            border-bottom-right-radius: 12px;
-            flex-shrink: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: 200px;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
         }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideInUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-menu a, .dropdown-menu button {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            color: var(--text);
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            transition: background-color 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-menu a:hover, .dropdown-menu button:hover {
+            background-color: var(--bg);
+        }
+
+        .dropdown-menu a:first-child, .dropdown-menu button:first-child {
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .dropdown-menu a:last-child, .dropdown-menu button:last-child {
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
 
         /* --- Paciente Info Card (Cartão de Informações do Paciente) --- */
         .paciente-info-card {
@@ -374,399 +356,337 @@
             border-color: color-mix(in srgb, var(--info) 30%, transparent);
         }
 
-        /* --- Estilos Específicos do PEI --- */
-        .pei-container {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
+        /* --- Prontuário Section (Seção do Prontuário) --- */
+        .prontuario-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
         }
-        .pei-section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-        .pei-section-header h3 {
-            font-size: 1.75rem;
-            color: var(--text);
-            margin: 0;
-            font-weight: 700;
-        }
+        .prontuario-header h2 { font-size: 1.75rem; color: var(--text); margin: 0; font-weight: 700; }
 
-        /* New: PEI Summary Card */
-        .pei-summary-card {
-            cursor: pointer;
+        /* Estilos para os cartões de registro */
+        .registro-card {
             background: var(--card); padding: 1.5rem; border-radius: 16px;
             box-shadow: 0 4px 10px -2px rgba(0,0,0,0.1), 0 2px 6px -2px rgba(0,0,0,0.05); /* Modern shadow */
             margin-bottom: 0;
             position: relative;
-            border-left: 8px solid var(--info); /* Default border color */
+            border-left: 8px solid transparent;
             display: flex;
             flex-direction: column;
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
             height: 100%; /* Ensure cards in a grid have equal height */
         }
-        .pei-summary-card:hover {
+        .registro-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 16px -4px rgba(0,0,0,0.15), 0 4px 8px -4px rgba(0,0,0,0.08);
         }
-        .pei-summary-card.finalizado {
-            border-left-color: var(--success);
-            opacity: 0.9;
-            filter: grayscale(0.2);
+        [data-theme="dark"] .registro-card {
+             box-shadow: 0 4px 10px -2px rgba(0,0,0,0.3), 0 2px 6px -2px rgba(0,0,0,0.2);
         }
-        .pei-summary-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-        }
-        .pei-summary-card-header h4 {
-            font-size: 1.3rem;
-            color: var(--primary);
-            margin: 0;
-            font-weight: 700;
-        }
-        .pei-summary-card-meta {
-            font-size: 0.85rem;
-            color: var(--muted);
-            text-align: right;
-            flex-shrink: 0;
-            line-height: 1.4;
-        }
-        .pei-summary-card-meta span { display: block; }
-        .pei-summary-card-meta i { margin-right: 0.4rem; color: var(--primary); }
-        .pei-summary-card-content {
-            font-size: 0.95rem;
-            color: var(--text);
-            line-height: 1.7;
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-        }
-        .pei-summary-card-content strong { color: var(--primary-dark); }
-        .pei-summary-card-content ul { list-style: none; padding-left: 0; margin-top: 0.5rem; }
-        .pei-summary-card-content li { margin-bottom: 0.3rem; }
-        .pei-summary-card-content li i { margin-right: 0.5rem; color: var(--info); }
 
+        .registro-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;
+        }
+        .registro-header h4 { font-size: 1.3rem; color: var(--primary); margin: 0; font-weight: 700; }
+        .registro-meta { font-size: 0.85rem; color: var(--muted); text-align: right; flex-shrink: 0;}
+        .registro-meta span { display: block; line-height: 1.4; }
+        .registro-meta i { margin-right: 0.4rem; color: var(--primary); } /* Icon color */
+        .registro-content {
+            font-size: 0.95rem; color: var(--text); line-height: 1.7;
+            white-space: pre-wrap; overflow-wrap: break-word;
+            max-height: 250px; overflow-y: auto; padding-right: 10px;
+            flex-grow: 1;
+        }
+        /* Scrollbar customizada para o conteúdo */
+        .registro-content::-webkit-scrollbar { width: 6px; }
+        .registro-content::-webkit-scrollbar-track { background: transparent; }
+        .registro-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        [data-theme="dark"] .registro-content::-webkit-scrollbar-thumb { background: #4b5563; }
 
-        /* PEI Details Modal Styles */
-        .pei-details-modal-body {
+        .registro-actions {
+            margin-top: 1.5rem; border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;
+        }
+        .empty-state {
+            text-align: center; padding: 2.5rem; color: var(--muted);
+            background: var(--card); border-radius: 16px;
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
-        }
-        .pei-details-header {
-            background-color: var(--bg);
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-        .pei-details-header h4 {
-            font-size: 1.5rem;
-            color: var(--primary-dark);
-            margin-bottom: 0.5rem;
-            font-weight: 700;
-        }
-        .pei-details-meta {
-            font-size: 0.9rem;
-            color: var(--muted);
-            line-height: 1.5;
-        }
-        .pei-details-meta span { display: block; }
-        .pei-details-meta i { margin-right: 0.5rem; color: var(--primary); }
-
-        .goals-list-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .goal-card {
-            background-color: var(--card);
-            border: 1px solid var(--border-color);
-            border-left: 8px solid var(--info);
-            border-radius: 12px;
-            padding: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .goal-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .goal-card.finalizado {
-            border-left-color: var(--success);
-            opacity: 0.9;
-            filter: grayscale(0.2);
-        }
-        .goal-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .goal-card-header strong {
-            font-size: 1.1rem;
-            color: var(--text);
-            font-weight: 600;
-        }
-        .goal-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-        .goal-status.active-status { background-color: color-mix(in srgb, var(--info) 20%, transparent); color: var(--info); }
-        .goal-status.finalizado-status { background-color: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
-
-        .targets-list {
-            list-style: none;
-            padding: 0;
-            margin-top: 0.75rem;
-        }
-        .target-item {
-            display: flex;
-            flex-direction: column; /* Changed to column for stacking main content and details */
-            margin-bottom: 0.7rem;
-            font-size: 0.9rem;
-            color: var(--text);
-            position: relative;
-            cursor: pointer;
-            border: 1px solid transparent;
-            border-radius: 8px;
-            padding: 0.5rem;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
-        }
-        .target-item:hover {
-            background-color: var(--bg);
-            border-color: var(--border-color);
-        }
-        .target-item.expanded {
-            background-color: var(--bg);
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
-        }
-        .target-item.concluido .target-text-content { /* Apply strikethrough only to the main text */
-            text-decoration: line-through;
-            color: var(--muted);
-        }
-        .target-item i.status-icon {
-            margin-right: 0.75rem;
-            font-size: 1.1rem;
-            width: 20px;
-            text-align: center;
-            flex-shrink: 0;
-            color: var(--muted);
-            transition: color 0.2s ease;
-        }
-        .target-item.concluido i.status-icon.fa-check-square {
-            color: var(--success);
-        }
-        .target-item .target-main-content {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            padding-right: 10px; /* Space for the expand icon */
-            position: relative; /* For expand icon positioning */
-        }
-        .target-item .target-text-content {
-            flex-grow: 1;
-        }
-        .target-item .attempts-counter {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-left: auto;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--primary-dark);
-            background-color: var(--bg); /* Changed from primary-light */
-            padding: 0.2rem 0.6rem;
-            border-radius: 15px;
-            flex-shrink: 0;
-            border: 1px solid var(--border-color); /* Added border */
-        }
-        .target-item .attempts-counter button {
-            background: none;
-            border: none;
-            color: var(--primary-dark);
-            font-size: 1rem;
-            cursor: pointer;
-            padding: 0 4px;
-            transition: color 0.2s ease;
-        }
-        .target-item .attempts-counter button:hover {
-            color: var(--primary);
-        }
-        .target-item .expand-icon {
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1rem;
-            color: var(--muted);
-            transition: transform 0.2s ease;
-        }
-        .target-item.expanded .expand-icon {
-            transform: translateY(-50%) rotate(90deg);
-        }
-
-        .target-details-expanded {
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            width: 100%;
-            padding-top: 0.5rem;
-            border-top: 1px dashed var(--border-color);
-            margin-top: 0.5rem;
-        }
-        .target-item.expanded .target-details-expanded {
-            display: flex; /* Show when expanded */
-        }
-        .target-details-expanded .form-group {
-            margin-bottom: 0.75rem;
-        }
-        .target-details-expanded .form-group:last-child {
-            margin-bottom: 0;
-        }
-
-        /* Styles for individual aids */
-        .aids-list {
-            list-style: none;
-            padding: 0;
-            margin-top: 0.75rem;
-            background-color: var(--card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.75rem;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .aid-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px dashed var(--border-color);
-            font-size: 0.9rem;
-            color: var(--text);
-        }
-        .aid-item:last-child {
-            border-bottom: none;
-        }
-        .aid-item-left {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-grow: 1;
-        }
-        .aid-item-left .aid-status-icon {
-            font-size: 1.1rem;
-            color: var(--muted);
-        }
-        .aid-item.finalizada .aid-status-icon {
-            color: var(--success);
-        }
-        .aid-item.finalizada .aid-description {
-            text-decoration: line-through;
-            color: var(--muted);
-        }
-        .aid-item .aid-attempts-counter {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--primary-dark);
-            background-color: var(--bg);
-            padding: 0.1rem 0.5rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-        }
-        .aid-item .aid-attempts-counter button {
-            background: none;
-            border: none;
-            color: var(--primary-dark);
-            font-size: 0.9rem;
-            cursor: pointer;
-            padding: 0 2px;
-            transition: color 0.2s ease;
-        }
-        .aid-item .aid-attempts-counter button:hover {
-            color: var(--primary);
-        }
-
-        .add-target-group {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-            align-items: center;
-        }
-        .add-target-group input {
-            flex-grow: 1;
-        }
-        .btn-add-target {
-            padding: 0.5rem 0.8rem;
-            font-size: 0.85rem;
-        }
-
-        .modal-body .targets-input-container .target-input-item {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
-            align-items: center;
-        }
-        .modal-body .targets-input-container .target-input-item input {
-            flex-grow: 1;
-        }
-        .modal-body .targets-input-container .target-input-item .btn-remove-target {
-            background: none;
-            border: none;
-            color: var(--danger);
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 0.2rem;
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
-        }
-        .modal-body .targets-input-container .target-input-item .btn-remove-target:hover {
-            background-color: color-mix(in srgb, var(--danger) 15%, transparent);
-        }
-        .add-target-button-modal {
-            margin-top: 0.75rem;
-        }
-
-        /* Global Loading Overlay (Overlay de Carregamento Global) */
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
+            grid-column: 1 / -1; /* Ensures it spans across all columns in a grid */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px dashed var(--border-color); /* Dashed border for empty state */
+        }
+        .empty-state i {
+            font-size: 3.5rem; /* Larger icon */
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        .empty-state p {
+            font-size: 1.2rem; /* Larger text */
+            font-weight: 500;
+        }
+        .empty-state-small {
+            text-align: center;
+            padding: 1rem;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        .empty-state-small i {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--muted);
+        }
+
+        /* --- Custom Record Card Colors (Cores Personalizadas do Cartão de Registro) --- */
+        .registro-card--anamnese { border-left-color: #0d9488; } /* Teal-600 */
+        .registro-card--laudo { border-left-color: #0ea5e9; } /* Sky-500 (info) */
+        .registro-card--orientacao { border-left-color: #f59e0b; } /* Amber-500 (secondary) */
+        .registro-card--procedimento { border-left-color: #16a34a; } /* Green-600 (success) */
+
+        /* --- Tabs (Abas) --- */
+        .tabs-container {
+            margin-bottom: 1.5rem;
+        }
+        .tab-nav {
+            display: flex;
+            gap: 8px; /* Increased gap */
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            padding-bottom: 4px; /* Space above border */
+        }
+        .tab-nav-item {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--muted);
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            transform: translateY(2px);
+            transition: color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+            font-size: 0.95rem;
+            border-radius: 6px 6px 0 0; /* Rounded top corners */
+        }
+        .tab-nav-item:hover {
+            color: var(--text);
+            background-color: var(--bg); /* Subtle background on hover */
+        }
+        .tab-nav-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background-color: var(--card); /* Solid background for active tab */
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05); /* Subtle shadow for active tab */
+            transform: translateY(0); /* Resets transform for active tab */
+        }
+        .tab-panel {
+            display: none;
+            transition: opacity 0.3s ease-in-out;
             opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            padding-top: 0.5rem; /* Space between tabs and content */
         }
-
-        #loading-overlay.active {
+        .tab-panel.active {
+            display: block;
             opacity: 1;
-            visibility: visible;
         }
 
-        #loading-overlay .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center; /* Center vertically */
+            justify-content: center;
+            padding: 1rem;
+            z-index: 2000; opacity: 0; transition: opacity 0.25s ease;
+            overflow-y: auto;
+        }
+        .modal-overlay.active { opacity: 1; display: flex; }
+        .modal-content {
+            background-color: var(--card); /* Usar variável para o background */
+            color: var(--text);
+            border-radius: 12px;
+            /* Sombra atualizada para ser mais neutra e adaptável */
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 900px; /* Reduced max-width for most modals, can be overridden */
+            max-height: 90vh; /* Keeps modal within viewport */
+            transform: translateY(-20px); transition: transform 0.3s ease, opacity 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Ensures content doesn't spill out rounded corners */
+        }
+        [data-theme="dark"] .modal-content {
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
+            background-color: var(--bg); /* Subtle background for header */
+        }
+        .modal-header h3 { font-size: 1.4rem; color: var(--text); margin: 0; font-weight: 700; }
+        .modal-close-btn {
+            background: none; border: none; font-size: 1.8rem; color: var(--muted); cursor: pointer; line-height: 1; transition: color 0.2s ease;
+            padding: 0.2rem 0.5rem; /* Add padding for easier clicking */
+            border-radius: 4px; /* Slight rounded corners */
+        }
+        .modal-close-btn:hover { color: var(--danger); background-color: rgba(var(--danger-rgb), 0.1); }
+        .modal-body { overflow-y: auto; padding: 1.5rem; line-height: 1.7; flex-grow: 1; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group:last-child { margin-bottom: 0; }
+        .form-group label { display: block; font-size: 0.9rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; }
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group select,
+        .form-group textarea {
+            font-size: 0.95rem; padding: 0.8rem 1rem; width: 100%; border: 1px solid var(--border-color);
+            border-radius: 8px; background-color: var(--bg); color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.03); /* Inner shadow for inputs */
+        }
+        [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select, [data-theme="dark"] .form-group textarea {
+             background-color: var(--dark-bg);
+             border-color: var(--dark-border-color);
+             color: var(--dark-text);
+        }
+        .form-group input[type="text"]:focus,
+        .form-group input[type="date"]:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
+        }
+        .modal-footer {
+            padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);
+            display: flex; justify-content: flex-end; gap: 0.75rem; flex-shrink: 0;
+            background-color: var(--card); /* ALTERADO: Usa --card para o background */
+        }
+
+        /* Rich Text Editor para modal genérico */
+        .editor-container {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Ensures toolbar/content doesn't overflow corners */
+        }
+        .editor-container .editor-toolbar {
+            background-color: var(--bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .editor-container .editor-toolbar button {
+            background: none; border: 1px solid transparent; padding: 8px;
+            cursor: pointer; font-size: 1rem; color: var(--muted); /* Muted color for icons */
+            border-radius: 4px; transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .editor-container .editor-toolbar button:hover { background-color: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
+        .editor-container .editor-toolbar button.is-active { background-color: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--primary-dark); }
+
+        .editor-content-generic {
+            min-height: 250px; /* Fixed height for consistent look */
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: var(--card);
+            color: var(--text);
+            outline: none;
+            line-height: 1.6;
+            resize: vertical;
+            flex-grow: 1;
+        }
+        .editor-content-generic[data-placeholder]:empty:before {
+            content: attr(data-placeholder); color: var(--muted);
+            pointer-events: none; display: block;
+        }
+        .editor-content-generic:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
+        }
+        /* Gemini Generator & Consent */
+        .gemini-generator {
+            margin-bottom: 1.5rem; background-color: color-mix(in srgb, var(--primary) 5%, transparent);
+            padding: 1rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
+        }
+        .gemini-generator .form-group { margin-bottom: 0.75rem; }
+        .gemini-generator .form-group:last-of-type { margin-bottom: 0; }
+        .gemini-generator-actions { display: flex; gap: 10px; align-items: center; }
+        .gemini-generator-actions input { flex-grow: 1; }
+
+        .consent-text {
+            font-size: 0.85rem; color: var(--muted); font-weight: 500;
+            line-height: 1.4; padding: 0.75rem; border-radius: 6px;
+            background-color: var(--bg); border: 1px solid transparent;
+            cursor: pointer; transition: all 0.2s ease; user-select: none;
+        }
+        .consent-text:hover { border-color: color-mix(in srgb, var(--primary) 30%, transparent); }
+        .consent-text.active {
+            background-color: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success);
+            font-weight: 600; border-color: color-mix(in srgb, var(--success) 30%, transparent);
+        }
+        .consent-text.active::before {
+            content: '\f00c'; /* Font Awesome check icon */
+            font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            margin-right: 0.75rem;
+        }
+
+        /* Loading Spinner para Geração AI */
+        .btn.loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin: -8px 0 0 -8px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
+        }
+        .btn.loading span, .btn.loading i {
+            visibility: hidden; /* Oculta texto e ícone durante o carregamento */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Confirmation Modal (Modal de Confirmação) */
+        .confirm-modal-content {
+            max-width: 500px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .confirm-modal-content h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+        .confirm-modal-content p {
+            margin-bottom: 1.5rem;
+            color: var(--muted);
+        }
+        .confirm-modal-content .confirm-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
         }
 
         /* Responsive (Responsividade) */
@@ -785,13 +705,14 @@
             .mobile-only { display: none; }
 
             /* Reverte para grid em desktop */
-            .pei-list {
+            .records-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
                 gap: 1.5rem;
-                /* Removido overflow-x: visible; e flex-wrap: wrap; pois grid já lida com isso */
+                overflow-x: visible;
+                flex-wrap: wrap;
             }
-            .pei-list > .pei-summary-card { /* Atualizado para pei-summary-card */
+            .records-grid > .registro-card {
                 flex-shrink: 1;
                 width: auto;
             }
@@ -833,7 +754,7 @@
             }
 
             /* Estilos para scroll lateral de cards em mobile */
-            .pei-list {
+            .records-grid {
                 display: flex;
                 flex-wrap: nowrap;
                 overflow-x: auto;
@@ -842,7 +763,7 @@
                 -webkit-overflow-scrolling: touch;
             }
 
-            .pei-list > .pei-summary-card { /* Atualizado para pei-summary-card */
+            .records-grid > .registro-card {
                 flex-shrink: 0;
                 width: 85%;
                 max-width: 350px;
@@ -851,7 +772,7 @@
             }
 
             /* Esconde a scrollbar para uma estética mais limpa, mas mantém a funcionalidade */
-            .pei-list::-webkit-scrollbar {
+            .records-grid::-webkit-scrollbar {
                 display: none;
             }
 
@@ -878,77 +799,6 @@
             .topbar-actions #addRecordDropdownBtn i:last-child {
                 margin-left: 0;
             }
-            /* Ajuste para o título da seção PEI em mobile */
-            .pei-section-header h3 .desktop-only {
-                display: none;
-            }
-            .pei-section-header h3 .mobile-only {
-                display: inline;
-            }
-        }
-
-        /* Styles for Activity Log/Chat within PEI card */
-        .pei-activities {
-            margin-top: 1.5rem;
-            border-top: 1px solid var(--border-color);
-            padding-top: 1rem;
-        }
-        .pei-activities h5 {
-            font-size: 1rem;
-            color: var(--text);
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-        }
-        .activity-log {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.75rem;
-            background-color: var(--bg);
-            margin-bottom: 1rem;
-        }
-        .activity-item {
-            padding: 0.5rem 0;
-            border-bottom: 1px dashed var(--border-color);
-            font-size: 0.9rem;
-        }
-        .activity-item:last-child {
-            border-bottom: none;
-        }
-        .activity-meta {
-            font-size: 0.75rem;
-            color: var(--muted);
-            margin-bottom: 0.2rem;
-        }
-        .activity-content {
-            color: var(--text);
-            line-height: 1.4;
-            word-break: break-word;
-        }
-        .activity-input-group {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-        .activity-input-group textarea {
-            flex-grow: 1;
-            padding: 0.6rem 0.8rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--bg);
-            color: var(--text);
-            resize: vertical;
-            min-height: 40px;
-            max-height: 100px;
-        }
-        .activity-input-group textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none;
-        }
-        .activity-input-group .btn {
-            flex-shrink: 0;
         }
     </style>
 </head>
@@ -993,20 +843,29 @@
                 <div class="topbar-left">
                     <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">Plano Educacional Individualizado (PEI)</h1> {# Título para a página de PEI #}
+                    <h1 class="page-title">Prontuário</h1> {# Título simplificado para mobile #}
                 </div>
                 <div class="topbar-actions">
-                    <div class="flex gap-2">
-                        {% if is_admin %}
-                            <button type="button" class="btn btn-primary" id="addPeiBtn">
-                                <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo PEI</span><span class="btn-text-mobile"></span>
-                            </button>
-                        {% endif %}
-                        {% if peis and peis | length > 0 %}
-                        <button type="button" class="btn btn-secondary" id="printAllPeisBtn">
-                            <i class="fas fa-print"></i> <span class="btn-text-desktop">Imprimir Todos PEIs</span><span class="btn-text-mobile"></span>
+                    <div class="relative inline-block text-left">
+                        <button type="button" class="btn btn-primary" id="addRecordDropdownBtn" aria-expanded="false" aria-haspopup="true">
+                            <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Novo Registro</span> <span class="btn-text-mobile"></span>
                         </button>
-                        {% endif %}
+                        <div class="dropdown-menu absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="addRecordDropdownBtn" tabindex="-1">
+                            <div class="py-1" role="none">
+                                <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addAnamneseLink">
+                                    <i class="fas fa-plus"></i> Adicionar Anamnese
+                                </a>
+                                <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addLaudoBtn" data-record-type="laudo" data-record-title="Adicionar Laudo Médico">
+                                    <i class="fas fa-file-medical"></i> Adicionar Laudo
+                                </button>
+                                <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addOrientacaoBtn" data-record-type="orientacao" data-record-title="Adicionar Orientação">
+                                    <i class="fas fa-notes-medical"></i> Adicionar Orientação
+                                </button>
+                                <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addProcedimentoBtn" data-record-type="procedimento" data-record-title="Adicionar Procedimento">
+                                    <i class="fas fa-syringe"></i> Adicionar Procedimento
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -1016,7 +875,7 @@
                     {% if messages %}
                         <div class="flash-messages">
                             {% for category, message in messages %}
-                                <div class="flash-message {{ category }}">{{ message }}</div>
+                                <div class="flash-message {{ category }}"><i class="{% if category == 'success' %}fas fa-check-circle{% elif category == 'danger' %}fas fa-times-circle{% elif category == 'warning' %}fas fa-exclamation-triangle{% else %}fas fa-info-circle{% endif %}"></i> {{ message }}</div>
                             {% endfor %}
                         </div>
                     {% endif %}
@@ -1035,84 +894,130 @@
                 </div>
                 {% endif %}
 
-                <!-- MACRO for rendering a PEI summary card (MACRO para renderizar um cartão PEI resumido) -->
-                {% macro render_pei_summary_card(pei) %}
-                <div class="pei-summary-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" data-pei-id="{{ pei.id }}">
-                    <div class="pei-summary-card-header">
-                        <h4>PEI: {{ pei.titulo }}</h4>
-                        <div class="pei-summary-card-meta">
-                            <span><i class="fas fa-calendar-alt"></i> Criado em: {{ pei.data_criacao }}</span>
-                            <span><i class="fas fa-user-tie"></i> Profissionais: {{ pei.profissionais_nomes_associados_fmt | default('N/A') }}</span>
-                            <span>Status: <span class="goal-status {% if pei.status == 'ativo' %}active-status{% else %}finalizado-status{% endif %}">{{ pei.status | capitalize }}</span></span>
+                {% macro render_registro_card(registro) %}
+                <div class="registro-card registro-card--{{ registro.tipo_registro }}" id="registro-{{ registro.id }}">
+                    <div class="registro-header">
+                        <h4>{{ registro.tipo_registro | capitalize }} - {{ registro.titulo | default('') }}</h4>
+                        <div class="registro-meta">
+                            <span><i class="fas fa-calendar-alt"></i> {{ registro.data_registro_fmt }}</span>
+                            <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
                         </div>
                     </div>
-                    <div class="pei-summary-card-content">
-                        <strong>Metas Ativas:</strong>
-                        <ul>
-                            {% set active_goals_count = pei.goals | selectattr('status', 'equalto', 'ativo') | list | length %}
-                            {% if active_goals_count > 0 %}
-                                {% for goal in pei.goals | selectattr('status', 'equalto', 'ativo') | slice(3) %} {# Mostra até 3 metas ativas #}
-                                    <li><i class="fas fa-bullseye"></i> {{ goal.descricao }}</li>
-                                {% endfor %}
-                                {% if active_goals_count > 3 %}
-                                    <li>...e {{ active_goals_count - 3 }} mais.</li>
-                                {% endif %}
-                            {% else %}
-                                <li>Nenhuma meta ativa.</li>
-                            {% endif %}
-                        </ul>
+                    <div class="registro-content">
+                        {{ registro.conteudo | safe }}
+                    </div>
+                    <div class="registro-actions">
+                        <button class="btn btn-sm btn-secondary btn-expand-registro"><i class="fas fa-expand-alt"></i></button>
+
+                        {% if registro.tipo_registro == 'anamnese' %}
+                        <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                        {% else %}
+                        <button type="button" class="btn btn-sm btn-warning btn-edit-registro-generico" data-registro-id="{{ registro.id }}"><i class="fas fa-edit"></i></button>
+                        {% endif %}
+
+                        <button class="btn btn-sm btn-info btn-print-pdf" data-record-id="{{ registro.id }}" data-record-type="{{ registro.tipo_registro }}"><i class="fas fa-print"></i></button>
+                        <button class="btn btn-sm btn-danger-outline btn-apagar-registro" data-registro-id="{{ registro.id }}"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
                 {% endmacro %}
 
 
-                <section class="pei-section">
-                    <div class="pei-container">
-                        <h4>PEIs Ativos:</h4>
-                        <div id="active-peis-list" class="pei-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {# PEIs ativos serão renderizados aqui via JavaScript ou Jinja2 #}
-                            {% if peis %}
-                                {% set active_peis = peis | selectattr('status', 'equalto', 'ativo') | list %}
-                                {% if active_peis %}
-                                    {% for pei_item in active_peis %}
-                                        {% if pei_item %}
-                                            {{ render_pei_summary_card(pei_item) }}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state">
-                                        <i class="fas fa-child-reaching"></i>
-                                        <p>Nenhum PEI ativo para este paciente.</p>
-                                    </div>
-                                {% endif %}
-                            {% else %}
-                                <div class="empty-state">
-                                    <i class="fas fa-child-reaching"></i>
-                                    <p>Nenhum PEI para este paciente.</p>
-                                </div>
-                            {% endif %}
+                <section class="prontuario-section">
+                    <div class="tabs-container">
+                        <div class="tab-nav">
+                            <button class="tab-nav-item active" data-tab="todos">Todos</button>
+                            <button class="tab-nav-item" data-tab="anamnese">Anamneses</button>
+                            <button class="tab-nav-item" data-tab="laudo">Laudos</button>
+                            <button class="tab-nav-item" data-tab="orientacao">Orientações</button>
+                            <button class="tab-nav-item" data-tab="procedimento">Procedimentos</button>
                         </div>
 
-                        <h4>PEIs Finalizados:</h4>
-                        <div id="finalized-peis-list" class="pei-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {# PEIs finalizados serão renderizados aqui via JavaScript ou Jinja2 #}
-                            {% if peis %}
-                                {% set finalized_peis = peis | selectattr('status', 'equalto', 'finalizado') | list %}
-                                {% if finalized_peis %}
-                                    {% for pei_item in finalized_peis %}
-                                        {% if pei_item %}
-                                            {{ render_pei_summary_card(pei_item) }}
+                        <div class="tab-content">
+                            <div id="tab-panel-todos" class="tab-panel active">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+                                    {% set filtered_registros = [] %}
+                                    {% for reg in registros %}
+                                        {% if reg.tipo_registro != 'pei' %}
+                                            {% set _ = filtered_registros.append(reg) %}
                                         {% endif %}
                                     {% endfor %}
-                                {% else %}
-                                    <div class="empty-state">
-                                        <i class="fas fa-check-circle"></i>
-                                        <p>Nenhum PEI finalizado para este paciente.</p>
-                                    </div>
-                                {% endif %}
-                            {% else %}
-                                <!-- Already covered by the first empty-state if no PEIs. -->
-                            {% endif %}
+
+                                    {% if filtered_registros %}
+                                        {% for registro in filtered_registros %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state">
+                                            <i class="fas fa-file-medical"></i>
+                                            <p>Nenhum registro encontrado para este paciente (excluindo PEIs).</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div id="tab-panel-anamnese" class="tab-panel">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+                                    {% set anamneses = registros | selectattr('tipo_registro', 'equalto', 'anamnese') | list %}
+                                    {% if anamneses %}
+                                        {% for registro in anamneses %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state">
+                                            <i class="fas fa-clipboard-question"></i>
+                                            <p>Nenhuma anamnese encontrada.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div id="tab-panel-laudo" class="tab-panel">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+                                    {% set laudos = registros | selectattr('tipo_registro', 'equalto', 'laudo') | list %}
+                                    {% if laudos %}
+                                        {% for registro in laudos %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state">
+                                            <i class="fas fa-file-invoice"></i>
+                                            <p>Nenhum laudo encontrado.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div id="tab-panel-orientacao" class="tab-panel">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+                                    {% set orientacoes = registros | selectattr('tipo_registro', 'equalto', 'orientacao') | list %}
+                                    {% if orientacoes %}
+                                        {% for registro in orientacoes %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state">
+                                            <i class="fas fa-lightbulb"></i>
+                                            <p>Nenhuma orientação encontrada.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div id="tab-panel-procedimento" class="tab-panel">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+                                    {% set procedimentos = registros | selectattr('tipo_registro', 'equalto', 'procedimento') | list %}
+                                    {% if procedimentos %}
+                                        {% for registro in procedimentos %}
+                                            {{ render_registro_card(registro) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state">
+                                            <i class="fas fa-syringe"></i>
+                                            <p>Nenhum procedimento encontrado.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -1120,149 +1025,84 @@
         </div>
     </div>
 
-    <!-- Global Loading Overlay (Overlay de Carregamento Global) -->
     <div id="loading-overlay">
         <div class="spinner"></div>
     </div>
 
-    <!-- NOVO MODAL: Adicionar PEI -->
-    <div id="addPeiModal" class="modal-overlay">
+    <div id="registro-completo-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="text-xl font-semibold">Adicionar Novo PEI</h3>
-                <button type="button" class="modal-close-btn" data-close-modal="addPeiModal">&times;</button>
+                <h3 id="modal-registro-completo-title">Registro Completo</h3>
+                <button class="modal-close-btn" data-close-modal="registro-completo-modal">&times;</button>
             </div>
-            <form id="formAddPei" method="POST" action="{{ url_for('peis.add_pei', paciente_doc_id=paciente.id) }}">
-                 <div class="modal-body">
-                    <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
-                    <div class="space-y-4">
-                        <div class="form-group">
-                            <label for="pei_titulo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título do PEI</label>
-                            <input type="text" id="pei_titulo" name="titulo" required placeholder="Ex: Plano para Desenvolvimento Motor"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                        </div>
-                        <div class="form-group">
-                            <label for="pei_data_criacao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Criação</label>
-                            <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                        </div>
-                        <div class="form-group">
-                            <label for="profissionais_ids" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profissionais Associados (Múltiplos)</label>
-                            <select id="profissionais_ids" name="profissionais_ids[]" multiple required
-                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                                {% for professional in all_professionals %}
-                                    <option value="{{ professional.id }}">{{ professional.nome }}</option>
-                                {% endfor %}
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">Selecione um ou mais profissionais (Ctrl/Cmd + clique para múltiplos).</p>
-                        </div>
-                    </div>
+            <div class="modal-body" id="modal-registro-completo-content">
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal="addPeiModal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save mr-2"></i> Criar PEI
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
-    <!-- NOVO MODAL: Adicionar Meta ao PEI -->
-    <div id="addGoalModal" class="modal-overlay">
+    <div id="modalRegistroGenerico" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="text-xl font-semibold">Adicionar Nova Meta ao PEI</h3>
-                <button type="button" class="modal-close-btn" data-close-modal="addGoalModal">&times;</button>
+                <h3 id="modalRegistroGenericoTitle">Adicionar Novo Registro</h3>
+                <button type="button" class="modal-close-btn" data-close-modal="modalRegistroGenerico">&times;</button>
             </div>
-            <form id="formAddGoal" method="POST" action="{{ url_for('peis.add_goal', paciente_doc_id=paciente.id) }}">
+            <form method="POST" action="" id="formRegistroGenerico">
+                <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+                <input type="hidden" name="tipo_registro" id="tipo_registro_generico">
+                <input type="hidden" name="registro_id" id="registro_id_generico">
+                <input type="hidden" name="agendamento_id_referencia" id="agendamento_id_referencia">
+
                 <div class="modal-body">
-                    <input type="hidden" name="pei_id" id="goal_pei_id">
-                    <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
-                    <div class="space-y-4">
+                    <div class="form-group">
+                        <label for="titulo_registro_generico">Título</label>
+                        <input type="text" id="titulo_registro_generico" name="titulo" required>
+                    </div>
+
+                    <div class="gemini-generator">
                         <div class="form-group">
-                            <label for="goal_descricao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição da Meta</label>
-                            <input type="text" id="goal_descricao" name="descricao" required placeholder="Ex: Desenvolver a coordenação olho-mão"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                            <label for="gemini-prompt-generico">Gerar conteúdo com Inteligência Artificial</label>
+                            <div class="gemini-generator-actions" style="display: none;">
+                                <input type="text" id="gemini-prompt-generico" placeholder="Ex: Laudo para paciente com fratura no fêmur">
+                                <button type="button" id="generate-generic-btn" class="btn btn-primary" disabled>
+                                    <i class="fas fa-robot"></i>&nbsp;<span>Gerar</span>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alvos da Meta</label>
-                            <div id="targets-input-container" class="space-y-3">
-                                <div class="target-input-item flex items-center space-x-2">
-                                    <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                           class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                                    <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
+                            <div id="lgpd-consent-text-generico" class="consent-text">
+                                Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
                             </div>
-                            <button type="button" class="btn btn-secondary btn-sm add-target-button-modal mt-3">
-                                <i class="fas fa-plus mr-2"></i> Adicionar Outro Alvo
-                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="conteudo_registro_generico">Conteúdo</label>
+                        <div class="editor-container">
+                            <div class="editor-toolbar">
+                                <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><i class="fas fa-bold"></i></button>
+                                <button type="button" data-command="italic" title="Itálico (Ctrl+I)"><i class="fas fa-italic"></i></button>
+                                <button type="button" data-command="underline" title="Sublinhado (Ctrl+U)"><i class="fas fa-underline"></i></button>
+                                <button type="button" data-command="insertUnorderedList" title="Lista não ordenada"><i class="fas fa-list-ul"></i></button>
+                                <button type="button" data-command="insertOrderedList" title="Lista ordenada"><i class="fas fa-list-ol"></i></button>
+                                <button type="button" data-command="undo" title="Desfazer (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                                <button type="button" data-command="redo" title="Refazer (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                            </div>
+                            <div id="editor-content-generico" contenteditable="true" class="editor-content-generic" data-placeholder="Digite o conteúdo do registro aqui..."></div>
+                            <textarea id="conteudo_generico_hidden" name="conteudo" style="display:none;"></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal="addGoalModal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save mr-2"></i> Adicionar Meta
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-close-modal="modalRegistroGenerico">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Registro</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- NOVO MODAL: Detalhes do PEI (com metas, alvos e atividades) -->
-    <div id="pei-details-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="pei-details-title">Detalhes do PEI</h3>
-                <button class="modal-close-btn" data-close-modal="pei-details-modal">&times;</button>
-            </div>
-            <div class="modal-body pei-details-modal-body">
-                <div class="pei-details-header">
-                    <h4 id="pei-modal-title"></h4>
-                    <div class="pei-details-meta">
-                        <span id="pei-modal-created-date"><i class="fas fa-calendar-alt"></i> Criado em: </span>
-                        <span id="pei-modal-professionals"><i class="fas fa-user-tie"></i> Profissionais: </span>
-                        <span id="pei-modal-status">Status: </span>
-                    </div>
-                </div>
 
-                <div class="goals-section">
-                    <h5>Metas Ativas:</h5>
-                    <div id="pei-modal-active-goals" class="goals-list-container">
-                        <!-- Metas ativas serão injetadas aqui -->
-                    </div>
-
-                    <h5>Metas Finalizadas:</h5>
-                    <div id="pei-modal-finalized-goals" class="goals-list-container">
-                        <!-- Metas finalizadas serão injetadas aqui -->
-                    </div>
-                </div>
-
-                <div class="pei-activities mt-4">
-                    <h5 class="flex items-center gap-2 mb-3">
-                        <i class="fas fa-comments text-gray-500"></i> Histórico de Atividades
-                    </h5>
-                    <div class="activity-log" id="pei-modal-activity-log">
-                        <!-- Atividades serão injetadas aqui -->
-                    </div>
-                    <div id="pei-modal-activity-input-container">
-                        <!-- Campo de entrada de atividade será injetado aqui -->
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" id="pei-details-modal-footer">
-                <!-- Botões de ação serão injetados aqui -->
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Confirmation Modal for Deletion (Modal de Confirmação para Exclusão) -->
     <div id="confirm-delete-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content confirm-modal-content">
             <div class="modal-header">
                 <h3 id="confirm-modal-title">Confirmar Exclusão</h3>
                 <button type="button" class="modal-close-btn" data-close-modal="confirm-delete-modal">&times;</button>
@@ -1270,27 +1110,18 @@
             <div class="modal-body">
                 <p id="confirm-delete-message">Tem certeza que deseja apagar este item? Esta ação não pode ser desfeita.</p>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer confirm-actions">
                 <button type="button" class="btn btn-secondary" data-close-modal="confirm-delete-modal">Cancelar</button>
-                <button type="button" class="btn" id="confirmDeleteBtn">Apagar</button>
+                <button type="button" class="btn btn-danger-outline" id="confirmDeleteBtn">Apagar</button>
             </div>
         </div>
     </div>
 
-    <!-- Formulário para Apagar PEI (escondido) -->
-    <form id="formApagarPei" method="POST" action="" style="display: none;">
-        <input type="hidden" name="pei_id" id="pei_id_apagar">
+    <form id="formApagarRegistro" method="POST" action="" style="display: none;">
+        <input type="hidden" name="registro_id" id="registro_id_apagar">
         <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
     </form>
 
-    <!-- Formulário para Apagar Meta (escondido) -->
-    <form id="formApagarGoal" method="POST" action="" style="display: none;">
-        <input type="hidden" name="pei_id" id="goal_delete_pei_id">
-        <input type="hidden" name="goal_id" id="goal_id_apagar">
-        <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
-    </form>
-
-    <!-- Script da biblioteca jsPDF para geração de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module">
         // Function to display custom flash messages (moved to global scope)
@@ -1329,36 +1160,33 @@
 
         // Importa funções do Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-        import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+        import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js"; // Corrected .s to .js
 
-        // Configuração do Firebase virá do backend
-        const firebaseConfig = {{ firebase_config | default(none) | tojson | safe }};
+        // Configuração do Firebase. ATENÇÃO: Substitua pelos dados do seu projeto Firebase.
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY", // Make sure this is replaced with a valid API key
+            authDomain: "SEU_AUTH_DOMAIN",
+            projectId: "SEU_PROJECT_ID",
+            storageBucket: "SEU_STORAGE_BUCKET",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
 
         let app;
         let auth;
-        if (firebaseConfig && firebaseConfig.apiKey) {
-            try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                console.log('Firebase app initialized successfully.');
-            } catch (error) {
-                console.error('Error initializing Firebase app:', error);
-                displayFlashMessage('danger', 'Erro ao inicializar o Firebase. Verifique sua configuração no backend.');
-            }
-        } else {
-            console.warn('Firebase config is missing or using placeholder values. Firebase features will be disabled.');
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => {
-                    displayFlashMessage('warning', 'Configuração do Firebase não encontrada. Funcionalidades de autenticação podem não funcionar.');
-                });
-            } else {
-                displayFlashMessage('warning', 'Configuração do Firebase não encontrada. Funcionalidades de autenticação podem não funcionar.');
-            }
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            console.log('Firebase app initialized successfully.');
+        } catch (error) {
+            console.error('Error initializing Firebase app:', error);
+            displayFlashMessage('danger', 'Erro ao inicializar o Firebase. Verifique sua configuração no código e se a chave de API é válida.');
         }
 
 
         // Variáveis globais para dados, vindos do Jinja2
-        let allPeisData = {{ peis | tojson | safe }} || []; // Garante que seja um array, mesmo que vazio
+        // `allRecordsData` contém todos os registros do paciente (anamnese, laudo, etc.)
+        const allRecordsData = {{ registros | tojson | safe }};
 
         // Passa as variáveis de role do Python para o JavaScript
         const IS_ADMIN = {{ is_admin | tojson }};
@@ -1376,7 +1204,7 @@
             console.log('É Administrador (IS_ADMIN):', IS_ADMIN);
             console.log('É Profissional (IS_PROFESSIONAL):', IS_PROFESSIONAL);
             console.log('ID do Profissional Logado (LOGGED_IN_PROFESSIONAL_ID):', LOGGED_IN_PROFESSIONAL_ID);
-            console.log('Todos os PEIs carregados:', allPeisData);
+            // Adicione este log para ver o PACIENTE_DOC_ID
             console.log('PACIENTE_DOC_ID:', PACIENTE_DOC_ID);
             console.log('-------------------------------------------');
 
@@ -1489,7 +1317,7 @@
                 }
 
                 // 3. Lógica de Logout
-                if (logoutButton && auth) {
+                if (logoutButton) {
                     logoutButton.addEventListener('click', (e) => {
                         e.preventDefault();
                         firebaseSignOut(auth).then(() => {
@@ -1503,8 +1331,220 @@
                 }
             }
 
-            // --- Lógica Específica da Página de PEI ---
-            function setupPeiPage() {
+            // --- Lógica Específica da Página de Prontuário ---
+            function setupProntuarioPage() {
+
+                // *** Lógica das Abas (Tabs) ***
+                function setupTabs() {
+                    const tabContainer = document.querySelector('.tabs-container');
+                    if (!tabContainer) {
+                        console.log('Tab container not found, skipping tab setup.');
+                        return;
+                    }
+
+                    const tabNavItems = tabContainer.querySelectorAll('.tab-nav-item');
+                    const tabPanels = tabContainer.querySelectorAll('.tab-panel');
+
+                    console.log('Tab nav items found:', tabNavItems.length);
+                    console.log('Tab panels found:', tabPanels.length);
+
+                    tabNavItems.forEach(tab => {
+                        tab.addEventListener('click', () => {
+                            console.log('Tab clicked:', tab.dataset.tab);
+                            // Remove a classe 'active' de todas as abas e painéis
+                            tabNavItems.forEach(item => {
+                                item.classList.remove('active');
+                                console.log('Removed active from:', item.dataset.tab);
+                            });
+                            tabPanels.forEach(panel => {
+                                panel.classList.remove('active');
+                                console.log('Removed active from panel:', panel.id);
+                            });
+
+                            // Adiciona a classe 'active' à aba clicada
+                            tab.classList.add('active');
+                            console.log('Added active to clicked tab:', tab.dataset.tab);
+
+                            // Ativa o painel correspondente
+                            const targetPanelId = 'tab-panel-' + tab.dataset.tab;
+                            const targetPanel = document.getElementById(targetPanelId);
+                            if(targetPanel) {
+                                targetPanel.classList.add('active');
+                                console.log('Added active to target panel:', targetPanel.id);
+                            } else {
+                                console.error('Target panel not found for:', targetPanelId);
+                            }
+                        });
+                    });
+                }
+
+                // *** Lógica do Modal de Registro Genérico (Adicionar/Editar) ***
+                const modalRegistroGenerico = document.getElementById('modalRegistroGenerico');
+                const formRegistroGenerico = document.getElementById('formRegistroGenerico');
+                const modalRegistroGenericoTitle = document.getElementById('modalRegistroGenericoTitle');
+                const tipoRegistroGenericoInput = document.getElementById('tipo_registro_generico');
+                const registroIdGenericoInput = document.getElementById('registro_id_generico');
+                const tituloRegistroGenericoInput = document.getElementById('titulo_registro_generico');
+                const conteudoRegistroGenericoEditor = document.getElementById('editor-content-generico');
+                const conteudoGenericoHiddenTextarea = document.getElementById('conteudo_generico_hidden');
+                const agendamentoIdReferenciaInput = document.getElementById('agendamento_id_referencia');
+
+                // Sincroniza o editor de texto com o campo oculto do formulário
+                if (conteudoRegistroGenericoEditor && conteudoGenericoHiddenTextarea) {
+                    conteudoRegistroGenericoEditor.addEventListener('input', () => {
+                        conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
+                    });
+                }
+
+                // Lógica da barra de ferramentas do editor de texto
+                document.querySelectorAll('#modalRegistroGenerico .editor-toolbar button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        document.execCommand(e.currentTarget.dataset.command, false, null);
+                        conteudoRegistroGenericoEditor.focus();
+                        if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
+                    });
+                });
+
+                // Função para abrir o modal de registro genérico (Adicionar/Editar)
+                function openRegistroGenericoModal(type, title, registroData = null) {
+                    formRegistroGenerico.reset(); // Limpa o formulário
+                    conteudoRegistroGenericoEditor.innerHTML = ''; // Limpa o editor
+                    conteudoGenericoHiddenTextarea.value = ''; // Limpa o textarea oculto
+
+                    tipoRegistroGenericoInput.value = type;
+                    modalRegistroGenericoTitle.innerHTML = title;
+
+                    // Define a ação padrão para adicionar
+                    formRegistroGenerico.action = `{{ url_for('registrar_registro_generico', paciente_doc_id=paciente.id) }}`;
+
+                    if (registroData) { // Modo de Edição
+                        registroIdGenericoInput.value = registroData.id;
+                        tituloRegistroGenericoInput.value = registroData.titulo || '';
+                        conteudoRegistroGenericoEditor.innerHTML = registroData.conteudo || '';
+                        conteudoGenericoHiddenTextarea.value = registroData.conteudo || '';
+                        if (agendamentoIdReferenciaInput) {
+                           agendamentoIdReferenciaInput.value = registroData.agendamento_id_referencia || '';
+                        }
+                        // Altera a ação do formulário para o endpoint de edição
+                        formRegistroGenerico.action = `{{ url_for('editar_registro_generico', paciente_doc_id=paciente.id, registro_doc_id='DUMMY_ID') }}`.replace('DUMMY_ID', registroData.id);
+                    } else { // Modo de Adição (garante que IDs de registro não estejam preenchidos)
+                        registroIdGenericoInput.value = '';
+                        if (agendamentoIdReferenciaInput) {
+                            agendamentoIdReferenciaInput.value = '';
+                        }
+                    }
+
+                    modalRegistroGenerico.classList.add('active'); // Abre o modal
+                }
+
+                // Listeners para os botões de Adicionar (Laudo, Orientação, etc.)
+                // Esses listeners são adicionados aos itens do dropdown de "Adicionar Novo Registro"
+                document.getElementById('addLaudoBtn')?.addEventListener('click', () => {
+                    closeAddRecordDropdown(); // Fecha o dropdown
+                    openRegistroGenericoModal('laudo', 'Adicionar Laudo Médico');
+                });
+                document.getElementById('addOrientacaoBtn')?.addEventListener('click', () => {
+                    closeAddRecordDropdown(); // Fecha o dropdown
+                    openRegistroGenericoModal('orientacao', 'Adicionar Orientação');
+                });
+                document.getElementById('addProcedimentoBtn')?.addEventListener('click', () => {
+                    closeAddRecordDropdown(); // Fecha o dropdown
+                    openRegistroGenericoModal('procedimento', 'Adicionar Procedimento');
+                });
+
+
+                // *** Lógica do Gerador Gemini (Inteligência Artificial) ***
+                const generateGenericBtn = document.getElementById('generate-generic-btn');
+                const genericPromptInput = document.getElementById('gemini-prompt-generico');
+                const lgpdConsentTextGeneric = document.getElementById('lgpd-consent-text-generico');
+                const generatorActions = document.querySelector('#modalRegistroGenerico .gemini-generator-actions');
+
+                // Lógica de consentimento LGPD para o gerador Gemini
+                if (lgpdConsentTextGeneric && generateGenericBtn && generatorActions) {
+                    lgpdConsentTextGeneric.addEventListener('click', () => {
+                        lgpdConsentTextGeneric.classList.toggle('active'); // Ativa/desativa a classe 'active'
+                        const isActive = lgpdConsentTextGeneric.classList.contains('active');
+
+                        generatorActions.style.display = isActive ? 'flex' : 'none'; // Mostra/oculta o campo de prompt e botão
+                        generateGenericBtn.disabled = !isActive; // Habilita/desabilita o botão de gerar
+                    });
+                }
+
+                // Lógica de chamada da API Gemini para gerar conteúdo
+                if (generateGenericBtn && genericPromptInput && conteudoRegistroGenericoEditor) {
+                    generateGenericBtn.addEventListener('click', async () => {
+                        const userPrompt = genericPromptInput.value.trim();
+                        const tipoRegistro = tipoRegistroGenericoInput.value;
+                        if (!userPrompt) {
+                            displayFlashMessage('warning', `Por favor, descreva o tipo de ${tipoRegistro} que você deseja gerar.`);
+                            return;
+                        }
+
+                        let fullPrompt = "";
+                        const patientName = "{{ paciente.nome if paciente else 'o paciente' }}";
+                        const professionalName = "{{ session.user_name if session.user_name else 'o profissional de saúde' }}";
+
+                        // Construção do prompt baseado no tipo de registro
+                        if (tipoRegistro === "laudo") {
+                            fullPrompt = `Você é um médico especialista. Crie um modelo de laudo médico completo e detalhado em HTML para o paciente ${patientName}, sem placeholders como "[...]", para a seguinte condição ou motivo: "${userPrompt}". Inclua seções como Identificação do Paciente, Histórico Clínico Relevante, Exame Físico (se aplicável), Resultados de Exames, Discussão do Caso e Conclusão/Diagnóstico, com um plano terapêutico. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
+                        } else if (tipoRegistro === "orientacao") {
+                            fullPrompt = `Você é um profissional de saúde. Crie um modelo de orientação ao paciente em HTML para ${patientName}, sem placeholders como "[...]", sobre a seguinte situação ou tratamento: "${userPrompt}". A orientação deve ser clara, concisa, de fácil entendimento e abranger tópicos como o que é a condição/tratamento, como manejar sintomas, quando procurar ajuda e dicas de autocuidado. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
+                        } else if (tipoRegistro === "procedimento") {
+                            fullPrompt = `Você é um profissional de saúde. Crie a descrição detalhada de um procedimento médico/clínico em HTML para ${patientName}, sem placeholders como "[...]", para: "${userPrompt}". O documento deve abranger indicação, descrição do procedimento passo a passo, cuidados pré-procedimento, cuidados pós-procedimento, riscos e benefícios. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
+                        } else {
+                            console.error("Tipo de registro desconhecido para geração com IA.");
+                            displayFlashMessage('danger', "Tipo de registro desconhecido para geração com IA.");
+                            return;
+                        }
+
+                        showLoading(); // Mostra o indicador de carregamento
+                        generateGenericBtn.disabled = true; // Desabilita o botão para evitar cliques múltiplos
+                        generateGenericBtn.classList.add('loading'); // Adiciona classe de carregamento
+
+                        try {
+                            // Utiliza a API Gemini para gerar conteúdo
+                            const apiKey = "SUA_API_KEY"; // A chave API será fornecida pelo ambiente Canvas
+
+                            // Check if apiKey is valid (simple check, not exhaustive)
+                            if (!apiKey || apiKey === "SUA_API_KEY") {
+                                throw new Error("API Key not configured. Please replace 'SUA_API_KEY' with a valid key.");
+                            }
+
+                            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                            const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
+
+                            const response = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            const result = await response.json();
+
+                            let generatedText = '';
+                            if (result.candidates && result.candidates[0]?.content?.parts?.[0]) {
+                                generatedText = result.candidates[0].content.parts[0].text;
+                            } else {
+                                throw new Error('Estrutura de resposta da IA inesperada ou conteúdo ausente.');
+                            }
+
+                            // Preenche o editor de texto com o conteúdo gerado
+                            conteudoRegistroGenericoEditor.innerHTML = generatedText;
+                            if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = generatedText;
+
+                        } catch (error) {
+                            console.error('Erro na API Gemini:', error);
+                            displayFlashMessage('danger', 'Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.');
+                        } finally {
+                            hideLoading(); // Oculta o indicador de carregamento
+                            // Restaura o estado do botão com base no consentimento LGPD
+                            generateGenericBtn.disabled = !lgpdConsentTextGeneric.classList.contains('active');
+                            generateGenericBtn.classList.remove('loading');
+                        }
+                    });
+                }
+
 
                 // *** Lógica de Exclusão e Modais (Centralizada) ***
                 const confirmDeleteModal = document.getElementById('confirm-delete-modal');
@@ -1512,8 +1552,7 @@
                 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
                 const confirmDeleteMessage = document.getElementById('confirm-delete-message');
 
-                const formApagarPei = document.getElementById('formApagarPei');
-                const formApagarGoal = document.getElementById('formApagarGoal');
+                const formApagarRegistro = document.getElementById('formApagarRegistro');
 
                 let currentDeleteAction = null; // Para armazenar qual ação de exclusão/finalização executar
                 let currentDeleteData = {}; // Para armazenar IDs para a ação
@@ -1534,9 +1573,45 @@
                     confirmDeleteBtn.classList.toggle('btn-success', !action.includes('delete'));
 
 
-                    currentDeleteAction = action; // Define a ação atual (e.g., 'delete_record', 'finalize_goal')
+                    currentDeleteAction = action; // Define a ação atual (e.g., 'delete_record')
                     currentDeleteData = data; // Define os dados relevantes para a ação
                     confirmDeleteModal.classList.add('active'); // Abre o modal de confirmação
+                }
+
+                // *** Lógica do Dropdown de Adicionar Registro ***
+                const addRecordDropdownBtn = document.getElementById('addRecordDropdownBtn');
+                // Assume que o menu dropdown é o próximo elemento irmão do botão
+                const addRecordDropdownMenu = addRecordDropdownBtn?.nextElementSibling;
+
+                // Função para alternar a visibilidade do dropdown
+                function toggleAddRecordDropdown() {
+                    if (addRecordDropdownMenu) {
+                        addRecordDropdownMenu.classList.toggle('active');
+                        // Define o atributo aria-expanded para acessibilidade
+                        addRecordDropdownBtn.setAttribute('aria-expanded', addRecordDropdownMenu.classList.contains('active'));
+                    }
+                }
+
+                // Função para fechar o dropdown
+                function closeAddRecordDropdown() {
+                    if (addRecordDropdownMenu) {
+                        addRecordDropdownMenu.classList.remove('active');
+                        addRecordDropdownBtn.setAttribute('aria-expanded', false);
+                    }
+                }
+
+                if (addRecordDropdownBtn) {
+                    addRecordDropdownBtn.addEventListener('click', (event) => {
+                        event.stopPropagation(); // Impede que o clique se propague para o documento e feche imediatamente
+                        toggleAddRecordDropdown(); // Alterna a visibilidade
+                    });
+
+                    // Fecha o dropdown se clicar fora dele
+                    document.addEventListener('click', (event) => {
+                        if (addRecordDropdownMenu && !addRecordDropdownBtn.contains(event.target) && !addRecordDropdownMenu.contains(event.target)) {
+                            closeAddRecordDropdown();
+                        }
+                    });
                 }
 
 
@@ -1551,7 +1626,6 @@
                         if(modalId) closeModalById(modalId);
                         return;
                     }
-                    // Adicionado para fechar modal ao clicar no overlay escuro
                     if(target.matches('.modal-overlay')) {
                          closeModalById(target.id);
                          return;
@@ -1561,159 +1635,49 @@
                         return;
                     }
 
-                    // Botão Adicionar Novo PEI
-                    if (target.id === 'addPeiBtn') {
-                        document.getElementById('addPeiModal').classList.add('active');
-                        document.getElementById('formAddPei').reset(); // Limpa o formulário do modal
-                        // Preenche o dropdown de profissionais
-                        const professionalSelect = document.getElementById('profissionais_ids');
-                        if (professionalSelect) {
-                            professionalSelect.innerHTML = ''; // Limpa opções antigas
-                            ALL_PROFESSIONALS.forEach(prof => {
-                                const option = document.createElement('option');
-                                option.value = prof.id;
-                                option.textContent = prof.nome;
-                                professionalSelect.appendChild(option);
-                            });
+                    // Botão EXPANDIR registro
+                    const expandButton = target.closest('.btn-expand-registro');
+                    if (expandButton) {
+                        const card = expandButton.closest('.registro-card');
+                        const contentDiv = card.querySelector('.registro-content');
+                        const titleText = card.querySelector('.registro-header h4').textContent;
+
+                        const modal = document.getElementById('registro-completo-modal');
+                        const modalTitle = document.getElementById('modal-registro-completo-title');
+                        const modalContent = document.getElementById('modal-registro-completo-content');
+
+                        if (modal && modalTitle && modalContent) {
+                            modalTitle.textContent = titleText;
+                            modalContent.innerHTML = contentDiv.innerHTML;
+                            modal.classList.add('active');
                         }
                         return;
                     }
 
-                    // NOVO: Abrir modal de detalhes do PEI ao clicar no cartão de resumo
-                    const peiSummaryCard = target.closest('.pei-summary-card');
-                    if (peiSummaryCard) {
-                        const peiId = peiSummaryCard.dataset.peiId;
-                        const peiData = allPeisData.find(p => p.id === peiId);
-                        if (peiData) {
-                            openPeiDetailsModal(peiData);
+                    // Botão EDITAR registro genérico
+                    const editButton = target.closest('.btn-edit-registro-generico');
+                    if(editButton) {
+                        e.preventDefault();
+                        const registroId = editButton.dataset.registroId;
+                        // Encontra os dados do registro correspondente no array `allRecordsData`
+                        const currentRegistro = allRecordsData.find(r => r.id === registroId);
+
+                        if (currentRegistro) {
+                            const capitalType = currentRegistro.tipo_registro.charAt(0).toUpperCase() + currentRegistro.tipo_registro.slice(1);
+                            // Abre o modal de registro genérico no modo de edição
+                            openRegistroGenericoModal(currentRegistro.tipo_registro, `Editar ${capitalType}`, currentRegistro);
+                        } else {
+                            console.error('Dados do registro não encontrados para edição:', registroId);
                         }
                         return;
                     }
 
-                    // Botão Adicionar Meta (dentro de um PEI)
-                    const addGoalButton = target.closest('.btn-add-goal');
-                    if (addGoalButton) {
-                        // Apenas admins podem adicionar metas
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para adicionar metas a PEIs.');
-                            return;
-                        }
-                        const peiId = addGoalButton.dataset.peiId;
-                        document.getElementById('goal_pei_id').value = peiId; // Define o ID do PEI no campo oculto
-                        document.getElementById('formAddGoal').reset(); // Limpa o formulário
-                        // Reinicia o container de alvos para ter apenas um campo de entrada vazio
-                        document.getElementById('targets-input-container').innerHTML = `
-                            <div class="target-input-item flex items-center space-x-2">
-                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                       class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                                <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
-                        document.getElementById('addGoalModal').classList.add('active'); // Abre o modal
-                        return;
-                    }
-
-                    // Botão Adicionar Outro Alvo (dentro do modal de adicionar meta)
-                    if (target.matches('.add-target-button-modal')) {
-                        // Apenas admins podem adicionar alvos
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para adicionar alvos a metas.');
-                            return;
-                        }
-                        const container = document.getElementById('targets-input-container');
-                        const newItem = document.createElement('div');
-                        newItem.classList.add('target-input-item', 'flex', 'items-center', 'space-x-2');
-                        const targetCount = container.children.length + 1; // Conta os alvos existentes para o placeholder
-                        newItem.innerHTML = `
-                            <input type="text" name="targets[]" placeholder="Descrição do Alvo ${targetCount}" required
-                                   class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                            <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        `;
-                        container.appendChild(newItem);
-                        // Mostra o botão de remover para todos os alvos se houver mais de um
-                        container.querySelectorAll('.btn-remove-target').forEach(btn => {
-                            btn.style.display = container.children.length > 1 ? 'block' : 'none';
-                        });
-                        return;
-                    }
-
-                    // Botão Remover Alvo (dentro do modal de adicionar meta)
-                    if (target.closest('.btn-remove-target')) {
-                        // Apenas admins podem remover alvos
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para remover alvos de metas.');
-                            return;
-                        }
-                        const container = target.closest('.targets-input-container');
-                        if (container.children.length > 1) { // Garante que pelo menos um alvo permaneça
-                            target.closest('.target-input-item').remove();
-                        }
-                        // Oculta o botão de remover se apenas um alvo permanecer
-                        container.querySelectorAll('.btn-remove-target').forEach(btn => {
-                            btn.style.display = container.children.length > 1 ? 'block' : 'none';
-                        });
-                        return;
-                    }
-
-                    // NOVO: Evento de clique no item do alvo para expandir/colapsar
-                    const clickedTargetMainContent = target.closest('.target-main-content');
-                    if (clickedTargetMainContent) {
-                        const targetItem = clickedTargetMainContent.closest('.target-item');
-                        const isExpanded = targetItem.dataset.targetExpanded === 'true';
-                        targetItem.dataset.targetExpanded = !isExpanded;
-                        targetItem.classList.toggle('expanded', !isExpanded);
-                        return;
-                    }
-
-                    // Botão Finalizar Meta
-                    const finalizeGoalButton = target.closest('.btn-finalize-goal');
-                    if (finalizeGoalButton) {
-                        const peiId = finalizeGoalButton.dataset.peiId;
-                        const goalId = finalizeGoalButton.dataset.goalId;
-                        // Abre o modal de confirmação para finalizar a meta
-                        openConfirmDeleteModal('Confirmar Finalização da Meta', 'Tem certeza que deseja finalizar esta meta? Uma vez finalizada, não poderá ser editada.', 'finalize_goal', { peiId: peiId, goalId: goalId });
-                        return;
-                    }
-
-                    // Botão Excluir Meta
-                    const deleteGoalButton = target.closest('.btn-delete-goal');
-                    if (deleteGoalButton) {
-                        // Apenas admins podem excluir metas
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para excluir metas.');
-                            return;
-                        }
-                        const peiId = deleteGoalButton.dataset.peiId;
-                        const goalId = deleteGoalButton.dataset.goalId;
-                        // Abre o modal de confirmação para excluir a meta
-                        openConfirmDeleteModal('Confirmar Exclusão da Meta', 'Tem certeza que deseja apagar esta meta e todos os seus alvos? Esta ação não pode ser desfeita.', 'delete_goal', { peiId: peiId, goalId: goalId });
-                        return;
-                    }
-
-                    // Botão Excluir PEI
-                    const deletePeiButton = target.closest('.btn-delete-pei');
-                    if (deletePeiButton) {
-                        // Apenas admins podem excluir PEIs
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para excluir PEIs.');
-                            return;
-                        }
-                        const peiId = deletePeiButton.dataset.peiId;
-                        // Abre o modal de confirmação para excluir o PEI
-                        openConfirmDeleteModal('Confirmar Exclusão do PEI', 'Tem certeza que deseja apagar este PEI e todas as suas metas e alvos? Esta ação não pode ser desfeita.', 'delete_pei', { peiId: peiId });
-                        return;
-                    }
-
-                    // Botão Finalizar PEI
-                    const finalizePeiButton = target.closest('.btn-finalize-pei');
-                    if (finalizePeiButton) {
-                        const peiId = finalizePeiButton.dataset.peiId;
-                        // Abre o modal de confirmação para finalizar o PEI
-                        openConfirmDeleteModal('Confirmar Finalização do PEI', 'Tem certeza que deseja finalizar este PEI? Todas as metas ativas serão consideradas finalizadas. Esta ação não pode ser desfeita.', 'finalize_pei', { peiId: peiId });
+                    // Botão APAGAR registro
+                    const deleteRecordButton = target.closest('.btn-apagar-registro');
+                    if (deleteRecordButton) {
+                        const recordId = deleteRecordButton.dataset.registroId;
+                        // Abre o modal de confirmação para exclusão de registro
+                        openConfirmDeleteModal('Confirmar Exclusão', 'Tem certeza que deseja apagar este registro? Esta ação não pode ser desfeita.', 'delete_record', { id: recordId });
                         return;
                     }
 
@@ -1723,23 +1687,11 @@
                         showLoading(); // Mostra o indicador de carregamento antes de iniciar a ação
 
                         try {
-                            if (currentDeleteAction === 'delete_pei') {
-                                // Define os valores e submete o formulário de exclusão de PEI
-                                formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
-                                formApagarPei.action = `/pacientes/${PACIENTE_DOC_ID}/peis/delete_pei`;
-                                formApagarPei.submit(); // Isso causará um recarregamento completo da página
-                            } else if (currentDeleteAction === 'delete_goal') {
-                                // Define os valores e submete o formulário de exclusão de meta
-                                formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
-                                formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
-                                formApagarGoal.action = `/pacientes/${PACIENTE_DOC_ID}/peis/delete_goal`;
-                                formApagarGoal.submit(); // Isso causará um recarregamento completo da página
-                            } else if (currentDeleteAction === 'finalize_goal') {
-                                // Chama a função assíncrona para finalizar a meta via AJAX
-                                await finalizeGoal(currentDeleteData.peiId, currentDeleteData.goalId);
-                            } else if (currentDeleteAction === 'finalize_pei') {
-                                // Chama a função assíncrona para finalizar o PEI via AJAX
-                                await finalizePei(currentDeleteData.peiId);
+                            if (currentDeleteAction === 'delete_record') {
+                                // Define os valores e submete o formulário de exclusão de registro
+                                formApagarRegistro.querySelector('#registro_id_apagar').value = currentDeleteData.id;
+                                formApagarRegistro.action = `{{ url_for('apagar_registro_generico', paciente_doc_id=PACIENTE_DOC_ID) }}`;
+                                formApagarRegistro.submit(); // Isso causará um recarregamento completo da página
                             }
                         } catch (error) {
                             console.error('Erro durante a ação de confirmação:', error);
@@ -1752,595 +1704,15 @@
                         return;
                     }
 
-                    // Botão de IMPRIMIR PEI
-                    const printPeiButton = target.closest('.btn-print-pei');
-                    if (printPeiButton) {
-                        const peiId = printPeiButton.dataset.peiId;
-                        // Encontra o PEI correspondente nos dados carregados
-                        const peiToPrint = allPeisData.find(p => p.id === peiId);
-                        if (peiToPrint) {
-                            generatePdfForPei(peiToPrint);
-                        } else {
-                            console.error('PEI não encontrado para impressão:', peiId);
-                            displayFlashMessage('danger', 'PEI não encontrado para impressão.');
-                        }
-                        return;
-                    }
-
-                    // Botão para imprimir todos os PEIs
-                    const printAllPeisButton = target.closest('#printAllPeisBtn'); // Supondo que você adicionaria um botão com este ID
-                    if (printAllPeisButton) {
-                        generatePdfForAllPeis(allPeisData);
-                        return;
-                    }
-
-                    // NOVO: Botões de tentativas (incrementar/decrementar) para UMA AJUDA ESPECÍFICA
-                    const aidIncrementBtn = target.closest('.btn-increment-aid-attempts');
-                    const aidDecrementBtn = target.closest('.btn-decrement-aid-attempts');
-                    if (aidIncrementBtn || aidDecrementBtn) {
-                        const aidItem = target.closest('.aid-item');
-                        const targetItem = aidItem.closest('.target-item');
-
-                        const peiId = targetItem.dataset.peiId;
-                        const goalId = targetItem.dataset.goalId;
-                        const targetId = targetItem.dataset.targetId;
-                        const aidId = aidItem.dataset.aidId;
-
-                        const attemptsSpan = aidItem.querySelector('.aid-attempts-count');
-                        let currentAttempts = parseInt(attemptsSpan.textContent);
-
-                        const currentPei = allPeisData.find(p => p.id === peiId);
-                        const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
-
-                        if (!canModify) {
-                            displayFlashMessage('danger', 'Você não tem permissão para atualizar tentativas neste PEI.');
-                            return;
-                        }
-
-                        if (aidIncrementBtn) {
-                            currentAttempts++;
-                        } else if (aidDecrementBtn) {
-                            currentAttempts = Math.max(0, currentAttempts - 1); // Não permite tentativas negativas
-                        }
-                        attemptsSpan.textContent = currentAttempts; // Atualiza visualmente
-
-                        console.log(`Updating aid attempts: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, Aid=${aidId}, Attempts=${currentAttempts}`);
-                        // Adicione este log para ver a URL sendo chamada
-                        console.log('URL para update_target_and_aid_data:', `/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`);
-                        // Envia a atualização para o backend, incluindo o aid_id
-                        await updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, currentAttempts, null);
-                        return;
-                    }
-
-                    // NOVO: Manipular mudança de status do alvo (dropdown)
-                    const targetStatusSelect = target.closest('.target-status-select');
-                    if (targetStatusSelect) {
-                        const targetItem = targetStatusSelect.closest('.target-item');
-                        const peiId = targetItem.dataset.peiId;
-                        const goalId = targetItem.dataset.goalId;
-                        const targetId = targetItem.dataset.targetId;
-                        const newStatus = targetStatusSelect.value;
-
-                        const currentPei = allPeisData.find(p => p.id === peiId);
-                        const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
-
-                        if (!canModify) {
-                            displayFlashMessage('danger', 'Você não tem permissão para atualizar o status deste alvo.');
-                            // Reverte a seleção visualmente
-                            const originalTarget = currentPei?.goals.find(g => g.id === goalId)?.targets.find(t => t.id === targetId);
-                            if (originalTarget) {
-                                targetStatusSelect.value = originalTarget.status || 'pendente';
-                            }
-                            return;
-                        }
-                        console.log(`Updating target status: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, New Status=${newStatus}`);
-                        // Adicione este log para ver a URL sendo chamada
-                        console.log('URL para update_target_and_aid_data:', `/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`);
-                        // Envia apenas o novo status do alvo
-                        await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, null, newStatus);
-                        return;
-                    }
+                    // Botão de IMPRIMIR PDF de registro
+                    const printButton = target.closest('.btn-print-pdf');
+                     if (printButton) {
+                         generatePdfForRecord(printButton);
+                         return;
+                     }
                 });
 
-                // --- Funções AJAX para PEI/Metas/Alvos ---
-                // Adiciona um novo alvo a uma meta existente dentro de um PEI
-                async function addTargetToGoal(peiId, goalId, targetDescription) {
-                    showLoading();
-                    try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_target_to_goal`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_description: targetDescription })
-                        });
-
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const data = await response.json();
-                            if (response.ok && data.success) {
-                                allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
-                                renderPeis(allPeisData); // Re-renderiza os PEIs para mostrar o novo alvo
-                                displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
-                                closeModalById('addGoalModal'); // Fecha o modal de adicionar meta
-                            } else {
-                                displayFlashMessage('danger', `Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
-                            }
-                        } else {
-                            const errorText = await response.text();
-                            console.error('Erro de rede ou servidor ao adicionar alvo: Resposta não é JSON.', errorText);
-                            displayFlashMessage('danger', 'Erro de rede ou servidor ao adicionar alvo. Por favor, tente novamente. Detalhes no console.');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao adicionar alvo:', error);
-                        displayFlashMessage('danger', `Erro de rede ou servidor ao adicionar alvo: ${error.message}`);
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
-                // Adiciona uma nova atividade ao histórico de um PEI
-                async function addPeiActivity(peiId, activityContent) {
-                    showLoading();
-                    try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_pei_activity`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId, content: activityContent })
-                        });
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const data = await response.json();
-                            if (response.ok && data.success) {
-                                allPeisData = data.peis; // Atualiza os dados locais
-                                // Re-renderiza o modal de detalhes do PEI para exibir a nova atividade
-                                const currentPei = allPeisData.find(p => p.id === peiId);
-                                if (currentPei) {
-                                    openPeiDetailsModal(currentPei);
-                                }
-                                displayFlashMessage('success', data.message);
-                            } else {
-                                displayFlashMessage('danger', `Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
-                            }
-                        } else {
-                            const errorText = await response.text();
-                            console.error('Erro de rede ou servidor ao adicionar atividade: Resposta não é JSON.', errorText);
-                            displayFlashMessage('danger', 'Erro de rede ou servidor ao adicionar atividade. Por favor, tente novamente. Detalhes no console.');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao adicionar atividade:', error);
-                        displayFlashMessage('danger', `Erro de rede ou servidor ao adicionar atividade: ${error.message}`);
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
-                // NOVO: Atualiza o contador de tentativas, o conteúdo de ajuda ou o status do alvo
-                async function updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, newAttemptsCount, newStatus) {
-                    showLoading();
-                    try {
-                        const payload = { pei_id: peiId, goal_id: goalId, target_id: targetId };
-                        if (aidId !== null) {
-                            payload.aid_id = aidId;
-                        }
-                        if (newAttemptsCount !== null) {
-                            payload.new_attempts_count = newAttemptsCount;
-                        }
-                        if (newStatus !== null) {
-                            payload.new_target_status = newStatus; // Envia o novo status geral do alvo
-                        }
-
-                        console.log('Sending payload to backend:', payload);
-
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const data = await response.json();
-                            console.log('Response from backend:', data);
-
-                            if (response.ok && data.success) {
-                                displayFlashMessage('success', data.message);
-                                if (data.peis) {
-                                    allPeisData = data.peis;
-                                }
-                                // Re-renderiza o modal de detalhes do PEI para refletir a mudança
-                                const currentPei = allPeisData.find(p => p.id === peiId);
-                                if (currentPei) {
-                                    openPeiDetailsModal(currentPei);
-                                }
-                            } else {
-                                displayFlashMessage('danger', `Erro ao atualizar alvo: ${data.message || 'Erro desconhecido.'}`);
-                            }
-                        } else {
-                            const errorText = await response.text();
-                            console.error('Erro de rede ou servidor ao atualizar tentativas/status do alvo: Resposta não é JSON.', errorText);
-                            displayFlashMessage('danger', 'Erro de rede ou servidor ao atualizar alvo. Por favor, tente novamente. Detalhes no console.');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao atualizar tentativas/status do alvo:', error);
-                        displayFlashMessage('danger', `Erro de rede ou servidor ao atualizar alvo: ${error.message}`);
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
-
-                // Finaliza uma meta, marcando-a como 'finalizado'
-                async function finalizeGoal(peiId, goalId) {
-                    console.log('Tentando finalizar meta:', { peiId, goalId });
-                    showLoading();
-                    try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/finalize_goal`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
-                        });
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const data = await response.json();
-                            console.log('Resposta de finalização de meta:', data);
-                            if (response.ok && data.success) {
-                                displayFlashMessage('success', data.message);
-                                if (data.peis) {
-                                    allPeisData = data.peis;
-                                }
-                                // Re-renderiza o modal de detalhes do PEI para refletir a mudança
-                                const currentPei = allPeisData.find(p => p.id === peiId);
-                                if (currentPei) {
-                                    openPeiDetailsModal(currentPei);
-                                }
-                            } else {
-                                console.error('Falha ao finalizar meta:', data.message || 'Erro desconhecido');
-                                displayFlashMessage('danger', `Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`);
-                            }
-                        } else {
-                            const errorText = await response.text();
-                            console.error('Erro de rede ou servidor ao finalizar meta: Resposta não é JSON.', errorText);
-                            displayFlashMessage('danger', 'Erro de rede ou servidor ao finalizar meta. Por favor, tente novamente. Detalhes no console.');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao finalizar meta:', error);
-                        displayFlashMessage('danger', `Erro de rede ou servidor ao finalizar meta: ${error.message}`);
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
-                // Finaliza um PEI completo, marcando-o e todas as suas metas ativas como 'finalizado'
-                async function finalizePei(peiId) {
-                    console.log('Tentando finalizar PEI:', { peiId });
-                    showLoading();
-                    try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/finalize_pei`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId })
-                        });
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const data = await response.json();
-                            console.log('Resposta de finalização do PEI:', data);
-                            if (response.ok && data.success) {
-                                displayFlashMessage('success', data.message);
-                                if (data.peis) {
-                                    allPeisData = data.peis;
-                                }
-                                renderPeis(allPeisData); // Re-renderiza os cartões de resumo do PEI
-                                closeModalById('pei-details-modal'); // Fecha o modal de detalhes do PEI
-                            } else {
-                                console.error('Falha ao finalizar PEI:', data.message || 'Erro desconhecido');
-                                displayFlashMessage('danger', `Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`);
-                            }
-                        } else {
-                            const errorText = await response.text();
-                            console.error('Erro de rede ou servidor ao finalizar PEI: Resposta não é JSON.', errorText);
-                            displayFlashMessage('danger', 'Erro de rede ou servidor ao finalizar PEI. Por favor, tente novamente. Detalhes no console.');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao finalizar PEI:', error);
-                        displayFlashMessage('danger', `Erro de rede ou servidor ao finalizar PEI: ${error.message}`);
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
-                // --- Função auxiliar para renderizar PEIs (após uma atualização do Flask) ---
-                // Esta função reconstrói os cartões de PEI na interface para refletir as últimas mudanças
-                function renderPeis(peis) {
-                    console.log('Renderizando PEIs com dados:', peis);
-                    const activePeisList = document.getElementById('active-peis-list');
-                    const finalizedPeisList = document.getElementById('finalized-peis-list');
-
-                    activePeisList.innerHTML = '';
-                    finalizedPeisList.innerHTML = '';
-
-                    const filteredPeis = peis.filter(pei => {
-                        if (IS_PROFESSIONAL && !IS_ADMIN) {
-                            // Um profissional só vê PEIs se ele for um dos profissionais_ids associados
-                            const shouldShow = pei.profissionais_ids && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
-                            return shouldShow;
-                        }
-                        return true; // Admins veem todos
-                    });
-
-                    // Ordena os PEIs por data_criacao (mais recente primeiro)
-                    const sortedPeis = [...filteredPeis].sort((a, b) => {
-                        const parseDateString = (dateStr) => {
-                            if (!dateStr || typeof dateStr !== 'string') return new Date(0);
-                            const parts = dateStr.split('/');
-                            if (parts.length === 3) {
-                                return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                            }
-                            return new Date(dateStr);
-                        };
-
-                        const dateA = parseDateString(a.data_criacao);
-                        const dateB = parseDateString(b.data_criacao);
-                        return dateB.getTime() - dateA.getTime();
-                    });
-
-                    let hasActivePeis = false;
-                    let hasFinalizedPeis = false;
-
-                    sortedPeis.forEach(pei => {
-                        const isPeiFinalized = pei.status === 'finalizado';
-                        const peiCardClasses = `pei-summary-card ${isPeiFinalized ? 'finalizado' : ''}`;
-
-                        const activeGoalsCount = pei.goals.filter(goal => goal.status === 'ativo').length;
-                        let activeGoalsHtml = '<ul>';
-                        if (activeGoalsCount > 0) {
-                            pei.goals.filter(goal => goal.status === 'ativo').slice(0, 3).forEach(goal => {
-                                activeGoalsHtml += `<li><i class="fas fa-bullseye"></i> ${goal.descricao}</li>`;
-                            });
-                            if (activeGoalsCount > 3) {
-                                activeGoalsHtml += `<li>...e ${activeGoalsCount - 3} mais.</li>`;
-                            }
-                        } else {
-                            activeGoalsHtml += `<li>Nenhuma meta ativa.</li>`;
-                        }
-                        activeGoalsHtml += '</ul>';
-
-
-                        const peiHtml = `
-                        <div class="${peiCardClasses}" data-pei-id="${pei.id}">
-                            <div class="pei-summary-card-header">
-                                <h4>PEI: ${pei.titulo}</h4>
-                                <div class="pei-summary-card-meta">
-                                    <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
-                                    <span><i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}</span>
-                                    <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
-                                </div>
-                            </div>
-                            <div class="pei-summary-card-content">
-                                <strong>Metas Ativas:</strong>
-                                ${activeGoalsHtml}
-                            </div>
-                        </div>
-                        `;
-                        // Adiciona o PEI à lista de ativos ou finalizados
-                        if (pei.status === 'ativo') {
-                            activePeisList.insertAdjacentHTML('beforeend', peiHtml);
-                            hasActivePeis = true;
-                        } else {
-                            finalizedPeisList.insertAdjacentHTML('beforeend', peiHtml);
-                            hasFinalizedPeis = true;
-                        }
-                    });
-
-                    // Atualiza os estados vazios se necessário
-                    if (!hasActivePeis && filteredPeis.length > 0) {
-                         activePeisList.innerHTML = '<div class="empty-state"><i class="fas fa-child-reaching"></i><p>Nenhum PEI ativo para este paciente.</p></div>';
-                    } else if (filteredPeis.length === 0 && IS_PROFESSIONAL && !IS_ADMIN) {
-                         activePeisList.innerHTML = '<div class="empty-state"><i class="fas fa-child-reaching"></i><p>Nenhum PEI associado a você para este paciente.</p></div>';
-                    }
-
-                    if (!hasFinalizedPeis && filteredPeis.length > 0) {
-                         finalizedPeisList.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i><p>Nenhum PEI finalizado para este paciente.</p></div>';
-                    }
-                }
-
-                // NOVO: Função para abrir e popular o modal de detalhes do PEI
-                function openPeiDetailsModal(pei) {
-                    const modal = document.getElementById('pei-details-modal');
-                    const peiModalTitle = document.getElementById('pei-modal-title');
-                    const peiModalCreatedDate = document.getElementById('pei-modal-created-date');
-                    const peiModalProfessionals = document.getElementById('pei-modal-professionals');
-                    const peiModalStatus = document.getElementById('pei-modal-status');
-                    const peiModalActiveGoals = document.getElementById('pei-modal-active-goals');
-                    const peiModalFinalizedGoals = document.getElementById('pei-modal-finalized-goals');
-                    const peiModalActivityLog = document.getElementById('pei-modal-activity-log');
-                    const peiModalActivityInputContainer = document.getElementById('pei-modal-activity-input-container');
-                    const peiDetailsModalFooter = document.getElementById('pei-details-modal-footer');
-
-                    // Limpa conteúdos anteriores
-                    peiModalActiveGoals.innerHTML = '';
-                    peiModalFinalizedGoals.innerHTML = '';
-                    peiModalActivityLog.innerHTML = '';
-                    peiDetailsModalFooter.innerHTML = '';
-                    peiModalActivityInputContainer.innerHTML = '';
-
-                    // Preenche o cabeçalho do modal
-                    peiModalTitle.textContent = `PEI: ${pei.titulo}`;
-                    peiModalCreatedDate.innerHTML = `<i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}`;
-                    peiModalProfessionals.innerHTML = `<i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`;
-                    peiModalStatus.innerHTML = `Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span>`;
-
-                    const canModifyPeiContent = IS_ADMIN || (IS_PROFESSIONAL && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID));
-                    const isPeiFinalized = pei.status === 'finalizado';
-
-                    // Renderiza Metas Ativas
-                    const activeGoals = pei.goals.filter(goal => goal.status === 'ativo');
-                    if (activeGoals.length > 0) {
-                        activeGoals.forEach(goal => {
-                            const goalHtml = createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized);
-                            peiModalActiveGoals.insertAdjacentHTML('beforeend', goalHtml);
-                        });
-                    } else {
-                        peiModalActiveGoals.innerHTML = '<div class="empty-state-small"><i class="fas fa-bullseye"></i><p>Nenhuma meta ativa para este PEI.</p></div>';
-                    }
-
-                    // Renderiza Metas Finalizadas
-                    const finalizedGoals = pei.goals.filter(goal => goal.status === 'finalizado');
-                    if (finalizedGoals.length > 0) {
-                        finalizedGoals.forEach(goal => {
-                            const goalHtml = createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized); // Reutiliza a função, mas desabilita ações
-                            peiModalFinalizedGoals.insertAdjacentHTML('beforeend', goalHtml);
-                        });
-                    } else {
-                        peiModalFinalizedGoals.innerHTML = '<div class="empty-state-small"><i class="fas fa-check-double"></i><p>Nenhuma meta finalizada para este PEI.</p></div>';
-                    }
-
-                    // Renderiza Atividades
-                    if (pei.activities && pei.activities.length > 0) {
-                        pei.activities.forEach(activity => {
-                            const activityHtml = `
-                                <div class="activity-item">
-                                    <div class="activity-meta">${activity.user_name} em ${activity.timestamp_fmt}</div>
-                                    <div class="activity-content">${activity.content}</div>
-                                </div>
-                            `;
-                            peiModalActivityLog.insertAdjacentHTML('beforeend', activityHtml);
-                        });
-                    } else {
-                        peiModalActivityLog.innerHTML = `<div class="empty-state-small">
-                            <i class="fas fa-clipboard-list text-2xl mb-2"></i>
-                            <p class="text-sm">Nenhuma atividade registrada para este PEI.</p>
-                            </div>`;
-                    }
-
-                    // Adiciona campo de entrada de atividade
-                    if (canModifyPeiContent) {
-                        peiModalActivityInputContainer.innerHTML = `
-                            <div class="activity-input-group mt-3">
-                                <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
-                                <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="${pei.id}">
-                                    <i class="fas fa-paper-plane"></i> Enviar
-                                </button>
-                            </div>
-                        `;
-                    } else {
-                        peiModalActivityInputContainer.innerHTML = `
-                            <div class="mt-3 text-center text-gray-500 text-sm opacity-80">
-                                <p>Apenas os profissionais associados ou um administrador podem adicionar comentários a este PEI.</p>
-                            </div>
-                        `;
-                    }
-
-
-                    // Renderiza botões do footer do modal
-                    if (IS_ADMIN) {
-                        peiDetailsModalFooter.insertAdjacentHTML('beforeend', `
-                            <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
-                                <i class="fas fa-plus"></i> Adicionar Meta
-                            </button>
-                            <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
-                                <i class="fas fa-trash"></i> Excluir PEI
-                            </button>
-                        `);
-                    }
-                    peiDetailsModalFooter.insertAdjacentHTML('beforeend', `
-                        <button type="button" class="btn btn-sm btn-info btn-print-pei" data-pei-id="${pei.id}"><i class="fas fa-print"></i> Imprimir PEI</button>
-                        <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="${pei.id}" ${isPeiFinalized || !canModifyPeiContent ? 'disabled' : ''}>
-                            <i class="fas fa-check-double"></i> Finalizar PEI
-                        </button>
-                    `);
-
-                    modal.classList.add('active'); // Abre o modal
-                }
-
-                // NOVO: Helper para criar o HTML de um Goal Card para o modal de detalhes do PEI
-                function createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized) {
-                    const isGoalFinalized = goal.status === 'finalizado';
-                    const goalActionsDisabled = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
-                    const targetItemDisabledClass = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
-
-                    let targetsHtml = '';
-                    if (goal.targets && goal.targets.length > 0) {
-                        goal.targets.forEach(target => {
-                            let aidsListHtml = '';
-                            if (target.aids && target.aids.length > 0) {
-                                aidsListHtml += '<ul class="aids-list">';
-                                target.aids.forEach(aid => {
-                                    const aidStatusClass = aid.status === 'finalizada' ? 'finalizada' : '';
-                                    aidsListHtml += `
-                                        <li class="aid-item ${aidStatusClass}" data-aid-id="${aid.id}" data-target-id="${target.id}" data-goal-id="${goal.id}" data-pei-id="${pei.id}">
-                                            <div class="aid-item-left">
-                                                <i class="aid-status-icon fas ${aid.status === 'finalizada' ? 'fa-check-circle' : 'fa-circle'}"></i>
-                                                <span class="aid-description">${aid.description}</span>
-                                            </div>
-                                            <div class="aid-attempts-counter">
-                                                <button type="button" class="btn-decrement-aid-attempts" ${goalActionsDisabled}>-</button>
-                                                Tentativas: <span class="aid-attempts-count">${aid.attempts_count || 0}</span>
-                                                <button type="button" class="btn-increment-aid-attempts" ${goalActionsDisabled}>+</button>
-                                            </div>
-                                        </li>
-                                    `;
-                                });
-                                aidsListHtml += '</ul>';
-                            } else {
-                                aidsListHtml = '<div class="empty-state-small"><i class="fas fa-question-circle"></i><p>Nenhuma ajuda definida para este alvo.</p></div>';
-                            }
-
-                            targetsHtml += `
-                                <li class="target-item ${target.concluido ? 'concluido' : ''} ${targetItemDisabledClass}"
-                                    data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}"
-                                    data-target-expanded="false">
-                                    <div class="target-main-content target-expand-trigger">
-                                        <i class="status-icon fas ${target.concluido ? 'fa-check-square' : 'fa-square'}"></i>
-                                        <span class="target-text-content">${target.descricao}</span>
-                                        <i class="expand-icon fas fa-chevron-right"></i>
-                                    </div>
-                                    <div class="target-details-expanded">
-                                        <div class="form-group">
-                                            <label for="target-status-${target.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status do Alvo</label>
-                                            <select id="target-status-${target.id}" class="target-status-select w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out" ${goalActionsDisabled}>
-                                                <option value="pendente" ${target.status === 'pendente' ? 'selected' : ''}>Pendente</option>
-                                                <option value="andamento" ${target.status === 'andamento' ? 'selected' : ''}>Em Andamento</option>
-                                                <option value="finalizada" ${target.status === 'finalizada' ? 'selected' : ''}>Finalizada</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ajudas e Tentativas</label>
-                                            ${aidsListHtml}
-                                        </div>
-                                    </div>
-                                </li>
-                            `;
-                        });
-                    } else {
-                        targetsHtml = '<div class="empty-state-small"><i class="fas fa-bullseye"></i><p>Nenhum alvo definido para esta meta.</p></div>';
-                    }
-
-                    return `
-                        <div class="goal-card ${isGoalFinalized ? 'finalizado' : ''}" id="goal-${pei.id}-${goal.id}">
-                            <div class="goal-card-header">
-                                <strong>Meta: ${goal.descricao}</strong>
-                                <span class="goal-status ${isGoalFinalized ? 'finalizado-status' : 'active-status'}">${isGoalFinalized ? 'Finalizada' : 'Ativa'}</span>
-                            </div>
-                            <ul class="targets-list">
-                                ${targetsHtml}
-                            </ul>
-                            ${IS_ADMIN ? `
-                                <div class="add-target-group mt-3">
-                                    <input type="text" class="new-target-input form-input" placeholder="Novo alvo para esta meta" ${goalActionsDisabled}>
-                                    <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>Adicionar</button>
-                                </div>
-                            ` : ''}
-                            <div class="pei-card-actions mt-3 border-t pt-3 flex justify-start gap-2 ${goalActionsDisabled ? 'disabled-actions' : ''}">
-                                <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>
-                                    <i class="fas fa-check-circle"></i> Finalizar Meta
-                                </button>
-                                ${IS_ADMIN ? `
-                                    <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>
-                                        <i class="fas fa-trash"></i> Excluir
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `;
-                }
+                // --- Funções AJAX para PEI/Metas/Alvos --- (REMOVIDAS)
 
 
                 // --- Lógica de Geração de PDF ---
@@ -2365,334 +1737,119 @@
                     return text.replace(/\n\s*\n/g, '\n').trim();
                 }
 
-                // Gera um PDF para um PEI específico
-                function generatePdfForPei(pei) {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
+                // Gera um PDF para um registro específico (Anamnese, Laudo, etc.)
+                function generatePdfForRecord(button) {
+                     const recordCard = button.closest('.registro-card');
 
-                    let yPos = 20;
-                    const margin = 15;
-                    const contentLineHeight = 5;
-                    const contentFontSize = 9;
-                    const maxWidth = doc.internal.pageSize.width - margin * 2;
+                     const title = recordCard.querySelector('.registro-header h4').textContent.trim();
+                     const date = recordCard.querySelector('.registro-meta span:first-child').textContent.trim().replace('📅 ', '');
+                     const professional = recordCard.querySelector('.registro-meta span:last-child').textContent.trim().replace('‍⚕️ ', '');
+                     const contentHtml = recordCard.querySelector('.registro-content').innerHTML;
 
-                    // Função auxiliar para verificar e adicionar nova página se necessário
-                    const checkPageBreak = (heightNeeded) => {
-                        if (yPos + heightNeeded > doc.internal.pageSize.height - margin) {
-                            doc.addPage();
-                            yPos = margin;
-                        }
-                    };
+                     const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
+                     const patientCpf = "{{ paciente.cpf or 'N/A' }}";
+                     const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
+                     const clinicName = "{{ session.clinica_nome_display or 'Clinica On' }}";
 
-                    // Cabeçalho da Clínica
-                    doc.setFontSize(12).setFont("helvetica", "bold").text("{{ session.clinica_nome_display or 'Clínica On' }}", margin, yPos);
-                    yPos += 8;
-                    doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
-                    yPos += 8;
+                     const { jsPDF } = window.jspdf;
+                     const doc = new jsPDF();
 
-                    // Informações do Paciente
-                    const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
-                    const patientCpf = "{{ paciente.cpf or 'N/A' }}";
-                    const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
+                     let yPos = 20;
+                     const margin = 15;
+                     // Ajustes de fonte e espaçamento
+                     const contentLineHeight = 5; // Altura da linha reduzida
+                     const contentFontSize = 9;   // Tamanho da fonte do conteúdo reduzido
+                     const maxWidth = doc.internal.pageSize.width - margin * 2;
 
-                    doc.setFontSize(10).setFont("helvetica", "normal");
-                    doc.text(`Paciente: ${patientName}`, margin, yPos);
-                    yPos += 6;
-                    doc.text(`CPF: ${patientCpf}`, margin, yPos);
-                    doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
-                    yPos += 8;
+                     // Cabeçalho da Clínica
+                     doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, margin, yPos);
+                     yPos += 8;
+                     doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
+                     yPos += 8;
 
-                    // Título do PEI
-                    checkPageBreak(20);
-                    doc.setFontSize(14).setFont("helvetica", "bold").text(`Plano Educacional Individualizado (PEI): ${pei.titulo}`, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
-                    yPos += 8;
+                     // Informações do Paciente
+                     doc.setFontSize(10).setFont("helvetica", "normal");
+                     doc.text(`Paciente: ${patientName}`, margin, yPos);
+                     yPos += 6;
+                     doc.text(`CPF: ${patientCpf}`, margin, yPos);
+                     doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
+                     yPos += 8;
 
-                    // Metadados do PEI
-                    checkPageBreak(10);
-                    doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`, margin, yPos);
-                    yPos += 6;
-                    doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
-                    yPos += 8;
+                     // Título do Registro
+                     doc.setFontSize(14).setFont("helvetica", "bold").text(title, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                     yPos += 8;
 
-                    // Metas e Alvos
-                    checkPageBreak(10);
-                    doc.setFontSize(11).setFont("helvetica", "bold").text("Metas:", margin, yPos);
-                    yPos += 8;
+                     // Metadados do Registro
+                     doc.setFontSize(9).setFont("helvetica", "italic").text(`Data: ${date} | Profissional: ${professional}`, margin, yPos);
+                     yPos += 6;
+                     doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
+                     yPos += 8;
 
-                    if (pei.goals && pei.goals.length > 0) {
-                        pei.goals.forEach((goal, goalIndex) => {
-                            checkPageBreak(20); // Verifica espaço para cabeçalho da meta e primeiro alvo
-                            doc.setFontSize(10).setFont("helvetica", "bold").text(`- Meta ${goalIndex + 1}: ${goal.descricao} (Status: ${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)})`, margin + 5, yPos);
-                            yPos += 7;
+                     // Conteúdo do Registro
+                     doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                     const contentText = htmlToPlainText(contentHtml); // Converte HTML para texto plano
+                     const splitText = doc.splitTextToSize(contentText, maxWidth); // Divide o texto em linhas para o PDF
 
-                            if (goal.targets && goal.targets.length > 0) {
-                                doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                                goal.targets.forEach((target) => {
-                                    checkPageBreak(contentLineHeight);
-                                    const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
-                                    doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
-                                    yPos += contentLineHeight;
+                     splitText.forEach(line => {
+                         // Adiciona nova página se não houver espaço suficiente
+                         if (yPos > doc.internal.pageSize.height - margin) {
+                             doc.addPage();
+                             yPos = margin;
+                         }
+                         doc.text(line, margin, yPos);
+                         yPos += contentLineHeight;
+                     });
 
-                                    if (target.aids && target.aids.length > 0) {
-                                        target.aids.forEach(aid => {
-                                            checkPageBreak(contentLineHeight);
-                                            const aidStatus = aid.status === 'finalizada' ? '[X]' : '[ ]';
-                                            doc.setFontSize(contentFontSize - 1).setFont("helvetica", "normal").text(`    ${aidStatus} ${aid.description} (Tentativas: ${aid.attempts_count || 0})`, margin + 15, yPos);
-                                            yPos += contentLineHeight - 1;
-                                        });
-                                    } else {
-                                        checkPageBreak(contentLineHeight);
-                                        doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text('    Nenhuma ajuda definida para este alvo.', margin + 15, yPos);
-                                        yPos += contentLineHeight - 1;
-                                    }
-                                    doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
-                                });
-                            } else {
-                                checkPageBreak(contentLineHeight);
-                                doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('  Nenhum alvo definido para esta meta.', margin + 10, yPos);
-                                yPos += contentLineHeight;
-                            }
-                            yPos += 5; // Espaço após cada meta
-                        });
-                    } else {
-                        checkPageBreak(contentLineHeight);
-                        doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta definida para este PEI.', margin, yPos);
-                        yPos += contentLineHeight;
-                    }
-
-                    // Seção de Atividades para PDF
-                    if (pei.activities && pei.activities.length > 0) {
-                        checkPageBreak(15);
-                        doc.setFontSize(11).setFont("helvetica", "bold").text("Histórico de Atividades:", margin, yPos);
-                        yPos += 8;
-                        doc.setLineWidth(0.1).line(margin, yPos, maxWidth + margin, yPos);
-                        yPos += 5;
-
-                        pei.activities.forEach(activity => {
-                            checkPageBreak(20); // Estimar espaço para cada atividade
-                            doc.setFontSize(8).setFont("helvetica", "italic").text(`${activity.user_name} em ${activity.timestamp_fmt}:`, margin + 5, yPos);
-                            yPos += 4;
-                            doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                            const activityTextLines = doc.splitTextToSize(activity.content, maxWidth - 10); // Recuo para o conteúdo da atividade
-                            activityTextLines.forEach(line => {
-                                checkPageBreak(contentLineHeight);
-                                doc.text(line, margin + 10, yPos);
-                                yPos += contentLineHeight;
-                            });
-                            yPos += 3; // Espaço entre atividades
-                        });
-                    }
-
-                    // Salva o PDF com um nome descritivo
-                    doc.save(`pei-${pei.titulo.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                     // Salva o PDF com um nome descritivo
+                     doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
 
-                // Função para imprimir todos os PEIs em um único documento PDF
-                function generatePdfForAllPeis(peis) {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
-
-                    const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
-                    const patientCpf = "{{ paciente.cpf or 'N/A' }}";
-                    const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
-                    const clinicName = "{{ session.clinica_nome_display or 'Clinica On' }}";
-
-                    let yPos = 20;
-                    const margin = 15;
-                    const contentLineHeight = 5;
-                    const contentFontSize = 9;
-                    const maxWidth = doc.internal.pageSize.width - margin * 2;
-
-                    // Helper function to add page and reset yPos if needed
-                    const checkPageBreak = (heightNeeded) => {
-                        if (yPos + heightNeeded > doc.internal.pageSize.height - margin) {
-                            doc.addPage();
-                            yPos = margin;
-                        }
-                    };
-
-                    // Filter PEIs for professionals, if applicable, before generating the PDF
-                    const filteredPeisForPdf = peis.filter(pei => {
-                        if (IS_PROFESSIONAL && !IS_ADMIN) {
-                            return pei.profissionais_ids && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
-                        }
-                        return true;
-                    });
-
-
-                    filteredPeisForPdf.forEach((pei, peiIndex) => {
-                        if (peiIndex > 0) { // Add a new page for each PEI after the first
-                            doc.addPage();
-                            yPos = margin;
-                        }
-
-                        // Clinic Header
-                        doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, margin, yPos);
-                        yPos += 8;
-                        doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
-                        yPos += 8;
-
-                        // Patient Information
-                        doc.setFontSize(10).setFont("helvetica", "normal");
-                        doc.text(`Paciente: ${patientName}`, margin, yPos);
-                        yPos += 6;
-                        doc.text(`CPF: ${patientCpf}`, margin, yPos);
-                        doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
-                        yPos += 8;
-
-                        // PEI Title
-                        checkPageBreak(20);
-                        doc.setFontSize(14).setFont("helvetica", "bold").text(`Plano Educacional Individualizado (PEI): ${pei.titulo}`, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
-                        yPos += 8;
-
-                        // Metadados do PEI
-                        checkPageBreak(10);
-                        doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`, margin, yPos);
-                        yPos += 6;
-                        doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
-                        yPos += 8;
-
-                        // Metas e Alvos
-                        checkPageBreak(10);
-                        doc.setFontSize(11).setFont("helvetica", "bold").text("Metas:", margin, yPos);
-                        yPos += 8;
-
-                        if (pei.goals && pei.goals.length > 0) {
-                            pei.goals.forEach((goal, goalIndex) => {
-                                checkPageBreak(20); // Verifica espaço para cabeçalho da meta e primeiro alvo
-                                doc.setFontSize(10).setFont("helvetica", "bold").text(`- Meta ${goalIndex + 1}: ${goal.descricao} (Status: ${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)})`, margin + 5, yPos);
-                                yPos += 7;
-
-                                if (goal.targets && goal.targets.length > 0) {
-                                    doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                                    goal.targets.forEach((target) => {
-                                        checkPageBreak(contentLineHeight);
-                                        const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
-                                        doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
-                                        yPos += contentLineHeight;
-
-                                        if (target.aids && target.aids.length > 0) {
-                                            target.aids.forEach(aid => {
-                                                checkPageBreak(contentLineHeight);
-                                                const aidStatus = aid.status === 'finalizada' ? '[X]' : '[ ]';
-                                                doc.setFontSize(contentFontSize - 1).setFont("helvetica", "normal").text(`    ${aidStatus} ${aid.description} (Tentativas: ${aid.attempts_count || 0})`, margin + 15, yPos);
-                                                yPos += contentLineHeight - 1;
-                                            });
-                                        } else {
-                                            checkPageBreak(contentLineHeight);
-                                            doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text('    Nenhuma ajuda definida para este alvo.', margin + 15, yPos);
-                                            yPos += contentLineHeight - 1;
-                                        }
-                                        doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
-                                    });
-                                } else {
-                                    checkPageBreak(contentLineHeight);
-                                    doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('  Nenhum alvo definido para esta meta.', margin + 10, yPos);
-                                    yPos += contentLineHeight;
-                                }
-                                yPos += 5; // Espaço após cada meta
-                            });
+                // Function to display custom flash messages
+                function displayFlashMessage(type, message) {
+                    let flashMessagesContainer = document.querySelector('.flash-messages');
+                    if (!flashMessagesContainer) {
+                        const mainElement = document.querySelector('main');
+                        if (mainElement) {
+                            const newContainer = document.createElement('div');
+                            newContainer.classList.add('flash-messages');
+                            mainElement.prepend(newContainer);
+                            flashMessagesContainer = newContainer;
                         } else {
-                            checkPageBreak(contentLineHeight);
-                            doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta definida para este PEI.', margin, yPos);
-                            yPos += contentLineHeight;
+                            console.error('Não foi possível encontrar ou criar o container de flash messages.');
+                            return;
                         }
+                    }
 
-                        // Seção de Atividades para PDF
-                        if (pei.activities && pei.activities.length > 0) {
-                            checkPageBreak(15);
-                            doc.setFontSize(11).setFont("helvetica", "bold").text("Histórico de Atividades:", margin, yPos);
-                            yPos += 8;
-                            doc.setLineWidth(0.1).line(margin, yPos, maxWidth + margin, yPos);
-                            yPos += 5;
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('flash-message', type);
+                    let iconClass = '';
+                    if (type === 'success') iconClass = 'fas fa-check-circle';
+                    else if (type === 'danger') iconClass = 'fas fa-times-circle';
+                    else if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
+                    else iconClass = 'fas fa-info-circle';
 
-                            pei.activities.forEach(activity => {
-                                checkPageBreak(20); // Estimar espaço para cada atividade
-                                doc.setFontSize(8).setFont("helvetica", "italic").text(`${activity.user_name} em ${activity.timestamp_fmt}:`, margin + 5, yPos);
-                                yPos += 4;
-                                doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                                const activityTextLines = doc.splitTextToSize(activity.content, maxWidth - 10); // Recuo para o conteúdo da atividade
-                                activityTextLines.forEach(line => {
-                                    checkPageBreak(contentLineHeight);
-                                    doc.text(line, margin + 10, yPos);
-                                    yPos += contentLineHeight;
-                                });
-                                yPos += 3; // Espaço entre atividades
-                            });
-                        }
-                    });
+                    messageDiv.innerHTML = `<i class="${iconClass}"></i> ${message}`;
 
-                    // Salva o PDF de todos os PEIs
-                    doc.save(`todos-peis-${patientName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`);
+                    flashMessagesContainer.appendChild(messageDiv);
+
+                    // Remove the message after a few seconds
+                    setTimeout(() => {
+                        messageDiv.remove();
+                    }, 5000);
                 }
 
 
-                // --- Initial PEI Rendering ---
-                renderPeis(allPeisData); // Call to render PEIs when the page loads
+                // --- Initial Renderings --- (PEI rendering removed)
 
-                // Event listener for "Add Target" button in each goal (delegated as elements are dynamically rendered)
-                document.body.addEventListener('click', async function(e) {
-                    const target = e.target;
-                    const addTargetBtn = target.closest('.btn-add-target');
-                    if (addTargetBtn) {
-                        e.preventDefault();
-                        const peiId = addTargetBtn.dataset.peiId;
-                        const goalId = addTargetBtn.dataset.goalId;
-                        const newTargetInput = addTargetBtn.previousElementSibling;
-                        const targetDescription = newTargetInput.value.trim();
+                // Event listeners for Add Target and Add Activity removed
 
-                        if (!targetDescription) {
-                            displayFlashMessage('warning', 'Por favor, digite a descrição do novo alvo.');
-                            return;
-                        }
-
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para adicionar alvos.');
-                            return;
-                        }
-
-                        addTargetBtn.disabled = true;
-                        newTargetInput.disabled = true;
-
-                        try {
-                            await addTargetToGoal(peiId, goalId, targetDescription);
-                            newTargetInput.value = '';
-                        } finally {
-                            addTargetBtn.disabled = false;
-                            newTargetInput.disabled = false;
-                        }
-                    }
-
-                    // Event listener for "Send" button of PEI activity
-                    const addActivityBtn = target.closest('.btn-add-activity');
-                    if (addActivityBtn) {
-                        e.preventDefault();
-                        const peiId = addActivityBtn.dataset.peiId;
-                        const activityInput = addActivityBtn.previousElementSibling;
-                        const activityContent = activityInput.value.trim();
-
-                        if (!activityContent) {
-                            displayFlashMessage('warning', 'Por favor, digite o conteúdo da atividade.');
-                            return;
-                        }
-
-                        addActivityBtn.disabled = true;
-                        activityInput.disabled = true;
-
-                        try {
-                            await addPeiActivity(peiId, activityContent);
-                            activityInput.value = '';
-                        } finally {
-                            addActivityBtn.disabled = false;
-                            activityInput.disabled = false;
-                        }
-                    }
-                });
+                // --- Initialization ---
+                setupTabs();
             }
 
             // --- General Initialization ---
             setupCommonUI();
-            setupPeiPage();
+            setupProntuarioPage();
         });
     </script>
 </body>
