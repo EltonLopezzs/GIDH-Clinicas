@@ -1726,13 +1726,13 @@
                             if (currentDeleteAction === 'delete_pei') {
                                 // Define os valores e submete o formulário de exclusão de PEI
                                 formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
-                                formApagarPei.action = `{{ url_for('peis.delete_pei', paciente_doc_id=PACIENTE_DOC_ID) }}`;
+                                formApagarPei.action = `/pacientes/${PACIENTE_DOC_ID}/peis/delete_pei`;
                                 formApagarPei.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'delete_goal') {
                                 // Define os valores e submete o formulário de exclusão de meta
                                 formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
                                 formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
-                                formApagarGoal.action = `{{ url_for('peis.delete_goal', paciente_doc_id=PACIENTE_DOC_ID) }}`;
+                                formApagarGoal.action = `/pacientes/${PACIENTE_DOC_ID}/peis/delete_goal`;
                                 formApagarGoal.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'finalize_goal') {
                                 // Chama a função assíncrona para finalizar a meta via AJAX
@@ -1806,7 +1806,7 @@
 
                         console.log(`Updating aid attempts: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, Aid=${aidId}, Attempts=${currentAttempts}`);
                         // Adicione este log para ver a URL sendo chamada
-                        console.log('URL para update_target_and_aid_data:', `{{ url_for('peis.update_target_and_aid_data', paciente_doc_id=PACIENTE_DOC_ID) }}`);
+                        console.log('URL para update_target_and_aid_data:', `/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`);
                         // Envia a atualização para o backend, incluindo o aid_id
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, currentAttempts, null);
                         return;
@@ -1835,7 +1835,7 @@
                         }
                         console.log(`Updating target status: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, New Status=${newStatus}`);
                         // Adicione este log para ver a URL sendo chamada
-                        console.log('URL para update_target_and_aid_data:', `{{ url_for('peis.update_target_and_aid_data', paciente_doc_id=PACIENTE_DOC_ID) }}`);
+                        console.log('URL para update_target_and_aid_data:', `/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`);
                         // Envia apenas o novo status do alvo
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, null, newStatus);
                         return;
@@ -1847,7 +1847,7 @@
                 async function addTargetToGoal(peiId, goalId, targetDescription) {
                     showLoading();
                     try {
-                        const response = await fetch(`{{ url_for('peis.add_target_to_goal', paciente_doc_id=PACIENTE_DOC_ID) }}`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_target_to_goal`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_description: targetDescription })
@@ -1881,7 +1881,7 @@
                 async function addPeiActivity(peiId, activityContent) {
                     showLoading();
                     try {
-                        const response = await fetch(`{{ url_for('peis.add_pei_activity', paciente_doc_id=PACIENTE_DOC_ID) }}`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_pei_activity`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, content: activityContent })
@@ -1930,7 +1930,7 @@
 
                         console.log('Sending payload to backend:', payload);
 
-                        const response = await fetch(`{{ url_for('peis.update_target_and_aid_data', paciente_doc_id=PACIENTE_DOC_ID) }}`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
@@ -1972,7 +1972,7 @@
                     console.log('Tentando finalizar meta:', { peiId, goalId });
                     showLoading();
                     try {
-                        const response = await fetch(`{{ url_for('peis.finalize_goal', paciente_doc_id=PACIENTE_DOC_ID) }}`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/finalize_goal`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
@@ -2013,7 +2013,7 @@
                     console.log('Tentando finalizar PEI:', { peiId });
                     showLoading();
                     try {
-                        const response = await fetch(`{{ url_for('peis.finalize_pei', paciente_doc_id=PACIENTE_DOC_ID) }}`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/finalize_pei`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId })
