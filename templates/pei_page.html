@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -213,57 +213,72 @@
             }
         }
 
-        /* Estilos do Dropdown */
-        .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background-color: var(--card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            min-width: 200px;
-            z-index: 100;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(10px);
-            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-        }
-
-        .dropdown-menu.active {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .dropdown-menu a, .dropdown-menu button {
-            display: flex;
+        /* --- Modal System --- */
+        .modal-overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            text-decoration: none;
+            padding: 1rem;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex; /* Show modal */
+        }
+        .modal-content {
+            background-color: var(--card);
             color: var(--text);
-            background-color: transparent;
-            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             width: 100%;
-            text-align: left;
-            transition: background-color 0.2s ease;
-            font-size: 0.9rem;
+            max-width: 900px; /* Default max-width */
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            animation: slideInUp 0.3s ease;
         }
-
-        .dropdown-menu a:hover, .dropdown-menu button:hover {
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .modal-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .modal-close-btn {
+            background: none; border: none; font-size: 2rem;
+            color: var(--muted); cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .modal-close-btn:hover { color: var(--text); }
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
             background-color: var(--bg);
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            flex-shrink: 0;
         }
 
-        .dropdown-menu a:first-child, .dropdown-menu button:first-child {
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
-        }
-        .dropdown-menu a:last-child, .dropdown-menu button:last-child {
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-        }
-
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         /* --- Paciente Info Card (Cartão de Informações do Paciente) --- */
         .paciente-info-card {
@@ -1112,38 +1127,40 @@
 
     <!-- NOVO MODAL: Adicionar PEI -->
     <div id="addPeiModal" class="modal-overlay">
-        <div class="modal-content p-6 rounded-lg shadow-xl text-gray-900 dark:text-gray-100 sm:max-w-md md:max-w-lg lg:max-w-2xl w-full">
-            <div class="modal-header border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex justify-between items-center">
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Adicionar Novo PEI</h3>
-                <button type="button" class="modal-close-btn text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl leading-none" data-close-modal="addPeiModal">&times;</button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-xl font-semibold">Adicionar Novo PEI</h3>
+                <button type="button" class="modal-close-btn" data-close-modal="addPeiModal">&times;</button>
             </div>
-            <form id="formAddPei" method="POST" action="{{ url_for('peis.add_pei', paciente_doc_id=paciente.id) }}" class="space-y-4">
-                <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
-                <div class="modal-body overflow-y-auto max-h-[60vh] pr-2">
-                    <div class="form-group">
-                        <label for="pei_titulo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título do PEI</label>
-                        <input type="text" id="pei_titulo" name="titulo" required placeholder="Ex: Plano para Desenvolvimento Motor"
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                    </div>
-                    <div class="form-group">
-                        <label for="pei_data_criacao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Criação</label>
-                        <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                    </div>
-                    <div class="form-group">
-                        <label for="profissionais_ids" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profissionais Associados (Múltiplos)</label>
-                        <select id="profissionais_ids" name="profissionais_ids[]" multiple required
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                            {% for professional in all_professionals %}
-                                <option value="{{ professional.id }}">{{ professional.nome }}</option>
-                            {% endfor %}
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">Selecione um ou mais profissionais (Ctrl/Cmd + clique para múltiplos).</p>
+            <form id="formAddPei" method="POST" action="{{ url_for('peis.add_pei', paciente_doc_id=paciente.id) }}">
+                 <div class="modal-body">
+                    <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+                    <div class="space-y-4">
+                        <div class="form-group">
+                            <label for="pei_titulo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título do PEI</label>
+                            <input type="text" id="pei_titulo" name="titulo" required placeholder="Ex: Plano para Desenvolvimento Motor"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                        </div>
+                        <div class="form-group">
+                            <label for="pei_data_criacao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Criação</label>
+                            <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                        </div>
+                        <div class="form-group">
+                            <label for="profissionais_ids" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profissionais Associados (Múltiplos)</label>
+                            <select id="profissionais_ids" name="profissionais_ids[]" multiple required
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                {% for professional in all_professionals %}
+                                    <option value="{{ professional.id }}">{{ professional.nome }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Selecione um ou mais profissionais (Ctrl/Cmd + clique para múltiplos).</p>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                    <button type="button" class="btn btn-secondary inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600" data-close-modal="addPeiModal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition duration-150 ease-in-out">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close-modal="addPeiModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save mr-2"></i> Criar PEI
                     </button>
                 </div>
@@ -1153,39 +1170,41 @@
 
     <!-- NOVO MODAL: Adicionar Meta ao PEI -->
     <div id="addGoalModal" class="modal-overlay">
-        <div class="modal-content p-6 rounded-lg shadow-xl text-gray-900 dark:text-gray-100 sm:max-w-md md:max-w-lg lg:max-w-2xl w-full">
-            <div class="modal-header border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex justify-between items-center">
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Adicionar Nova Meta ao PEI</h3>
-                <button type="button" class="modal-close-btn text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl leading-none" data-close-modal="addGoalModal">&times;</button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-xl font-semibold">Adicionar Nova Meta ao PEI</h3>
+                <button type="button" class="modal-close-btn" data-close-modal="addGoalModal">&times;</button>
             </div>
-            <form id="formAddGoal" method="POST" action="{{ url_for('peis.add_goal', paciente_doc_id=paciente.id) }}" class="space-y-4">
-                <input type="hidden" name="pei_id" id="goal_pei_id">
-                <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
-                <div class="modal-body overflow-y-auto max-h-[60vh] pr-2">
-                    <div class="form-group">
-                        <label for="goal_descricao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição da Meta</label>
-                        <input type="text" id="goal_descricao" name="descricao" required placeholder="Ex: Desenvolver a coordenação olho-mão"
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                    </div>
-                    <div class="form-group">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alvos da Meta</label>
-                        <div id="targets-input-container" class="space-y-3">
-                            <div class="target-input-item flex items-center space-x-2">
-                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                       class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                                <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
+            <form id="formAddGoal" method="POST" action="{{ url_for('peis.add_goal', paciente_doc_id=paciente.id) }}">
+                <div class="modal-body">
+                    <input type="hidden" name="pei_id" id="goal_pei_id">
+                    <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+                    <div class="space-y-4">
+                        <div class="form-group">
+                            <label for="goal_descricao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição da Meta</label>
+                            <input type="text" id="goal_descricao" name="descricao" required placeholder="Ex: Desenvolver a coordenação olho-mão"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                         </div>
-                        <button type="button" class="btn btn-secondary btn-sm add-target-button-modal mt-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600">
-                            <i class="fas fa-plus mr-2"></i> Adicionar Outro Alvo
-                        </button>
+                        <div class="form-group">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alvos da Meta</label>
+                            <div id="targets-input-container" class="space-y-3">
+                                <div class="target-input-item flex items-center space-x-2">
+                                    <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
+                                           class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                    <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm add-target-button-modal mt-3">
+                                <i class="fas fa-plus mr-2"></i> Adicionar Outro Alvo
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                    <button type="button" class="btn btn-secondary inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600" data-close-modal="addGoalModal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition duration-150 ease-in-out">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close-modal="addGoalModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save mr-2"></i> Adicionar Meta
                     </button>
                 </div>
@@ -1243,7 +1262,7 @@
 
     <!-- Confirmation Modal for Deletion (Modal de Confirmação para Exclusão) -->
     <div id="confirm-delete-modal" class="modal-overlay">
-        <div class="modal-content confirm-modal-content">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
                 <h3 id="confirm-modal-title">Confirmar Exclusão</h3>
                 <button type="button" class="modal-close-btn" data-close-modal="confirm-delete-modal">&times;</button>
@@ -1251,9 +1270,9 @@
             <div class="modal-body">
                 <p id="confirm-delete-message">Tem certeza que deseja apagar este item? Esta ação não pode ser desfeita.</p>
             </div>
-            <div class="modal-footer confirm-actions">
+            <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-close-modal="confirm-delete-modal">Cancelar</button>
-                <button type="button" class="btn btn-danger-outline" id="confirmDeleteBtn">Apagar</button>
+                <button type="button" class="btn" id="confirmDeleteBtn">Apagar</button>
             </div>
         </div>
     </div>
@@ -1312,25 +1331,29 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
         import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 
-        // Configuração do Firebase. ATENÇÃO: Substitua pelos dados do seu projeto Firebase.
-        const firebaseConfig = {
-            apiKey: "SUA_API_KEY", // Make sure this is replaced with a valid API key
-            authDomain: "SEU_AUTH_DOMAIN",
-            projectId: "SEU_PROJECT_ID",
-            storageBucket: "SEU_STORAGE_BUCKET",
-            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-            appId: "SEU_APP_ID"
-        };
+        // Configuração do Firebase virá do backend
+        const firebaseConfig = {{ firebase_config | default(none) | tojson | safe }};
 
         let app;
         let auth;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            console.log('Firebase app initialized successfully.');
-        } catch (error) {
-            console.error('Error initializing Firebase app:', error);
-            displayFlashMessage('danger', 'Erro ao inicializar o Firebase. Verifique sua configuração no código e se a chave de API é válida.');
+        if (firebaseConfig && firebaseConfig.apiKey) {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                console.log('Firebase app initialized successfully.');
+            } catch (error) {
+                console.error('Error initializing Firebase app:', error);
+                displayFlashMessage('danger', 'Erro ao inicializar o Firebase. Verifique sua configuração no backend.');
+            }
+        } else {
+            console.warn('Firebase config is missing or using placeholder values. Firebase features will be disabled.');
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    displayFlashMessage('warning', 'Configuração do Firebase não encontrada. Funcionalidades de autenticação podem não funcionar.');
+                });
+            } else {
+                displayFlashMessage('warning', 'Configuração do Firebase não encontrada. Funcionalidades de autenticação podem não funcionar.');
+            }
         }
 
 
@@ -1466,7 +1489,7 @@
                 }
 
                 // 3. Lógica de Logout
-                if (logoutButton) {
+                if (logoutButton && auth) {
                     logoutButton.addEventListener('click', (e) => {
                         e.preventDefault();
                         firebaseSignOut(auth).then(() => {
@@ -1619,7 +1642,7 @@
                     }
 
                     // Botão Remover Alvo (dentro do modal de adicionar meta)
-                    if (target.matches('.btn-remove-target')) {
+                    if (target.closest('.btn-remove-target')) {
                         // Apenas admins podem remover alvos
                         if (!IS_ADMIN) {
                             displayFlashMessage('danger', 'Você não tem permissão para remover alvos de metas.');
@@ -2184,7 +2207,7 @@
                         peiModalActivityLog.innerHTML = `<div class="empty-state-small">
                             <i class="fas fa-clipboard-list text-2xl mb-2"></i>
                             <p class="text-sm">Nenhuma atividade registrada para este PEI.</p>
-                           </div>`;
+                            </div>`;
                     }
 
                     // Adiciona campo de entrada de atividade
@@ -2236,12 +2259,6 @@
                     let targetsHtml = '';
                     if (goal.targets && goal.targets.length > 0) {
                         goal.targets.forEach(target => {
-                            // Determine a classe de cor para o status geral do alvo
-                            let targetStatusClass = '';
-                            if (target.status === 'pendente') targetStatusClass = 'pendente';
-                            else if (target.status === 'andamento') targetStatusClass = 'andamento';
-                            else if (target.status === 'finalizada') targetStatusClass = 'finalizada';
-
                             let aidsListHtml = '';
                             if (target.aids && target.aids.length > 0) {
                                 aidsListHtml += '<ul class="aids-list">';
@@ -2278,9 +2295,7 @@
                                     <div class="target-details-expanded">
                                         <div class="form-group">
                                             <label for="target-status-${target.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status do Alvo</label>
-                                            <select id="target-status-${target.id}" class="target-status-select w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out
-                                                ${targetStatusClass}
-                                                " ${goalActionsDisabled}>
+                                            <select id="target-status-${target.id}" class="target-status-select w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out" ${goalActionsDisabled}>
                                                 <option value="pendente" ${target.status === 'pendente' ? 'selected' : ''}>Pendente</option>
                                                 <option value="andamento" ${target.status === 'andamento' ? 'selected' : ''}>Em Andamento</option>
                                                 <option value="finalizada" ${target.status === 'finalizada' ? 'selected' : ''}>Finalizada</option>
