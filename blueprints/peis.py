@@ -353,9 +353,12 @@ def ver_peis_paciente(paciente_doc_id):
         for pei_doc in peis_query.stream():
             pei = convert_doc_to_dict(pei_doc)
             if 'data_criacao' in pei and isinstance(pei['data_criacao'], datetime.datetime):
+                pei['data_criacao_iso'] = pei['data_criacao'].isoformat() # Adiciona data em ISO para ordenação no JS
                 pei['data_criacao'] = pei['data_criacao'].strftime('%d/%m/%Y %H:%M')
             else:
                 pei['data_criacao'] = pei.get('data_criacao', 'N/A')
+                pei['data_criacao_iso'] = None
+
 
             pei['profissionais_nomes_associados_fmt'] = ", ".join(pei.get('profissionais_nomes_associados', ['N/A']))
 
@@ -443,7 +446,7 @@ def add_pei(paciente_doc_id):
         print(f"Erro add_pei: {e}")
     return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
 
-@peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/delete', methods=['POST'], endpoint='delete_pei')
+@peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/delete_pei', methods=['POST'], endpoint='delete_pei')
 @login_required
 @admin_required
 def delete_pei(paciente_doc_id):
@@ -871,4 +874,3 @@ def update_target_and_aid_data(paciente_doc_id):
     except Exception as e:
         print(f"Erro ao atualizar tentativas/status do alvo: {e}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
-

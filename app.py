@@ -442,7 +442,7 @@ register_appointments_routes(app)
 register_medical_records_routes(app)
 register_estoque_routes(app)
 register_contas_a_pagar_routes(app)
-app.register_blueprint(peis_bp) # NOVO: Registrar o blueprint de PEIs
+app.register_blueprint(peis_bp) 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True) 

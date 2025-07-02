@@ -375,22 +375,23 @@
         }
 
         /* --- Estilos Específicos do PEI --- */
-        .pei-container {
+        .pei-section {
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 1.5rem;
         }
-        .pei-section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-        .pei-section-header h3 {
-            font-size: 1.75rem;
-            color: var(--text);
-            margin: 0;
+        .pei-section h3 {
+            font-size: 1.5rem;
             font-weight: 700;
+            color: var(--text);
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+        .pei-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
         }
 
         /* New: PEI Summary Card */
@@ -1066,56 +1067,21 @@
                 {% endmacro %}
 
 
-                <section class="pei-section">
-                    <div class="pei-container">
-                        <h4>PEIs Ativos:</h4>
-                        <div id="active-peis-list" class="pei-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div class="pei-container space-y-8">
+                    <section class="pei-section">
+                        <h3>PEIs Ativos</h3>
+                        <div id="active-peis-list" class="pei-list">
                             {# PEIs ativos serão renderizados aqui via JavaScript ou Jinja2 #}
-                            {% if peis %}
-                                {% set active_peis = peis | selectattr('status', 'equalto', 'ativo') | list %}
-                                {% if active_peis %}
-                                    {% for pei_item in active_peis %}
-                                        {% if pei_item %}
-                                            {{ render_pei_summary_card(pei_item) }}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state">
-                                        <i class="fas fa-child-reaching"></i>
-                                        <p>Nenhum PEI ativo para este paciente.</p>
-                                    </div>
-                                {% endif %}
-                            {% else %}
-                                <div class="empty-state">
-                                    <i class="fas fa-child-reaching"></i>
-                                    <p>Nenhum PEI para este paciente.</p>
-                                </div>
-                            {% endif %}
                         </div>
-
-                        <h4>PEIs Finalizados:</h4>
-                        <div id="finalized-peis-list" class="pei-list grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    </section>
+                
+                    <section class="pei-section">
+                        <h3>PEIs Finalizados</h3>
+                        <div id="finalized-peis-list" class="pei-list">
                             {# PEIs finalizados serão renderizados aqui via JavaScript ou Jinja2 #}
-                            {% if peis %}
-                                {% set finalized_peis = peis | selectattr('status', 'equalto', 'finalizado') | list %}
-                                {% if finalized_peis %}
-                                    {% for pei_item in finalized_peis %}
-                                        {% if pei_item %}
-                                            {{ render_pei_summary_card(pei_item) }}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="empty-state">
-                                        <i class="fas fa-check-circle"></i>
-                                        <p>Nenhum PEI finalizado para este paciente.</p>
-                                    </div>
-                                {% endif %}
-                            {% else %}
-                                <!-- Already covered by the first empty-state if no PEIs. -->
-                            {% endif %}
                         </div>
-                    </div>
-                </section>
+                    </section>
+                </div>
             </main>
         </div>
     </div>
@@ -1175,7 +1141,7 @@
                 <h3 class="text-xl font-semibold">Adicionar Nova Meta ao PEI</h3>
                 <button type="button" class="modal-close-btn" data-close-modal="addGoalModal">&times;</button>
             </div>
-            <form id="formAddGoal" method="POST" action="{{ url_for('peis.add_goal', paciente_doc_id=paciente.id) }}">
+            <form id="formAddGoal" method="POST" action="{{ url_for('peis.add_goal', paciente_doc_id=paciente_doc_id) }}">
                 <div class="modal-body">
                     <input type="hidden" name="pei_id" id="goal_pei_id">
                     <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
@@ -1359,6 +1325,7 @@
 
         // Variáveis globais para dados, vindos do Jinja2
         let allPeisData = {{ peis | tojson | safe }} || []; // Garante que seja um array, mesmo que vazio
+        let currentlyOpenPeiId = null; // **NOVO**: Rastreia o PEI aberto no modal
 
         // Passa as variáveis de role do Python para o JavaScript
         const IS_ADMIN = {{ is_admin | tojson }};
@@ -1521,7 +1488,12 @@
                 // Função genérica para fechar modais pelo ID
                 function closeModalById(modalId) {
                     const modal = document.getElementById(modalId);
-                    if (modal) modal.classList.remove('active');
+                    if (modal) {
+                        modal.classList.remove('active');
+                        if (modalId === 'pei-details-modal') {
+                            currentlyOpenPeiId = null; // **NOVO**: Limpa o ID do PEI aberto
+                        }
+                    }
                 }
 
                 // Função para abrir o modal de confirmação genérico
@@ -1802,24 +1774,23 @@
                         } else if (aidDecrementBtn) {
                             currentAttempts = Math.max(0, currentAttempts - 1); // Não permite tentativas negativas
                         }
-                        attemptsSpan.textContent = currentAttempts; // Atualiza visualmente
-
-                        console.log(`Updating aid attempts: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, Aid=${aidId}, Attempts=${currentAttempts}`);
-                        // Adicione este log para ver a URL sendo chamada
-                        console.log('URL para update_target_and_aid_data:', `/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`);
+                        
                         // Envia a atualização para o backend, incluindo o aid_id
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, currentAttempts, null);
                         return;
                     }
-
-                    // NOVO: Manipular mudança de status do alvo (dropdown)
-                    const targetStatusSelect = target.closest('.target-status-select');
-                    if (targetStatusSelect) {
-                        const targetItem = targetStatusSelect.closest('.target-item');
+                });
+                
+                // **NOVO**: Event listener separado para 'change' em vez de 'click'
+                document.body.addEventListener('change', async function(e) {
+                    const target = e.target;
+                    // Manipular mudança de status do alvo (dropdown)
+                    if (target.matches('.target-status-select')) {
+                        const targetItem = target.closest('.target-item');
                         const peiId = targetItem.dataset.peiId;
                         const goalId = targetItem.dataset.goalId;
                         const targetId = targetItem.dataset.targetId;
-                        const newStatus = targetStatusSelect.value;
+                        const newStatus = target.value;
 
                         const currentPei = allPeisData.find(p => p.id === peiId);
                         const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
@@ -1829,13 +1800,11 @@
                             // Reverte a seleção visualmente
                             const originalTarget = currentPei?.goals.find(g => g.id === goalId)?.targets.find(t => t.id === targetId);
                             if (originalTarget) {
-                                targetStatusSelect.value = originalTarget.status || 'pendente';
+                                target.value = originalTarget.status || 'pendente';
                             }
                             return;
                         }
-                        console.log(`Updating target status: PEI=${peiId}, Goal=${goalId}, Target=${targetId}, New Status=${newStatus}`);
-                        // Adicione este log para ver a URL sendo chamada
-                        console.log('URL para update_target_and_aid_data:', `/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`);
+                        
                         // Envia apenas o novo status do alvo
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, null, newStatus);
                         return;
@@ -1858,9 +1827,17 @@
                             const data = await response.json();
                             if (response.ok && data.success) {
                                 allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
-                                renderPeis(allPeisData); // Re-renderiza os PEIs para mostrar o novo alvo
                                 displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
-                                closeModalById('addGoalModal'); // Fecha o modal de adicionar meta
+                                
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                renderPeis(allPeisData);
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    openPeiDetailsModal(updatedPeiData);
+                                } else {
+                                    closeModalById('pei-details-modal');
+                                }
+
                             } else {
                                 displayFlashMessage('danger', `Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
                             }
@@ -1881,7 +1858,7 @@
                 async function addPeiActivity(peiId, activityContent) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_pei_activity`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_activity`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, content: activityContent })
@@ -1891,12 +1868,14 @@
                             const data = await response.json();
                             if (response.ok && data.success) {
                                 allPeisData = data.peis; // Atualiza os dados locais
-                                // Re-renderiza o modal de detalhes do PEI para exibir a nova atividade
-                                const currentPei = allPeisData.find(p => p.id === peiId);
-                                if (currentPei) {
-                                    openPeiDetailsModal(currentPei);
-                                }
                                 displayFlashMessage('success', data.message);
+                                
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    openPeiDetailsModal(updatedPeiData);
+                                }
+
                             } else {
                                 displayFlashMessage('danger', `Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
                             }
@@ -1945,11 +1924,31 @@
                                 if (data.peis) {
                                     allPeisData = data.peis;
                                 }
-                                // Re-renderiza o modal de detalhes do PEI para refletir a mudança
-                                const currentPei = allPeisData.find(p => p.id === peiId);
-                                if (currentPei) {
-                                    openPeiDetailsModal(currentPei);
+                                
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                renderPeis(allPeisData); // Atualiza os cards da página principal
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    // Salva o estado de expansão antes de recarregar
+                                    const expandedTargetIds = new Set();
+                                    document.querySelectorAll(`#pei-details-modal .target-item.expanded`).forEach(item => {
+                                        expandedTargetIds.add(item.dataset.targetId);
+                                    });
+                                    
+                                    openPeiDetailsModal(updatedPeiData);
+
+                                    // Restaura o estado de expansão
+                                    if (expandedTargetIds.size > 0) {
+                                        expandedTargetIds.forEach(id => {
+                                            const targetItem = document.querySelector(`#pei-details-modal .target-item[data-target-id="${id}"]`);
+                                            if (targetItem) {
+                                                targetItem.classList.add('expanded');
+                                                targetItem.dataset.targetExpanded = 'true';
+                                            }
+                                        });
+                                    }
                                 }
+
                             } else {
                                 displayFlashMessage('danger', `Erro ao atualizar alvo: ${data.message || 'Erro desconhecido.'}`);
                             }
@@ -1986,10 +1985,12 @@
                                 if (data.peis) {
                                     allPeisData = data.peis;
                                 }
-                                // Re-renderiza o modal de detalhes do PEI para refletir a mudança
-                                const currentPei = allPeisData.find(p => p.id === peiId);
-                                if (currentPei) {
-                                    openPeiDetailsModal(currentPei);
+                                
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                renderPeis(allPeisData);
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    openPeiDetailsModal(updatedPeiData);
                                 }
                             } else {
                                 console.error('Falha ao finalizar meta:', data.message || 'Erro desconhecido');
@@ -2049,7 +2050,6 @@
                 // --- Função auxiliar para renderizar PEIs (após uma atualização do Flask) ---
                 // Esta função reconstrói os cartões de PEI na interface para refletir as últimas mudanças
                 function renderPeis(peis) {
-                    console.log('Renderizando PEIs com dados:', peis);
                     const activePeisList = document.getElementById('active-peis-list');
                     const finalizedPeisList = document.getElementById('finalized-peis-list');
 
@@ -2058,68 +2058,19 @@
 
                     const filteredPeis = peis.filter(pei => {
                         if (IS_PROFESSIONAL && !IS_ADMIN) {
-                            // Um profissional só vê PEIs se ele for um dos profissionais_ids associados
                             const shouldShow = pei.profissionais_ids && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
                             return shouldShow;
                         }
-                        return true; // Admins veem todos
+                        return true;
                     });
 
-                    // Ordena os PEIs por data_criacao (mais recente primeiro)
-                    const sortedPeis = [...filteredPeis].sort((a, b) => {
-                        const parseDateString = (dateStr) => {
-                            if (!dateStr || typeof dateStr !== 'string') return new Date(0);
-                            const parts = dateStr.split('/');
-                            if (parts.length === 3) {
-                                return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                            }
-                            return new Date(dateStr);
-                        };
-
-                        const dateA = parseDateString(a.data_criacao);
-                        const dateB = parseDateString(b.data_criacao);
-                        return dateB.getTime() - dateA.getTime();
-                    });
+                    const sortedPeis = [...filteredPeis].sort((a, b) => new Date(b.data_criacao_iso) - new Date(a.data_criacao_iso));
 
                     let hasActivePeis = false;
                     let hasFinalizedPeis = false;
 
                     sortedPeis.forEach(pei => {
-                        const isPeiFinalized = pei.status === 'finalizado';
-                        const peiCardClasses = `pei-summary-card ${isPeiFinalized ? 'finalizado' : ''}`;
-
-                        const activeGoalsCount = pei.goals.filter(goal => goal.status === 'ativo').length;
-                        let activeGoalsHtml = '<ul>';
-                        if (activeGoalsCount > 0) {
-                            pei.goals.filter(goal => goal.status === 'ativo').slice(0, 3).forEach(goal => {
-                                activeGoalsHtml += `<li><i class="fas fa-bullseye"></i> ${goal.descricao}</li>`;
-                            });
-                            if (activeGoalsCount > 3) {
-                                activeGoalsHtml += `<li>...e ${activeGoalsCount - 3} mais.</li>`;
-                            }
-                        } else {
-                            activeGoalsHtml += `<li>Nenhuma meta ativa.</li>`;
-                        }
-                        activeGoalsHtml += '</ul>';
-
-
-                        const peiHtml = `
-                        <div class="${peiCardClasses}" data-pei-id="${pei.id}">
-                            <div class="pei-summary-card-header">
-                                <h4>PEI: ${pei.titulo}</h4>
-                                <div class="pei-summary-card-meta">
-                                    <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
-                                    <span><i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}</span>
-                                    <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
-                                </div>
-                            </div>
-                            <div class="pei-summary-card-content">
-                                <strong>Metas Ativas:</strong>
-                                ${activeGoalsHtml}
-                            </div>
-                        </div>
-                        `;
-                        // Adiciona o PEI à lista de ativos ou finalizados
+                        const peiHtml = renderPeiSummaryCardHtml(pei);
                         if (pei.status === 'ativo') {
                             activePeisList.insertAdjacentHTML('beforeend', peiHtml);
                             hasActivePeis = true;
@@ -2129,20 +2080,52 @@
                         }
                     });
 
-                    // Atualiza os estados vazios se necessário
-                    if (!hasActivePeis && filteredPeis.length > 0) {
-                         activePeisList.innerHTML = '<div class="empty-state"><i class="fas fa-child-reaching"></i><p>Nenhum PEI ativo para este paciente.</p></div>';
-                    } else if (filteredPeis.length === 0 && IS_PROFESSIONAL && !IS_ADMIN) {
-                         activePeisList.innerHTML = '<div class="empty-state"><i class="fas fa-child-reaching"></i><p>Nenhum PEI associado a você para este paciente.</p></div>';
+                    if (!hasActivePeis) {
+                        activePeisList.innerHTML = `<div class="col-span-full text-center p-8 text-gray-500"><i class="fas fa-folder-open fa-2x mb-2"></i><p>Nenhum PEI ativo para este paciente.</p></div>`;
                     }
-
-                    if (!hasFinalizedPeis && filteredPeis.length > 0) {
-                         finalizedPeisList.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i><p>Nenhum PEI finalizado para este paciente.</p></div>';
+                    if (!hasFinalizedPeis) {
+                        finalizedPeisList.innerHTML = `<div class="col-span-full text-center p-8 text-gray-500"><i class="fas fa-check-double fa-2x mb-2"></i><p>Nenhum PEI finalizado para este paciente.</p></div>`;
                     }
                 }
+                
+                function renderPeiSummaryCardHtml(pei) {
+                    const activeGoals = pei.goals ? pei.goals.filter(goal => goal.status === 'ativo') : [];
+                    const activeGoalsCount = activeGoals.length;
+                    let activeGoalsHtml = '<ul>';
+                    if (activeGoalsCount > 0) {
+                        activeGoals.slice(0, 3).forEach(goal => {
+                            activeGoalsHtml += `<li><i class="fas fa-bullseye text-teal-500 mr-2"></i> ${goal.descricao}</li>`;
+                        });
+                        if (activeGoalsCount > 3) {
+                            activeGoalsHtml += `<li class="text-sm text-gray-500 mt-1">...e mais ${activeGoalsCount - 3}.</li>`;
+                        }
+                    } else {
+                        activeGoalsHtml += `<li class="text-sm text-gray-400">Nenhuma meta ativa.</li>`;
+                    }
+                    activeGoalsHtml += '</ul>';
+
+                    return `
+                    <div class="pei-summary-card ${pei.status === 'finalizado' ? 'finalizado' : ''}" data-pei-id="${pei.id}">
+                        <div class="pei-summary-card-header">
+                            <h4>PEI: ${pei.titulo}</h4>
+                            <div class="pei-summary-card-meta">
+                                <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
+                                <span><i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}</span>
+                                <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
+                            </div>
+                        </div>
+                        <div class="pei-summary-card-content">
+                            <strong>Metas Ativas:</strong>
+                            ${activeGoalsHtml}
+                        </div>
+                    </div>`;
+                }
+
 
                 // NOVO: Função para abrir e popular o modal de detalhes do PEI
                 function openPeiDetailsModal(pei) {
+                    currentlyOpenPeiId = pei.id; // **NOVO**: Define o ID do PEI aberto
+
                     const modal = document.getElementById('pei-details-modal');
                     const peiModalTitle = document.getElementById('pei-modal-title');
                     const peiModalCreatedDate = document.getElementById('pei-modal-created-date');
