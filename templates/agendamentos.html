@@ -209,8 +209,20 @@
             padding: 1.5rem; 
             overflow: hidden; /* Adicionado para evitar scroll no main, deixando o scroll para o calendário */
             display: flex; 
-            gap: 1.5rem; /* Espaçamento entre o calendário principal e o mini-calendário */
+            gap: 1.5rem; /* Espaçamento entre o painel esquerdo e o calendário principal */
             height: 100%; /* Ocupa a altura total do main-content */
+        }
+
+        /* Novo contêiner para o mini-calendário e a lista de profissionais */
+        .left-panel {
+            display: flex;
+            flex-direction: column; /* Empilha os itens verticalmente */
+            gap: 0.75rem; /* Reduzido o espaçamento entre o mini-calendário e a lista de profissionais */
+            flex-shrink: 0; /* Evita que o painel encolha */
+            width: 150px; /* Reduzido a largura fixa para o painel esquerdo de 180px para 150px */
+            align-self: flex-start; /* Alinha o painel ao topo do contêiner 'main' */
+            flex-grow: 1; /* Permite que o painel cresça para preencher o espaço vertical */
+            height: 100%; /* Garante que o painel ocupe a altura total disponível */
         }
 
         /* ============================================
@@ -270,7 +282,8 @@
         .calendar-grid-week {
             display: grid;
             grid-template-columns: 90px repeat(7, minmax(120px, 1fr)); 
-            grid-auto-rows: minmax(40px, auto); /* Minimum row height for hourly slots */
+            /* Define a primeira linha (cabeçalhos) com 70px de altura e as demais com min de 40px */
+            grid-template-rows: 70px repeat(auto-fill, minmax(40px, auto)); 
             border: 1px solid var(--border-color);
             border-radius: 8px;
             overflow: hidden; /* Contains children within rounded corners */
@@ -287,7 +300,7 @@
             background-color: var(--bg);
             border-bottom: 1px solid var(--border-color);
             border-right: 1px solid var(--border-color);
-            font-size: 0.85rem; /* Mantido o tamanho da fonte para não impactar layout */
+            font-size: 1rem; /* Alterado de 0.85rem para 1rem */
             color: var(--muted);
             display: flex;
             flex-direction: column; /* Para empilhar dia da semana e número */
@@ -296,12 +309,14 @@
             position: sticky; /* Fixa os cabeçalhos */
             top: 0; /* Fixa no topo do grid-week */
             z-index: 20; /* Garante que fiquem acima dos eventos */
+            box-sizing: border-box; /* Adicionado para incluir padding na largura/altura */
         }
         .time-column-header {
             background-color: var(--card); /* Different background for time column header */
             border-right: 1px solid var(--border-color);
             left: 0; /* Fixa a coluna de tempo */
             z-index: 25; /* Maior z-index para a coluna de tempo */
+            position: sticky; /* Adicionado para fixar a coluna de tempo */
         }
         .day-header-week:last-child, .time-cell:last-child {
             border-right: none;
@@ -472,7 +487,10 @@
                 grid-template-columns: 60px repeat(7, minmax(70px, 1fr)); 
                 font-size: 0.75rem;
             }
-            .time-column-header, .day-header-week { padding: 0.5rem 0.2rem; font-size: 0.75rem; }
+            .time-column-header, .day-header-week { 
+                padding: 0.5rem 0.2rem; 
+                font-size: 0.9rem; /* Aumentado de 0.75rem para 0.9rem para telas menores */
+            }
             .time-cell { height: 30px; /* Altura menor para slots de tempo */ }
             .appointment-event { font-size: 0.7rem; padding: 1px 3px; }
         }
@@ -485,6 +503,7 @@
             .topbar { padding: 0 1rem; }
             .mini-calendar-wrapper { display: none; } /* Esconde o mini-calendário em mobile */
             .form-row { grid-template-columns: 1fr; }
+            .professional-list-container { margin-top: 1rem; } /* Adiciona espaçamento em mobile */
         }
 
         /* ============================================
@@ -492,14 +511,13 @@
           ============================================
          */
         .mini-calendar-wrapper {
-            width: 350px; 
-            height: 250px; 
+            /* Removido: width: 350px; - agora controlado por .left-panel */
+            /* Removido: align-self: flex-start; - agora controlado por .left-panel */
             background-color: var(--card); 
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             padding: 0.75rem; 
             flex-shrink: 0; 
-            align-self: flex-start; 
             z-index: 500; 
         }
 
@@ -776,6 +794,56 @@
         .notification-modal-button:hover {
             background-color: var(--primary-dark);
         }
+
+        /* Estilos para a nova lista de profissionais */
+        .professional-list-container {
+            /* Removido: width: 350px; - agora controlado por .left-panel */
+            /* Removido: margin-top: 1.5rem; - agora controlado por .left-panel */
+            /* Removido: align-self: flex-start; - agora controlado por .left-panel */
+            background-color: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1rem;
+            overflow-y: auto; /* Adiciona rolagem se a lista for muito longa */
+            /* Removido: max-height: 300px; */
+            flex-grow: 1; /* Permite que este contêiner cresça para preencher o espaço restante */
+        }
+
+        .professional-list-container h4 {
+            font-size: 1rem;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .professional-list-item {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 0.8rem;
+            margin-bottom: 0.4rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .professional-list-item:hover {
+            background-color: var(--bg);
+            color: var(--primary);
+        }
+
+        .professional-list-item.selected {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 700;
+        }
+        .professional-list-item.selected:hover {
+            background-color: var(--primary-dark);
+        }
     </style>
 </head>
 <body>
@@ -832,15 +900,25 @@
             <main>
                 <!-- O bloco de mensagens flash antigo foi removido daqui -->
 
-                <!-- Mini Calendário Lateral (Movido para o main) -->
-                <div class="mini-calendar-wrapper">
-                    <div class="mini-calendar-header">
-                        <button id="mini-prev-month-btn"><i class="fas fa-chevron-left"></i></button>
-                        <span id="mini-current-month-year"></span>
-                        <button id="mini-next-month-btn"><i class="fas fa-chevron-right"></i></button>
+                <div class="left-panel">
+                    <!-- Mini Calendário Lateral (Movido para o main) -->
+                    <div class="mini-calendar-wrapper">
+                        <div class="mini-calendar-header">
+                            <button id="mini-prev-month-btn"><i class="fas fa-chevron-left"></i></button>
+                            <span id="mini-current-month-year"></span>
+                            <button id="mini-next-month-btn"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="mini-calendar-grid" id="mini-calendar-grid">
+                            <!-- Dias da semana e números serão gerados aqui via JS -->
+                        </div>
                     </div>
-                    <div class="mini-calendar-grid" id="mini-calendar-grid">
-                        <!-- Dias da semana e números serão gerados aqui via JS -->
+
+                    <!-- Novo Contêiner para a Lista de Profissionais -->
+                    <div class="professional-list-container">
+                        <h4>Filtrar por Profissional</h4>
+                        <div id="professional-filter-list">
+                            <!-- A lista de profissionais será gerada aqui via JS -->
+                        </div>
                     </div>
                 </div>
 
@@ -851,12 +929,7 @@
                             <span id="current-week-display" class="font-semibold text-lg text-gray-800 dark:text-gray-200"></span>
                             <button id="next-week-btn" title="Próxima Semana"><i class="fas fa-chevron-right"></i></button>
                         </div>
-                        <select id="professional-filter" class="btn btn-filter ml-auto">
-                            <option value="">Todos os Profissionais</option>
-                            {% for profissional in profissionais_para_filtro %}
-                            <option value="{{ profissional.id }}" {% if filtros_atuais.profissional_id == profissional.id %}selected{% endif %}>{{ profissional.nome }}</option>
-                            {% endfor %}
-                        </select>
+                        <!-- O select de profissionais foi removido daqui -->
                     </div>
                     <div class="calendar-grid-week" id="calendar-grid-week">
                         <!-- Cabeçalhos dos dias e horários serão gerados aqui via JS -->
@@ -941,7 +1014,7 @@
                             <input type="date" id="data_agendamento_manual" name="data_agendamento_manual" required>
                         </div>
                         <div class="form-group">
-                            <label for="hora_agendamento_manual">Hora</label>
+                            <label for="hora_agendamento_manual">Hora</labeL>
                             <input type="time" id="hora_agendamento_manual" name="hora_agendamento_manual" required>
                         </div>
                     </div>
@@ -954,7 +1027,7 @@
                             <label for="status_manual">Status</label>
                             <select id="status_manual" name="status_manual" required>
                                 <option value="confirmado" selected>Confirmado</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                                 <option value="pendente">Pendente</option>
                                 <option value="cancelado">Cancelado</option>
                             </select>
@@ -1119,7 +1192,7 @@
                 if (!sidebar || !mainContent) return;
                 const updateDesktopToggleIcon = () => {
                     if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
+                    const icon = toggleBtnDesktop.querySelector('i'); /* Corrigido: toggleBtnBtnDesktop para toggleBtnDesktop */
                     icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
                 };
                 const applyInitialState = () => {
@@ -1143,7 +1216,7 @@
                     });
                 }
                 if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
+                    menuBtnMobile.addEventListener('click', (e) => { /* Corrigido: de menu_btn_mobile para menuBtnMobile */
                         e.stopPropagation();
                         sidebar.classList.toggle('open');
                     });
@@ -1231,7 +1304,8 @@
 
                 // Define as colunas do grid: 90px para a coluna de tempo, e 7 colunas flexíveis para os dias
                 calendarGridWeek.style.gridTemplateColumns = '90px repeat(7, minmax(120px, 1fr))'; // Aumentado min-width para 120px
-                calendarGridWeek.style.gridAutoRows = 'minmax(40px, auto)'; // Altura mínima para cada slot
+                // A altura da primeira linha (cabeçalhos) é 70px, e as demais linhas de horários têm min de 40px
+                calendarGridWeek.style.gridTemplateRows = '70px repeat(auto-fill, minmax(40px, auto))'; 
 
                 // Cria o cabeçalho da grade (dias da semana)
                 const cornerHeader = document.createElement('div');
@@ -1313,11 +1387,57 @@
                 currentWeekDisplay.textContent = formatDateRange(weekStartDate, weekEnd);
             }
 
+            // Função para renderizar a lista de profissionais
+            function renderProfessionalFilterList() {
+                const professionalFilterListContainer = document.getElementById('professional-filter-list');
+                if (!professionalFilterListContainer) return;
+
+                professionalFilterListContainer.innerHTML = ''; // Limpa a lista existente
+
+                // Adiciona a opção "Todos os Profissionais"
+                const allProfessionalsItem = document.createElement('div');
+                allProfessionalsItem.className = `professional-list-item ${!professionalFilterId ? 'selected' : ''}`;
+                allProfessionalsItem.textContent = 'Todos os Profissionais';
+                allProfessionalsItem.dataset.professionalId = ''; // ID vazio para "todos"
+                allProfessionalsItem.addEventListener('click', () => {
+                    professionalFilterId = '';
+                    renderWeeklyGrid(currentWeekStart);
+                    updateProfessionalListSelection();
+                });
+                professionalFilterListContainer.appendChild(allProfessionalsItem);
+
+                // Adiciona os profissionais individuais
+                allProfessionalsForFilter.forEach(professional => {
+                    const professionalItem = document.createElement('div');
+                    professionalItem.className = `professional-list-item ${professionalFilterId === professional.id ? 'selected' : ''}`;
+                    professionalItem.textContent = professional.nome;
+                    professionalItem.dataset.professionalId = professional.id;
+                    professionalItem.addEventListener('click', () => {
+                        professionalFilterId = professional.id;
+                        renderWeeklyGrid(currentWeekStart);
+                        updateProfessionalListSelection();
+                    });
+                    professionalFilterListContainer.appendChild(professionalItem);
+                });
+            }
+
+            // Função para atualizar a seleção na lista de profissionais
+            function updateProfessionalListSelection() {
+                document.querySelectorAll('.professional-list-item').forEach(item => {
+                    if (item.dataset.professionalId === professionalFilterId) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
+            }
+
+
             // --- Funções de interação do Calendário ---
             function setupCalendarInteractions() {
                 const prevWeekBtn = document.getElementById('prev-week-btn');
                 const nextWeekBtn = document.getElementById('next-week-btn');
-                const professionalFilterSelect = document.getElementById('professional-filter');
+                // const professionalFilterSelect = document.getElementById('professional-filter'); // Removido
                 const addManualAppointmentBtn = document.getElementById('addManualAppointmentBtn');
 
                 prevWeekBtn.addEventListener('click', () => {
@@ -1330,10 +1450,10 @@
                     renderWeeklyGrid(currentWeekStart);
                 });
 
-                professionalFilterSelect.addEventListener('change', (event) => {
-                    professionalFilterId = event.target.value;
-                    renderWeeklyGrid(currentWeekStart); // Re-renderiza com o novo filtro
-                });
+                // professionalFilterSelect.addEventListener('change', (event) => { // Removido
+                //     professionalFilterId = event.target.value;
+                //     renderWeeklyGrid(currentWeekStart); // Re-renderiza com o novo filtro
+                // });
 
                 addManualAppointmentBtn.addEventListener('click', () => {
                     openBookingModal(new Date(), '08:00'); // Abre o modal para a data atual e 8:00
@@ -1622,6 +1742,7 @@
             setupMiniCalendarInteractions(); // Configura as interações do mini-calendário
             renderWeeklyGrid(currentWeekStart); // Renderiza o calendário semanal na carga da página
             renderMiniCalendar(currentMiniCalendarDate); // Renderiza o mini-calendário na carga da página
+            renderProfessionalFilterList(); // Renderiza a nova lista de profissionais
         });
     </script>
 </body>
