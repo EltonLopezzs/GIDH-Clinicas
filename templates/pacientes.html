@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Pacientes - {{ session.clinica_nome_display or 'Clínica On' }}</title>
-    
+
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -25,13 +25,13 @@
             --warning: #f59e0b;
             --info: #0ea5e9; /* Sky-500 */
             --border-color: #e2e8f0;
-            
+
             --dark-bg: #0f172a;
             --dark-card: #1e293b;
             --dark-text: #f1f5f9;
             --dark-muted: #94a3b8;
             --dark-border-color: #334155;
-            
+
             color-scheme: light;
         }
 
@@ -103,7 +103,7 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar.collapsed .sidebar-footer span { display: none; }
         .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
-        
+
         /* --- Main Content & Topbar --- */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
@@ -126,13 +126,13 @@
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
         .topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
         .search-form { display: flex; align-items: center; }
-        .search-input { 
-            padding: 0.5rem 0.8rem; border: 1px solid var(--border-color); border-radius: 8px 0 0 8px; 
+        .search-input {
+            padding: 0.5rem 0.8rem; border: 1px solid var(--border-color); border-radius: 8px 0 0 8px;
             font-size: 0.9rem; background-color: var(--bg); color: var(--text);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .search-input:focus { 
-            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); 
+        .search-input:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
             outline: none; z-index: 1;
         }
         .search-button {
@@ -141,9 +141,9 @@
             cursor: pointer; transition: background-color 0.2s ease;
         }
         .search-button:hover { background-color: var(--primary-dark); }
-        
+
         main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
-        
+
         /* --- Buttons --- */
         .btn {
             padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
@@ -285,7 +285,7 @@
                         <input type="text" name="search" placeholder="Buscar paciente..." class="search-input" value="{{ search_query or '' }}">
                         <button type="submit" class="search-button"><i class="fas fa-search"></i></button>
                     </form>
-                    <a href="{{ url_for('adicionar_paciente') }}" class="btn btn-primary"> 
+                    <a href="{{ url_for('adicionar_paciente') }}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Paciente</span>
                     </a>
                 </div>
@@ -311,7 +311,7 @@
                                 <th>Telefone</th>
                                 <th>E-mail</th>
                                 <th>Convênio</th>
-                                <th style="width: 220px;">Ações</th>
+                                <th style="width: 280px;">Ações</th> <!-- Aumentado o width para acomodar o novo botão -->
                             </tr>
                         </thead>
                         <tbody>
@@ -326,6 +326,9 @@
                                     <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-info">
                                         <i class="fas fa-notes-medical"></i> Prontuário
                                     </a>
+                                    <a href="{{ url_for('peis.ver_peis_paciente', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-child-reaching"></i> PEI <!-- Novo botão PEI -->
+                                    </a>
                                     <a href="{{ url_for('editar_paciente', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit"></i> Editar
                                     </a>
@@ -339,7 +342,7 @@
                         </tbody>
                     </table>
                 </div>
-                
+
                 <div class="mobile-cards-wrapper">
                     {% for paciente in pacientes %}
                     <div class="paciente-card-mobile">
@@ -363,6 +366,9 @@
                         <div class="card-actions-footer">
                            <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-info">
                                 <i class="fas fa-notes-medical"></i> Prontuário
+                            </a>
+                            <a href="{{ url_for('peis.ver_peis_paciente', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-child-reaching"></i> PEI <!-- Novo botão PEI -->
                             </a>
                             <a href="{{ url_for('editar_paciente', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-warning">
                                 <i class="fas fa-edit"></i> Editar

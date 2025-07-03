@@ -21,7 +21,9 @@ from blueprints.schedules import register_schedules_routes
 from blueprints.appointments import register_appointments_routes
 from blueprints.medical_records import register_medical_records_routes
 from blueprints.estoque import register_estoque_routes # Importar o novo blueprint
-from blueprints.contas_a_pagar import register_contas_a_pagar_routes  
+from blueprints.contas_a_pagar import register_contas_a_pagar_routes
+from blueprints.peis import peis_bp # NOVO: Importar o blueprint de PEIs
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 CORS(app)
@@ -141,7 +143,7 @@ def setup_mapeamento_admin():
                 flash(f'Erro ao associar usuário: {e}', 'danger')
                 print(f"Erro em setup_mapeamento_admin: {e}")
         return redirect(url_for('setup_mapeamento_admin'))
-    
+
     return render_template_string("""
         <!DOCTYPE html>
         <html>
@@ -214,7 +216,7 @@ def setup_mapeamento_admin():
             E-mail do Usuário (para referência): <input type="email" name="email_para_referencia" required size="40" value="{{ request.form.email_para_referencia if 'email_para_referencia' in request.form else '' }}"><br><br>
             ID da Clínica (ex: clinicaSaoJudas): <input type="text" name="clinica_id_associada" required size="40" value="{{ request.form.clinica_id_associada if 'clinica_id_associada' in request.form else '' }}"><br><br>
             Nome de Exibição da Clínica: <input type="text" name="nome_clinica_display" required size="40" value="{{ request.form.nome_clinica_display if 'nome_clinica_display' in request.form else '' }}"><br><br>
-            Função do Usuário: 
+            Função do Usuário:
             <select name="user_role" required>
                 <option value="admin" {% if request.form.user_role == 'admin' %}selected{% endif %}>Administrador</option>
                 <option value="medico" {% if request.form.user_role == 'medico' %}selected{% endif %}>Médico</option>
@@ -252,7 +254,7 @@ def index():
             user_doc = db_instance.collection('User').document(user_uid).get()
             if user_doc.exists:
                 profissional_id_logado = user_doc.to_dict().get('profissional_id')
-            
+
             if not profissional_id_logado:
                 flash("Sua conta de usuário não está corretamente associada a um perfil de profissional. Contate o administrador.", "warning")
         except Exception as e:
@@ -262,10 +264,10 @@ def index():
     agendamentos_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos')
     pacientes_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')
     current_year = datetime.datetime.now(SAO_PAULO_TZ).year
-    
+
     hoje_dt = datetime.datetime.now(SAO_PAULO_TZ)
     mes_atual_nome = hoje_dt.strftime('%B').capitalize()
-    
+
     inicio_mes_atual_dt = hoje_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     fim_mes_anterior_dt = inicio_mes_atual_dt - datetime.timedelta(seconds=1)
     inicio_mes_anterior_dt = fim_mes_anterior_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -302,7 +304,7 @@ def index():
     atendimentos_mes_atual = 0
     receita_mes_anterior = 0.0
     atendimentos_mes_anterior = 0
-    
+
     try:
         novos_pacientes_mes = pacientes_ref.where(
             filter=FieldFilter('data_cadastro', '>=', inicio_mes_atual_dt)
@@ -313,7 +315,7 @@ def index():
     for ag in agendamentos_para_analise:
         ag_timestamp = ag.get('data_agendamento_ts')
         preco = float(ag.get('servico_procedimento_preco', 0))
-        
+
         if ag_timestamp and inicio_mes_atual_dt <= ag_timestamp:
             receita_mes_atual += preco
             atendimentos_mes_atual += 1
@@ -364,7 +366,7 @@ def index():
         if ag_ts and ag_ts >= inicio_mes_atual_dt:
             nome_proc = ag.get('servico_procedimento_nome', 'Desconhecido')
             receita_por_procedimento[nome_proc] += float(ag.get('servico_procedimento_preco', 0))
-    
+
     top_5_procedimentos = receita_por_procedimento.most_common(5)
     dados_receita_procedimento = {
         "labels": [item[0] for item in top_5_procedimentos],
@@ -377,7 +379,7 @@ def index():
         if ag_ts and ag_ts >= inicio_mes_atual_dt:
             nome_prof = ag.get('profissional_nome', 'Desconhecido')
             atendimentos_por_profissional[nome_prof] += 1
-            
+
     top_5_profissionais = atendimentos_por_profissional.most_common(5)
     dados_desempenho_profissional = {
         "labels": [item[0] for item in top_5_profissionais],
@@ -391,14 +393,14 @@ def index():
         ).where(
             filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt.replace(hour=0, minute=0, second=0))
         )
-        
+
         if user_role != 'admin':
             if profissional_id_logado:
                 query_proximos = query_proximos.where(
                     filter=FieldFilter('profissional_id', '==', profissional_id_logado)
                 )
             else:
-                proximos_agendamentos_lista = []    
+                proximos_agendamentos_lista = []
 
         if user_role == 'admin' or profissional_id_logado:
             docs_proximos = query_proximos.order_by('data_agendamento_ts').limit(10).stream()
@@ -438,8 +440,9 @@ register_covenants_routes(app)
 register_schedules_routes(app)
 register_appointments_routes(app)
 register_medical_records_routes(app)
-register_estoque_routes(app)  
-register_contas_a_pagar_routes(app)  
+register_estoque_routes(app)
+register_contas_a_pagar_routes(app)
+app.register_blueprint(peis_bp) 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True) 
