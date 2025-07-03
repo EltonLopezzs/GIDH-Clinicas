@@ -551,7 +551,7 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
         }
-        .target-item.finalizada .target-text-content { /* Apply strikethrough only to the main text */
+        .target-item.concluido .target-text-content { /* Apply strikethrough only to the main text */
             text-decoration: line-through;
             color: var(--muted);
         }
@@ -564,7 +564,7 @@
             color: var(--muted);
             transition: color 0.2s ease;
         }
-        .target-item.finalizada i.status-icon.fa-check-square {
+        .target-item.concluido i.status-icon.fa-check-square {
             color: var(--success);
         }
         .target-item .target-main-content {
@@ -576,6 +576,32 @@
         }
         .target-item .target-text-content {
             flex-grow: 1;
+        }
+        .target-item .attempts-counter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: auto;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            background-color: var(--bg); /* Changed from primary-light */
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            flex-shrink: 0;
+            border: 1px solid var(--border-color); /* Added border */
+        }
+        .target-item .attempts-counter button {
+            background: none;
+            border: none;
+            color: var(--primary-dark);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: color 0.2s ease;
+        }
+        .target-item .attempts-counter button:hover {
+            color: var(--primary);
         }
         .target-item .expand-icon {
             position: absolute;
@@ -1011,7 +1037,6 @@
                 {% endif %}
 
                 <!-- MACRO for rendering a PEI summary card (MACRO para renderizar um cartão PEI resumido) -->
-                {# Este macro não é mais usado diretamente pelo Jinja2 para renderizar os PEIs, mas a função JS `renderPeiSummaryCardHtml` replica sua lógica #}
                 {% macro render_pei_summary_card(pei) %}
                 <div class="pei-summary-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" data-pei-id="{{ pei.id }}">
                     <div class="pei-summary-card-header">
@@ -1025,11 +1050,9 @@
                     <div class="pei-summary-card-content">
                         <strong>Metas Ativas:</strong>
                         <ul>
-                            {# A lógica de exibição de metas ativas será tratada no JavaScript #}
-                            {# Este bloco Jinja2 é apenas um placeholder para compatibilidade do macro, não será executado diretamente #}
                             {% set active_goals_count = pei.goals | selectattr('status', 'equalto', 'ativo') | list | length %}
                             {% if active_goals_count > 0 %}
-                                {% for goal in pei.goals | selectattr('status', 'equalto', 'ativo') | slice(3) %}
+                                {% for goal in pei.goals | selectattr('status', 'equalto', 'ativo') | slice(3) %} {# Mostra até 3 metas ativas #}
                                     <li><i class="fas fa-bullseye"></i> {{ goal.descricao }}</li>
                                 {% endfor %}
                                 {% if active_goals_count > 3 %}
@@ -1048,14 +1071,14 @@
                     <section class="pei-section">
                         <h3>PEIs Ativos</h3>
                         <div id="active-peis-list" class="pei-list">
-                            {# PEIs ativos serão renderizados aqui via JavaScript #}
+                            {# PEIs ativos serão renderizados aqui via JavaScript ou Jinja2 #}
                         </div>
                     </section>
                 
                     <section class="pei-section">
                         <h3>PEIs Finalizados</h3>
                         <div id="finalized-peis-list" class="pei-list">
-                            {# PEIs finalizados serão renderizados aqui via JavaScript #}
+                            {# PEIs finalizados serão renderizados aqui via JavaScript ou Jinja2 #}
                         </div>
                     </section>
                 </div>
@@ -1302,7 +1325,7 @@
 
         // Variáveis globais para dados, vindos do Jinja2
         let allPeisData = {{ peis | tojson | safe }} || []; // Garante que seja um array, mesmo que vazio
-        let currentlyOpenPeiId = null; // Rastreia o PEI aberto no modal
+        let currentlyOpenPeiId = null; // **NOVO**: Rastreia o PEI aberto no modal
 
         // Passa as variáveis de role do Python para o JavaScript
         const IS_ADMIN = {{ is_admin | tojson }};
@@ -1468,7 +1491,7 @@
                     if (modal) {
                         modal.classList.remove('active');
                         if (modalId === 'pei-details-modal') {
-                            currentlyOpenPeiId = null; // Limpa o ID do PEI aberto
+                            currentlyOpenPeiId = null; // **NOVO**: Limpa o ID do PEI aberto
                         }
                     }
                 }
@@ -1528,7 +1551,7 @@
                         return;
                     }
 
-                    // Abrir modal de detalhes do PEI ao clicar no cartão de resumo
+                    // NOVO: Abrir modal de detalhes do PEI ao clicar no cartão de resumo
                     const peiSummaryCard = target.closest('.pei-summary-card');
                     if (peiSummaryCard) {
                         const peiId = peiSummaryCard.dataset.peiId;
@@ -1608,7 +1631,7 @@
                         return;
                     }
 
-                    // Evento de clique no item do alvo para expandir/colapsar
+                    // NOVO: Evento de clique no item do alvo para expandir/colapsar
                     const clickedTargetMainContent = target.closest('.target-main-content');
                     if (clickedTargetMainContent) {
                         const targetItem = clickedTargetMainContent.closest('.target-item');
@@ -1723,16 +1746,16 @@
                         return;
                     }
 
-                    // Botões de tentativas (incrementar/decrementar) para UMA AJUDA ESPECÍFICA
+                    // NOVO: Botões de tentativas (incrementar/decrementar) para UMA AJUDA ESPECÍFICA
                     const aidIncrementBtn = target.closest('.btn-increment-aid-attempts');
                     const aidDecrementBtn = target.closest('.btn-decrement-aid-attempts');
                     if (aidIncrementBtn || aidDecrementBtn) {
                         const aidItem = target.closest('.aid-item');
                         const targetItem = aidItem.closest('.target-item');
 
-                        const peiId = aidItem.dataset.peiId;
-                        const goalId = aidItem.dataset.goalId;
-                        const targetId = aidItem.dataset.targetId;
+                        const peiId = targetItem.dataset.peiId;
+                        const goalId = targetItem.dataset.goalId;
+                        const targetId = targetItem.dataset.targetId;
                         const aidId = aidItem.dataset.aidId;
 
                         const attemptsSpan = aidItem.querySelector('.aid-attempts-count');
@@ -1758,7 +1781,7 @@
                     }
                 });
                 
-                // Event listener separado para 'change' em vez de 'click'
+                // **NOVO**: Event listener separado para 'change' em vez de 'click'
                 document.body.addEventListener('change', async function(e) {
                     const target = e.target;
                     // Manipular mudança de status do alvo (dropdown)
@@ -1775,16 +1798,9 @@
                         if (!canModify) {
                             displayFlashMessage('danger', 'Você não tem permissão para atualizar o status deste alvo.');
                             // Reverte a seleção visualmente
-                            // Para reverter, precisamos encontrar o PEI, a meta e o alvo nos dados locais
-                            const originalPei = allPeisData.find(p => p.id === peiId);
-                            if (originalPei) {
-                                const originalGoal = originalPei.goals.find(g => g.id === goalId);
-                                if (originalGoal) {
-                                    const originalTarget = originalGoal.targets.find(t => t.id === targetId);
-                                    if (originalTarget) {
-                                        target.value = originalTarget.status || 'pendente';
-                                    }
-                                }
+                            const originalTarget = currentPei?.goals.find(g => g.id === goalId)?.targets.find(t => t.id === targetId);
+                            if (originalTarget) {
+                                target.value = originalTarget.status || 'pendente';
                             }
                             return;
                         }
@@ -1813,7 +1829,7 @@
                                 allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
                                 displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
                                 
-                                // Mantém o modal de detalhes aberto e atualizado
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
                                 renderPeis(allPeisData);
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
                                 if (updatedPeiData) {
@@ -1854,7 +1870,7 @@
                                 allPeisData = data.peis; // Atualiza os dados locais
                                 displayFlashMessage('success', data.message);
                                 
-                                // Mantém o modal de detalhes aberto e atualizado
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
                                 if (updatedPeiData) {
                                     openPeiDetailsModal(updatedPeiData);
@@ -1876,7 +1892,7 @@
                     }
                 }
 
-                // Atualiza o contador de tentativas, o conteúdo de ajuda ou o status do alvo
+                // NOVO: Atualiza o contador de tentativas, o conteúdo de ajuda ou o status do alvo
                 async function updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, newAttemptsCount, newStatus) {
                     showLoading();
                     try {
@@ -1909,7 +1925,7 @@
                                     allPeisData = data.peis;
                                 }
                                 
-                                // Mantém o modal de detalhes aberto e atualizado
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
                                 renderPeis(allPeisData); // Atualiza os cards da página principal
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
                                 if (updatedPeiData) {
@@ -1970,7 +1986,7 @@
                                     allPeisData = data.peis;
                                 }
                                 
-                                // Mantém o modal de detalhes aberto e atualizado
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
                                 renderPeis(allPeisData);
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
                                 if (updatedPeiData) {
@@ -2106,12 +2122,12 @@
                 }
 
 
-                // Função para abrir e popular o modal de detalhes do PEI
+                // NOVO: Função para abrir e popular o modal de detalhes do PEI
                 function openPeiDetailsModal(pei) {
-                    currentlyOpenPeiId = pei.id; // Define o ID do PEI aberto
+                    currentlyOpenPeiId = pei.id; // **NOVO**: Define o ID do PEI aberto
 
                     const modal = document.getElementById('pei-details-modal');
-                    const peiModalTitle = document.getElementById('pei-details-title'); // Changed from pei-modal-title
+                    const peiModalTitle = document.getElementById('pei-modal-title');
                     const peiModalCreatedDate = document.getElementById('pei-modal-created-date');
                     const peiModalProfessionals = document.getElementById('pei-modal-professionals');
                     const peiModalStatus = document.getElementById('pei-modal-status');
@@ -2129,7 +2145,7 @@
                     peiModalActivityInputContainer.innerHTML = '';
 
                     // Preenche o cabeçalho do modal
-                    peiModalTitle.textContent = `Detalhes do PEI: ${pei.titulo}`; // Changed to include "Detalhes do PEI"
+                    peiModalTitle.textContent = `PEI: ${pei.titulo}`;
                     peiModalCreatedDate.innerHTML = `<i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}`;
                     peiModalProfessionals.innerHTML = `<i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`;
                     peiModalStatus.innerHTML = `Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span>`;
@@ -2217,7 +2233,7 @@
                     modal.classList.add('active'); // Abre o modal
                 }
 
-                // Helper para criar o HTML de um Goal Card para o modal de detalhes do PEI
+                // NOVO: Helper para criar o HTML de um Goal Card para o modal de detalhes do PEI
                 function createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized) {
                     const isGoalFinalized = goal.status === 'finalizado';
                     const goalActionsDisabled = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
@@ -2251,11 +2267,11 @@
                             }
 
                             targetsHtml += `
-                                <li class="target-item ${target.status === 'finalizada' ? 'finalizada' : ''} ${targetItemDisabledClass}"
+                                <li class="target-item ${target.concluido ? 'concluido' : ''} ${targetItemDisabledClass}"
                                     data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}"
                                     data-target-expanded="false">
                                     <div class="target-main-content target-expand-trigger">
-                                        <i class="status-icon fas ${target.status === 'finalizada' ? 'fa-check-square' : 'fa-square'}"></i>
+                                        <i class="status-icon fas ${target.concluido ? 'fa-check-square' : 'fa-square'}"></i>
                                         <span class="target-text-content">${target.descricao}</span>
                                         <i class="expand-icon fas fa-chevron-right"></i>
                                     </div>
