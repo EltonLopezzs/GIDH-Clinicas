@@ -107,7 +107,7 @@ def _finalize_pei_transaction(transaction, pei_ref):
     Args:
         transaction: Objeto de transação do Firestore.
         pei_ref: Referência do documento PEI.
-    Raises:
+        Raises:
         Exception: Se o PEI não for encontrado.
     """
     snapshot = pei_ref.get(transaction=transaction)
@@ -221,7 +221,7 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
         goal_id: ID da meta que contém o alvo.
         target_id: ID do alvo a ser atualizado.
         aid_id: Opcional. ID da ajuda específica a ser atualizada.
-        new_attempts_count: Opcional. Nova contagem de tentativas para a ajuda.
+        new_attempts_count: Opcional. O novo valor TOTAL da contagem de tentativas para a ajuda.
         new_target_status: Opcional. Novo status geral do alvo.
     Raises:
         Exception: Se o PEI, a meta, o alvo ou a ajuda não forem encontrados, ou se houver erro de tipo.
@@ -258,7 +258,8 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
                                 aid_found = True
                                 if new_attempts_count is not None:
                                     try:
-                                        aid['attempts_count'] = int(new_attempts_count)
+                                        # Define a contagem de tentativas para o novo valor fornecido
+                                        aid['attempts_count'] = max(0, int(new_attempts_count)) # Garante que não seja negativo
                                     except (ValueError, TypeError) as e:
                                         raise Exception(f"Valor inválido para tentativas: {new_attempts_count}. Erro: {e}")
                                 break
