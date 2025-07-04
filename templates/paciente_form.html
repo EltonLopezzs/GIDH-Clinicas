@@ -17,32 +17,45 @@
     <style>
         :root {
             --bg: #f1f5f9;
+            --primary: #0d9488; /* Teal-600 */
             --card: #ffffff;
             --text: #0f172a;
             --muted: #64748b;
             --accent: #0f172a;
-            --primary: #0d9488; /* Teal-600 */
-            --primary-dark: #115e59;
+            --border-color: #e2e8f0;
+            --primary-light: #0d8686;
+            --accent-light: #b1dfdc;
+            --white-on-dark: #0a0a0a;
+
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
             --success: #16a34a; /* Green-600 */
-            --border-color: #e2e8f0;
             
             --dark-bg: #0f172a;
+            --primary-dark: #115e59;
             --dark-card: #1e293b;
             --dark-text: #f1f5f9;
             --dark-muted: #94a3b8;
+            --dark-accent: #0f172a;
             --dark-border-color: #334155;
+            --primary-dark-light: #0d8686;
+            --accent-dark-light: #b1dfdc;
+            --dark-on-light: #f1f5f9;
             
             color-scheme: light;
         }
 
         [data-theme="dark"] {
             --bg: var(--dark-bg);
+            --primary: var(--primary-dark);
             --text: var(--dark-text);
             --card: var(--dark-card);
             --muted: var(--dark-muted);
+            --accent: var(--dark-accent);
             --border-color: var(--dark-border-color);
+            --primary-light: var(--primary-dark-light);
+            --accent-light: var(--accent-dark-light);
+            --white-on-dark: var(--dark-on-light);
             color-scheme: dark;
         }
 
@@ -137,83 +150,222 @@
         .flash-message.success { color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
         .flash-message.danger, .flash-message.error { color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
 
-        /* --- Form Card & Elements --- */
+        /* --- Nova Identidade Visual Paciente --- */
         .form-card {
-            background: var(--card); padding: 2rem; border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            max-width: 800px; margin: 0 auto;
-        }
-        .form-card h2.form-title {
-            text-align: center; font-size: 1.6rem; color: var(--text);
-            margin-bottom: 2rem; font-weight: 700;
-        }
-        .form-card h3.section-title {
-            font-size: 1.1rem; color: var(--primary); font-weight: 600;
-            margin-top: 2rem; margin-bottom: 1.5rem;
-            padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);
-        }
-        .form-card h3.section-title:first-of-type { margin-top: 0; }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group label {
-            display: block; font-size: 0.9rem; color: var(--muted);
-            font-weight: 500; margin-bottom: 0.5rem;
-        }
-        .form-group input, .form-group select, .form-group textarea {
-            font-size: 0.95rem; padding: 0.7rem 0.8rem; width: 100%;
-            border: 1px solid var(--border-color); border-radius: 8px;
-            background-color: var(--bg); color: var(--text);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none;
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
-        .form-actions {
-            margin-top: 2rem; display: flex; justify-content: flex-end;
-            gap: 0.75rem; flex-wrap: wrap;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: row;
+            width: 100%;
+            height: auto;
         }
         
-        .btn {
-            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
-            font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
-            gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
+        .paciente-steps {
+            display: flex;
+            flex-direction: column;
+            height: 32.5rem;
+            width: 13.75rem;
         }
-        .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: var(--primary-dark); }
-        .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
-        .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
-        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
-        [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn.loading i { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* --- Responsive --- */
-        .toggle-btn-desktop { display: none; }
-        .menu-btn-mobile { display: block; }
-
-        @media(min-width: 769px) {
-            .toggle-btn-desktop { display: grid; }
-            .menu-btn-mobile { display: none; }
+        .paciente-step {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 18px 12px;
+            height: 100%;
+            background-color: var(--card);
+            /* align-items: center; */
+            /* gap: 0.5rem; */
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 1.1rem;
+            opacity: 0.7;
+            transition: color 0.2s, opacity 0.2s;
         }
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
-            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
-            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
-            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
-            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
-            main { padding: 1rem; }
-            .form-card { padding: 1.5rem; }
-            .form-card h2.form-title { font-size: 1.4rem; }
-            .form-row { grid-template-columns: 1fr; }
+
+        .paciente-steps :first-child {
+            border-radius: 18px 0px 0px 0px;
+        }
+
+        .paciente-steps :last-child {
+            border-radius: 0px 0px 0px 18px;
+        }
+        
+        .paciente-step.active {
+            color: var(--primary);
+            opacity: 1;
+            padding-left: 24px;
+            border-right: 10px solid var(--primary-light);
+            background-color: var(--accent-light);
+        }
+
+        .paciente-step:not(.active) {
+            border-bottom: 2px solid var(--border-color);
+            border-left: 2px solid var(--border-color);
+        }
+        
+        .paciente-step:not(.active):first-child {
+            border-top: 2px solid var(--border-color);
+        }
+
+        .paciente-step i {
+            font-size: 2.2rem;
+            margin-bottom: 0.2rem;
+        }
+        .paciente-card-section {
+            background: var(--card);
+            border-radius: 0px 18px 18px 0px;
+            box-shadow: 0 4px 24px 0 rgb(0 0 0 / 0.07);
+            padding: 2.5rem 2rem 2rem 2rem;
+            height: 32.5rem;
+            width: calc(100% - 16.25rem);
+            border: 1.5px solid var(--border-color);
+            position: relative;
+        }
+        .paciente-card-section .section-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 2rem;
+        }
+        .paciente-card-section .section-title i {
+            font-size: 2rem;
+        }
+        .paciente-card-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem 2.5rem;
+        }
+        .paciente-card-fields.single {
+            grid-template-columns: 1fr;
+        }
+        .paciente-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .paciente-field label {
+            font-size: 1.05rem;
+            color: var(--muted);
+            font-weight: 600;
+            margin-bottom: 0.1rem;
+        }
+        .paciente-field input,
+        .paciente-field select,
+        .paciente-field textarea {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 1.15rem;
+            padding: 0.5rem 0.2rem 0.3rem 0.2rem;
+            color: var(--text);
+            transition: border-color 0.2s;
+            border-radius: 0;
+            outline: none;
+        }
+        .paciente-field input:focus,
+        .paciente-field select:focus,
+        .paciente-field textarea:focus {
+            border-color: var(--primary);
+            background: #f7fafc;
+        }
+        .paciente-field textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .paciente-actions {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            /* margin-top: 2.5rem; */
+        }
+        .paciente-btn:not(.cancel) {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+
+            padding: 8px 16px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 12px 0 rgb(13 148 136 / 0.10);
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .paciente-btn.cancel {
+            padding: 4px;
+            font-size: 1.2rem;
+            border-radius: 18px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            background-color: transparent;
+            color: var(--white-on-dark);
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
+        /* .paciente-btn.cancel:hover {
+            background: var(--primary);
+            color: #fff;
+        } */
+        .paciente-btn:hover {
+            background: var(--primary-dark);
+        }
+        /* .paciente-actions-sticky {
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, var(--card) 90%, rgba(255,255,255,0));
+            box-shadow: 0 -2px 16px 0 rgb(13 148 136 / 0.07);
+            padding: 1.2rem 0 0.5rem 0;
+            margin-top: 2.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            z-index: 10;
+            border-bottom-left-radius: 18px;
+            border-bottom-right-radius: 18px;
+        } */
+        @media (max-width: 900px) {
+            .paciente-card-section {
+                padding: 1.5rem 0.5rem 1.2rem 0.5rem;
+            }
+            .paciente-card-fields {
+                grid-template-columns: 1fr;
+                gap: 1.2rem;
+            }
+        }
+        @media (max-width: 600px) {
+            .paciente-steps {
+                gap: 1rem;
+            }
+            .paciente-card-section {
+                padding: 1rem 0.2rem 1rem 0.2rem;
+            }
+            .paciente-actions {
+                gap: 1rem;
+            }
+            .paciente-actions-sticky {
+                flex-direction: column;
+                gap: 0.7rem;
+                padding: 0.7rem 0 0.3rem 0;
+            }
         }
     </style>
 </head>
@@ -229,7 +381,7 @@
                 <nav>
                     <ul>
                         <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li class="active"><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
                         <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
                         <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
                         <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
@@ -240,7 +392,7 @@
                         <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
                         <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
+                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -273,111 +425,154 @@
                     {% endif %}
                 {% endwith %}
 
-                <div class="form-card">
-                    <h2 class="form-title">{{ page_title|default(('Editar' if paciente else 'Adicionar Novo') ~ ' Paciente') }}</h2>
-                    <form method="POST" action="{{ action_url|default('') }}">
-                        
-                        <h3 class="section-title">Dados Pessoais</h3>
-                        <div class="form-group">
-                            <label for="nome">Nome Completo</label>
-                            <input type="text" id="nome" name="nome" value="{{ request.form.nome if 'nome' in request.form else paciente.nome if paciente else '' }}" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="data_nascimento">Data de Nascimento</label>
-                                <input type="text" id="data_nascimento" name="data_nascimento" class="flatpickr-input" value="{{ request.form.data_nascimento if 'data_nascimento' in request.form else paciente.data_nascimento if paciente else '' }}" placeholder="DD/MM/AAAA" required>
+                <form method="POST" action="{{ action_url|default('') }}">
+                    <div class="form-card">
+                        <div class="paciente-steps">
+                            <div class="paciente-step active" data-step="1">
+                                <i class="fa-solid fa-user"></i>
+                                Dados Pessoais
                             </div>
-                            <div class="form-group">
-                                <label for="genero">Gênero</label>
-                                <select id="genero" name="genero">
-                                    <option value="">Selecione</option>
-                                    <option value="Masculino" {% if (request.form.genero == 'Masculino') or (paciente and paciente.genero == 'Masculino') %}selected{% endif %}>Masculino</option>
-                                    <option value="Feminino" {% if (request.form.genero == 'Feminino') or (paciente and paciente.genero == 'Feminino') %}selected{% endif %}>Feminino</option>
-                                    <option value="Outro" {% if (request.form.genero == 'Outro') or (paciente and paciente.genero == 'Outro') %}selected{% endif %}>Outro</option>
-                                </select>
+                            <div class="paciente-step" data-step="2">
+                                <i class="fa-solid fa-phone"></i>
+                                Contato
                             </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cpf">CPF</label>
-                                <input type="text" id="cpf" name="cpf" value="{{ request.form.cpf if 'cpf' in request.form else paciente.cpf if paciente else '' }}" placeholder="XXX.XXX.XXX-XX">
+                            <div class="paciente-step" data-step="3">
+                                <i class="fa-solid fa-location-dot"></i>
+                                Endereço
                             </div>
-                            <div class="form-group">
-                                <label for="rg">RG</label>
-                                <input type="text" id="rg" name="rg" value="{{ request.form.rg if 'rg' in request.form else paciente.rg if paciente else '' }}" placeholder="XX.XXX.XXX-X">
+                            <div class="paciente-step" data-step="4">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Outras Informações
                             </div>
                         </div>
 
-                        <h3 class="section-title">Contato</h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="telefone">Telefone (com DDD)</label>
-                                <input type="tel" id="telefone" name="telefone" value="{{ request.form.telefone if 'telefone' in request.form else paciente.contato_telefone if paciente else '' }}" placeholder="(XX) XXXXX-XXXX">
+                        <div class="paciente-card-section" data-step-content="1">
+                            <div class="section-title">
+                                <i class="fa-solid fa-user"></i>
+                                Dados Pessoais
                             </div>
-                            <div class="form-group">
-                                <label for="email">E-mail</label>
-                                <input type="email" id="email" name="email" value="{{ request.form.email if 'email' in request.form else paciente.contato_email if paciente else '' }}" placeholder="seu.email@example.com">
-                            </div>
-                        </div>
+                            <div class="paciente-card-fields">
+                                <div class="paciente-field">
+                                    <label for="nome">Nome Completo</label>
+                                    <input type="text" id="nome" name="nome" value="{{ request.form.nome if 'nome' in request.form else paciente.nome if paciente else '' }}" required>
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="data_nascimento">Data de Nascimento</label>
+                                    <input type="text" id="data_nascimento" name="data_nascimento" class="flatpickr-input" value="{{ request.form.data_nascimento if 'data_nascimento' in request.form else paciente.data_nascimento if paciente else '' }}" placeholder="DD/MM/AAAA" required>
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="genero">Gênero</label>
+                                    <select id="genero" name="genero">
+                                        <option value="">Selecione</option>
+                                        <option value="Masculino" {% if (request.form.genero == 'Masculino') or (paciente and paciente.genero == 'Masculino') %}selected{% endif %}>Masculino</option>
+                                        <option value="Feminino" {% if (request.form.genero == 'Feminino') or (paciente and paciente.genero == 'Feminino') %}selected{% endif %}>Feminino</option>
+                                        <option value="Outro" {% if (request.form.genero == 'Outro') or (paciente and paciente.genero == 'Outro') %}selected{% endif %}>Outro</option>
+                                    </select>
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="cpf">CPF</label>
+                                    <input type="text" id="cpf" name="cpf" value="{{ request.form.cpf if 'cpf' in request.form else paciente.cpf if paciente else '' }}" placeholder="XXX.XXX.XXX-XX">
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="rg">RG</label>
+                                    <input type="text" id="rg" name="rg" value="{{ request.form.rg if 'rg' in request.form else paciente.rg if paciente else '' }}" placeholder="XX.XXX.XXX-X">
+                                </div>
+                            </div> <!-- .paciente-card-fields -->
+                        </div> <!-- .paciente-card-section -->
 
-                        <h3 class="section-title">Endereço</h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cep">CEP</label>
-                                <input type="text" id="cep" name="cep" value="{{ request.form.cep if 'cep' in request.form else (paciente.endereco.cep if paciente and paciente.endereco else '') }}" placeholder="XXXXX-XXX">
+                        <div class="paciente-card-section" data-step-content="2" style="display:none;">
+                            <div class="section-title">
+                                <i class="fa-solid fa-phone"></i>
+                                Contato
                             </div>
-                             <div class="form-group">
-                                <label for="cidade">Cidade</label>
-                                <input type="text" id="cidade" name="cidade" value="{{ request.form.cidade if 'cidade' in request.form else (paciente.endereco.cidade if paciente and paciente.endereco else '') }}" required>
+                            <div class="paciente-card-fields">
+                                <div class="paciente-field">
+                                    <label for="telefone">Telefone (com DDD)</label>
+                                    <input type="tel" id="telefone" name="telefone" value="{{ request.form.telefone if 'telefone' in request.form else paciente.contato_telefone if paciente else '' }}" placeholder="(XX) XXXXX-XXXX">
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="email">E-mail</label>
+                                    <input type="email" id="email" name="email" value="{{ request.form.email if 'email' in request.form else paciente.contato_email if paciente else '' }}" placeholder="seu.email@example.com">
+                                </div>
+                            </div> <!-- .paciente-card-fields -->
+                        </div> <!-- .paciente-card-section -->
+
+                        <div class="paciente-card-section" data-step-content="3" style="display:none;">
+                            <div class="section-title">
+                                <i class="fa-solid fa-location-dot"></i>
+                                Endereço
                             </div>
-                            <div class="form-group">
-                                <label for="estado">Estado (UF)</label>
-                                <input type="text" id="estado" name="estado" value="{{ request.form.estado if 'estado' in request.form else (paciente.endereco.estado if paciente and paciente.endereco else '') }}" placeholder="SP" required>
+                            <div class="paciente-card-fields">
+                                <div class="paciente-field">
+                                    <label for="cep">CEP</label>
+                                    <input type="text" id="cep" name="cep" value="{{ request.form.cep if 'cep' in request.form else (paciente.endereco.cep if paciente and paciente.endereco else '') }}" placeholder="XXXXX-XXX">
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="cidade">Cidade</label>
+                                    <input type="text" id="cidade" name="cidade" value="{{ request.form.cidade if 'cidade' in request.form else (paciente.endereco.cidade if paciente and paciente.endereco else '') }}" required>
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="estado">Estado (UF)</label>
+                                    <input type="text" id="estado" name="estado" value="{{ request.form.estado if 'estado' in request.form else (paciente.endereco.estado if paciente and paciente.endereco else '') }}" placeholder="SP" required>
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="logradouro">Logradouro</label>
+                                    <input type="text" id="logradouro" name="logradouro" value="{{ request.form.logradouro if 'logradouro' in request.form else (paciente.endereco.logradouro if paciente and paciente.endereco else '') }}" placeholder="Rua Exemplo">
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="numero">Número</label>
+                                    <input type="text" id="numero" name="numero" value="{{ request.form.numero if 'numero' in request.form else (paciente.endereco.numero if paciente and paciente.endereco else '') }}" placeholder="123">
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="bairro">Bairro</label>
+                                    <input type="text" id="bairro" name="bairro" value="{{ request.form.bairro if 'bairro' in request.form else (paciente.endereco.bairro if paciente and paciente.endereco else '') }}" placeholder="Centro">
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="complemento">Complemento</label>
+                                    <input type="text" id="complemento" name="complemento" value="{{ request.form.complemento if 'complemento' in request.form else (paciente.endereco.complemento if paciente and paciente.endereco else '') }}" placeholder="Apto 401">
+                                </div>
+                            </div> <!-- .paciente-card-fields -->
+                        </div> <!-- .paciente-card-section -->
+
+                        <div class="paciente-card-section" data-step-content="4" style="display:none;">
+                            <div class="section-title">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Outras Informações
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="logradouro">Logradouro (Rua, Avenida, etc.)</label>
-                            <input type="text" id="logradouro" name="logradouro" value="{{ request.form.logradouro if 'logradouro' in request.form else (paciente.endereco.logradouro if paciente and paciente.endereco else '') }}" placeholder="Rua Exemplo">
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="numero">Número</label>
-                                <input type="text" id="numero" name="numero" value="{{ request.form.numero if 'numero' in request.form else (paciente.endereco.numero if paciente and paciente.endereco else '') }}" placeholder="123">
+                            <div class="paciente-card-fields">
+                                <div class="paciente-field">
+                                    <label for="convenio_id">Convênio</label>
+                                    <select id="convenio_id" name="convenio_id">
+                                        <option value="">Nenhum / Particular</option>
+                                        {% for convenio in convenios %}
+                                            <option value="{{ convenio.id }}" 
+                                                {% if (request.form.convenio_id and request.form.convenio_id == convenio.id) or (paciente and paciente.convenio_id == convenio.id) %}selected{% endif %}>
+                                                {{ convenio.nome }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="paciente-field">
+                                    <label for="observacoes">Observações Gerais (Serão exibidas no prontuário)</label>
+                                    <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações relevantes sobre o paciente, alergias, etc.">{{ request.form.observacoes if 'observacoes' in request.form else paciente.observacoes if paciente else '' }}</textarea>
+                                </div>
+                            </div> <!-- .paciente-card-fields -->
+
+                            <div class="paciente-actions paciente-actions-sticky">
+                                <button type="button" class="paciente-btn cancel modal-close">
+                                    <i class="fas fa-times"></i>
+                                    <!-- <span>Cancelar</span> -->
+                                </button>
+
+                                <button type="submit" class="paciente-btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    <span>Salvar</span>
+                                </button>
                             </div>
-                            <div class="form-group">
-                                <label for="bairro">Bairro</label>
-                                <input type="text" id="bairro" name="bairro" value="{{ request.form.bairro if 'bairro' in request.form else (paciente.endereco.bairro if paciente and paciente.endereco else '') }}" placeholder="Centro">
-                            </div>
-                        </div>
-                         <div class="form-group">
-                            <label for="complemento">Complemento (Apto, Bloco)</label>
-                            <input type="text" id="complemento" name="complemento" value="{{ request.form.complemento if 'complemento' in request.form else (paciente.endereco.complemento if paciente and paciente.endereco else '') }}" placeholder="Apto 401">
-                        </div>
-                        
-                        <h3 class="section-title">Outras Informações</h3>
-                        <div class="form-group">
-                            <label for="convenio_id">Convênio</label>
-                            <select id="convenio_id" name="convenio_id">
-                                <option value="">Nenhum / Particular</option>
-                                {% for convenio in convenios %}
-                                    <option value="{{ convenio.id }}" 
-                                        {% if (request.form.convenio_id and request.form.convenio_id == convenio.id) or (paciente and paciente.convenio_id == convenio.id) %}selected{% endif %}>
-                                        {{ convenio.nome }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="observacoes">Observações Gerais (Serão exibidas no prontuário)</label>
-                            <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações relevantes sobre o paciente, alergias, etc.">{{ request.form.observacoes if 'observacoes' in request.form else paciente.observacoes if paciente else '' }}</textarea>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <a href="{{ url_for('listar_pacientes') }}" class="btn btn-secondary"><i class="fas fa-times"></i>&nbsp;Cancelar</a>
-                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i>&nbsp;Salvar</button>
-                        </div>
+                        </div> <!-- .paciente-card-section -->
+
+                    </div>
                     </form>
-                </div>
             </main>
         </div>
     </div>
@@ -505,6 +700,28 @@
                         }
                     });
                 }
+
+                // --- Step Navigation Logic ---
+                const steps = document.querySelectorAll('.paciente-step');
+                const stepContents = document.querySelectorAll('[data-step-content]');
+                const showStep = (step) => {
+                    stepContents.forEach((content) => {
+                        content.style.display = 'none';
+                    });
+                    const activeStepContent = document.querySelector(`[data-step-content="${step}"]`);
+                    if (activeStepContent) {
+                        activeStepContent.style.display = 'block';
+                    }
+                };
+                steps.forEach((step) => {
+                    step.addEventListener('click', () => {
+                        const stepNumber = step.getAttribute('data-step');
+                        steps.forEach((s) => s.classList.remove('active'));
+                        step.classList.add('active');
+                        showStep(stepNumber);
+                    });
+                });
+                showStep(1); // Show first step content initially
             }
 
             // --- Initialization ---
