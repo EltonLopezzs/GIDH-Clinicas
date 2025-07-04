@@ -17,32 +17,45 @@
     <style>
         :root {
             --bg: #f1f5f9;
+            --primary: #0d9488; /* Teal-600 */
             --card: #ffffff;
             --text: #0f172a;
             --muted: #64748b;
             --accent: #0f172a;
-            --primary: #0d9488; /* Teal-600 */
-            --primary-dark: #115e59;
+            --border-color: #e2e8f0;
+            --primary-light: #0d8686;
+            --accent-light: #b1dfdc;
+            --white-on-dark: #0a0a0a;
+
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
             --success: #16a34a; /* Green-600 */
-            --border-color: #e2e8f0;
             
             --dark-bg: #0f172a;
+            --primary-dark: #115e59;
             --dark-card: #1e293b;
             --dark-text: #f1f5f9;
             --dark-muted: #94a3b8;
+            --dark-accent: #0f172a;
             --dark-border-color: #334155;
+            --primary-dark-light: #0d8686;
+            --accent-dark-light: #b1dfdc;
+            --dark-on-light: #f1f5f9;
             
             color-scheme: light;
         }
 
         [data-theme="dark"] {
             --bg: var(--dark-bg);
+            --primary: var(--primary-dark);
             --text: var(--dark-text);
             --card: var(--dark-card);
             --muted: var(--dark-muted);
+            --accent: var(--dark-accent);
             --border-color: var(--dark-border-color);
+            --primary-light: var(--primary-dark-light);
+            --accent-light: var(--accent-dark-light);
+            --white-on-dark: var(--dark-on-light);
             color-scheme: dark;
         }
 
@@ -161,7 +174,7 @@
             align-items: center;
             padding: 18px 12px;
             height: 100%;
-            background-color: #f8f8f8;
+            background-color: var(--card);
             /* align-items: center; */
             /* gap: 0.5rem; */
             color: var(--muted);
@@ -182,21 +195,33 @@
         .paciente-step.active {
             color: var(--primary);
             opacity: 1;
-            border-right: 10px solid #0d8686;
-            background-color: #b1dfdc;
+            padding-left: 24px;
+            border-right: 10px solid var(--primary-light);
+            background-color: var(--accent-light);
         }
+
+        .paciente-step:not(.active) {
+            border-bottom: 2px solid var(--border-color);
+            border-left: 2px solid var(--border-color);
+        }
+        
+        .paciente-step:not(.active):first-child {
+            border-top: 2px solid var(--border-color);
+        }
+
         .paciente-step i {
             font-size: 2.2rem;
             margin-bottom: 0.2rem;
         }
         .paciente-card-section {
-            background: #fff;
+            background: var(--card);
             border-radius: 0px 18px 18px 0px;
             box-shadow: 0 4px 24px 0 rgb(0 0 0 / 0.07);
             padding: 2.5rem 2rem 2rem 2rem;
             height: 32.5rem;
             width: calc(100% - 16.25rem);
             border: 1.5px solid var(--border-color);
+            position: relative;
         }
         .paciente-card-section .section-title {
             display: flex;
@@ -256,14 +281,25 @@
             display: flex;
             justify-content: center;
             gap: 2.5rem;
-            margin-top: 2.5rem;
+            /* margin-top: 2.5rem; */
         }
-        .paciente-btn {
-            padding: 1rem 2.5rem;
+        .paciente-btn:not(.cancel) {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+
+            padding: 8px 16px;
             font-size: 1.2rem;
-            border-radius: 100px;
+            border-radius: 8px;
             border: none;
             font-weight: 700;
+            font-size: 1.1rem;
+
             background: var(--primary);
             color: #fff;
             box-shadow: 0 2px 12px 0 rgb(13 148 136 / 0.10);
@@ -271,19 +307,27 @@
             transition: background 0.2s, box-shadow 0.2s;
         }
         .paciente-btn.cancel {
-            background: #fff;
-            color: var(--primary);
-            border: 2px solid var(--primary);
+            padding: 4px;
+            font-size: 1.2rem;
+            border-radius: 18px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            background-color: transparent;
+            color: var(--white-on-dark);
+            position: absolute;
+            top: 12px;
+            right: 12px;
         }
-        .paciente-btn.cancel:hover {
+        /* .paciente-btn.cancel:hover {
             background: var(--primary);
             color: #fff;
-        }
+        } */
         .paciente-btn:hover {
             background: var(--primary-dark);
         }
-        .paciente-actions-sticky {
-            position: sticky;
+        /* .paciente-actions-sticky {
             bottom: 0;
             left: 0;
             right: 0;
@@ -297,7 +341,7 @@
             z-index: 10;
             border-bottom-left-radius: 18px;
             border-bottom-right-radius: 18px;
-        }
+        } */
         @media (max-width: 900px) {
             .paciente-card-section {
                 padding: 1.5rem 0.5rem 1.2rem 0.5rem;
@@ -337,7 +381,7 @@
                 <nav>
                     <ul>
                         <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li class="active"><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
                         <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
                         <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
                         <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
@@ -348,7 +392,7 @@
                         <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
                         <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
+                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -382,7 +426,7 @@
                 {% endwith %}
 
                 <form method="POST" action="{{ action_url|default('') }}">
-                        <div class="form-card">
+                    <div class="form-card">
                         <div class="paciente-steps">
                             <div class="paciente-step active" data-step="1">
                                 <i class="fa-solid fa-user"></i>
@@ -513,11 +557,13 @@
                                     <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações relevantes sobre o paciente, alergias, etc.">{{ request.form.observacoes if 'observacoes' in request.form else paciente.observacoes if paciente else '' }}</textarea>
                                 </div>
                             </div> <!-- .paciente-card-fields -->
+
                             <div class="paciente-actions paciente-actions-sticky">
                                 <button type="button" class="paciente-btn cancel modal-close">
                                     <i class="fas fa-times"></i>
-                                    <span>Cancelar</span>
+                                    <!-- <span>Cancelar</span> -->
                                 </button>
+
                                 <button type="submit" class="paciente-btn btn-primary">
                                     <i class="fas fa-save"></i>
                                     <span>Salvar</span>
