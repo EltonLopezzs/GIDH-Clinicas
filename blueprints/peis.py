@@ -284,7 +284,6 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
 @login_required
 def ver_peis_paciente(paciente_doc_id):
     db_instance = get_db()
-    # clinica_id não é mais usado para o caminho das coleções principais, mas pode ser útil para outras lógicas
     clinica_id = session['clinica_id']
     paciente_data = None
     all_peis = []
@@ -299,7 +298,6 @@ def ver_peis_paciente(paciente_doc_id):
 
     if is_professional and not is_admin and user_uid:
         try:
-            # Assumindo que a coleção 'User' está na raiz
             user_doc = db_instance.collection('User').document(user_uid).get()
             if user_doc.exists:
                 logged_in_professional_id = user_doc.to_dict().get('profissional_id')
@@ -309,8 +307,7 @@ def ver_peis_paciente(paciente_doc_id):
 
     # Obter informações do paciente
     try:
-        # Caminho da coleção 'pacientes' agora é na raiz
-        paciente_ref = db_instance.collection('pacientes').document(paciente_doc_id)
+        paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
         paciente_doc = paciente_ref.get()
         if not paciente_doc.exists:
             flash('Paciente não encontrado.', 'danger')
@@ -331,8 +328,7 @@ def ver_peis_paciente(paciente_doc_id):
     # Obter lista de profissionais para o dropdown no modal de criação de PEI
     profissionais_lista = []
     try:
-        # Caminho da coleção 'profissionais' agora é na raiz
-        profissionais_docs = db_instance.collection('profissionais').order_by('nome').stream()
+        profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').order_by('nome').stream()
         for doc in profissionais_docs:
             prof_data = doc.to_dict()
             if prof_data:
@@ -343,8 +339,7 @@ def ver_peis_paciente(paciente_doc_id):
 
     # Obter PEIs do paciente
     try:
-        # Caminho da coleção 'peis' agora é na raiz
-        peis_ref = db_instance.collection('peis')
+        peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
         # A consulta ainda usa o ID string, o que é compatível com DocumentReference
         peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', paciente_doc_id))
 
@@ -411,7 +406,7 @@ def ver_peis_paciente(paciente_doc_id):
 @admin_required
 def add_pei(paciente_doc_id):
     db_instance = get_db()
-    clinica_id = session['clinica_id'] # Mantido caso seja usado para outras lógicas
+    clinica_id = session['clinica_id']
     try:
         data = request.form
         titulo = data.get('titulo')
@@ -432,8 +427,7 @@ def add_pei(paciente_doc_id):
         profissionais_refs = []
         profissionais_nomes_associados = []
         for prof_id in profissionais_ids_selecionados:
-            # Caminho da coleção 'profissionais' agora é na raiz
-            profissional_ref = db_instance.collection('profissionais').document(prof_id)
+            profissional_ref = db_instance.collection(f'clinicas/{clinica_id}/profissionais').document(prof_id)
             profissional_doc = profissional_ref.get()
             if profissional_doc.exists:
                 profissionais_refs.append(profissional_ref) # Armazena a referência do documento
@@ -442,11 +436,9 @@ def add_pei(paciente_doc_id):
                 profissionais_nomes_associados.append(f"Profissional Desconhecido ({prof_id})")
 
         # Obter referência do paciente
-        # Caminho da coleção 'pacientes' agora é na raiz
-        paciente_ref = db_instance.collection('pacientes').document(paciente_doc_id)
+        paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
 
-        # Caminho da coleção 'peis' agora é na raiz
-        peis_ref = db_instance.collection('peis')
+        peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
 
         new_pei_data = {
             'paciente_id': paciente_ref, # Agora é um objeto DocumentReference
@@ -472,15 +464,13 @@ def add_pei(paciente_doc_id):
 @admin_required
 def delete_pei(paciente_doc_id):
     db_instance = get_db()
-    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     try:
         pei_id = request.form.get('pei_id')
         if not pei_id:
             flash('ID do PEI não fornecido.', 'danger')
         else:
-            # Caminho da coleção 'peis' agora é na raiz
-            db_instance.collection('peis').document(pei_id).delete()
+            db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).delete()
             flash('PEI excluído com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao excluir PEI: {e}', 'danger')
@@ -491,7 +481,6 @@ def delete_pei(paciente_doc_id):
 @login_required
 def finalize_pei(paciente_doc_id):
     db_instance = get_db()
-    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
@@ -512,8 +501,7 @@ def finalize_pei(paciente_doc_id):
         if not pei_id:
             return jsonify({'success': False, 'message': 'ID do PEI não fornecido.'}), 400
 
-        # Caminho da coleção 'peis' agora é na raiz
-        pei_ref = db_instance.collection('peis').document(pei_id)
+        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
         pei_doc = pei_ref.get()
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
@@ -529,8 +517,8 @@ def finalize_pei(paciente_doc_id):
         _finalize_pei_transaction(db_instance.transaction(), pei_ref)
 
         all_peis = []
-        # Caminho da coleção 'peis' agora é na raiz
-        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        # A consulta ainda usa o ID string do paciente, o que é compatível com DocumentReference
+        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if not is_admin and logged_in_professional_id:
             # A consulta ainda usa o ID string do profissional, o que é compatível com DocumentReference
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
@@ -566,7 +554,6 @@ def finalize_pei(paciente_doc_id):
 @admin_required
 def add_goal(paciente_doc_id):
     db_instance = get_db()
-    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     try:
         data = request.form
@@ -577,8 +564,7 @@ def add_goal(paciente_doc_id):
         if not pei_id or not descricao_goal:
             flash('Dados insuficientes para adicionar meta.', 'danger')
         else:
-            # Caminho da coleção 'peis' agora é na raiz
-            pei_ref = db_instance.collection('peis').document(pei_id)
+            pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
             new_targets = []
             fixed_aids_template = [
                 {'id': str(uuid.uuid4()), 'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente'},
@@ -614,7 +600,6 @@ def add_goal(paciente_doc_id):
 @admin_required
 def add_target_to_goal(paciente_doc_id):
     db_instance = get_db()
-    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     try:
         data = request.get_json()
@@ -625,8 +610,7 @@ def add_target_to_goal(paciente_doc_id):
         if not all([pei_id, goal_id, target_description]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar alvo.'}), 400
 
-        # Caminho da coleção 'peis' agora é na raiz
-        pei_ref = db_instance.collection('peis').document(pei_id)
+        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
         transaction = db_instance.transaction()
 
         _add_target_to_goal_transaction(transaction, pei_ref, goal_id, target_description)
@@ -640,8 +624,7 @@ def add_target_to_goal(paciente_doc_id):
             if user_doc.exists:
                 logged_in_professional_id = user_doc.to_dict().get('profissional_id')
 
-        # Caminho da coleção 'peis' agora é na raiz
-        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id:
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
@@ -677,7 +660,6 @@ def add_target_to_goal(paciente_doc_id):
 @admin_required
 def delete_goal(paciente_doc_id):
     db_instance = get_db()
-    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     try:
         pei_id = request.form.get('pei_id')
@@ -685,8 +667,7 @@ def delete_goal(paciente_doc_id):
         if not pei_id or not goal_id:
             flash('Dados insuficientes para excluir meta.', 'danger')
         else:
-            # Caminho da coleção 'peis' agora é na raiz
-            pei_ref = db_instance.collection('peis').document(pei_id)
+            pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
             transaction = db_instance.transaction()
             _delete_goal_transaction(transaction, pei_ref, goal_id)
             transaction.commit()
@@ -700,7 +681,6 @@ def delete_goal(paciente_doc_id):
 @login_required
 def finalize_goal(paciente_doc_id):
     db_instance = get_db()
-    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
@@ -722,8 +702,7 @@ def finalize_goal(paciente_doc_id):
         if not all([pei_id, goal_id]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para finalizar meta.'}), 400
 
-        # Caminho da coleção 'peis' agora é na raiz
-        pei_ref = db_instance.collection('peis').document(pei_id)
+        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
         pei_doc = pei_ref.get()
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
@@ -738,8 +717,7 @@ def finalize_goal(paciente_doc_id):
         transaction.commit()
 
         all_peis = []
-        # Caminho da coleção 'peis' agora é na raiz
-        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if not is_admin and logged_in_professional_id:
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
@@ -773,7 +751,6 @@ def finalize_goal(paciente_doc_id):
 @login_required
 def add_pei_activity(paciente_doc_id):
     db_instance = get_db()
-    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
@@ -796,8 +773,7 @@ def add_pei_activity(paciente_doc_id):
         if not all([pei_id, activity_content]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar atividade.'}), 400
 
-        # Caminho da coleção 'peis' agora é na raiz
-        pei_ref = db_instance.collection('peis').document(pei_id)
+        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
         pei_doc = pei_ref.get()
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
@@ -811,8 +787,7 @@ def add_pei_activity(paciente_doc_id):
         _add_pei_activity_transaction(db_instance.transaction(), pei_ref, activity_content, user_name)
 
         all_peis = []
-        # Caminho da coleção 'peis' agora é na raiz
-        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if not is_admin and logged_in_professional_id:
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
@@ -847,7 +822,6 @@ def add_pei_activity(paciente_doc_id):
 @login_required
 def update_target_and_aid_data(paciente_doc_id):
     db_instance = get_db()
-    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
@@ -874,8 +848,7 @@ def update_target_and_aid_data(paciente_doc_id):
         if not all([pei_id, goal_id, target_id]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para atualizar alvo.'}), 400
 
-        # Caminho da coleção 'peis' agora é na raiz
-        pei_ref = db_instance.collection('peis').document(pei_id)
+        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
         pei_doc = pei_ref.get()
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
@@ -890,8 +863,7 @@ def update_target_and_aid_data(paciente_doc_id):
         transaction.commit()
 
         all_peis = []
-        # Caminho da coleção 'peis' agora é na raiz
-        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if not is_admin and logged_in_professional_id:
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
@@ -916,7 +888,7 @@ def update_target_and_aid_data(paciente_doc_id):
                         activity['timestamp_fmt'] = 'N/A'
             all_peis.append(pei_data_converted)
 
-        return jsonify({'success'' gás: True, 'message': 'Alvo atualizado com sucesso!', 'peis': all_peis}), 200
+        return jsonify({'success': True, 'message': 'Alvo atualizado com sucesso!', 'peis': all_peis}), 200
     except Exception as e:
         print(f"Erro ao atualizar tentativas/status do alvo: {e}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
