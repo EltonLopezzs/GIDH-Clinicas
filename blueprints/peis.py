@@ -532,7 +532,6 @@ def finalize_pei(paciente_doc_id):
         # Caminho da coleção 'peis' agora é na raiz
         peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if not is_admin and logged_in_professional_id:
-            # A consulta ainda usa o ID string do profissional, o que é compatível com DocumentReference
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
@@ -642,7 +641,7 @@ def add_target_to_goal(paciente_doc_id):
 
         # Caminho da coleção 'peis' agora é na raiz
         peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
-        if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id:
+        if not is_admin and logged_in_professional_id:
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
@@ -916,7 +915,7 @@ def update_target_and_aid_data(paciente_doc_id):
                         activity['timestamp_fmt'] = 'N/A'
             all_peis.append(pei_data_converted)
 
-        return jsonify({'success'' gás: True, 'message': 'Alvo atualizado com sucesso!', 'peis': all_peis}), 200
+        return jsonify({'success': True, 'message': 'Alvo atualizado com sucesso!', 'peis': all_peis}), 200
     except Exception as e:
         print(f"Erro ao atualizar tentativas/status do alvo: {e}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
