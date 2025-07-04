@@ -6,100 +6,10 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud import firestore
 
 # Importe as suas funções utilitárias.
+# Assumimos que 'utils' contém get_db, login_required, admin_required, SAO_PAULO_TZ, convert_doc_to_dict
 from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_doc_to_dict
 
 peis_bp = Blueprint('peis', __name__)
-
-# --- NEW HELPER FUNCTION ---
-def _format_professional_names(db_instance, clinica_id, professional_ids):
-    """
-    Formata uma string com os nomes dos profissionais dados seus IDs.
-    Busca os nomes dos profissionais no Firestore.
-    """
-    if not professional_ids:
-        return 'N/A'
-    
-    professional_names = []
-    # Fetch all professionals once if needed, or get them individually
-    # For efficiency, if this is called repeatedly, consider caching or passing a map of all professionals
-    for prof_id in professional_ids:
-        try:
-            prof_doc = db_instance.collection(f'clinicas/{clinica_id}/profissionais').document(prof_id).get()
-            if prof_doc.exists:
-                professional_names.append(prof_doc.to_dict().get('nome', 'N/A'))
-            else:
-                professional_names.append(f"Profissional Desconhecido ({prof_id})")
-        except Exception as e:
-            print(f"Erro ao buscar nome do profissional {prof_id}: {e}")
-            professional_names.append(f"Erro ao Carregar Profissional ({prof_id})")
-    
-    return ", ".join(professional_names)
-
-def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals_map=None):
-    """
-    Converte um documento PEI em um dicionário e formata campos para exibição no template.
-    Args:
-        db_instance: Instância do Firestore DB.
-        clinica_id: ID da clínica.
-        pei_doc: DocumentSnapshot do PEI.
-        all_professionals_map: Opcional. Um dicionário de {id: nome} de todos os profissionais para lookup rápido.
-    Returns:
-        Dicionário formatado do PEI.
-    """
-    pei = convert_doc_to_dict(pei_doc)
-
-    # Formata data de criação
-    if 'data_criacao' in pei and isinstance(pei['data_criacao'], datetime.datetime):
-        pei['data_criacao_iso'] = pei['data_criacao'].isoformat()
-        pei['data_criacao'] = pei['data_criacao'].strftime('%d/%m/%Y %H:%M')
-    else:
-        pei['data_criacao'] = pei.get('data_criacao', 'N/A')
-        pei['data_criacao_iso'] = None
-
-    # Formata nomes dos profissionais associados usando os IDs
-    prof_ids = pei.get('profissionais_ids', [])
-    if all_professionals_map:
-        # Use o mapa fornecido para lookup rápido
-        pei['profissionais_nomes_associados_fmt'] = ", ".join(
-            [all_professionals_map.get(prof_id, f"Profissional Desconhecido ({prof_id})") for prof_id in prof_ids]
-        ) if prof_ids else 'N/A'
-    else:
-        # Se o mapa não for fornecido, faça a busca individual (menos eficiente para múltiplos PEIs)
-        pei['profissionais_nomes_associados_fmt'] = _format_professional_names(db_instance, clinica_id, prof_ids)
-
-    # Formata timestamps das atividades
-    if 'activities' in pei and isinstance(pei['activities'], list):
-        for activity in pei['activities']:
-            activity_ts = activity.get('timestamp')
-            if isinstance(activity_ts, datetime.datetime):
-                activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
-            elif isinstance(activity_ts, str):
-                try:
-                    naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
-                    activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
-                except (ValueError, TypeError):
-                    activity['timestamp_fmt'] = 'Data Inválida'
-            else:
-                activity['timestamp_fmt'] = 'N/A'
-    
-    # Ensure all targets have a 'status' field, default to 'pendente'
-    if 'goals' in pei and isinstance(pei['goals'], list):
-        for goal in pei['goals']:
-            if 'targets' in goal and isinstance(goal['targets'], list):
-                for target in goal['targets']:
-                    if 'status' not in target:
-                        target['status'] = 'pendente'
-                    # Ensure 'concluido' is consistent with 'status'
-                    target['concluido'] = (target['status'] == 'finalizada')
-                    if 'aids' in target and isinstance(target['aids'], list):
-                        for aid in target['aids']:
-                            if 'status' not in aid:
-                                aid['status'] = 'pendente'
-                            if 'attempts_count' not in aid:
-                                aid['attempts_count'] = 0
-
-    return pei
-
 
 # =================================================================
 # FUNÇÕES DE TRANSAÇÃO (Helpers para PEI)
@@ -374,6 +284,7 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
 @login_required
 def ver_peis_paciente(paciente_doc_id):
     db_instance = get_db()
+    # clinica_id não é mais usado para o caminho das coleções principais, mas pode ser útil para outras lógicas
     clinica_id = session['clinica_id']
     paciente_data = None
     all_peis = []
@@ -388,6 +299,7 @@ def ver_peis_paciente(paciente_doc_id):
 
     if is_professional and not is_admin and user_uid:
         try:
+            # Assumindo que a coleção 'User' está na raiz
             user_doc = db_instance.collection('User').document(user_uid).get()
             if user_doc.exists:
                 logged_in_professional_id = user_doc.to_dict().get('profissional_id')
@@ -397,7 +309,8 @@ def ver_peis_paciente(paciente_doc_id):
 
     # Obter informações do paciente
     try:
-        paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+        # Caminho da coleção 'pacientes' agora é na raiz
+        paciente_ref = db_instance.collection('pacientes').document(paciente_doc_id)
         paciente_doc = paciente_ref.get()
         if not paciente_doc.exists:
             flash('Paciente não encontrado.', 'danger')
@@ -415,44 +328,72 @@ def ver_peis_paciente(paciente_doc_id):
         print(f"Erro ao carregar paciente para PEI: {e}")
         return redirect(url_for('buscar_prontuario'))
 
-    # Obter lista de profissionais para o dropdown no modal de criação de PEI e para lookup de nomes
+    # Obter lista de profissionais para o dropdown no modal de criação de PEI
     profissionais_lista = []
-    profissionais_map = {} # Map for quick lookup {id: name}
     try:
-        profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').order_by('nome').stream()
+        # Caminho da coleção 'profissionais' agora é na raiz
+        profissionais_docs = db_instance.collection('profissionais').order_by('nome').stream()
         for doc in profissionais_docs:
             prof_data = doc.to_dict()
             if prof_data:
                 profissionais_lista.append({'id': doc.id, 'nome': prof_data.get('nome', 'N/A')})
-                profissionais_map[doc.id] = prof_data.get('nome', 'N/A')
     except Exception as e:
         flash(f'Erro ao carregar lista de profissionais: {e}', 'warning')
         print(f"Erro ao carregar profissionais para PEI: {e}")
 
     # Obter PEIs do paciente
     try:
-        peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
+        # Caminho da coleção 'peis' agora é na raiz
+        peis_ref = db_instance.collection('peis')
+        # A consulta ainda usa o ID string, o que é compatível com DocumentReference
         peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', paciente_doc_id))
 
         if is_professional and not is_admin:
             if logged_in_professional_id:
+                # A consulta ainda usa o ID string, o que é compatível com DocumentReference
                 peis_query = peis_query.where(
                     filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id)
                 )
             else:
+                # Se o ID do profissional logado não for encontrado, não deve retornar nenhum PEI
                 peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', 'ID_INVALIDO_PARA_NAO_RETORNAR_NADA'))
 
         peis_query = peis_query.order_by('data_criacao', direction=firestore.Query.DESCENDING)
 
         for pei_doc in peis_query.stream():
-            # Use a nova função helper para preparar o PEI para exibição
-            pei = _prepare_pei_for_display(db_instance, clinica_id, pei_doc, profissionais_map)
+            pei = convert_doc_to_dict(pei_doc)
+            # Ao converter, se paciente_id ou profissionais_ids forem DocumentReference,
+            # convert_doc_to_dict deve lidar com isso (ex: convertendo para string ID para exibição)
+            if 'data_criacao' in pei and isinstance(pei['data_criacao'], datetime.datetime):
+                pei['data_criacao_iso'] = pei['data_criacao'].isoformat() # Adiciona data em ISO para ordenação no JS
+                pei['data_criacao'] = pei['data_criacao'].strftime('%d/%m/%Y %H:%M')
+            else:
+                pei['data_criacao'] = pei.get('data_criacao', 'N/A')
+                pei['data_criacao_iso'] = None
+
+
+            pei['profissionais_nomes_associados_fmt'] = ", ".join(pei.get('profissionais_nomes_associados', ['N/A']))
+
+            if 'activities' in pei and isinstance(pei['activities'], list):
+                for activity in pei['activities']:
+                    activity_ts = activity.get('timestamp')
+                    if isinstance(activity_ts, datetime.datetime):
+                        activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                    elif isinstance(activity_ts, str):
+                        try:
+                            naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                            activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                        except (ValueError, TypeError):
+                            activity['timestamp_fmt'] = 'Data Inválida'
+                    else:
+                        activity['timestamp_fmt'] = 'N/A'
             all_peis.append(pei)
 
     except Exception as e:
         flash(f'Erro ao carregar PEIs do paciente: {e}.', 'danger')
         print(f"Erro ao carregar PEIs: {e}")
 
+    # Adicionando paciente_doc_id ao contexto do template
     return render_template('pei_page.html',
                            paciente=paciente_data,
                            paciente_doc_id=paciente_doc_id,
@@ -470,7 +411,7 @@ def ver_peis_paciente(paciente_doc_id):
 @admin_required
 def add_pei(paciente_doc_id):
     db_instance = get_db()
-    clinica_id = session['clinica_id']
+    clinica_id = session['clinica_id'] # Mantido caso seja usado para outras lógicas
     try:
         data = request.form
         titulo = data.get('titulo')
@@ -487,20 +428,28 @@ def add_pei(paciente_doc_id):
             flash('Formato de data de criação inválido.', 'danger')
             return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
 
-        # REMOVIDO: Lógica para buscar e armazenar nomes de profissionais diretamente no PEI
-        # profissionais_nomes_associados = []
-        # for prof_id in profissionais_ids_selecionados:
-        #     profissional_ref = db_instance.collection(f'clinicas/{clinica_id}/profissionais').document(prof_id)
-        #     profissional_doc = profissional_ref.get()
-        #     if profissional_doc.exists:
-        #         profissionais_nomes_associados.append(profissional_doc.to_dict().get('nome', 'N/A'))
-        #     else:
-        #         profissionais_nomes_associados.append(f"Profissional Desconhecido ({prof_id})")
+        # Obter referências dos profissionais e seus nomes
+        profissionais_refs = []
+        profissionais_nomes_associados = []
+        for prof_id in profissionais_ids_selecionados:
+            # Caminho da coleção 'profissionais' agora é na raiz
+            profissional_ref = db_instance.collection('profissionais').document(prof_id)
+            profissional_doc = profissional_ref.get()
+            if profissional_doc.exists:
+                profissionais_refs.append(profissional_ref) # Armazena a referência do documento
+                profissionais_nomes_associados.append(profissional_doc.to_dict().get('nome', 'N/A'))
+            else:
+                profissionais_nomes_associados.append(f"Profissional Desconhecido ({prof_id})")
 
-        peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
+        # Obter referência do paciente
+        # Caminho da coleção 'pacientes' agora é na raiz
+        paciente_ref = db_instance.collection('pacientes').document(paciente_doc_id)
+
+        # Caminho da coleção 'peis' agora é na raiz
+        peis_ref = db_instance.collection('peis')
 
         new_pei_data = {
-            'paciente_id': paciente_doc_id,
+            'paciente_id': paciente_ref, # Agora é um objeto DocumentReference
             'titulo': titulo,
             'data_criacao': data_criacao_obj,
             'status': 'ativo',
@@ -508,9 +457,8 @@ def add_pei(paciente_doc_id):
             'activities': [],
             'criado_em': datetime.datetime.now(SAO_PAULO_TZ),
             'profissional_criador_nome': session.get('user_name', 'N/A'),
-            'profissionais_ids': profissionais_ids_selecionados,
-            # REMOVIDO: Não armazena mais os nomes diretamente
-            # 'profissionais_nomes_associados': profissionais_nomes_associados
+            'profissionais_ids': profissionais_refs, # Agora é uma lista de DocumentReference
+            'profissionais_nomes_associados': profissionais_nomes_associados
         }
         peis_ref.add(new_pei_data)
         flash('PEI adicionado com sucesso!', 'success')
@@ -524,13 +472,15 @@ def add_pei(paciente_doc_id):
 @admin_required
 def delete_pei(paciente_doc_id):
     db_instance = get_db()
+    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     try:
         pei_id = request.form.get('pei_id')
         if not pei_id:
             flash('ID do PEI não fornecido.', 'danger')
         else:
-            db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).delete()
+            # Caminho da coleção 'peis' agora é na raiz
+            db_instance.collection('peis').document(pei_id).delete()
             flash('PEI excluído com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao excluir PEI: {e}', 'danger')
@@ -541,6 +491,7 @@ def delete_pei(paciente_doc_id):
 @login_required
 def finalize_pei(paciente_doc_id):
     db_instance = get_db()
+    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
@@ -561,32 +512,48 @@ def finalize_pei(paciente_doc_id):
         if not pei_id:
             return jsonify({'success': False, 'message': 'ID do PEI não fornecido.'}), 400
 
-        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+        # Caminho da coleção 'peis' agora é na raiz
+        pei_ref = db_instance.collection('peis').document(pei_id)
         pei_doc = pei_ref.get()
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
 
         if not is_admin:
-            associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
+            # Ao verificar permissões, ainda podemos usar o ID string do profissional logado
+            # e comparar com os IDs das referências armazenadas.
+            # Firestore permite comparar DocumentReference com string ID em array_contains.
+            associated_professionals_ids = [ref.id for ref in pei_doc.to_dict().get('profissionais_ids', [])]
             if logged_in_professional_id not in associated_professionals_ids:
                 return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar este PEI.'}), 403
 
         _finalize_pei_transaction(db_instance.transaction(), pei_ref)
 
         all_peis = []
-        # Obter lista de profissionais para lookup de nomes
-        profissionais_map = {}
-        profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').stream()
-        for doc in profissionais_docs:
-            profissionais_map[doc.id] = doc.to_dict().get('nome', 'N/A')
-
-        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        # Caminho da coleção 'peis' agora é na raiz
+        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if not is_admin and logged_in_professional_id:
+            # A consulta ainda usa o ID string do profissional, o que é compatível com DocumentReference
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            # Use a nova função helper para preparar o PEI para exibição
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            pei_data_converted = convert_doc_to_dict(doc)
+            if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
+            pei_data_converted['profissionais_nomes_associados_fmt'] = ", ".join(pei_data_converted.get('profissionais_nomes_associados', ['N/A']))
+
+            if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                for activity in pei_data_converted['activities']:
+                    activity_ts = activity.get('timestamp')
+                    if isinstance(activity_ts, datetime.datetime):
+                        activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                    elif isinstance(activity_ts, str):
+                        try:
+                            naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                            activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                        except (ValueError, TypeError):
+                            activity['timestamp_fmt'] = 'Data Inválida'
+                    else:
+                        activity['timestamp_fmt'] = 'N/A'
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'PEI finalizado com sucesso!', 'peis': all_peis}), 200
@@ -599,6 +566,7 @@ def finalize_pei(paciente_doc_id):
 @admin_required
 def add_goal(paciente_doc_id):
     db_instance = get_db()
+    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     try:
         data = request.form
@@ -609,7 +577,8 @@ def add_goal(paciente_doc_id):
         if not pei_id or not descricao_goal:
             flash('Dados insuficientes para adicionar meta.', 'danger')
         else:
-            pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+            # Caminho da coleção 'peis' agora é na raiz
+            pei_ref = db_instance.collection('peis').document(pei_id)
             new_targets = []
             fixed_aids_template = [
                 {'id': str(uuid.uuid4()), 'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente'},
@@ -645,6 +614,7 @@ def add_goal(paciente_doc_id):
 @admin_required
 def add_target_to_goal(paciente_doc_id):
     db_instance = get_db()
+    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     try:
         data = request.get_json()
@@ -655,7 +625,8 @@ def add_target_to_goal(paciente_doc_id):
         if not all([pei_id, goal_id, target_description]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar alvo.'}), 400
 
-        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+        # Caminho da coleção 'peis' agora é na raiz
+        pei_ref = db_instance.collection('peis').document(pei_id)
         transaction = db_instance.transaction()
 
         _add_target_to_goal_transaction(transaction, pei_ref, goal_id, target_description)
@@ -669,19 +640,30 @@ def add_target_to_goal(paciente_doc_id):
             if user_doc.exists:
                 logged_in_professional_id = user_doc.to_dict().get('profissional_id')
 
-        # Obter lista de profissionais para lookup de nomes
-        profissionais_map = {}
-        profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').stream()
-        for doc in profissionais_docs:
-            profissionais_map[doc.id] = doc.to_dict().get('nome', 'N/A')
-
-        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        # Caminho da coleção 'peis' agora é na raiz
+        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if user_role == 'medico' and not (user_role == 'admin') and logged_in_professional_id:
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            # Use a nova função helper para preparar o PEI para exibição
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            pei_data_converted = convert_doc_to_dict(doc)
+            if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
+            pei_data_converted['profissionais_nomes_associados_fmt'] = ", ".join(pei_data_converted.get('profissionais_nomes_associados', ['N/A']))
+
+            if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                for activity in pei_data_converted['activities']:
+                    activity_ts = activity.get('timestamp')
+                    if isinstance(activity_ts, datetime.datetime):
+                        activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                    elif isinstance(activity_ts, str):
+                        try:
+                            naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                            activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                        except (ValueError, TypeError):
+                            activity['timestamp_fmt'] = 'Data Inválida'
+                    else:
+                        activity['timestamp_fmt'] = 'N/A'
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'Alvo adicionado com sucesso!', 'peis': all_peis}), 200
@@ -695,6 +677,7 @@ def add_target_to_goal(paciente_doc_id):
 @admin_required
 def delete_goal(paciente_doc_id):
     db_instance = get_db()
+    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     try:
         pei_id = request.form.get('pei_id')
@@ -702,7 +685,8 @@ def delete_goal(paciente_doc_id):
         if not pei_id or not goal_id:
             flash('Dados insuficientes para excluir meta.', 'danger')
         else:
-            pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+            # Caminho da coleção 'peis' agora é na raiz
+            pei_ref = db_instance.collection('peis').document(pei_id)
             transaction = db_instance.transaction()
             _delete_goal_transaction(transaction, pei_ref, goal_id)
             transaction.commit()
@@ -716,6 +700,7 @@ def delete_goal(paciente_doc_id):
 @login_required
 def finalize_goal(paciente_doc_id):
     db_instance = get_db()
+    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
@@ -737,13 +722,14 @@ def finalize_goal(paciente_doc_id):
         if not all([pei_id, goal_id]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para finalizar meta.'}), 400
 
-        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+        # Caminho da coleção 'peis' agora é na raiz
+        pei_ref = db_instance.collection('peis').document(pei_id)
         pei_doc = pei_ref.get()
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
 
         if not is_admin:
-            associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
+            associated_professionals_ids = [ref.id for ref in pei_doc.to_dict().get('profissionais_ids', [])]
             if logged_in_professional_id not in associated_professionals_ids:
                 return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar esta meta.'}), 403
 
@@ -752,19 +738,30 @@ def finalize_goal(paciente_doc_id):
         transaction.commit()
 
         all_peis = []
-        # Obter lista de profissionais para lookup de nomes
-        profissionais_map = {}
-        profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').stream()
-        for doc in profissionais_docs:
-            profissionais_map[doc.id] = doc.to_dict().get('nome', 'N/A')
-
-        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        # Caminho da coleção 'peis' agora é na raiz
+        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if not is_admin and logged_in_professional_id:
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            # Use a nova função helper para preparar o PEI para exibição
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            pei_data_converted = convert_doc_to_dict(doc)
+            if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
+            pei_data_converted['profissionais_nomes_associados_fmt'] = ", ".join(pei_data_converted.get('profissionais_nomes_associados', ['N/A']))
+
+            if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                for activity in pei_data_converted['activities']:
+                    activity_ts = activity.get('timestamp')
+                    if isinstance(activity_ts, datetime.datetime):
+                        activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                    elif isinstance(activity_ts, str):
+                        try:
+                            naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                            activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                        except (ValueError, TypeError):
+                            activity['timestamp_fmt'] = 'Data Inválida'
+                    else:
+                        activity['timestamp_fmt'] = 'N/A'
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'Meta finalizada com sucesso!', 'peis': all_peis}), 200
@@ -776,6 +773,7 @@ def finalize_goal(paciente_doc_id):
 @login_required
 def add_pei_activity(paciente_doc_id):
     db_instance = get_db()
+    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
@@ -798,13 +796,14 @@ def add_pei_activity(paciente_doc_id):
         if not all([pei_id, activity_content]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar atividade.'}), 400
 
-        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+        # Caminho da coleção 'peis' agora é na raiz
+        pei_ref = db_instance.collection('peis').document(pei_id)
         pei_doc = pei_ref.get()
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
 
         if not is_admin:
-            associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
+            associated_professionals_ids = [ref.id for ref in pei_doc.to_dict().get('profissionais_ids', [])]
             if logged_in_professional_id not in associated_professionals_ids:
                 return jsonify({'success': False, 'message': 'Você não tem permissão para adicionar atividades a este PEI.'}), 403
 
@@ -812,19 +811,30 @@ def add_pei_activity(paciente_doc_id):
         _add_pei_activity_transaction(db_instance.transaction(), pei_ref, activity_content, user_name)
 
         all_peis = []
-        # Obter lista de profissionais para lookup de nomes
-        profissionais_map = {}
-        profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').stream()
-        for doc in profissionais_docs:
-            profissionais_map[doc.id] = doc.to_dict().get('nome', 'N/A')
-
-        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        # Caminho da coleção 'peis' agora é na raiz
+        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if not is_admin and logged_in_professional_id:
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            # Use a nova função helper para preparar o PEI para exibição
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            pei_data_converted = convert_doc_to_dict(doc)
+            if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
+            pei_data_converted['profissionais_nomes_associados_fmt'] = ", ".join(pei_data_converted.get('profissionais_nomes_associados', ['N/A']))
+
+            if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                for activity in pei_data_converted['activities']:
+                    activity_ts = activity.get('timestamp')
+                    if isinstance(activity_ts, datetime.datetime):
+                        activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                    elif isinstance(activity_ts, str):
+                        try:
+                            naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                            activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                        except (ValueError, TypeError):
+                            activity['timestamp_fmt'] = 'Data Inválida'
+                    else:
+                        activity['timestamp_fmt'] = 'N/A'
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'Atividade adicionada com sucesso!', 'peis': all_peis}), 200
@@ -837,6 +847,7 @@ def add_pei_activity(paciente_doc_id):
 @login_required
 def update_target_and_aid_data(paciente_doc_id):
     db_instance = get_db()
+    # clinica_id não é mais usado para o caminho da coleção principal
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
     user_uid = session.get('user_uid')
@@ -863,13 +874,14 @@ def update_target_and_aid_data(paciente_doc_id):
         if not all([pei_id, goal_id, target_id]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para atualizar alvo.'}), 400
 
-        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+        # Caminho da coleção 'peis' agora é na raiz
+        pei_ref = db_instance.collection('peis').document(pei_id)
         pei_doc = pei_ref.get()
         if not pei_doc.exists:
             return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
 
         if not is_admin:
-            associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
+            associated_professionals_ids = [ref.id for ref in pei_doc.to_dict().get('profissionais_ids', [])]
             if logged_in_professional_id not in associated_professionals_ids:
                 return jsonify({'success': False, 'message': 'Você não tem permissão para atualizar este alvo.'}), 403
 
@@ -878,22 +890,33 @@ def update_target_and_aid_data(paciente_doc_id):
         transaction.commit()
 
         all_peis = []
-        # Obter lista de profissionais para lookup de nomes
-        profissionais_map = {}
-        profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').stream()
-        for doc in profissionais_docs:
-            profissionais_map[doc.id] = doc.to_dict().get('nome', 'N/A')
-
-        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        # Caminho da coleção 'peis' agora é na raiz
+        peis_query = db_instance.collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
         if not is_admin and logged_in_professional_id:
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            # Use a nova função helper para preparar o PEI para exibição
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            pei_data_converted = convert_doc_to_dict(doc)
+            if 'data_criacao' in pei_data_converted and isinstance(pei_data_converted['data_criacao'], datetime.datetime):
+                pei_data_converted['data_criacao'] = pei_data_converted['data_criacao'].strftime('%d/%m/%Y %H:%M')
+            pei_data_converted['profissionais_nomes_associados_fmt'] = ", ".join(pei_data_converted.get('profissionais_nomes_associados', ['N/A']))
+
+            if 'activities' in pei_data_converted and isinstance(pei_data_converted['activities'], list):
+                for activity in pei_data_converted['activities']:
+                    activity_ts = activity.get('timestamp')
+                    if isinstance(activity_ts, datetime.datetime):
+                        activity['timestamp_fmt'] = activity_ts.astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
+                    elif isinstance(activity_ts, str):
+                        try:
+                            naive_dt = datetime.datetime.strptime(activity_ts, '%Y-%m-%dT%H:%M:%S')
+                            activity['timestamp_fmt'] = naive_dt.strftime('%d/%m/%Y %H:%M')
+                        except (ValueError, TypeError):
+                            activity['timestamp_fmt'] = 'Data Inválida'
+                    else:
+                        activity['timestamp_fmt'] = 'N/A'
             all_peis.append(pei_data_converted)
 
-        return jsonify({'success': True, 'message': 'Alvo atualizado com sucesso!', 'peis': all_peis}), 200
+        return jsonify({'success'' gás: True, 'message': 'Alvo atualizado com sucesso!', 'peis': all_peis}), 200
     except Exception as e:
         print(f"Erro ao atualizar tentativas/status do alvo: {e}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
