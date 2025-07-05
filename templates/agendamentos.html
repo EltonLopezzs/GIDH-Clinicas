@@ -174,7 +174,13 @@
         }
 
         /* New Filter Button in Topbar */
-        .topbar-right { display: flex; align-items: center; gap: 1rem; }
+        .topbar-right { 
+            display: flex; 
+            align-items: center; 
+            gap: 1rem; 
+            flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha em telas menores */
+            justify-content: flex-end; /* Alinha os itens à direita */
+        }
         .btn-filter {
             background: none;
             border: 1px solid var(--border-color);
@@ -203,6 +209,37 @@
             background-color: var(--primary-dark);
             color: white;
         }
+
+        /* View Toggle Buttons */
+        .view-toggle-buttons {
+            display: flex;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .view-toggle-buttons .btn {
+            border-radius: 0; /* Remove rounded corners for individual buttons in the group */
+            border: none; /* Remove individual borders */
+            padding: 0.6rem 1rem;
+            background-color: var(--card);
+            color: var(--muted);
+            font-weight: 500;
+        }
+        .view-toggle-buttons .btn:hover {
+            background-color: var(--bg);
+            color: var(--primary);
+        }
+        .view-toggle-buttons .btn.active {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+        .view-toggle-buttons .btn.active:hover {
+            background-color: var(--primary-dark);
+        }
+        .view-toggle-buttons .btn:first-child { border-top-left-radius: 7px; border-bottom-left-radius: 7px; }
+        .view-toggle-buttons .btn:last-child { border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
+
 
         main { 
             flex-grow: 1; 
@@ -237,6 +274,7 @@
             display: flex;
             flex-direction: column;
             flex-grow: 1; /* Ocupa o espaço disponível */
+            /* Controlado por JS para display: none; */
         }
 
         .calendar-header {
@@ -391,17 +429,129 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             position: absolute;
-            width: calc(100% - 2px); /* Full width minus margin */
-            box-sizing: border-box;
+            height: 18px; /* Fixed height for consistent display */
+            line-height: 18px; /* Vertically center text */
+            box-sizing: border-box; /* Include padding and border in width/height */
             z-index: 10;
             cursor: pointer;
-            line-height: 1.2;
-            left: 1px; /* Alinha à esquerda */
+            transition: all 0.1s ease-out; /* Smooth transitions */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Subtle shadow */
         }
         .appointment-event.status-concluido { background-color: color-mix(in srgb, var(--status-concluido) 15%, transparent); color: var(--status-concluido); border-left-color: var(--status-concluido); }
         .appointment-event.status-pendente { background-color: color-mix(in srgb, var(--status-pendente) 15%, transparent); color: var(--status-pendente); border-left-color: var(--status-pendente); }
         .appointment-event.status-cancelado { background-color: color-mix(in srgb, var(--status-cancelado) 15%, transparent); color: var(--status-cancelado); border-left-color: var(--status-cancelado); }
         .appointment-event.status-confirmado { background-color: color-mix(in srgb, var(--status-confirmado) 15%, transparent); color: var(--status-confirmado); border-left-color: var(--status-confirmado); }
+
+        /* New style for 'more' indicator */
+        .appointment-event.more-indicator {
+            background-color: var(--muted); /* A neutral color */
+            color: white;
+            text-align: center;
+            font-weight: 600;
+            padding: 2px 5px;
+            border-left: none; /* No colored border for indicator */
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .appointment-event.more-indicator:hover {
+            background-color: var(--accent);
+        }
+
+        /* ============================================
+         --- LISTA DE CARDS (NOVO) ---
+         ============================================
+        */
+        .card-list-container {
+            background-color: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            flex-grow: 1;
+            overflow-y: auto; /* Adiciona rolagem vertical para a lista de cards */
+            display: none; /* Escondido por padrão, controlado por JS */
+            flex-direction: column; /* Garante que os cards se empilhem */
+            gap: 1rem; /* Espaçamento entre os cards */
+        }
+
+        .appointment-card {
+            background-color: var(--card); /* Fundo do card mais claro */
+            border-radius: 12px;
+            padding: 1.5rem; /* Aumenta o padding para mais espaço */
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Aumenta o espaçamento interno */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            position: relative; /* Para a barra de status */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Sombra mais pronunciada */
+        }
+        .appointment-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra maior no hover */
+        }
+
+        .appointment-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.75rem; /* Mais padding abaixo do cabeçalho */
+            border-bottom: 1px solid var(--border-color);
+        }
+        .appointment-card-header h4 {
+            font-size: 1.4rem; /* Título maior */
+            font-weight: 700; /* Negrito */
+            color: var(--text); /* Cor do texto principal */
+            margin: 0;
+        }
+        [data-theme="dark"] .appointment-card-header h4 {
+            color: var(--dark-text); /* Cor do texto principal no modo escuro */
+        }
+
+        .appointment-card-header .status-badge {
+            padding: 0.4rem 0.9rem; /* Aumenta o padding do badge */
+            border-radius: 9999px; /* Totalmente arredondado */
+            font-size: 0.8rem; /* Tamanho da fonte do badge */
+            font-weight: 700; /* Negrito */
+            color: white;
+            text-transform: uppercase; /* Texto em maiúsculas */
+            letter-spacing: 0.05em; /* Espaçamento entre letras */
+        }
+        .appointment-card-header .status-badge.status-confirmado { background-color: var(--status-confirmado); }
+        .appointment-card-header .status-badge.status-concluido { background-color: var(--status-concluido); }
+        .appointment-card-header .status-badge.status-pendente { background-color: var(--status-pendente); }
+        .appointment-card-header .status-badge.status-cancelado { background-color: var(--status-cancelado); }
+
+        .appointment-card-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Layout mais flexível */
+            gap: 1rem; /* Espaçamento entre os itens do corpo */
+            font-size: 0.95rem; /* Tamanho da fonte do corpo */
+        }
+        .appointment-card-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem; /* Espaçamento entre ícone e texto */
+            color: var(--text);
+        }
+        .appointment-card-item i {
+            color: var(--muted); 
+            font-size: 1.1rem; /* Ícones maiores */
+            width: 24px; /* Largura fixa para alinhar ícones */
+            text-align: center;
+        }
+        .appointment-card-item .label {
+            font-weight: 600; /* Labels mais fortes */
+            color: var(--muted);
+        }
+        .appointment-card-item .value {
+            font-weight: 500; /* Valor normal */
+            color: var(--text);
+        }
+        [data-theme="dark"] .appointment-card-item .value {
+            color: var(--dark-text);
+        }
+
 
         /* ============================================
          --- MODAIS (REUTILIZADOS) ---
@@ -414,8 +564,8 @@
             color: var(--text); 
             border-radius: 16px; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-            width: 90%; 
-            max-width: 800px; 
+            width: 95%; /* Aumentado para 95% */
+            max-width: 1200px; /* Aumentado de 1000px para 1200px */
             transform: translateY(-20px); 
             transition: transform 0.25s ease; 
             max-height: calc(100vh - 40px); 
@@ -458,6 +608,34 @@
         .info-card .info-item-content .label { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
         .info-card .info-item-content .value { font-size: 1rem; font-weight: 600; color: var(--text); }
 
+        /* Style for the new status select control in details modal */
+        .info-card .status-select-control {
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-appearance: none; /* Remove default arrow on WebKit browsers */
+            -moz-appearance: none;    /* Remove default arrow on Firefox */
+            appearance: none;         /* Remove default arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E"); /* Custom arrow */
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.25rem;
+            width: auto; /* Allow select to size based on content */
+            min-width: 150px; /* Ensure a minimum width */
+            text-align: left; /* Align text to the left */
+        }
+
+        .info-card .status-select-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+        }
         /* ============================================
          --- BOTÕES ---
          ============================================
@@ -477,7 +655,7 @@
         */
         @media (max-width: 992px) { /* Ajuste para telas menores que 992px */
             main { flex-direction: column; overflow: auto; }
-            .weekly-calendar-container { padding: 1rem; } /* Reduz o padding do container principal */
+            .weekly-calendar-container, .card-list-container { padding: 1rem; } /* Reduz o padding do container principal */
             .calendar-header { flex-direction: column; align-items: flex-start; } /* Empilha elementos do cabeçalho */
             .calendar-nav { width: 100%; justify-content: space-between; margin-bottom: 0.5rem; } /* Ocupa largura total */
             .calendar-nav span { flex-grow: 1; text-align: center; } /* Centraliza o display da semana */
@@ -493,6 +671,10 @@
             }
             .time-cell { height: 30px; /* Altura menor para slots de tempo */ }
             .appointment-event { font-size: 0.7rem; padding: 1px 3px; }
+
+            .appointment-card-body {
+                grid-template-columns: 1fr; /* Empilha itens do card em mobile */
+            }
         }
 
         @media (max-width: 768px) { /* Ajustes para mobile */
@@ -504,6 +686,25 @@
             .mini-calendar-wrapper { display: none; } /* Esconde o mini-calendário em mobile */
             .form-row { grid-template-columns: 1fr; }
             .professional-list-container { margin-top: 1rem; } /* Adiciona espaçamento em mobile */
+            .topbar-right {
+                flex-direction: column; /* Empilha botões em mobile */
+                align-items: stretch; /* Estica botões para largura total */
+                gap: 0.5rem;
+            }
+            .topbar-right .btn, .topbar-right .view-toggle-buttons {
+                width: 100%; /* Ocupa largura total */
+            }
+            .view-toggle-buttons {
+                border-radius: 8px; /* Mantém bordas arredondadas para o grupo */
+            }
+            .view-toggle-buttons .btn:first-child { border-radius: 8px 0 0 8px; }
+            .view-toggle-buttons .btn:last-child { border-radius: 0 8px 8px 0; }
+            
+            /* Ajuste da modal para telas menores */
+            .modal-content {
+                width: 95%; /* Garante que a modal ocupe a maior parte da largura em telas menores */
+                max-width: 95%; /* Limita a largura máxima para não estourar a tela */
+            }
         }
 
         /* ============================================
@@ -891,6 +1092,11 @@
                     <h1 class="page-title">Agendamentos</h1>
                 </div>
                 <div class="topbar-right">
+                    <!-- Botões de Alternar Visualização -->
+                    <div class="view-toggle-buttons">
+                        <button id="calendarViewBtn" class="btn active"><i class="fas fa-calendar-alt"></i> Calendário</button>
+                        <button id="listViewBtn" class="btn"><i class="fas fa-list"></i> Lista</button>
+                    </div>
                     <button type="button" class="btn btn-primary" id="addManualAppointmentBtn">
                         <i class="fas fa-plus"></i> <span class="btn-text-desktop">Novo Agendamento</span>
                     </button>
@@ -898,8 +1104,6 @@
             </header>
 
             <main>
-                <!-- O bloco de mensagens flash antigo foi removido daqui -->
-
                 <div class="left-panel">
                     <!-- Mini Calendário Lateral (Movido para o main) -->
                     <div class="mini-calendar-wrapper">
@@ -922,18 +1126,23 @@
                     </div>
                 </div>
 
-                <div class="weekly-calendar-container">
+                <!-- Contêiner para a Visualização de Calendário -->
+                <div id="calendarViewContainer" class="weekly-calendar-container">
                     <div class="calendar-header">
                         <div class="calendar-nav">
                             <button id="prev-week-btn" title="Semana Anterior"><i class="fas fa-chevron-left"></i></button>
                             <span id="current-week-display" class="font-semibold text-lg text-gray-800 dark:text-gray-200"></span>
                             <button id="next-week-btn" title="Próxima Semana"><i class="fas fa-chevron-right"></i></button>
                         </div>
-                        <!-- O select de profissionais foi removido daqui -->
                     </div>
                     <div class="calendar-grid-week" id="calendar-grid-week">
                         <!-- Cabeçalhos dos dias e horários serão gerados aqui via JS -->
                     </div>
+                </div>
+
+                <!-- Contêiner para a Visualização de Lista/Cards -->
+                <div id="listViewContainer" class="card-list-container">
+                    <!-- Os cards de agendamento serão gerados aqui via JS -->
                 </div>
             </main>
         </div>
@@ -1046,6 +1255,22 @@
     <form id="formApagarAgendamento" method="POST" action="{{ url_for('apagar_agendamento') }}" style="display: none;">
         <input type="hidden" name="agendamento_id" id="agendamento_id_apagar">
     </form>
+
+    <!-- Modal de Múltiplos Agendamentos no Mesmo Horário -->
+    <div class="modal-overlay" id="modalMultiAgendamentos">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> Agendamentos no Slot</h3>
+                <button type="button" class="modal-close-btn" data-close-multi>&times;</button>
+            </div>
+            <div class="modal-body" id="multiAppointmentsList">
+                <!-- Lista de agendamentos será preenchida via JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-close-multi>Fechar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- The Notification Modal -->
     <div id="notificationModal" class="notification-modal">
@@ -1285,6 +1510,34 @@
             const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
             const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
+            // Elementos de visualização
+            const calendarViewBtn = document.getElementById('calendarViewBtn');
+            const listViewBtn = document.getElementById('listViewBtn');
+            const calendarViewContainer = document.getElementById('calendarViewContainer');
+            const listViewContainer = document.getElementById('listViewContainer');
+
+            // Estado da visualização atual
+            let currentView = localStorage.getItem('appointmentView') || 'calendar'; // Padrão é 'calendar'
+
+            // Função para alternar a visualização
+            function switchView(view) {
+                currentView = view;
+                localStorage.setItem('appointmentView', view);
+
+                if (view === 'calendar') {
+                    calendarViewContainer.style.display = 'flex';
+                    listViewContainer.style.display = 'none';
+                    calendarViewBtn.classList.add('active');
+                    listViewBtn.classList.remove('active');
+                    renderWeeklyGrid(currentWeekStart); // Re-renderiza o calendário para garantir que esteja atualizado
+                } else {
+                    calendarViewContainer.style.display = 'none';
+                    listViewContainer.style.display = 'flex';
+                    calendarViewBtn.classList.remove('active');
+                    listViewBtn.classList.add('active');
+                    renderCardView(); // Re-renderiza a lista de cards
+                }
+            }
 
             // Função para formatar o intervalo de datas da semana
             function formatDateRange(start, end) {
@@ -1305,7 +1558,7 @@
                 // Define as colunas do grid: 90px para a coluna de tempo, e 7 colunas flexíveis para os dias
                 calendarGridWeek.style.gridTemplateColumns = '90px repeat(7, minmax(120px, 1fr))'; // Aumentado min-width para 120px
                 // A altura da primeira linha (cabeçalhos) é 70px, e as demais linhas de horários têm min de 40px
-                calendarGridWeek.style.gridTemplateRows = '70px repeat(auto-fill, minmax(40px, auto))'; 
+                calendarGridWeek.style.gridTemplateRows = '70px repeat(auto-fill, minmax(40px, auto));'; 
 
                 // Cria o cabeçalho da grade (dias da semana)
                 const cornerHeader = document.createElement('div');
@@ -1358,23 +1611,68 @@
                                 return matchesDate && matchesTime && matchesProfessional;
                             });
 
-                            // Adiciona os agendamentos encontrados à célula
-                            appointmentsInSlot.forEach(app => {
-                                const appElement = document.createElement('div');
-                                appElement.className = `appointment-event status-${app.status}`;
-                                appElement.textContent = `${app.paciente_nome} (${app.profissional_nome || 'N/A'})`;
-                                appElement.dataset.appointmentId = app.id;
-                                appElement.addEventListener('click', (e) => {
-                                    e.stopPropagation(); // Evita que o clique na div pai também abra o modal de agendamento
-                                    openDetailsModal(app);
-                                });
-                                eventCell.appendChild(appElement);
+                            // Sort appointments for consistent horizontal order
+                            appointmentsInSlot.sort((a, b) => a.paciente_nome.localeCompare(b.paciente_nome)); // Sort alphabetically by patient name
+
+                            const maxVisibleHorizontalEvents = 3; // Max events to show side-by-side before "+X mais"
+                            const overlapWidth = 8; // Pixels of visual overlap between events
+
+                            // Calculate the effective width for each event
+                            let numEventsToRender = Math.min(appointmentsInSlot.length, maxVisibleHorizontalEvents);
+                            let singleEventWidth;
+
+                            if (numEventsToRender === 0) {
+                                singleEventWidth = '100%'; // No events, this won't be used
+                            } else {
+                                // Calculate width to fit events with overlap
+                                // Total width available for events (100% of cell width)
+                                // minus the total overlap for N-1 events
+                                // divided by N events.
+                                singleEventWidth = `calc((100% - ${overlapWidth * (numEventsToRender - 1)}px) / ${numEventsToRender})`;
+                            }
+
+
+                            appointmentsInSlot.forEach((app, index) => {
+                                if (index < maxVisibleHorizontalEvents) {
+                                    const appElement = document.createElement('div');
+                                    appElement.className = `appointment-event status-${app.status}`;
+                                    appElement.textContent = `${app.paciente_nome}`; 
+                                    appElement.dataset.appointmentId = app.id;
+
+                                    appElement.style.top = `0px`;
+                                    appElement.style.width = singleEventWidth;
+                                    appElement.style.left = `calc(${index} * (${singleEventWidth} - ${overlapWidth}px))`; // Position based on calculated width and overlap
+                                    appElement.style.zIndex = 10 + index;
+
+                                    appElement.addEventListener('click', (e) => {
+                                        e.stopPropagation();
+                                        openDetailsModal(app);
+                                    });
+                                    eventCell.appendChild(appElement);
+                                }
                             });
 
-                            // Adiciona o ouvinte de evento para abrir o modal de agendamento ao clicar em um slot vazio
-                            if (appointmentsInSlot.length === 0) {
-                                eventCell.addEventListener('click', () => openBookingModal(day, timeStr));
+                            if (appointmentsInSlot.length > maxVisibleHorizontalEvents) {
+                                const moreIndicator = document.createElement('div');
+                                moreIndicator.className = 'appointment-event more-indicator';
+                                moreIndicator.textContent = `+${appointmentsInSlot.length - maxVisibleHorizontalEvents} mais`;
+                                
+                                // Position the "more" indicator
+                                moreIndicator.style.top = `0px`;
+                                // Position it after the last visible event, considering its width and overlap
+                                moreIndicator.style.left = `calc(${maxVisibleHorizontalEvents} * (${singleEventWidth} - ${overlapWidth}px))`;
+                                moreIndicator.style.width = `auto`; // Let content define width
+                                moreIndicator.style.padding = `2px 8px`;
+                                moreIndicator.style.zIndex = 10 + maxVisibleHorizontalEvents;
+                                moreIndicator.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    openMultipleAppointmentsModal(appointmentsInSlot, dateString, timeStr);
+                                });
+                                eventCell.appendChild(moreIndicator);
                             }
+
+                            // Adiciona o ouvinte de evento para abrir o modal de agendamento ao clicar em um slot
+                            eventCell.addEventListener('click', () => openBookingModal(day, timeStr));
                             
                             calendarGridWeek.appendChild(eventCell);
                         });
@@ -1386,6 +1684,83 @@
                 weekEnd.setDate(weekStartDate.getDate() + 6);
                 currentWeekDisplay.textContent = formatDateRange(weekStartDate, weekEnd);
             }
+
+            // Função para renderizar a lista de cards
+            function renderCardView() {
+                listViewContainer.innerHTML = ''; // Limpa a lista existente
+
+                // Filtra os agendamentos com base no profissional selecionado e na semana atual
+                const filteredAppointments = allAppointments.filter(app => {
+                    const appDate = new Date(app.data_agendamento + 'T00:00:00'); // Garante fuso horário local
+                    const matchesProfessional = !professionalFilterId || app.profissional_id === professionalFilterId;
+                    
+                    // Verifica se o agendamento está na semana atual
+                    const appMonday = getMonday(appDate);
+                    const currentWeekMonday = getMonday(currentWeekStart);
+
+                    return matchesProfessional && appMonday.toDateString() === currentWeekMonday.toDateString();
+                });
+
+                // Ordena os agendamentos por data e hora
+                filteredAppointments.sort((a, b) => {
+                    const dateTimeA = new Date(`${a.data_agendamento}T${a.hora_agendamento}`);
+                    const dateTimeB = new Date(`${b.data_agendamento}T${b.hora_agendamento}`);
+                    return dateTimeA - dateTimeB;
+                });
+
+                if (filteredAppointments.length === 0) {
+                    const noAppointmentsMessage = document.createElement('p');
+                    noAppointmentsMessage.textContent = 'Nenhum agendamento encontrado para a semana e filtro selecionados.';
+                    noAppointmentsMessage.style.textAlign = 'center';
+                    noAppointmentsMessage.style.color = 'var(--muted)';
+                    noAppointmentsMessage.style.marginTop = '2rem';
+                    listViewContainer.appendChild(noAppointmentsMessage);
+                    return;
+                }
+
+                filteredAppointments.forEach(app => {
+                    const card = document.createElement('div');
+                    card.className = 'appointment-card';
+                    card.dataset.appointmentId = app.id;
+                    card.addEventListener('click', () => openDetailsModal(app));
+
+                    card.innerHTML = `
+                        <div class="appointment-card-header">
+                            <h4>${app.paciente_nome}</h4>
+                            <span class="status-badge status-${app.status}">${app.status.charAt(0).toUpperCase() + app.status.slice(1)}</span>
+                        </div>
+                        <div class="appointment-card-body">
+                            <div class="appointment-card-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span class="label">Data:</span>
+                                <span class="value">${new Date(app.data_agendamento + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                            </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-clock"></i>
+                                <span class="label">Hora:</span>
+                                <span class="value">${app.hora_agendamento}</span>
+                            </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-user-doctor"></i>
+                                <span class="label">Profissional:</span>
+                                <span class="value">${app.profissional_nome}</span>
+                            </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-syringe"></i>
+                                <span class="label">Serviço:</span>
+                                <span class="value">${app.servico_procedimento_nome}</span>
+                            </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-hand-holding-dollar"></i>
+                                <span class="label">Preço:</span>
+                                <span class="value">R$ ${parseFloat(app.servico_procedimento_preco).toFixed(2).replace('.', ',')}</span>
+                            </div>
+                        </div>
+                    `;
+                    listViewContainer.appendChild(card);
+                });
+            }
+
 
             // Função para renderizar a lista de profissionais
             function renderProfessionalFilterList() {
@@ -1401,7 +1776,7 @@
                 allProfessionalsItem.dataset.professionalId = ''; // ID vazio para "todos"
                 allProfessionalsItem.addEventListener('click', () => {
                     professionalFilterId = '';
-                    renderWeeklyGrid(currentWeekStart);
+                    switchView(currentView); // Renderiza a visualização atual com o novo filtro
                     updateProfessionalListSelection();
                 });
                 professionalFilterListContainer.appendChild(allProfessionalsItem);
@@ -1414,7 +1789,7 @@
                     professionalItem.dataset.professionalId = professional.id;
                     professionalItem.addEventListener('click', () => {
                         professionalFilterId = professional.id;
-                        renderWeeklyGrid(currentWeekStart);
+                        switchView(currentView); // Renderiza a visualização atual com o novo filtro
                         updateProfessionalListSelection();
                     });
                     professionalFilterListContainer.appendChild(professionalItem);
@@ -1437,23 +1812,17 @@
             function setupCalendarInteractions() {
                 const prevWeekBtn = document.getElementById('prev-week-btn');
                 const nextWeekBtn = document.getElementById('next-week-btn');
-                // const professionalFilterSelect = document.getElementById('professional-filter'); // Removido
                 const addManualAppointmentBtn = document.getElementById('addManualAppointmentBtn');
 
                 prevWeekBtn.addEventListener('click', () => {
                     currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-                    renderWeeklyGrid(currentWeekStart);
+                    switchView(currentView); // Re-renderiza a visualização atual
                 });
 
                 nextWeekBtn.addEventListener('click', () => {
                     currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-                    renderWeeklyGrid(currentWeekStart);
+                    switchView(currentView); // Re-renderiza a visualização atual
                 });
-
-                // professionalFilterSelect.addEventListener('change', (event) => { // Removido
-                //     professionalFilterId = event.target.value;
-                //     renderWeeklyGrid(currentWeekStart); // Re-renderiza com o novo filtro
-                // });
 
                 addManualAppointmentBtn.addEventListener('click', () => {
                     openBookingModal(new Date(), '08:00'); // Abre o modal para a data atual e 8:00
@@ -1491,7 +1860,7 @@
                 
                 // Limpa e preenche o select de pacientes existentes
                 const pacienteSelectManual = document.getElementById('paciente_id_manual');
-                pacienteSelectManual.innerHTML = '<option value="">-- Selecione um paciente existente --</option>';
+                pacienteSelectManual.innerHTML = '<option value="">-- Selecione ou cadastre um novo abaixo --</option>';
                 allPatientsForFilter.forEach(paciente => {
                     const option = document.createElement('option');
                     option.value = paciente.id;
@@ -1538,10 +1907,49 @@
                         <i class="fa-solid fa-toggle-on"></i>
                         <div class="info-item-content">
                             <span class="label">Status</span>
-                            <span class="value">${agendamento.status.charAt(0).toUpperCase() + agendamento.status.slice(1)}</span>
+                            <select id="status_details_modal" class="status-select-control" data-appointment-id="${agendamento.id}">
+                                <option value="confirmado" ${agendamento.status === 'confirmado' ? 'selected' : ''}>Confirmado</option>
+                                <option value="concluido" ${agendamento.status === 'concluido' ? 'selected' : ''}>Concluído</option>
+                                <option value="pendente" ${agendamento.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                                <option value="cancelado" ${agendamento.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                            </select>
                         </div>
                     </div>
                 `;
+
+                const statusSelect = document.getElementById('status_details_modal');
+                if (statusSelect) {
+                    statusSelect.addEventListener('change', async (e) => {
+                        const appointmentId = e.target.dataset.appointmentId;
+                        const newStatus = e.target.value;
+
+                        try {
+                            // Em uma aplicação real, isso seria uma chamada fetch para o seu backend Flask:
+                            // const response = await fetch(`/api/appointments/${appointmentId}/status`, {
+                            //     method: 'POST', // ou PUT, dependendo da sua API
+                            //     headers: { 'Content-Type': 'application/json' },
+                            //     body: JSON.stringify({ status: newStatus })
+                            // });
+                            // if (!response.ok) throw new Error('Falha ao atualizar o status');
+                            // const result = await response.json(); // Se o seu backend retornar dados atualizados
+
+                            // Atualiza o array de dados local (simulação do backend)
+                            const appIndex = allAppointments.findIndex(app => app.id === appointmentId);
+                            if (appIndex !== -1) {
+                                allAppointments[appIndex].status = newStatus;
+                            }
+
+                            showToast(`Status do agendamento atualizado para "${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}".`, 'success');
+                            
+                            // Re-renderiza a visualização atual para refletir a mudança de status
+                            switchView(currentView);
+
+                        } catch (error) {
+                            console.error('Erro ao atualizar status:', error);
+                            showToast('Erro ao atualizar o status do agendamento.', 'danger');
+                        }
+                    });
+                }
 
                 btnEditar.onclick = () => {
                     modalDetalhes.classList.remove('active');
@@ -1620,6 +2028,13 @@
                 modalEl.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => modalEl.classList.remove('active')));
                 modalEl.addEventListener('click', (e) => { if (e.target === modalEl) modalEl.classList.remove('active'); });
             });
+
+            // Lógica para fechar a nova modal de múltiplos agendamentos
+            const modalMultiAgendamentos = document.getElementById('modalMultiAgendamentos');
+            if (modalMultiAgendamentos) {
+                modalMultiAgendamentos.querySelectorAll('[data-close-multi]').forEach(btn => btn.addEventListener('click', () => modalMultiAgendamentos.classList.remove('active')));
+                modalMultiAgendamentos.addEventListener('click', (e) => { if (e.target === modalMultiAgendamentos) modalMultiAgendamentos.classList.remove('active'); });
+            }
             
             // Lógica para preencher preço do serviço automaticamente
             const servicoSelect = document.getElementById('servico_id_manual');
@@ -1660,6 +2075,7 @@
             function renderMiniCalendar(date) {
                 const miniCalendarGrid = document.getElementById('mini-calendar-grid');
                 const miniCurrentMonthYear = document.getElementById('mini-current-month-year');
+                const today = new Date(); // Data de hoje
 
                 miniCalendarGrid.innerHTML = ''; // Limpa o calendário existente
 
@@ -1695,24 +2111,30 @@
                     dayElement.dataset.date = new Date(year, month, day).toISOString().split('T')[0];
 
                     // Destaca o dia atual
-                    if (new Date(year, month, day).toDateString() === new Date().toDateString()) {
+                    if (new Date(year, month, day).toDateString() === today.toDateString()) {
                         dayElement.classList.add('current-day');
                     }
-                    // Destaca o dia selecionado (que corresponde à semana exibida no calendário principal)
-                    if (new Date(year, month, day).toDateString() === currentWeekStart.toDateString()) {
-                        dayElement.classList.add('selected');
-                    }
+                    // REMOVIDO: A lógica que adicionava a classe 'selected' com base na semana atual,
+                    // para que apenas o dia atual seja destacado.
+                    // if (new Date(year, month, day).toDateString() === currentWeekStart.toDateString()) {
+                    //     dayElement.classList.add('selected');
+                    // }
 
 
                     dayElement.addEventListener('click', () => {
                         // CORREÇÃO: Adiciona 'T00:00:00' para garantir que a data seja interpretada no fuso horário local.
                         const clickedDate = new Date(`${dayElement.dataset.date}T00:00:00`);
                         currentWeekStart = getMonday(clickedDate); // Atualiza a semana principal para a do dia clicado
-                        renderWeeklyGrid(currentWeekStart); // Renderiza a grade semanal principal
                         
+                        // Re-renderiza a visualização atual (calendário ou lista)
+                        switchView(currentView); 
+
                         // Remove a seleção antiga e adiciona a nova no mini-calendário
+                        // Apenas o 'current-day' deve ser selecionado, não a semana inteira.
                         document.querySelectorAll('.mini-calendar-day.selected').forEach(el => el.classList.remove('selected'));
-                        dayElement.classList.add('selected');
+                        // Não adiciona 'selected' ao dia clicado, pois o objetivo é ter apenas o 'current-day' marcado.
+                        // Se o usuário clicar em um dia que não é "hoje", nenhum dia ficará "selecionado" no mini-calendário,
+                        // mas a semana do calendário principal será atualizada.
                     });
                     miniCalendarGrid.appendChild(dayElement);
                 }
@@ -1725,12 +2147,68 @@
                 miniPrevMonthBtn.addEventListener('click', () => {
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() - 1);
                     renderMiniCalendar(currentMiniCalendarDate);
+                    // Atualiza o calendário principal para a primeira semana do novo mês
+                    currentWeekStart = getMonday(new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1));
+                    switchView(currentView);
                 });
 
                 miniNextMonthBtn.addEventListener('click', () => {
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() + 1);
                     renderMiniCalendar(currentMiniCalendarDate);
+                    // Atualiza o calendário principal para a primeira semana do novo mês
+                    currentWeekStart = getMonday(new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1));
+                    switchView(currentView);
                 });
+            }
+
+            // Função para abrir a modal de múltiplos agendamentos
+            function openMultipleAppointmentsModal(appointments, date, time) {
+                const modalMulti = document.getElementById('modalMultiAgendamentos');
+                const multiAppointmentsList = document.getElementById('multiAppointmentsList');
+                multiAppointmentsList.innerHTML = ''; // Limpa o conteúdo anterior
+
+                const header = document.createElement('h4');
+                header.className = 'form-section-title';
+                header.textContent = `Agendamentos em ${new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')} às ${time}`;
+                multiAppointmentsList.appendChild(header);
+
+                appointments.forEach(app => {
+                    const card = document.createElement('div');
+                    card.className = 'appointment-card'; // Reutiliza o estilo de card existente
+                    card.style.marginBottom = '10px';
+                    card.dataset.appointmentId = app.id;
+                    card.addEventListener('click', () => {
+                        modalMulti.classList.remove('active'); // Fecha a modal de múltiplos
+                        openDetailsModal(app); // Abre os detalhes do agendamento individual
+                    });
+
+                    card.innerHTML = `
+                        <div class="appointment-card-header">
+                            <h4>${app.paciente_nome}</h4>
+                            <span class="status-badge status-${app.status}">${app.status.charAt(0).toUpperCase() + app.status.slice(1)}</span>
+                        </div>
+                        <div class="appointment-card-body">
+                            <div class="appointment-card-item">
+                                <i class="fas fa-user-doctor"></i>
+                                <span class="label">Profissional:</span>
+                                <span class="value">${app.profissional_nome}</span>
+                            </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-syringe"></i>
+                                <span class="label">Serviço:</span>
+                                <span class="value">${app.servico_procedimento_nome}</span>
+                            </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-hand-holding-dollar"></i>
+                                <span class="label">Preço:</span>
+                                <span class="value">R$ ${parseFloat(app.servico_procedimento_preco).toFixed(2).replace('.', ',')}</span>
+                            </div>
+                        </div>
+                    `;
+                    multiAppointmentsList.appendChild(card);
+                });
+
+                modalMulti.classList.add('active');
             }
 
 
@@ -1740,9 +2218,15 @@
             setupLogout();
             setupCalendarInteractions(); // Configura as interações do calendário principal
             setupMiniCalendarInteractions(); // Configura as interações do mini-calendário
-            renderWeeklyGrid(currentWeekStart); // Renderiza o calendário semanal na carga da página
-            renderMiniCalendar(currentMiniCalendarDate); // Renderiza o mini-calendário na carga da página
             renderProfessionalFilterList(); // Renderiza a nova lista de profissionais
+
+            // Configura os listeners dos botões de visualização
+            calendarViewBtn.addEventListener('click', () => switchView('calendar'));
+            listViewBtn.addEventListener('click', () => switchView('list'));
+
+            // Renderiza a visualização inicial com base no localStorage
+            switchView(currentView);
+            renderMiniCalendar(currentMiniCalendarDate); // Garante que o mini-calendário reflita a semana inicial
         });
     </script>
 </body>
