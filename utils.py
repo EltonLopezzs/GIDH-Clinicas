@@ -47,6 +47,10 @@ def format_firestore_timestamp(timestamp):
     return None
 
 def convert_doc_to_dict(doc_snapshot):
+    """
+    Converte um DocumentSnapshot do Firestore em um dicionário Python,
+    tratando tipos especiais como datetime e DocumentReference.
+    """
     data = doc_snapshot.to_dict()
     if not data:
         return {}
@@ -54,6 +58,7 @@ def convert_doc_to_dict(doc_snapshot):
     data['id'] = doc_snapshot.id
 
     def _convert_value(value):
+        """Função auxiliar para converter valores recursivamente."""
         if isinstance(value, datetime.datetime):
             # Garante que o datetime tenha informações de fuso horário antes de formatar
             if value.tzinfo is None:
@@ -62,12 +67,18 @@ def convert_doc_to_dict(doc_snapshot):
                 # Aqui, estamos localizando para SAO_PAULO_TZ para consistência.
                 return SAO_PAULO_TZ.localize(value).strftime('%Y-%m-%dT%H:%M:%S')
             return value.astimezone(SAO_PAULO_TZ).strftime('%Y-%m-%dT%H:%M:%S')
+        elif isinstance(value, firestore.DocumentReference):
+            # Converte DocumentReference para a string do ID do documento
+            return value.id
         elif isinstance(value, dict):
+            # Converte dicionários recursivamente
             return {k: _convert_value(v) for k, v in value.items()}
         elif isinstance(value, list):
+            # Converte listas recursivamente
             return [_convert_value(item) for item in value]
         return value
 
+    # Aplica a conversão a todos os itens do dicionário principal
     return {k: _convert_value(v) for k, v in data.items()}
 
 def parse_date_input(date_string):
@@ -96,6 +107,7 @@ def parse_date_input(date_string):
     return None
 
 def login_required(f):
+    """Decorador para exigir que o usuário esteja logado."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session or 'clinica_id' not in session or 'user_uid' not in session:
@@ -107,6 +119,7 @@ def login_required(f):
     return decorated_function
 
 def admin_required(f):
+    """Decorador para exigir que o usuário tenha o papel de administrador."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session or 'clinica_id' not in session or 'user_uid' not in session:
@@ -117,3 +130,4 @@ def admin_required(f):
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
+

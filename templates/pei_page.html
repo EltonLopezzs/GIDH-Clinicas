@@ -1037,6 +1037,7 @@
                 {% endif %}
 
                 <!-- MACRO for rendering a PEI summary card (MACRO para renderizar um cartão PEI resumido) -->
+                {# Este macro não é mais usado diretamente, a renderização é feita via JS #}
                 {% macro render_pei_summary_card(pei) %}
                 <div class="pei-summary-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" data-pei-id="{{ pei.id }}">
                     <div class="pei-summary-card-header">
@@ -1071,14 +1072,14 @@
                     <section class="pei-section">
                         <h3>PEIs Ativos</h3>
                         <div id="active-peis-list" class="pei-list">
-                            {# PEIs ativos serão renderizados aqui via JavaScript ou Jinja2 #}
+                            {# PEIs ativos serão renderizados aqui via JavaScript #}
                         </div>
                     </section>
                    
                     <section class="pei-section">
                         <h3>PEIs Finalizados</h3>
                         <div id="finalized-peis-list" class="pei-list">
-                            {# PEIs finalizados serão renderizados aqui via JavaScript ou Jinja2 #}
+                            {# PEIs finalizados serão renderizados aqui via JavaScript #}
                         </div>
                     </section>
                 </div>
@@ -1342,7 +1343,7 @@
             console.log('É Administrador (IS_ADMIN):', IS_ADMIN);
             console.log('É Profissional (IS_PROFESSIONAL):', IS_PROFESSIONAL);
             console.log('ID do Profissional Logado (LOGGED_IN_PROFESSIONAL_ID):', LOGGED_IN_PROFESSIONAL_ID);
-            console.log('Todos os PEIs carregados:', allPeisData);
+            console.log('Todos os PEIs carregados inicialmente (via Jinja):', allPeisData);
             console.log('PACIENTE_DOC_ID:', PACIENTE_DOC_ID);
             console.log('-------------------------------------------');
 
@@ -1861,13 +1862,23 @@
                     activePeisList.innerHTML = '';
                     finalizedPeisList.innerHTML = '';
 
-                    const activePeis = allPeisData.filter(pei => pei.status === 'ativo');
-                    const finalizedPeis = allPeisData.filter(pei => pei.status === 'finalizado');
+                    // Ordena os PEIs por data de criação (mais recente primeiro)
+                    const sortedPeis = [...allPeisData].sort((a, b) => {
+                        const dateA = new Date(a.data_criacao_iso || a.data_criacao);
+                        const dateB = new Date(b.data_criacao_iso || b.data_criacao);
+                        return dateB - dateA;
+                    });
+
+                    const activePeis = sortedPeis.filter(pei => pei.status === 'ativo');
+                    const finalizedPeis = sortedPeis.filter(pei => pei.status === 'finalizado');
+
+                    console.log('PEIs Ativos para renderizar:', activePeis);
+                    console.log('PEIs Finalizados para renderizar:', finalizedPeis);
+
 
                     // Renderiza PEIs ativos
                     if (activePeis.length > 0) {
                         activePeis.forEach(pei => {
-                            // CORREÇÃO AQUI: Substituindo a sintaxe Jinja2 por JavaScript puro
                             const peiCardHtml = `
                                 <div class="pei-summary-card ${pei.status === 'finalizado' ? 'finalizado' : ''}" data-pei-id="${pei.id}">
                                     <div class="pei-summary-card-header">
@@ -1903,7 +1914,6 @@
                     // Renderiza PEIs finalizados
                     if (finalizedPeis.length > 0) {
                         finalizedPeis.forEach(pei => {
-                            // CORREÇÃO AQUI: Substituindo a sintaxe Jinja2 por JavaScript puro
                             const peiCardHtml = `
                                 <div class="pei-summary-card ${pei.status === 'finalizado' ? 'finalizado' : ''}" data-pei-id="${pei.id}">
                                     <div class="pei-summary-card-header">
@@ -1968,6 +1978,8 @@
 
                         // Check if the logged-in professional is associated with this PEI
                         const isAssociatedProfessional = pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
+                        console.log(`Verificando permissões para PEI ${pei.id}, Profissional Logado: ${LOGGED_IN_PROFESSIONAL_ID}, Profissionais do PEI: ${pei.profissionais_ids}, Associado: ${isAssociatedProfessional}`);
+
 
                         // Define visibility for action buttons based on roles and PEI/Goal status
                         const showGoalActions = IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional && pei.status === 'ativo' && goal.status === 'ativo');
@@ -1996,11 +2008,11 @@
                             </div>
                             <ul class="targets-list">
                                 ${goal.targets.map((target, targetIndex) => `
-                                    <li class="target-item ${target.concluido ? 'concluido' : ''}" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}">
+                                    <li class="target-item ${target.status === 'finalizada' ? 'concluido' : ''}" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}">
                                         <div class="target-main-content">
-                                            <i class="status-icon fas ${target.concluido ? 'fa-check-square text-green-600' : 'fa-square'}"></i>
+                                            <i class="status-icon fas ${target.status === 'finalizada' ? 'fa-check-square text-green-600' : 'fa-square'}"></i>
                                             <span class="target-text-content">${target.descricao}</span>
-                                            ${(IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional)) && pei.status === 'ativo' && !target.concluido ? `
+                                            ${(IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional)) && pei.status === 'ativo' && target.status !== 'finalizada' ? `
                                                 <div class="attempts-counter" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}">
                                                     <button type="button" data-action="decrement"><i class="fas fa-minus"></i></button>
                                                     <span>${target.tentativas || 0}</span>
@@ -2014,15 +2026,15 @@
                                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ajudas:</label>
                                                 <ul class="aids-list">
                                                     ${target.aids.map((aid, aidIndex) => `
-                                                        <li class="aid-item ${aid.finalizada ? 'finalizada' : ''}">
+                                                        <li class="aid-item ${aid.status === 'finalizada' ? 'finalizada' : ''}">
                                                             <div class="aid-item-left">
-                                                                <i class="aid-status-icon fas ${aid.finalizada ? 'fa-check-square' : 'fa-square'}"></i>
-                                                                <span class="aid-description">${aid.descricao}</span>
+                                                                <i class="aid-status-icon fas ${aid.status === 'finalizada' ? 'fa-check-square' : 'fa-square'}"></i>
+                                                                <span class="aid-description">${aid.description}</span>
                                                             </div>
-                                                            ${(IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional)) && pei.status === 'ativo' && !aid.finalizada ? `
-                                                                <div class="aid-attempts-counter" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}" data-aid-index="${aidIndex}">
+                                                            ${(IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional)) && pei.status === 'ativo' && aid.status !== 'finalizada' ? `
+                                                                <div class="aid-attempts-counter" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}" data-aid-index="${aidIndex}" data-aid-id="${aid.id}">
                                                                     <button type="button" data-action="decrement"><i class="fas fa-minus"></i></button>
-                                                                    <span>${aid.tentativas || 0}</span>
+                                                                    <span>${aid.attempts_count || 0}</span>
                                                                     <button type="button" data-action="increment"><i class="fas fa-plus"></i></button>
                                                                 </div>
                                                             ` : ''}
@@ -2030,7 +2042,7 @@
                                                     `).join('')}
                                                 </ul>
                                             </div>
-                                            ${(IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional)) && pei.status === 'ativo' && !target.concluido ? `
+                                            ${(IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional)) && pei.status === 'ativo' && target.status !== 'finalizada' ? `
                                                 <div class="flex justify-end mt-2">
                                                     <button type="button" class="btn btn-success btn-sm btn-mark-target-complete" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}">
                                                         <i class="fas fa-check mr-2"></i> Marcar como Concluído
@@ -2061,16 +2073,17 @@
 
                     // Renderizar Atividades
                     if (pei.activities && pei.activities.length > 0) {
-                        pei.activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Mais recente primeiro
+                        // Ordena as atividades por timestamp (mais recente primeiro)
+                        pei.activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); 
                         pei.activities.forEach(activity => {
                             const activityItem = document.createElement('div');
                             activityItem.classList.add('activity-item');
                             activityItem.innerHTML = `
                                 <div class="activity-meta">
-                                    ${activity.timestamp} - ${activity.professional_name || 'N/A'}
+                                    ${activity.timestamp} - ${activity.user_name || 'N/A'}
                                 </div>
                                 <div class="activity-content">
-                                    ${activity.description}
+                                    ${activity.content}
                                 </div>
                             `;
                             activityLogContainer.appendChild(activityItem);
@@ -2140,12 +2153,18 @@
                 async function updateTargetAttempts(peiId, goalId, targetId, action) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/goals/${goalId}/targets/${targetId}/update_attempts`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ action: action })
+                            body: JSON.stringify({ 
+                                pei_id: peiId, 
+                                goal_id: goalId, 
+                                target_id: targetId, 
+                                action: action, // Envia a ação de incremento/decremento
+                                type: 'target_attempts' // Indica o tipo de atualização
+                            })
                         });
                         const data = await response.json();
                         if (response.ok) {
@@ -2171,12 +2190,24 @@
                 async function updateAidAttempts(peiId, goalId, targetId, aidIndex, action) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/goals/${goalId}/targets/${targetId}/aids/${aidIndex}/update_attempts`, {
+                        const pei = allPeisData.find(p => p.id === peiId);
+                        const goal = pei.goals.find(g => g.id === goalId);
+                        const target = goal.targets.find(t => t.id === targetId);
+                        const aid = target.aids[aidIndex];
+
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ action: action })
+                            body: JSON.stringify({ 
+                                pei_id: peiId, 
+                                goal_id: goalId, 
+                                target_id: targetId, 
+                                aid_id: aid.id, // Passa o ID da ajuda
+                                action: action, // Envia a ação de incremento/decremento
+                                type: 'aid_attempts' // Indica o tipo de atualização
+                            })
                         });
                         const data = await response.json();
                         if (response.ok) {
@@ -2202,11 +2233,18 @@
                 async function markTargetComplete(peiId, goalId, targetId) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/goals/${goalId}/targets/${targetId}/complete`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                            }
+                            },
+                            body: JSON.stringify({ 
+                                pei_id: peiId, 
+                                goal_id: goalId, 
+                                target_id: targetId, 
+                                new_target_status: 'finalizada',
+                                type: 'target_status' // Indica o tipo de atualização
+                            })
                         });
                         const data = await response.json();
                         if (response.ok) {
@@ -2231,12 +2269,12 @@
                 async function addActivity(peiId, description) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/add_activity`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_activity`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ description: description })
+                            body: JSON.stringify({ pei_id: peiId, description: description })
                         });
                         const data = await response.json();
                         if (response.ok) {
@@ -2261,13 +2299,14 @@
                 async function deletePei(peiId) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/delete`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/delete_pei`, {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
-                            }
+                                'Content-Type': 'application/x-www-form-urlencoded', // Form data
+                            },
+                            body: new URLSearchParams({ pei_id: peiId, paciente_id: PACIENTE_DOC_ID })
                         });
-                        const data = await response.json();
+                        const data = await response.json(); // Assumindo que o backend retorna JSON
                         if (response.ok) {
                             displayFlashMessage('success', data.message);
                             await fetchPeisData(); // Atualiza os dados após a exclusão
@@ -2288,16 +2327,17 @@
                 async function finalizePei(peiId) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/finalize`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/finalize`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                            }
+                            },
+                            body: JSON.stringify({ pei_id: peiId })
                         });
                         const data = await response.json();
                         if (response.ok) {
                             displayFlashMessage('success', data.message);
-                            await fetchPeisData(); // Atualiza os dados
+                            allPeisData = data.peis; // Atualiza com os dados retornados pelo backend
                             renderPeis(); // Re-renderiza as listas de PEIs
                             closeModalById('pei-details-modal'); // Fecha o modal de detalhes se estiver aberto
                         } else {
@@ -2315,16 +2355,17 @@
                 async function finalizeGoal(peiId, goalId) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/goals/${goalId}/finalize`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/finalize_goal`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                            }
+                            },
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
                         });
                         const data = await response.json();
                         if (response.ok) {
                             displayFlashMessage('success', data.message);
-                            await fetchPeisData(); // Atualiza os dados
+                            allPeisData = data.peis; // Atualiza com os dados retornados pelo backend
                             const updatedPei = allPeisData.find(p => p.id === peiId);
                             if (updatedPei && currentlyOpenPeiId === peiId) {
                                 openPeiDetailsModal(updatedPei); // Reabre o modal com dados atualizados
@@ -2344,13 +2385,14 @@
                 async function deleteGoal(peiId, goalId) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/goals/${goalId}/delete`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/delete_goal`, {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
-                            }
+                                'Content-Type': 'application/x-www-form-urlencoded', // Form data
+                            },
+                            body: new URLSearchParams({ pei_id: peiId, goal_id: goalId, paciente_id: PACIENTE_DOC_ID })
                         });
-                        const data = await response.json();
+                        const data = await response.json(); // Assumindo que o backend retorna JSON
                         if (response.ok) {
                             displayFlashMessage('success', data.message);
                             await fetchPeisData(); // Atualiza os dados
@@ -2378,7 +2420,7 @@
                         }
                         const data = await response.json();
                         allPeisData = data; // Atualiza a variável global
-                        console.log('Dados de PEIs atualizados:', allPeisData);
+                        console.log('Dados de PEIs atualizados (via API):', allPeisData);
                     } catch (error) {
                         console.error('Erro ao buscar dados de PEIs:', error);
                         displayFlashMessage('danger', 'Erro ao carregar dados de PEIs. Tente recarregar a página.');
@@ -2439,7 +2481,9 @@
 
                 // Inicializa a UI comum e a lógica da página de PEI
                 setupCommonUI();
-                renderPeis(); // Renderiza os PEIs ao carregar a página
+                fetchPeisData().then(() => { // Garante que os dados sejam buscados antes de renderizar
+                    renderPeis(); // Renderiza os PEIs ao carregar a página
+                });
             }
 
             setupPeiPage();
