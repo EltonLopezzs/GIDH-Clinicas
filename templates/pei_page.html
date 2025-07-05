@@ -1037,7 +1037,6 @@
                 {% endif %}
 
                 <!-- MACRO for rendering a PEI summary card (MACRO para renderizar um cartão PEI resumido) -->
-                {# Este macro não é mais usado diretamente, a renderização é feita via JS #}
                 {% macro render_pei_summary_card(pei) %}
                 <div class="pei-summary-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" data-pei-id="{{ pei.id }}">
                     <div class="pei-summary-card-header">
@@ -1072,14 +1071,14 @@
                     <section class="pei-section">
                         <h3>PEIs Ativos</h3>
                         <div id="active-peis-list" class="pei-list">
-                            {# PEIs ativos serão renderizados aqui via JavaScript #}
+                            {# PEIs ativos serão renderizados aqui via JavaScript ou Jinja2 #}
                         </div>
                     </section>
-                   
+                
                     <section class="pei-section">
                         <h3>PEIs Finalizados</h3>
                         <div id="finalized-peis-list" class="pei-list">
-                            {# PEIs finalizados serão renderizados aqui via JavaScript #}
+                            {# PEIs finalizados serão renderizados aqui via JavaScript ou Jinja2 #}
                         </div>
                     </section>
                 </div>
@@ -1100,37 +1099,37 @@
                 <button type="button" class="modal-close-btn" data-close-modal="addPeiModal">&times;</button>
             </div>
             <form id="formAddPei" method="POST" action="{{ url_for('peis.add_pei', paciente_doc_id=paciente.id) }}">
-                    <div class="modal-body">
-                        <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
-                        <div class="space-y-4">
-                            <div class="form-group">
-                                <label for="pei_titulo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título do PEI</label>
-                                <input type="text" id="pei_titulo" name="titulo" required placeholder="Ex: Plano para Desenvolvimento Motor"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                            </div>
-                            <div class="form-group">
-                                <label for="pei_data_criacao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Criação</label>
-                                <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                            </div>
-                            <div class="form-group">
-                                <label for="profissionais_ids" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profissionais Associados (Múltiplos)</label>
-                                <select id="profissionais_ids" name="profissionais_ids[]" multiple required
-                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                                    {% for professional in all_professionals %}
-                                        <option value="{{ professional.id }}">{{ professional.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                                <p class="text-xs text-gray-500 mt-1">Selecione um ou mais profissionais (Ctrl/Cmd + clique para múltiplos).</p>
-                            </div>
+                 <div class="modal-body">
+                    <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+                    <div class="space-y-4">
+                        <div class="form-group">
+                            <label for="pei_titulo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título do PEI</label>
+                            <input type="text" id="pei_titulo" name="titulo" required placeholder="Ex: Plano para Desenvolvimento Motor"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                        </div>
+                        <div class="form-group">
+                            <label for="pei_data_criacao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Criação</label>
+                            <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                        </div>
+                        <div class="form-group">
+                            <label for="profissionais_ids" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profissionais Associados (Múltiplos)</label>
+                            <select id="profissionais_ids" name="profissionais_ids[]" multiple required
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                {% for professional in all_professionals %}
+                                    <option value="{{ professional.id }}">{{ professional.nome }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Selecione um ou mais profissionais (Ctrl/Cmd + clique para múltiplos).</p>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-close-modal="addPeiModal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save mr-2"></i> Criar PEI
-                        </button>
-                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close-modal="addPeiModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-2"></i> Criar PEI
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -1150,14 +1149,14 @@
                         <div class="form-group">
                             <label for="goal_descricao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição da Meta</label>
                             <input type="text" id="goal_descricao" name="descricao" required placeholder="Ex: Desenvolver a coordenação olho-mão"
-                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                         </div>
                         <div class="form-group">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alvos da Meta</label>
                             <div id="targets-input-container" class="space-y-3">
                                 <div class="target-input-item flex items-center space-x-2">
                                     <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                            class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                           class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                                     <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -1168,6 +1167,7 @@
                             </button>
                         </div>
                     </div>
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-close-modal="addGoalModal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">
@@ -1343,7 +1343,7 @@
             console.log('É Administrador (IS_ADMIN):', IS_ADMIN);
             console.log('É Profissional (IS_PROFESSIONAL):', IS_PROFESSIONAL);
             console.log('ID do Profissional Logado (LOGGED_IN_PROFESSIONAL_ID):', LOGGED_IN_PROFESSIONAL_ID);
-            console.log('Todos os PEIs carregados inicialmente (via Jinja):', allPeisData);
+            console.log('Todos os PEIs carregados:', allPeisData);
             console.log('PACIENTE_DOC_ID:', PACIENTE_DOC_ID);
             console.log('-------------------------------------------');
 
@@ -1440,7 +1440,6 @@
                         // Aplica apenas em mobile e se a sidebar estiver aberta
                         if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
                             // Verifica se o clique foi fora da sidebar E não no botão de menu mobile
-                            // Se a sidebar estiver aberta e o clique não for dentro dela nem no botão de menu, fecha.
                             if (!sidebar.contains(e.target) && (!menuBtnMobile || !menuBtnMobile.contains(e.target))) {
                                 sidebar.classList.remove('open');
                                 if (menuBtnMobile) { // Atualiza o ícone de volta para barras
@@ -1526,8 +1525,8 @@
                     }
                     // Adicionado para fechar modal ao clicar no overlay escuro
                     if(target.matches('.modal-overlay')) {
-                           closeModalById(target.id);
-                           return;
+                         closeModalById(target.id);
+                         return;
                     }
                     if(target.closest('[data-close-modal]')) {
                         closeModalById(target.closest('[data-close-modal]').dataset.closeModal);
@@ -1578,7 +1577,7 @@
                         document.getElementById('targets-input-container').innerHTML = `
                             <div class="target-input-item flex items-center space-x-2">
                                 <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                        class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                       class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                                 <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -1601,891 +1600,1081 @@
                         const targetCount = container.children.length + 1; // Conta os alvos existentes para o placeholder
                         newItem.innerHTML = `
                             <input type="text" name="targets[]" placeholder="Descrição do Alvo ${targetCount}" required
-                                    class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                   class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                             <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1">
                                 <i class="fas fa-trash"></i>
                             </button>
                         `;
                         container.appendChild(newItem);
-                        // Mostra o botão de remover no primeiro item se houver mais de um
-                        if (container.children.length > 1) {
-                            container.querySelector('.target-input-item .btn-remove-target').style.display = 'block';
-                        }
+                        // Mostra o botão de remover para todos os alvos se houver mais de um
+                        container.querySelectorAll('.btn-remove-target').forEach(btn => {
+                            btn.style.display = container.children.length > 1 ? 'block' : 'none';
+                        });
                         return;
                     }
 
                     // Botão Remover Alvo (dentro do modal de adicionar meta)
-                    if (target.matches('.btn-remove-target')) {
+                    if (target.closest('.btn-remove-target')) {
                         // Apenas admins podem remover alvos
                         if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para remover alvos.');
+                            displayFlashMessage('danger', 'Você não tem permissão para remover alvos de metas.');
                             return;
                         }
-                        const itemToRemove = target.closest('.target-input-item');
-                        if (itemToRemove) {
-                            itemToRemove.remove();
-                            const container = document.getElementById('targets-input-container');
-                            // Se restar apenas um item, esconde o botão de remover dele
-                            if (container.children.length === 1) {
-                                container.querySelector('.target-input-item .btn-remove-target').style.display = 'none';
+                        const container = target.closest('.targets-input-container');
+                        if (container.children.length > 1) { // Garante que pelo menos um alvo permaneça
+                            target.closest('.target-input-item').remove();
+                        }
+                        // Oculta o botão de remover se apenas um alvo permanecer
+                        container.querySelectorAll('.btn-remove-target').forEach(btn => {
+                            btn.style.display = container.children.length > 1 ? 'block' : 'none';
+                        });
+                        return;
+                    }
+
+                    // NOVO: Evento de clique no item do alvo para expandir/colapsar
+                    const clickedTargetMainContent = target.closest('.target-main-content');
+                    if (clickedTargetMainContent) {
+                        const targetItem = clickedTargetMainContent.closest('.target-item');
+                        const isExpanded = targetItem.dataset.targetExpanded === 'true';
+                        targetItem.dataset.targetExpanded = !isExpanded;
+                        targetItem.classList.toggle('expanded', !isExpanded);
+                        return;
+                    }
+
+                    // Botão Finalizar Meta
+                    const finalizeGoalButton = target.closest('.btn-finalize-goal');
+                    if (finalizeGoalButton) {
+                        const peiId = finalizeGoalButton.dataset.peiId;
+                        const goalId = finalizeGoalButton.dataset.goalId;
+                        // Abre o modal de confirmação para finalizar a meta
+                        openConfirmDeleteModal('Confirmar Finalização da Meta', 'Tem certeza que deseja finalizar esta meta? Uma vez finalizada, não poderá ser editada.', 'finalize_goal', { peiId: peiId, goalId: goalId });
+                        return;
+                    }
+
+                    // Botão Excluir Meta
+                    const deleteGoalButton = target.closest('.btn-delete-goal');
+                    if (deleteGoalButton) {
+                        // Apenas admins podem excluir metas
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para excluir metas.');
+                            return;
+                        }
+                        const peiId = deleteGoalButton.dataset.peiId;
+                        const goalId = deleteGoalButton.dataset.goalId;
+                        // Abre o modal de confirmação para excluir a meta
+                        openConfirmDeleteModal('Confirmar Exclusão da Meta', 'Tem certeza que deseja apagar esta meta e todos os seus alvos? Esta ação não pode ser desfeita.', 'delete_goal', { peiId: peiId, goalId: goalId });
+                        return;
+                    }
+
+                    // Botão Excluir PEI
+                    const deletePeiButton = target.closest('.btn-delete-pei');
+                    if (deletePeiButton) {
+                        // Apenas admins podem excluir PEIs
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para excluir PEIs.');
+                            return;
+                        }
+                        const peiId = deletePeiButton.dataset.peiId;
+                        // Abre o modal de confirmação para excluir o PEI
+                        openConfirmDeleteModal('Confirmar Exclusão do PEI', 'Tem certeza que deseja apagar este PEI e todas as suas metas e alvos? Esta ação não pode ser desfeita.', 'delete_pei', { peiId: peiId });
+                        return;
+                    }
+
+                    // Botão Finalizar PEI
+                    const finalizePeiButton = target.closest('.btn-finalize-pei');
+                    if (finalizePeiButton) {
+                        const peiId = finalizePeiButton.dataset.peiId;
+                        // Abre o modal de confirmação para finalizar o PEI
+                        openConfirmDeleteModal('Confirmar Finalização do PEI', 'Tem certeza que deseja finalizar este PEI? Todas as metas ativas serão consideradas finalizadas. Esta ação não pode ser desfeita.', 'finalize_pei', { peiId: peiId });
+                        return;
+                    }
+
+                    // Botão de CONFIRMAR exclusão/finalização (lida com base em currentDeleteAction)
+                    if (target.id === 'confirmDeleteBtn') {
+                        closeModalById('confirm-delete-modal'); // Fecha o modal de confirmação primeiro
+                        showLoading(); // Mostra o indicador de carregamento antes de iniciar a ação
+
+                        try {
+                            if (currentDeleteAction === 'delete_pei') {
+                                // Define os valores e submete o formulário de exclusão de PEI
+                                formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
+                                formApagarPei.action = `/pacientes/${PACIENTE_DOC_ID}/peis/delete_pei`;
+                                formApagarPei.submit(); // Isso causará um recarregamento completo da página
+                            } else if (currentDeleteAction === 'delete_goal') {
+                                // Define os valores e submete o formulário de exclusão de meta
+                                formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
+                                formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
+                                formApagarGoal.action = `/pacientes/${PACIENTE_DOC_ID}/peis/delete_goal`;
+                                formApagarGoal.submit(); // Isso causará um recarregamento completo da página
+                            } else if (currentDeleteAction === 'finalize_goal') {
+                                // Chama a função assíncrona para finalizar a meta via AJAX
+                                await finalizeGoal(currentDeleteData.peiId, currentDeleteData.goalId);
+                            } else if (currentDeleteAction === 'finalize_pei') {
+                                // Chama a função assíncrona para finalizar o PEI via AJAX
+                                await finalizePei(currentDeleteData.peiId);
                             }
-                            // Atualiza os placeholders dos alvos restantes
-                            Array.from(container.children).forEach((item, index) => {
-                                const input = item.querySelector('input[name="targets[]"]');
-                                if (input) {
-                                    input.placeholder = `Descrição do Alvo ${index + 1}`;
-                                }
-                            });
+                        } catch (error) {
+                            console.error('Erro durante a ação de confirmação:', error);
+                            displayFlashMessage('danger', `Ocorreu um erro ao processar a solicitação: ${error.message}`); // Feedback ao usuário
+                        } finally {
+                            hideLoading(); // Oculta o indicador de carregamento
+                            currentDeleteAction = null; // Reseta a ação
+                            currentDeleteData = {}; // Limpa os dados
                         }
                         return;
                     }
 
-                    // Botões de ação dentro do modal de detalhes do PEI (Editar, Apagar PEI, Finalizar PEI)
-                    if (target.matches('#editPeiBtn')) {
-                        // Apenas admins podem editar PEIs
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para editar PEIs.');
-                            return;
-                        }
-                        const peiId = target.dataset.peiId;
-                        // Redireciona para a página de edição do PEI
-                        window.location.href = `/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/editar`;
-                        return;
-                    }
-
-                    if (target.matches('#deletePeiBtn')) {
-                        // Apenas admins podem apagar PEIs
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para apagar PEIs.');
-                            return;
-                        }
-                        const peiId = target.dataset.peiId;
-                        openConfirmDeleteModal(
-                            'Apagar PEI',
-                            'Tem certeza que deseja apagar este PEI? Todas as metas e atividades associadas serão removidas permanentemente.',
-                            'delete_pei',
-                            { pei_id: peiId }
-                        );
-                        return;
-                    }
-
-                    if (target.matches('#finalizePeiBtn')) {
-                        // Apenas admins podem finalizar PEIs
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para finalizar PEIs.');
-                            return;
-                        }
-                        const peiId = target.dataset.peiId;
-                        openConfirmDeleteModal(
-                            'Finalizar PEI',
-                            'Tem certeza que deseja finalizar este PEI? Ele será movido para a seção de PEIs finalizados e não poderá ser editado.',
-                            'finalize_pei',
-                            { pei_id: peiId }
-                        );
-                        return;
-                    }
-
-                    // Botões de ação de metas (Finalizar Meta, Apagar Meta)
-                    const finalizeGoalBtn = target.closest('.btn-finalize-goal');
-                    if (finalizeGoalBtn) {
-                        // Apenas admins podem finalizar metas
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para finalizar metas.');
-                            return;
-                        }
-                        const peiId = finalizeGoalBtn.dataset.peiId;
-                        const goalId = finalizeGoalBtn.dataset.goalId;
-                        openConfirmDeleteModal(
-                            'Finalizar Meta',
-                            'Tem certeza que deseja finalizar esta meta? Todas as metas e atividades associadas serão removidas permanentemente.',
-                            'finalize_goal',
-                            { pei_id: peiId, goal_id: goalId }
-                        );
-                        return;
-                    }
-
-                    const deleteGoalBtn = target.closest('.btn-delete-goal');
-                    if (deleteGoalBtn) {
-                        // Apenas admins podem apagar metas
-                        if (!IS_ADMIN) {
-                            displayFlashMessage('danger', 'Você não tem permissão para apagar metas.');
-                            return;
-                        }
-                        const peiId = deleteGoalBtn.dataset.peiId;
-                        const goalId = deleteGoalBtn.dataset.goalId;
-                        openConfirmDeleteModal(
-                            'Apagar Meta',
-                            'Tem certeza que deseja apagar esta meta? Esta ação não pode ser desfeita.',
-                            'delete_goal',
-                            { pei_id: peiId, goal_id: goalId }
-                        );
-                        return;
-                    }
-
-                    // Botão de expandir/recolher alvo
-                    const targetItem = target.closest('.target-item');
-                    if (targetItem && (target.matches('.target-main-content') || target.closest('.target-main-content'))) {
-                        targetItem.classList.toggle('expanded');
-                        return;
-                    }
-
-                    // Botões de incremento/decremento de tentativas de alvo
-                    const attemptsBtn = target.closest('.attempts-counter button');
-                    if (attemptsBtn) {
-                        // Apenas admins ou o profissional logado (se associado ao PEI) podem alterar tentativas
-                        const peiId = attemptsBtn.dataset.peiId;
-                        const goalId = attemptsBtn.dataset.goalId;
-                        const targetId = attemptsBtn.dataset.targetId;
-                        const pei = allPeisData.find(p => p.id === peiId);
-                        const isAssociatedProfessional = pei && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
-
-                        if (!IS_ADMIN && !(IS_PROFESSIONAL && isAssociatedProfessional)) {
-                            displayFlashMessage('danger', 'Você não tem permissão para alterar as tentativas deste alvo.');
-                            return;
-                        }
-
-                        const action = attemptsBtn.dataset.action; // 'increment' ou 'decrement'
-                        await updateTargetAttempts(peiId, goalId, targetId, action);
-                        return;
-                    }
-
-                    // Botões de incremento/decremento de tentativas de ajuda (aid)
-                    const aidAttemptsBtn = target.closest('.aid-attempts-counter button');
-                    if (aidAttemptsBtn) {
-                        // Apenas admins ou o profissional logado (se associado ao PEI) podem alterar tentativas
-                        const peiId = aidAttemptsBtn.dataset.peiId;
-                        const goalId = aidAttemptsBtn.dataset.goalId;
-                        const targetId = aidAttemptsBtn.dataset.targetId;
-                        const aidIndex = aidAttemptsBtn.dataset.aidIndex;
-                        const pei = allPeisData.find(p => p.id === peiId);
-                        const isAssociatedProfessional = pei && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
-
-                        if (!IS_ADMIN && !(IS_PROFESSIONAL && isAssociatedProfessional)) {
-                            displayFlashMessage('danger', 'Você não tem permissão para alterar as tentativas desta ajuda.');
-                            return;
-                        }
-
-                        const action = aidAttemptsBtn.dataset.action; // 'increment' ou 'decrement'
-                        await updateAidAttempts(peiId, goalId, targetId, aidIndex, action);
-                        return;
-                    }
-
-                    // Botão para marcar alvo como concluído
-                    const markTargetCompleteBtn = target.closest('.btn-mark-target-complete');
-                    if (markTargetCompleteBtn) {
-                        // Apenas admins ou o profissional logado (se associado ao PEI) podem marcar alvos como concluídos
-                        const peiId = markTargetCompleteBtn.dataset.peiId;
-                        const goalId = markTargetCompleteBtn.dataset.goalId;
-                        const targetId = markTargetCompleteBtn.dataset.targetId;
-                        const pei = allPeisData.find(p => p.id === peiId);
-                        const isAssociatedProfessional = pei && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
-
-                        if (!IS_ADMIN && !(IS_PROFESSIONAL && isAssociatedProfessional)) {
-                            displayFlashMessage('danger', 'Você não tem permissão para marcar este alvo como concluído.');
-                            return;
-                        }
-
-                        openConfirmDeleteModal(
-                            'Concluir Alvo',
-                            'Tem certeza que deseja marcar este alvo como concluído?',
-                            'complete_target',
-                            { pei_id: peiId, goal_id: goalId, target_id: targetId }
-                        );
-                        return;
-                    }
-
-                    // Botão para adicionar atividade
-                    const addActivityBtn = target.closest('.btn-add-activity');
-                    if (addActivityBtn) {
-                        // Apenas admins ou o profissional logado (se associado ao PEI) podem adicionar atividades
-                        const peiId = addActivityBtn.dataset.peiId;
-                        const pei = allPeisData.find(p => p.id === peiId);
-                        const isAssociatedProfessional = pei && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
-
-                        if (!IS_ADMIN && !(IS_PROFESSIONAL && isAssociatedProfessional)) {
-                            displayFlashMessage('danger', 'Você não tem permissão para adicionar atividades a este PEI.');
-                            return;
-                        }
-
-                        const activityTextarea = document.getElementById(`activity-input-${peiId}`);
-                        if (activityTextarea && activityTextarea.value.trim() !== '') {
-                            await addActivity(peiId, activityTextarea.value.trim());
-                            activityTextarea.value = ''; // Limpa o campo
+                    // Botão de IMPRIMIR PEI
+                    const printPeiButton = target.closest('.btn-print-pei');
+                    if (printPeiButton) {
+                        const peiId = printPeiButton.dataset.peiId;
+                        // Encontra o PEI correspondente nos dados carregados
+                        const peiToPrint = allPeisData.find(p => p.id === peiId);
+                        if (peiToPrint) {
+                            generatePdfForPei(peiToPrint);
                         } else {
-                            displayFlashMessage('warning', 'Por favor, digite a descrição da atividade.');
+                            console.error('PEI não encontrado para impressão:', peiId);
+                            displayFlashMessage('danger', 'PEI não encontrado para impressão.');
                         }
                         return;
                     }
 
                     // Botão para imprimir todos os PEIs
-                    if (target.id === 'printAllPeisBtn') {
-                        await printAllPeis();
+                    const printAllPeisButton = target.closest('#printAllPeisBtn'); // Supondo que você adicionaria um botão com este ID
+                    if (printAllPeisButton) {
+                        generatePdfForAllPeis(allPeisData);
                         return;
                     }
 
-                    // Botão de Confirmação no Modal de Confirmação (confirmDeleteBtn)
-                    if (target.id === 'confirmDeleteBtn') {
-                        showLoading();
-                        try {
-                            if (currentDeleteAction === 'delete_pei') {
-                                await deletePei(currentDeleteData.pei_id);
-                            } else if (currentDeleteAction === 'finalize_pei') {
-                                await finalizePei(currentDeleteData.pei_id);
-                            } else if (currentDeleteAction === 'finalize_goal') {
-                                await finalizeGoal(currentDeleteData.pei_id, currentDeleteData.goal_id);
-                            } else if (currentDeleteAction === 'delete_goal') {
-                                await deleteGoal(currentDeleteData.pei_id, currentDeleteData.goal_id);
-                            } else if (currentDeleteAction === 'complete_target') {
-                                await markTargetComplete(currentDeleteData.pei_id, currentDeleteData.goal_id, currentDeleteData.target_id);
-                            }
-                        } catch (error) {
-                            console.error('Erro ao executar ação:', error);
-                            displayFlashMessage('danger', 'Erro ao executar a ação. Tente novamente.');
-                        } finally {
-                            closeModalById('confirm-delete-modal');
-                            hideLoading();
+                    // NOVO: Botões de tentativas (incrementar/decrementar) para UMA AJUDA ESPECÍFICA
+                    const aidIncrementBtn = target.closest('.btn-increment-aid-attempts');
+                    const aidDecrementBtn = target.closest('.btn-decrement-aid-attempts');
+                    if (aidIncrementBtn || aidDecrementBtn) {
+                        const aidItem = target.closest('.aid-item');
+                        const targetItem = aidItem.closest('.target-item');
+
+                        const peiId = targetItem.dataset.peiId;
+                        const goalId = targetItem.dataset.goalId;
+                        const targetId = targetItem.dataset.targetId;
+                        const aidId = aidItem.dataset.aidId;
+
+                        const attemptsSpan = aidItem.querySelector('.aid-attempts-count');
+                        let currentAttempts = parseInt(attemptsSpan.textContent);
+
+                        const currentPei = allPeisData.find(p => p.id === peiId);
+                        const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
+
+                        if (!canModify) {
+                            displayFlashMessage('danger', 'Você não tem permissão para atualizar tentativas neste PEI.');
+                            return;
                         }
+
+                        if (aidIncrementBtn) {
+                            currentAttempts++;
+                        } else if (aidDecrementBtn) {
+                            currentAttempts = Math.max(0, currentAttempts - 1); // Não permite tentativas negativas
+                        }
+                        
+                        // Envia a atualização para o backend, incluindo o aid_id
+                        await updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, currentAttempts, null);
+                        return;
+                    }
+                });
+                
+                // **NOVO**: Event listener separado para 'change' em vez de 'click'
+                document.body.addEventListener('change', async function(e) {
+                    const target = e.target;
+                    // Manipular mudança de status do alvo (dropdown)
+                    if (target.matches('.target-status-select')) {
+                        const targetItem = target.closest('.target-item');
+                        const peiId = targetItem.dataset.peiId;
+                        const goalId = targetItem.dataset.goalId;
+                        const targetId = targetItem.dataset.targetId;
+                        const newStatus = target.value;
+
+                        const currentPei = allPeisData.find(p => p.id === peiId);
+                        const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
+
+                        if (!canModify) {
+                            displayFlashMessage('danger', 'Você não tem permissão para atualizar o status deste alvo.');
+                            // Reverte a seleção visualmente
+                            const originalTarget = currentPei?.goals.find(g => g.id === goalId)?.targets.find(t => t.id === targetId);
+                            if (originalTarget) {
+                                target.value = originalTarget.status || 'pendente';
+                            }
+                            return;
+                        }
+                        
+                        // Envia apenas o novo status do alvo
+                        await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, null, newStatus);
                         return;
                     }
                 });
 
-                // Função para renderizar os PEIs na lista
-                function renderPeis() {
-                    const activePeisList = document.getElementById('active-peis-list');
-                    const finalizedPeisList = document.getElementById('finalized-peis-list');
-
-                    if (!activePeisList || !finalizedPeisList) {
-                        console.error('Elementos de lista de PEIs não encontrados.');
-                        return;
-                    }
-
-                    activePeisList.innerHTML = '';
-                    finalizedPeisList.innerHTML = '';
-
-                    // Ordena os PEIs por data de criação (mais recente primeiro)
-                    const sortedPeis = [...allPeisData].sort((a, b) => {
-                        const dateA = new Date(a.data_criacao_iso || a.data_criacao);
-                        const dateB = new Date(b.data_criacao_iso || b.data_criacao);
-                        return dateB - dateA;
-                    });
-
-                    const activePeis = sortedPeis.filter(pei => pei.status === 'ativo');
-                    const finalizedPeis = sortedPeis.filter(pei => pei.status === 'finalizado');
-
-                    console.log('PEIs Ativos para renderizar:', activePeis);
-                    console.log('PEIs Finalizados para renderizar:', finalizedPeis);
-
-
-                    // Renderiza PEIs ativos
-                    if (activePeis.length > 0) {
-                        activePeis.forEach(pei => {
-                            const peiCardHtml = `
-                                <div class="pei-summary-card ${pei.status === 'finalizado' ? 'finalizado' : ''}" data-pei-id="${pei.id}">
-                                    <div class="pei-summary-card-header">
-                                        <h4>PEI: ${pei.titulo || 'Sem Título'}</h4>
-                                        <div class="pei-summary-card-meta">
-                                            <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
-                                            <span><i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}</span>
-                                            <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
-                                        </div>
-                                    </div>
-                                    <div class="pei-summary-card-content">
-                                        <strong>Metas Ativas:</strong>
-                                        <ul>
-                                            ${pei.goals.filter(goal => goal.status === 'ativo').slice(0, 3).map(goal => `
-                                                <li><i class="fas fa-bullseye"></i> ${goal.descricao}</li>
-                                            `).join('')}
-                                            ${pei.goals.filter(goal => goal.status === 'ativo').length > 3 ? `
-                                                <li>...e ${pei.goals.filter(goal => goal.status === 'ativo').length - 3} mais.</li>
-                                            ` : ''}
-                                            ${pei.goals.filter(goal => goal.status === 'ativo').length === 0 ? `
-                                                <li>Nenhuma meta ativa.</li>
-                                            ` : ''}
-                                        </ul>
-                                    </div>
-                                </div>
-                            `;
-                            activePeisList.insertAdjacentHTML('beforeend', peiCardHtml);
-                        });
-                    } else {
-                        activePeisList.innerHTML = '<p class="text-muted text-center py-4">Nenhum PEI ativo encontrado para este paciente.</p>';
-                    }
-
-                    // Renderiza PEIs finalizados
-                    if (finalizedPeis.length > 0) {
-                        finalizedPeis.forEach(pei => {
-                            const peiCardHtml = `
-                                <div class="pei-summary-card ${pei.status === 'finalizado' ? 'finalizado' : ''}" data-pei-id="${pei.id}">
-                                    <div class="pei-summary-card-header">
-                                        <h4>PEI: ${pei.titulo || 'Sem Título'}</h4>
-                                        <div class="pei-summary-card-meta">
-                                            <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
-                                            <span><i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}</span>
-                                            <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
-                                        </div>
-                                    </div>
-                                    <div class="pei-summary-card-content">
-                                        <strong>Metas Ativas:</strong>
-                                        <ul>
-                                            ${pei.goals.filter(goal => goal.status === 'ativo').slice(0, 3).map(goal => `
-                                                <li><i class="fas fa-bullseye"></i> ${goal.descricao}</li>
-                                            `).join('')}
-                                            ${pei.goals.filter(goal => goal.status === 'ativo').length > 3 ? `
-                                                <li>...e ${pei.goals.filter(goal => goal.status === 'ativo').length - 3} mais.</li>
-                                            ` : ''}
-                                            ${pei.goals.filter(goal => goal.status === 'ativo').length === 0 ? `
-                                                <li>Nenhuma meta ativa.</li>
-                                            ` : ''}
-                                        </ul>
-                                    </div>
-                                </div>
-                            `;
-                            finalizedPeisList.insertAdjacentHTML('beforeend', peiCardHtml);
-                        });
-                    } else {
-                        finalizedPeisList.innerHTML = '<p class="text-muted text-center py-4">Nenhum PEI finalizado encontrado para este paciente.</p>';
-                    }
-                }
-
-                // Função para abrir o modal de detalhes do PEI
-                function openPeiDetailsModal(pei) {
-                    currentlyOpenPeiId = pei.id; // Define o PEI que está aberto
-                    const modal = document.getElementById('pei-details-modal');
-                    document.getElementById('pei-modal-title').textContent = pei.titulo;
-                    document.getElementById('pei-modal-created-date').innerHTML = `<i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}`;
-                    document.getElementById('pei-modal-professionals').innerHTML = `<i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`;
-                    document.getElementById('pei-modal-status').innerHTML = `Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span>`;
-
-                    const activeGoalsContainer = document.getElementById('pei-modal-active-goals');
-                    const finalizedGoalsContainer = document.getElementById('pei-modal-finalized-goals');
-                    const activityLogContainer = document.getElementById('pei-modal-activity-log');
-                    const activityInputContainer = document.getElementById('pei-modal-activity-input-container');
-                    const modalFooter = document.getElementById('pei-details-modal-footer');
-
-                    activeGoalsContainer.innerHTML = '';
-                    finalizedGoalsContainer.innerHTML = '';
-                    activityLogContainer.innerHTML = '';
-                    activityInputContainer.innerHTML = '';
-                    modalFooter.innerHTML = '';
-
-                    // Renderizar Metas
-                    pei.goals.forEach(goal => {
-                        const goalCard = document.createElement('div');
-                        goalCard.classList.add('goal-card');
-                        if (goal.status === 'finalizado') {
-                            goalCard.classList.add('finalizado');
-                        }
-
-                        // Check if the logged-in professional is associated with this PEI
-                        const isAssociatedProfessional = pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
-                        console.log(`Verificando permissões para PEI ${pei.id}, Profissional Logado: ${LOGGED_IN_PROFESSIONAL_ID}, Profissionais do PEI: ${pei.profissionais_ids}, Associado: ${isAssociatedProfessional}`);
-
-
-                        // Define visibility for action buttons based on roles and PEI/Goal status
-                        const showGoalActions = IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional && pei.status === 'ativo' && goal.status === 'ativo');
-                        const showDeleteGoal = IS_ADMIN && pei.status === 'ativo'; // Only admin can delete and only if PEI is active
-                        const showFinalizeGoal = IS_ADMIN && pei.status === 'ativo' && goal.status === 'ativo'; // Only admin can finalize and only if PEI and Goal are active
-
-                        goalCard.innerHTML = `
-                            <div class="goal-card-header">
-                                <strong>${goal.descricao}</strong>
-                                <div class="flex items-center gap-2">
-                                    <span class="goal-status ${goal.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}</span>
-                                    ${showGoalActions ? `
-                                        <div class="relative inline-block text-left">
-                                            <button type="button" class="btn btn-sm btn-secondary" data-dropdown-toggle="goal-dropdown-${goal.id}">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div id="goal-dropdown-${goal.id}" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabindex="-1">
-                                                <div class="py-1" role="none">
-                                                    ${showFinalizeGoal ? `<button type="button" class="btn-finalize-goal text-green-600 dark:text-green-400 block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem" data-pei-id="${pei.id}" data-goal-id="${goal.id}"><i class="fas fa-check mr-2"></i> Finalizar Meta</button>` : ''}
-                                                    ${showDeleteGoal ? `<button type="button" class="btn-delete-goal text-red-600 dark:text-red-400 block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem" data-pei-id="${pei.id}" data-goal-id="${goal.id}"><i class="fas fa-trash mr-2"></i> Apagar Meta</button>` : ''}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
-                            <ul class="targets-list">
-                                ${goal.targets.map((target, targetIndex) => `
-                                    <li class="target-item ${target.status === 'finalizada' ? 'concluido' : ''}" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}">
-                                        <div class="target-main-content">
-                                            <i class="status-icon fas ${target.status === 'finalizada' ? 'fa-check-square text-green-600' : 'fa-square'}"></i>
-                                            <span class="target-text-content">${target.descricao}</span>
-                                            ${(IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional)) && pei.status === 'ativo' && target.status !== 'finalizada' ? `
-                                                <div class="attempts-counter" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}">
-                                                    <button type="button" data-action="decrement"><i class="fas fa-minus"></i></button>
-                                                    <span>${target.tentativas || 0}</span>
-                                                    <button type="button" data-action="increment"><i class="fas fa-plus"></i></button>
-                                                </div>
-                                            ` : ''}
-                                            <i class="expand-icon fas fa-chevron-right ml-2"></i>
-                                        </div>
-                                        <div class="target-details-expanded">
-                                            <div class="form-group">
-                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ajudas:</label>
-                                                <ul class="aids-list">
-                                                    ${target.aids.map((aid, aidIndex) => `
-                                                        <li class="aid-item ${aid.status === 'finalizada' ? 'finalizada' : ''}">
-                                                            <div class="aid-item-left">
-                                                                <i class="aid-status-icon fas ${aid.status === 'finalizada' ? 'fa-check-square' : 'fa-square'}"></i>
-                                                                <span class="aid-description">${aid.description}</span>
-                                                            </div>
-                                                            ${(IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional)) && pei.status === 'ativo' && aid.status !== 'finalizada' ? `
-                                                                <div class="aid-attempts-counter" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}" data-aid-index="${aidIndex}" data-aid-id="${aid.id}">
-                                                                    <button type="button" data-action="decrement"><i class="fas fa-minus"></i></button>
-                                                                    <span>${aid.attempts_count || 0}</span>
-                                                                    <button type="button" data-action="increment"><i class="fas fa-plus"></i></button>
-                                                                </div>
-                                                            ` : ''}
-                                                        </li>
-                                                    `).join('')}
-                                                </ul>
-                                            </div>
-                                            ${(IS_ADMIN || (IS_PROFESSIONAL && isAssociatedProfessional)) && pei.status === 'ativo' && target.status !== 'finalizada' ? `
-                                                <div class="flex justify-end mt-2">
-                                                    <button type="button" class="btn btn-success btn-sm btn-mark-target-complete" data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}">
-                                                        <i class="fas fa-check mr-2"></i> Marcar como Concluído
-                                                    </button>
-                                                </div>
-                                            ` : ''}
-                                        </div>
-                                    </li>
-                                `).join('')}
-                            </ul>
-                        `;
-                        if (goal.status === 'ativo') {
-                            activeGoalsContainer.appendChild(goalCard);
-                        } else {
-                            finalizedGoalsContainer.appendChild(goalCard);
-                        }
-                    });
-
-                    // Botão para adicionar meta
-                    if (IS_ADMIN && pei.status === 'ativo') {
-                        const addGoalButtonHtml = `
-                            <button type="button" class="btn btn-primary btn-add-goal w-full mt-4" data-pei-id="${pei.id}">
-                                <i class="fas fa-plus mr-2"></i> Adicionar Nova Meta
-                            </button>
-                        `;
-                        activeGoalsContainer.insertAdjacentHTML('beforeend', addGoalButtonHtml);
-                    }
-
-                    // Renderizar Atividades
-                    if (pei.activities && pei.activities.length > 0) {
-                        // Ordena as atividades por timestamp (mais recente primeiro)
-                        pei.activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); 
-                        pei.activities.forEach(activity => {
-                            const activityItem = document.createElement('div');
-                            activityItem.classList.add('activity-item');
-                            activityItem.innerHTML = `
-                                <div class="activity-meta">
-                                    ${activity.timestamp} - ${activity.user_name || 'N/A'}
-                                </div>
-                                <div class="activity-content">
-                                    ${activity.content}
-                                </div>
-                            `;
-                            activityLogContainer.appendChild(activityItem);
-                        });
-                    } else {
-                        activityLogContainer.innerHTML = '<p class="text-muted text-center py-2">Nenhuma atividade registrada ainda.</p>';
-                    }
-
-                    // Campo para adicionar nova atividade
-                    if (IS_ADMIN || (IS_PROFESSIONAL && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID) && pei.status === 'ativo')) {
-                        activityInputContainer.innerHTML = `
-                            <div class="activity-input-group">
-                                <textarea id="activity-input-${pei.id}" placeholder="Adicionar nova atividade..." rows="1"></textarea>
-                                <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="${pei.id}">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
-                        `;
-                        // Auto-resize textarea
-                        const textarea = document.getElementById(`activity-input-${pei.id}`);
-                        textarea.addEventListener('input', () => {
-                            textarea.style.height = 'auto';
-                            textarea.style.height = (textarea.scrollHeight) + 'px';
-                        });
-                    }
-
-                    // Renderizar Botões do Rodapé do Modal
-                    if (IS_ADMIN) {
-                        modalFooter.innerHTML = `
-                            <button type="button" class="btn btn-secondary" id="editPeiBtn" data-pei-id="${pei.id}">
-                                <i class="fas fa-edit mr-2"></i> Editar PEI
-                            </button>
-                            <button type="button" class="btn btn-danger-outline" id="deletePeiBtn" data-pei-id="${pei.id}">
-                                <i class="fas fa-trash mr-2"></i> Apagar PEI
-                            </button>
-                            <button type="button" class="btn btn-success" id="finalizePeiBtn" data-pei-id="${pei.id}">
-                                <i class="fas fa-check mr-2"></i> Finalizar PEI
-                            </button>
-                            <button type="button" class="btn btn-info" id="printPeiBtn" data-pei-id="${pei.id}">
-                                <i class="fas fa-print mr-2"></i> Imprimir PEI
-                            </button>
-                        `;
-                    } else if (IS_PROFESSIONAL && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID)) {
-                        // Profissionais associados podem imprimir
-                        modalFooter.innerHTML = `
-                            <button type="button" class="btn btn-info" id="printPeiBtn" data-pei-id="${pei.id}">
-                                <i class="fas fa-print mr-2"></i> Imprimir PEI
-                            </button>
-                        `;
-                    } else {
-                        // Outros usuários não têm ações
-                        modalFooter.innerHTML = '';
-                    }
-
-                    // Adicionar listener para o botão de impressão dentro do modal
-                    const printPeiBtn = document.getElementById('printPeiBtn');
-                    if (printPeiBtn) {
-                        printPeiBtn.addEventListener('click', async () => {
-                            await printPei(pei.id);
-                        });
-                    }
-
-                    modal.classList.add('active');
-                }
-
-                // Função para atualizar tentativas de um alvo
-                async function updateTargetAttempts(peiId, goalId, targetId, action) {
+                // --- Funções AJAX para PEI/Metas/Alvos ---
+                // Adiciona um novo alvo a uma meta existente dentro de um PEI
+                async function addTargetToGoal(peiId, goalId, targetDescription) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_target_to_goal`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ 
-                                pei_id: peiId, 
-                                goal_id: goalId, 
-                                target_id: targetId, 
-                                action: action, // Envia a ação de incremento/decremento
-                                type: 'target_attempts' // Indica o tipo de atualização
-                            })
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_description: targetDescription })
                         });
-                        const data = await response.json();
-                        if (response.ok) {
-                            displayFlashMessage('success', data.message);
-                            // Atualizar os dados locais e re-renderizar o modal
-                            await fetchPeisData();
-                            const updatedPei = allPeisData.find(p => p.id === peiId);
-                            if (updatedPei && currentlyOpenPeiId === peiId) {
-                                openPeiDetailsModal(updatedPei); // Reabre o modal com dados atualizados
+
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            if (response.ok && data.success) {
+                                allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
+                                displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
+                                
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                renderPeis(allPeisData);
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    openPeiDetailsModal(updatedPeiData);
+                                } else {
+                                    closeModalById('pei-details-modal');
+                                }
+
+                            } else {
+                                displayFlashMessage('danger', `Erro ao adicionar alvo: ${data.message || 'Erro desconhecido.'}`);
                             }
                         } else {
-                            displayFlashMessage('danger', data.error || 'Erro ao atualizar tentativas do alvo.');
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao adicionar alvo: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao adicionar alvo. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
-                        console.error('Erro na requisição de atualização de tentativas do alvo:', error);
-                        displayFlashMessage('danger', 'Erro de conexão ao atualizar tentativas do alvo.');
+                        console.error('Erro ao adicionar alvo:', error);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao adicionar alvo: ${error.message}`);
                     } finally {
                         hideLoading();
                     }
                 }
 
-                // Função para atualizar tentativas de uma ajuda (aid)
-                async function updateAidAttempts(peiId, goalId, targetId, aidIndex, action) {
-                    showLoading();
-                    try {
-                        const pei = allPeisData.find(p => p.id === peiId);
-                        const goal = pei.goals.find(g => g.id === goalId);
-                        const target = goal.targets.find(t => t.id === targetId);
-                        const aid = target.aids[aidIndex];
-
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ 
-                                pei_id: peiId, 
-                                goal_id: goalId, 
-                                target_id: targetId, 
-                                aid_id: aid.id, // Passa o ID da ajuda
-                                action: action, // Envia a ação de incremento/decremento
-                                type: 'aid_attempts' // Indica o tipo de atualização
-                            })
-                        });
-                        const data = await response.json();
-                        if (response.ok) {
-                            displayFlashMessage('success', data.message);
-                            // Atualizar os dados locais e re-renderizar o modal
-                            await fetchPeisData();
-                            const updatedPei = allPeisData.find(p => p.id === peiId);
-                            if (updatedPei && currentlyOpenPeiId === peiId) {
-                                openPeiDetailsModal(updatedPei); // Reabre o modal com dados atualizados
-                            }
-                        } else {
-                            displayFlashMessage('danger', data.error || 'Erro ao atualizar tentativas da ajuda.');
-                        }
-                    } catch (error) {
-                        console.error('Erro na requisição de atualização de tentativas da ajuda:', error);
-                        displayFlashMessage('danger', 'Erro de conexão ao atualizar tentativas da ajuda.');
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
-                // Função para marcar um alvo como concluído
-                async function markTargetComplete(peiId, goalId, targetId) {
-                    showLoading();
-                    try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ 
-                                pei_id: peiId, 
-                                goal_id: goalId, 
-                                target_id: targetId, 
-                                new_target_status: 'finalizada',
-                                type: 'target_status' // Indica o tipo de atualização
-                            })
-                        });
-                        const data = await response.json();
-                        if (response.ok) {
-                            displayFlashMessage('success', data.message);
-                            await fetchPeisData();
-                            const updatedPei = allPeisData.find(p => p.id === peiId);
-                            if (updatedPei && currentlyOpenPeiId === peiId) {
-                                openPeiDetailsModal(updatedPei); // Reabre o modal com dados atualizados
-                            }
-                        } else {
-                            displayFlashMessage('danger', data.error || 'Erro ao marcar alvo como concluído.');
-                        }
-                    } catch (error) {
-                        console.error('Erro na requisição de conclusão de alvo:', error);
-                        displayFlashMessage('danger', 'Erro de conexão ao marcar alvo como concluído.');
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
-                // Função para adicionar uma atividade
-                async function addActivity(peiId, description) {
+                // Adiciona uma nova atividade ao histórico de um PEI
+                async function addPeiActivity(peiId, activityContent) {
                     showLoading();
                     try {
                         const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_activity`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ pei_id: peiId, description: description })
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, content: activityContent })
                         });
-                        const data = await response.json();
-                        if (response.ok) {
-                            displayFlashMessage('success', data.message);
-                            await fetchPeisData();
-                            const updatedPei = allPeisData.find(p => p.id === peiId);
-                            if (updatedPei && currentlyOpenPeiId === peiId) {
-                                openPeiDetailsModal(updatedPei); // Reabre o modal com dados atualizados
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            if (response.ok && data.success) {
+                                allPeisData = data.peis; // Atualiza os dados locais
+                                displayFlashMessage('success', data.message);
+                                
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    openPeiDetailsModal(updatedPeiData);
+                                }
+
+                            } else {
+                                displayFlashMessage('danger', `Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
                             }
                         } else {
-                            displayFlashMessage('danger', data.error || 'Erro ao adicionar atividade.');
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao adicionar atividade: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao adicionar atividade. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
-                        console.error('Erro na requisição de adicionar atividade:', error);
-                        displayFlashMessage('danger', 'Erro de conexão ao adicionar atividade.');
+                        console.error('Erro ao adicionar atividade:', error);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao adicionar atividade: ${error.message}`);
                     } finally {
                         hideLoading();
                     }
                 }
 
-                // Função para apagar um PEI
-                async function deletePei(peiId) {
+                // NOVO: Atualiza o contador de tentativas, o conteúdo de ajuda ou o status do alvo
+                async function updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, newAttemptsCount, newStatus) {
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/delete_pei`, {
+                        const payload = { pei_id: peiId, goal_id: goalId, target_id: targetId };
+                        if (aidId !== null) {
+                            payload.aid_id = aidId;
+                        }
+                        if (newAttemptsCount !== null) {
+                            payload.new_attempts_count = newAttemptsCount;
+                        }
+                        if (newStatus !== null) {
+                            payload.new_target_status = newStatus; // Envia o novo status geral do alvo
+                        }
+
+                        console.log('Sending payload to backend:', payload);
+
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded', // Form data
-                            },
-                            body: new URLSearchParams({ pei_id: peiId, paciente_id: PACIENTE_DOC_ID })
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
                         });
-                        const data = await response.json(); // Assumindo que o backend retorna JSON
-                        if (response.ok) {
-                            displayFlashMessage('success', data.message);
-                            await fetchPeisData(); // Atualiza os dados após a exclusão
-                            renderPeis(); // Re-renderiza as listas de PEIs
-                            closeModalById('pei-details-modal'); // Fecha o modal de detalhes se estiver aberto
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            console.log('Response from backend:', data);
+
+                            if (response.ok && data.success) {
+                                displayFlashMessage('success', data.message);
+                                if (data.peis) {
+                                    allPeisData = data.peis;
+                                }
+                                
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                renderPeis(allPeisData); // Atualiza os cards da página principal
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    // Salva o estado de expansão antes de recarregar
+                                    const expandedTargetIds = new Set();
+                                    document.querySelectorAll(`#pei-details-modal .target-item.expanded`).forEach(item => {
+                                        expandedTargetIds.add(item.dataset.targetId);
+                                    });
+                                    
+                                    openPeiDetailsModal(updatedPeiData);
+
+                                    // Restaura o estado de expansão
+                                    if (expandedTargetIds.size > 0) {
+                                        expandedTargetIds.forEach(id => {
+                                            const targetItem = document.querySelector(`#pei-details-modal .target-item[data-target-id="${id}"]`);
+                                            if (targetItem) {
+                                                targetItem.classList.add('expanded');
+                                                targetItem.dataset.targetExpanded = 'true';
+                                            }
+                                        });
+                                    }
+                                }
+
+                            } else {
+                                displayFlashMessage('danger', `Erro ao atualizar alvo: ${data.message || 'Erro desconhecido.'}`);
+                            }
                         } else {
-                            displayFlashMessage('danger', data.error || 'Erro ao apagar PEI.');
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao atualizar tentativas/status do alvo: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao atualizar alvo. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
-                        console.error('Erro na requisição de exclusão de PEI:', error);
-                        displayFlashMessage('danger', 'Erro de conexão ao apagar PEI.');
+                        console.error('Erro ao atualizar tentativas/status do alvo:', error);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao atualizar alvo: ${error.message}`);
                     } finally {
                         hideLoading();
                     }
                 }
 
-                // Função para finalizar um PEI
-                async function finalizePei(peiId) {
-                    showLoading();
-                    try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/finalize`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ pei_id: peiId })
-                        });
-                        const data = await response.json();
-                        if (response.ok) {
-                            displayFlashMessage('success', data.message);
-                            allPeisData = data.peis; // Atualiza com os dados retornados pelo backend
-                            renderPeis(); // Re-renderiza as listas de PEIs
-                            closeModalById('pei-details-modal'); // Fecha o modal de detalhes se estiver aberto
-                        } else {
-                            displayFlashMessage('danger', data.error || 'Erro ao finalizar PEI.');
-                        }
-                    } catch (error) {
-                        console.error('Erro na requisição de finalização de PEI:', error);
-                        displayFlashMessage('danger', 'Erro de conexão ao finalizar PEI.');
-                    } finally {
-                        hideLoading();
-                    }
-                }
 
-                // Função para finalizar uma meta
+                // Finaliza uma meta, marcando-a como 'finalizado'
                 async function finalizeGoal(peiId, goalId) {
+                    console.log('Tentando finalizar meta:', { peiId, goalId });
                     showLoading();
                     try {
                         const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/finalize_goal`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ pei_id: peiId, goal_id: goalId })
                         });
-                        const data = await response.json();
-                        if (response.ok) {
-                            displayFlashMessage('success', data.message);
-                            allPeisData = data.peis; // Atualiza com os dados retornados pelo backend
-                            const updatedPei = allPeisData.find(p => p.id === peiId);
-                            if (updatedPei && currentlyOpenPeiId === peiId) {
-                                openPeiDetailsModal(updatedPei); // Reabre o modal com dados atualizados
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            console.log('Resposta de finalização de meta:', data);
+                            if (response.ok && data.success) {
+                                displayFlashMessage('success', data.message);
+                                if (data.peis) {
+                                    allPeisData = data.peis;
+                                }
+                                
+                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                renderPeis(allPeisData);
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    openPeiDetailsModal(updatedPeiData);
+                                }
+                            } else {
+                                console.error('Falha ao finalizar meta:', data.message || 'Erro desconhecido');
+                                displayFlashMessage('danger', `Erro ao finalizar meta: ${data.message || 'Erro desconhecido.'}`);
                             }
                         } else {
-                            displayFlashMessage('danger', data.error || 'Erro ao finalizar meta.');
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao finalizar meta: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao finalizar meta. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
-                        console.error('Erro na requisição de finalização de meta:', error);
-                        displayFlashMessage('danger', 'Erro de conexão ao finalizar meta.');
+                        console.error('Erro ao finalizar meta:', error);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao finalizar meta: ${error.message}`);
                     } finally {
                         hideLoading();
                     }
                 }
 
-                // Função para apagar uma meta
-                async function deleteGoal(peiId, goalId) {
+                // Finaliza um PEI completo, marcando-o e todas as suas metas ativas como 'finalizado'
+                async function finalizePei(peiId) {
+                    console.log('Tentando finalizar PEI:', { peiId });
                     showLoading();
                     try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/delete_goal`, {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/finalize_pei`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded', // Form data
-                            },
-                            body: new URLSearchParams({ pei_id: peiId, goal_id: goalId, paciente_id: PACIENTE_DOC_ID })
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId })
                         });
-                        const data = await response.json(); // Assumindo que o backend retorna JSON
-                        if (response.ok) {
-                            displayFlashMessage('success', data.message);
-                            await fetchPeisData(); // Atualiza os dados
-                            const updatedPei = allPeisData.find(p => p.id === peiId);
-                            if (updatedPei && currentlyOpenPeiId === peiId) {
-                                openPeiDetailsModal(updatedPei); // Reabre o modal com dados atualizados
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            console.log('Resposta de finalização do PEI:', data);
+                            if (response.ok && data.success) {
+                                displayFlashMessage('success', data.message);
+                                if (data.peis) {
+                                    allPeisData = data.peis;
+                                }
+                                renderPeis(allPeisData); // Re-renderiza os cartões de resumo do PEI
+                                closeModalById('pei-details-modal'); // Fecha o modal de detalhes do PEI
+                            } else {
+                                console.error('Falha ao finalizar PEI:', data.message || 'Erro desconhecido');
+                                displayFlashMessage('danger', `Erro ao finalizar PEI: ${data.message || 'Erro desconhecido.'}`);
                             }
                         } else {
-                            displayFlashMessage('danger', data.error || 'Erro ao apagar meta.');
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao finalizar PEI: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao finalizar PEI. Por favor, tente novamente. Detalhes no console.');
                         }
                     } catch (error) {
-                        console.error('Erro na requisição de exclusão de meta:', error);
-                        displayFlashMessage('danger', 'Erro de conexão ao apagar meta.');
+                        console.error('Erro ao finalizar PEI:', error);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao finalizar PEI: ${error.message}`);
                     } finally {
                         hideLoading();
                     }
                 }
 
-                // Função para buscar os dados de PEIs atualizados do backend
-                async function fetchPeisData() {
-                    try {
-                        const response = await fetch(`/api/pacientes/${PACIENTE_DOC_ID}/peis`);
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                // --- Função auxiliar para renderizar PEIs (após uma atualização do Flask) ---
+                // Esta função reconstrói os cartões de PEI na interface para refletir as últimas mudanças
+                function renderPeis(peis) {
+                    const activePeisList = document.getElementById('active-peis-list');
+                    const finalizedPeisList = document.getElementById('finalized-peis-list');
+
+                    activePeisList.innerHTML = '';
+                    finalizedPeisList.innerHTML = '';
+
+                    const filteredPeis = peis.filter(pei => {
+                        if (IS_PROFESSIONAL && !IS_ADMIN) {
+                            const shouldShow = pei.profissionais_ids && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
+                            return shouldShow;
                         }
-                        const data = await response.json();
-                        allPeisData = data; // Atualiza a variável global
-                        console.log('Dados de PEIs atualizados (via API):', allPeisData);
-                    } catch (error) {
-                        console.error('Erro ao buscar dados de PEIs:', error);
-                        displayFlashMessage('danger', 'Erro ao carregar dados de PEIs. Tente recarregar a página.');
+                        return true;
+                    });
+
+                    const sortedPeis = [...filteredPeis].sort((a, b) => new Date(b.data_criacao_iso) - new Date(a.data_criacao_iso));
+
+                    let hasActivePeis = false;
+                    let hasFinalizedPeis = false;
+
+                    sortedPeis.forEach(pei => {
+                        const peiHtml = renderPeiSummaryCardHtml(pei);
+                        if (pei.status === 'ativo') {
+                            activePeisList.insertAdjacentHTML('beforeend', peiHtml);
+                            hasActivePeis = true;
+                        } else {
+                            finalizedPeisList.insertAdjacentHTML('beforeend', peiHtml);
+                            hasFinalizedPeis = true;
+                        }
+                    });
+
+                    if (!hasActivePeis) {
+                        activePeisList.innerHTML = `<div class="col-span-full text-center p-8 text-gray-500"><i class="fas fa-folder-open fa-2x mb-2"></i><p>Nenhum PEI ativo para este paciente.</p></div>`;
+                    }
+                    if (!hasFinalizedPeis) {
+                        finalizedPeisList.innerHTML = `<div class="col-span-full text-center p-8 text-gray-500"><i class="fas fa-check-double fa-2x mb-2"></i><p>Nenhum PEI finalizado para este paciente.</p></div>`;
                     }
                 }
-
-                // Função para imprimir um PEI específico
-                async function printPei(peiId) {
-                    showLoading();
-                    try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/${peiId}/pdf`);
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                
+                function renderPeiSummaryCardHtml(pei) {
+                    const activeGoals = pei.goals ? pei.goals.filter(goal => goal.status === 'ativo') : [];
+                    const activeGoalsCount = activeGoals.length;
+                    let activeGoalsHtml = '<ul>';
+                    if (activeGoalsCount > 0) {
+                        activeGoals.slice(0, 3).forEach(goal => {
+                            activeGoalsHtml += `<li><i class="fas fa-bullseye text-teal-500 mr-2"></i> ${goal.descricao}</li>`;
+                        });
+                        if (activeGoalsCount > 3) {
+                            activeGoalsHtml += `<li class="text-sm text-gray-500 mt-1">...e mais ${activeGoalsCount - 3}.</li>`;
                         }
-                        const blob = await response.blob();
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = `PEI_${peiId}.pdf`;
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        displayFlashMessage('success', 'PEI gerado com sucesso!');
-                    } catch (error) {
-                        console.error('Erro ao gerar PDF do PEI:', error);
-                        displayFlashMessage('danger', 'Erro ao gerar PDF do PEI. Tente novamente.');
-                    } finally {
-                        hideLoading();
+                    } else {
+                        activeGoalsHtml += `<li class="text-sm text-gray-400">Nenhuma meta ativa.</li>`;
                     }
+                    activeGoalsHtml += '</ul>';
+
+                    return `
+                    <div class="pei-summary-card ${pei.status === 'finalizado' ? 'finalizado' : ''}" data-pei-id="${pei.id}">
+                        <div class="pei-summary-card-header">
+                            <h4>PEI: ${pei.titulo}</h4>
+                            <div class="pei-summary-card-meta">
+                                <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
+                                <span><i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}</span>
+                                <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
+                            </div>
+                        </div>
+                        <div class="pei-summary-card-content">
+                            <strong>Metas Ativas:</strong>
+                            ${activeGoalsHtml}
+                        </div>
+                    </div>`;
                 }
 
-                // Função para imprimir todos os PEIs do paciente
-                async function printAllPeis() {
-                    showLoading();
-                    try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/all/pdf`);
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        const blob = await response.blob();
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = `PEIs_Paciente_${PACIENTE_DOC_ID}.pdf`;
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        displayFlashMessage('success', 'Todos os PEIs gerados com sucesso!');
-                    } catch (error) {
-                        console.error('Erro ao gerar PDF de todos os PEIs:', error);
-                        displayFlashMessage('danger', 'Erro ao gerar PDF de todos os PEIs. Tente novamente.');
-                    } finally {
-                        hideLoading();
+
+                // NOVO: Função para abrir e popular o modal de detalhes do PEI
+                function openPeiDetailsModal(pei) {
+                    currentlyOpenPeiId = pei.id; // **NOVO**: Define o ID do PEI aberto
+
+                    const modal = document.getElementById('pei-details-modal');
+                    const peiModalTitle = document.getElementById('pei-modal-title');
+                    const peiModalCreatedDate = document.getElementById('pei-modal-created-date');
+                    const peiModalProfessionals = document.getElementById('pei-modal-professionals');
+                    const peiModalStatus = document.getElementById('pei-modal-status');
+                    const peiModalActiveGoals = document.getElementById('pei-modal-active-goals');
+                    const peiModalFinalizedGoals = document.getElementById('pei-modal-finalized-goals');
+                    const peiModalActivityLog = document.getElementById('pei-modal-activity-log');
+                    const peiModalActivityInputContainer = document.getElementById('pei-modal-activity-input-container');
+                    const peiDetailsModalFooter = document.getElementById('pei-details-modal-footer');
+
+                    // Limpa conteúdos anteriores
+                    peiModalActiveGoals.innerHTML = '';
+                    peiModalFinalizedGoals.innerHTML = '';
+                    peiModalActivityLog.innerHTML = '';
+                    peiDetailsModalFooter.innerHTML = '';
+                    peiModalActivityInputContainer.innerHTML = '';
+
+                    // Preenche o cabeçalho do modal
+                    peiModalTitle.textContent = `PEI: ${pei.titulo}`;
+                    peiModalCreatedDate.innerHTML = `<i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}`;
+                    peiModalProfessionals.innerHTML = `<i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`;
+                    peiModalStatus.innerHTML = `Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span>`;
+
+                    const canModifyPeiContent = IS_ADMIN || (IS_PROFESSIONAL && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID));
+                    const isPeiFinalized = pei.status === 'finalizado';
+
+                    // Renderiza Metas Ativas
+                    const activeGoals = pei.goals.filter(goal => goal.status === 'ativo');
+                    if (activeGoals.length > 0) {
+                        activeGoals.forEach(goal => {
+                            const goalHtml = createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized);
+                            peiModalActiveGoals.insertAdjacentHTML('beforeend', goalHtml);
+                        });
+                    } else {
+                        peiModalActiveGoals.innerHTML = '<div class="empty-state-small"><i class="fas fa-bullseye"></i><p>Nenhuma meta ativa para este PEI.</p></div>';
                     }
+
+                    // Renderiza Metas Finalizadas
+                    const finalizedGoals = pei.goals.filter(goal => goal.status === 'finalizado');
+                    if (finalizedGoals.length > 0) {
+                        finalizedGoals.forEach(goal => {
+                            const goalHtml = createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized); // Reutiliza a função, mas desabilita ações
+                            peiModalFinalizedGoals.insertAdjacentHTML('beforeend', goalHtml);
+                        });
+                    } else {
+                        peiModalFinalizedGoals.innerHTML = '<div class="empty-state-small"><i class="fas fa-check-double"></i><p>Nenhuma meta finalizada para este PEI.</p></div>';
+                    }
+
+                    // Renderiza Atividades
+                    if (pei.activities && pei.activities.length > 0) {
+                        pei.activities.forEach(activity => {
+                            const activityHtml = `
+                                <div class="activity-item">
+                                    <div class="activity-meta">${activity.user_name} em ${activity.timestamp_fmt}</div>
+                                    <div class="activity-content">${activity.content}</div>
+                                </div>
+                            `;
+                            peiModalActivityLog.insertAdjacentHTML('beforeend', activityHtml);
+                        });
+                    } else {
+                        peiModalActivityLog.innerHTML = `<div class="empty-state-small">
+                            <i class="fas fa-clipboard-list text-2xl mb-2"></i>
+                            <p class="text-sm">Nenhuma atividade registrada para este PEI.</p>
+                            </div>`;
+                    }
+
+                    // Adiciona campo de entrada de atividade
+                    if (canModifyPeiContent) {
+                        peiModalActivityInputContainer.innerHTML = `
+                            <div class="activity-input-group mt-3">
+                                <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
+                                <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="${pei.id}">
+                                    <i class="fas fa-paper-plane"></i> Enviar
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        peiModalActivityInputContainer.innerHTML = `
+                            <div class="mt-3 text-center text-gray-500 text-sm opacity-80">
+                                <p>Apenas os profissionais associados ou um administrador podem adicionar comentários a este PEI.</p>
+                            </div>
+                        `;
+                    }
+
+
+                    // Renderiza botões do footer do modal
+                    if (IS_ADMIN) {
+                        peiDetailsModalFooter.insertAdjacentHTML('beforeend', `
+                            <button type="button" class="btn btn-sm btn-primary btn-add-goal" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
+                                <i class="fas fa-plus"></i> Adicionar Meta
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger-outline btn-delete-pei" data-pei-id="${pei.id}" ${isPeiFinalized ? 'disabled' : ''}>
+                                <i class="fas fa-trash"></i> Excluir PEI
+                            </button>
+                        `);
+                    }
+                    peiDetailsModalFooter.insertAdjacentHTML('beforeend', `
+                        <button type="button" class="btn btn-sm btn-info btn-print-pei" data-pei-id="${pei.id}"><i class="fas fa-print"></i> Imprimir PEI</button>
+                        <button type="button" class="btn btn-sm btn-success btn-finalize-pei" data-pei-id="${pei.id}" ${isPeiFinalized || !canModifyPeiContent ? 'disabled' : ''}>
+                            <i class="fas fa-check-double"></i> Finalizar PEI
+                        </button>
+                    `);
+
+                    modal.classList.add('active'); // Abre o modal
                 }
 
-                // Inicializa a UI comum e a lógica da página de PEI
-                setupCommonUI();
-                fetchPeisData().then(() => { // Garante que os dados sejam buscados antes de renderizar
-                    renderPeis(); // Renderiza os PEIs ao carregar a página
+                // NOVO: Helper para criar o HTML de um Goal Card para o modal de detalhes do PEI
+                function createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized) {
+                    const isGoalFinalized = goal.status === 'finalizado';
+                    const goalActionsDisabled = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
+                    const targetItemDisabledClass = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
+
+                    let targetsHtml = '';
+                    if (goal.targets && goal.targets.length > 0) {
+                        goal.targets.forEach(target => {
+                            let aidsListHtml = '';
+                            if (target.aids && target.aids.length > 0) {
+                                aidsListHtml += '<ul class="aids-list">';
+                                target.aids.forEach(aid => {
+                                    const aidStatusClass = aid.status === 'finalizada' ? 'finalizada' : '';
+                                    aidsListHtml += `
+                                        <li class="aid-item ${aidStatusClass}" data-aid-id="${aid.id}" data-target-id="${target.id}" data-goal-id="${goal.id}" data-pei-id="${pei.id}">
+                                            <div class="aid-item-left">
+                                                <i class="aid-status-icon fas ${aid.status === 'finalizada' ? 'fa-check-circle' : 'fa-circle'}"></i>
+                                                <span class="aid-description">${aid.description}</span>
+                                            </div>
+                                            <div class="aid-attempts-counter">
+                                                <button type="button" class="btn-decrement-aid-attempts" ${goalActionsDisabled}>-</button>
+                                                Tentativas: <span class="aid-attempts-count">${aid.attempts_count || 0}</span>
+                                                <button type="button" class="btn-increment-aid-attempts" ${goalActionsDisabled}>+</button>
+                                            </div>
+                                        </li>
+                                    `;
+                                });
+                                aidsListHtml += '</ul>';
+                            } else {
+                                aidsListHtml = '<div class="empty-state-small"><i class="fas fa-question-circle"></i><p>Nenhuma ajuda definida para este alvo.</p></div>';
+                            }
+
+                            targetsHtml += `
+                                <li class="target-item ${target.concluido ? 'concluido' : ''} ${targetItemDisabledClass}"
+                                    data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}"
+                                    data-target-expanded="false">
+                                    <div class="target-main-content target-expand-trigger">
+                                        <i class="status-icon fas ${target.concluido ? 'fa-check-square' : 'fa-square'}"></i>
+                                        <span class="target-text-content">${target.descricao}</span>
+                                        <i class="expand-icon fas fa-chevron-right"></i>
+                                    </div>
+                                    <div class="target-details-expanded">
+                                        <div class="form-group">
+                                            <label for="target-status-${target.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status do Alvo</label>
+                                            <select id="target-status-${target.id}" class="target-status-select w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out" ${goalActionsDisabled}>
+                                                <option value="pendente" ${target.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                                                <option value="andamento" ${target.status === 'andamento' ? 'selected' : ''}>Em Andamento</option>
+                                                <option value="finalizada" ${target.status === 'finalizada' ? 'selected' : ''}>Finalizada</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ajudas e Tentativas</label>
+                                            ${aidsListHtml}
+                                        </div>
+                                    </div>
+                                </li>
+                            `;
+                        });
+                    } else {
+                        targetsHtml = '<div class="empty-state-small"><i class="fas fa-bullseye"></i><p>Nenhum alvo definido para esta meta.</p></div>';
+                    }
+
+                    return `
+                        <div class="goal-card ${isGoalFinalized ? 'finalizado' : ''}" id="goal-${pei.id}-${goal.id}">
+                            <div class="goal-card-header">
+                                <strong>Meta: ${goal.descricao}</strong>
+                                <span class="goal-status ${isGoalFinalized ? 'finalizado-status' : 'active-status'}">${isGoalFinalized ? 'Finalizada' : 'Ativa'}</span>
+                            </div>
+                            <ul class="targets-list">
+                                ${targetsHtml}
+                            </ul>
+                            ${IS_ADMIN ? `
+                                <div class="add-target-group mt-3">
+                                    <input type="text" class="new-target-input form-input" placeholder="Novo alvo para esta meta" ${goalActionsDisabled}>
+                                    <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>Adicionar</button>
+                                </div>
+                            ` : ''}
+                            <div class="pei-card-actions mt-3 border-t pt-3 flex justify-start gap-2 ${goalActionsDisabled ? 'disabled-actions' : ''}">
+                                <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>
+                                    <i class="fas fa-check-circle"></i> Finalizar Meta
+                                </button>
+                                ${IS_ADMIN ? `
+                                    <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
+
+                // --- Lógica de Geração de PDF ---
+                // Função para converter HTML em texto plano para inclusão no PDF
+                function htmlToPlainText(html) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+
+                    // Remove tags de script e estilo para não aparecerem no PDF
+                    tempDiv.querySelectorAll('script, style').forEach(el => el.remove());
+
+                    // Substitui quebras de linha por espaços para evitar duplicação
+                    tempDiv.innerHTML = tempDiv.innerHTML.replace(/<br\s*\/?>/gi, '\n');
+
+                    // Adiciona quebras de linha após elementos de bloco para melhor formatação
+                    tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, div, li').forEach(el => {
+                        el.appendChild(document.createTextNode('\n'));
+                    });
+
+                    // Converte para texto plano, removendo espaços excessivos e quebras de linha
+                    let text = tempDiv.textContent || tempDiv.innerText || "";
+                    return text.replace(/\n\s*\n/g, '\n').trim();
+                }
+
+                // Gera um PDF para um PEI específico
+                function generatePdfForPei(pei) {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+
+                    let yPos = 20;
+                    const margin = 15;
+                    const contentLineHeight = 5;
+                    const contentFontSize = 9;
+                    const maxWidth = doc.internal.pageSize.width - margin * 2;
+
+                    // Função auxiliar para verificar e adicionar nova página se necessário
+                    const checkPageBreak = (heightNeeded) => {
+                        if (yPos + heightNeeded > doc.internal.pageSize.height - margin) {
+                            doc.addPage();
+                            yPos = margin;
+                        }
+                    };
+
+                    // Cabeçalho da Clínica
+                    doc.setFontSize(12).setFont("helvetica", "bold").text("{{ session.clinica_nome_display or 'Clínica On' }}", margin, yPos);
+                    yPos += 8;
+                    doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
+                    yPos += 8;
+
+                    // Informações do Paciente
+                    const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
+                    const patientCpf = "{{ paciente.cpf or 'N/A' }}";
+                    const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
+
+                    doc.setFontSize(10).setFont("helvetica", "normal");
+                    doc.text(`Paciente: ${patientName}`, margin, yPos);
+                    yPos += 6;
+                    doc.text(`CPF: ${patientCpf}`, margin, yPos);
+                    doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
+                    yPos += 8;
+
+                    // Título do PEI
+                    checkPageBreak(20);
+                    doc.setFontSize(14).setFont("helvetica", "bold").text(`Plano Educacional Individualizado (PEI): ${pei.titulo}`, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                    yPos += 8;
+
+                    // Metadados do PEI
+                    checkPageBreak(10);
+                    doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`, margin, yPos);
+                    yPos += 6;
+                    doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
+                    yPos += 8;
+
+                    // Metas e Alvos
+                    checkPageBreak(10);
+                    doc.setFontSize(11).setFont("helvetica", "bold").text("Metas:", margin, yPos);
+                    yPos += 8;
+
+                    if (pei.goals && pei.goals.length > 0) {
+                        pei.goals.forEach((goal, goalIndex) => {
+                            checkPageBreak(20); // Verifica espaço para cabeçalho da meta e primeiro alvo
+                            doc.setFontSize(10).setFont("helvetica", "bold").text(`- Meta ${goalIndex + 1}: ${goal.descricao} (Status: ${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)})`, margin + 5, yPos);
+                            yPos += 7;
+
+                            if (goal.targets && goal.targets.length > 0) {
+                                doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                                goal.targets.forEach((target) => {
+                                    checkPageBreak(contentLineHeight);
+                                    const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
+                                    doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
+                                    yPos += contentLineHeight;
+
+                                    if (target.aids && target.aids.length > 0) {
+                                        target.aids.forEach(aid => {
+                                            checkPageBreak(contentLineHeight);
+                                            const aidStatus = aid.status === 'finalizada' ? '[X]' : '[ ]';
+                                            doc.setFontSize(contentFontSize - 1).setFont("helvetica", "normal").text(`    ${aidStatus} ${aid.description} (Tentativas: ${aid.attempts_count || 0})`, margin + 15, yPos);
+                                            yPos += contentLineHeight - 1;
+                                        });
+                                    } else {
+                                        checkPageBreak(contentLineHeight);
+                                        doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text('    Nenhuma ajuda definida para este alvo.', margin + 15, yPos);
+                                        yPos += contentLineHeight - 1;
+                                    }
+                                    doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
+                                });
+                            } else {
+                                checkPageBreak(contentLineHeight);
+                                doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('  Nenhum alvo definido para esta meta.', margin + 10, yPos);
+                                yPos += contentLineHeight;
+                            }
+                            yPos += 5; // Espaço após cada meta
+                        });
+                    } else {
+                        checkPageBreak(contentLineHeight);
+                        doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta definida para este PEI.', margin, yPos);
+                        yPos += contentLineHeight;
+                    }
+
+                    // Seção de Atividades para PDF
+                    if (pei.activities && pei.activities.length > 0) {
+                        checkPageBreak(15);
+                        doc.setFontSize(11).setFont("helvetica", "bold").text("Histórico de Atividades:", margin, yPos);
+                        yPos += 8;
+                        doc.setLineWidth(0.1).line(margin, yPos, maxWidth + margin, yPos);
+                        yPos += 5;
+
+                        pei.activities.forEach(activity => {
+                            checkPageBreak(20); // Estimar espaço para cada atividade
+                            doc.setFontSize(8).setFont("helvetica", "italic").text(`${activity.user_name} em ${activity.timestamp_fmt}:`, margin + 5, yPos);
+                            yPos += 4;
+                            doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                            const activityTextLines = doc.splitTextToSize(activity.content, maxWidth - 10); // Recuo para o conteúdo da atividade
+                            activityTextLines.forEach(line => {
+                                checkPageBreak(contentLineHeight);
+                                doc.text(line, margin + 10, yPos);
+                                yPos += contentLineHeight;
+                            });
+                            yPos += 3; // Espaço entre atividades
+                        });
+                    }
+
+                    // Salva o PDF com um nome descritivo
+                    doc.save(`pei-${pei.titulo.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                }
+
+                // Função para imprimir todos os PEIs em um único documento PDF
+                function generatePdfForAllPeis(peis) {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+
+                    const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
+                    const patientCpf = "{{ paciente.cpf or 'N/A' }}";
+                    const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
+                    const clinicName = "{{ session.clinica_nome_display or 'Clinica On' }}";
+
+                    let yPos = 20;
+                    const margin = 15;
+                    const contentLineHeight = 5;
+                    const contentFontSize = 9;
+                    const maxWidth = doc.internal.pageSize.width - margin * 2;
+
+                    // Helper function to add page and reset yPos if needed
+                    const checkPageBreak = (heightNeeded) => {
+                        if (yPos + heightNeeded > doc.internal.pageSize.height - margin) {
+                            doc.addPage();
+                            yPos = margin;
+                        }
+                    };
+
+                    // Filter PEIs for professionals, if applicable, before generating the PDF
+                    const filteredPeisForPdf = peis.filter(pei => {
+                        if (IS_PROFESSIONAL && !IS_ADMIN) {
+                            return pei.profissionais_ids && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
+                        }
+                        return true;
+                    });
+
+
+                    filteredPeisForPdf.forEach((pei, peiIndex) => {
+                        if (peiIndex > 0) { // Add a new page for each PEI after the first
+                            doc.addPage();
+                            yPos = margin;
+                        }
+
+                        // Clinic Header
+                        doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, margin, yPos);
+                        yPos += 8;
+                        doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
+                        yPos += 8;
+
+                        // Patient Information
+                        doc.setFontSize(10).setFont("helvetica", "normal");
+                        doc.text(`Paciente: ${patientName}`, margin, yPos);
+                        yPos += 6;
+                        doc.text(`CPF: ${patientCpf}`, margin, yPos);
+                        doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
+                        yPos += 8;
+
+                        // PEI Title
+                        checkPageBreak(20);
+                        doc.setFontSize(14).setFont("helvetica", "bold").text(`Plano Educacional Individualizado (PEI): ${pei.titulo}`, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                        yPos += 8;
+
+                        // Metadados do PEI
+                        checkPageBreak(10);
+                        doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`, margin, yPos);
+                        yPos += 6;
+                        doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
+                        yPos += 8;
+
+                        // Metas e Alvos
+                        checkPageBreak(10);
+                        doc.setFontSize(11).setFont("helvetica", "bold").text("Metas:", margin, yPos);
+                        yPos += 8;
+
+                        if (pei.goals && pei.goals.length > 0) {
+                            pei.goals.forEach((goal, goalIndex) => {
+                                checkPageBreak(20); // Verifica espaço para cabeçalho da meta e primeiro alvo
+                                doc.setFontSize(10).setFont("helvetica", "bold").text(`- Meta ${goalIndex + 1}: ${goal.descricao} (Status: ${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)})`, margin + 5, yPos);
+                                yPos += 7;
+
+                                if (goal.targets && goal.targets.length > 0) {
+                                    doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                                    goal.targets.forEach((target) => {
+                                        checkPageBreak(contentLineHeight);
+                                        const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
+                                        doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
+                                        yPos += contentLineHeight;
+
+                                        if (target.aids && target.aids.length > 0) {
+                                            target.aids.forEach(aid => {
+                                                checkPageBreak(contentLineHeight);
+                                                const aidStatus = aid.status === 'finalizada' ? '[X]' : '[ ]';
+                                                doc.setFontSize(contentFontSize - 1).setFont("helvetica", "normal").text(`    ${aidStatus} ${aid.description} (Tentativas: ${aid.attempts_count || 0})`, margin + 15, yPos);
+                                                yPos += contentLineHeight - 1;
+                                            });
+                                        } else {
+                                            checkPageBreak(contentLineHeight);
+                                            doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text('    Nenhuma ajuda definida para este alvo.', margin + 15, yPos);
+                                            yPos += contentLineHeight - 1;
+                                        }
+                                        doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
+                                    });
+                                } else {
+                                    checkPageBreak(contentLineHeight);
+                                    doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('  Nenhum alvo definido para esta meta.', margin + 10, yPos);
+                                    yPos += contentLineHeight;
+                                }
+                                yPos += 5; // Espaço após cada meta
+                            });
+                        } else {
+                            checkPageBreak(contentLineHeight);
+                            doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta definida para este PEI.', margin, yPos);
+                            yPos += contentLineHeight;
+                        }
+
+                        // Seção de Atividades para PDF
+                        if (pei.activities && pei.activities.length > 0) {
+                            checkPageBreak(15);
+                            doc.setFontSize(11).setFont("helvetica", "bold").text("Histórico de Atividades:", margin, yPos);
+                            yPos += 8;
+                            doc.setLineWidth(0.1).line(margin, yPos, maxWidth + margin, yPos);
+                            yPos += 5;
+
+                            pei.activities.forEach(activity => {
+                                checkPageBreak(20); // Estimar espaço para cada atividade
+                                doc.setFontSize(8).setFont("helvetica", "italic").text(`${activity.user_name} em ${activity.timestamp_fmt}:`, margin + 5, yPos);
+                                yPos += 4;
+                                doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                                const activityTextLines = doc.splitTextToSize(activity.content, maxWidth - 10); // Recuo para o conteúdo da atividade
+                                activityTextLines.forEach(line => {
+                                    checkPageBreak(contentLineHeight);
+                                    doc.text(line, margin + 10, yPos);
+                                    yPos += contentLineHeight;
+                                });
+                                yPos += 3; // Espaço entre atividades
+                            });
+                        }
+                    });
+
+                    // Salva o PDF de todos os PEIs
+                    doc.save(`todos-peis-${patientName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`);
+                }
+
+
+                // --- Initial PEI Rendering ---
+                renderPeis(allPeisData); // Call to render PEIs when the page loads
+
+                // Event listener for "Add Target" button in each goal (delegated as elements are dynamically rendered)
+                document.body.addEventListener('click', async function(e) {
+                    const target = e.target;
+                    const addTargetBtn = target.closest('.btn-add-target');
+                    if (addTargetBtn) {
+                        e.preventDefault();
+                        const peiId = addTargetBtn.dataset.peiId;
+                        const goalId = addTargetBtn.dataset.goalId;
+                        const newTargetInput = addTargetBtn.previousElementSibling;
+                        const targetDescription = newTargetInput.value.trim();
+
+                        if (!targetDescription) {
+                            displayFlashMessage('warning', 'Por favor, digite a descrição do novo alvo.');
+                            return;
+                        }
+
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para adicionar alvos.');
+                            return;
+                        }
+
+                        addTargetBtn.disabled = true;
+                        newTargetInput.disabled = true;
+
+                        try {
+                            await addTargetToGoal(peiId, goalId, targetDescription);
+                            newTargetInput.value = '';
+                        } finally {
+                            addTargetBtn.disabled = false;
+                            newTargetInput.disabled = false;
+                        }
+                    }
+
+                    // Event listener for "Send" button of PEI activity
+                    const addActivityBtn = target.closest('.btn-add-activity');
+                    if (addActivityBtn) {
+                        e.preventDefault();
+                        const peiId = addActivityBtn.dataset.peiId;
+                        const activityInput = addActivityBtn.previousElementSibling;
+                        const activityContent = activityInput.value.trim();
+
+                        if (!activityContent) {
+                            displayFlashMessage('warning', 'Por favor, digite o conteúdo da atividade.');
+                            return;
+                        }
+
+                        addActivityBtn.disabled = true;
+                        activityInput.disabled = true;
+
+                        try {
+                            await addPeiActivity(peiId, activityContent);
+                            activityInput.value = '';
+                        } finally {
+                            addActivityBtn.disabled = false;
+                            activityInput.disabled = false;
+                        }
+                    }
                 });
             }
 
+            // --- General Initialization ---
+            setupCommonUI();
             setupPeiPage();
         });
     </script>
