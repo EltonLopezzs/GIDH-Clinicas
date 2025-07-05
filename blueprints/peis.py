@@ -487,16 +487,6 @@ def add_pei(paciente_doc_id):
             flash('Formato de data de criação inválido.', 'danger')
             return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
 
-        # REMOVIDO: Lógica para buscar e armazenar nomes de profissionais diretamente no PEI
-        # profissionais_nomes_associados = []
-        # for prof_id in profissionais_ids_selecionados:
-        #     profissional_ref = db_instance.collection(f'clinicas/{clinica_id}/profissionais').document(prof_id)
-        #     profissional_doc = profissional_ref.get()
-        #     if profissional_doc.exists:
-        #         profissionais_nomes_associados.append(profissional_doc.to_dict().get('nome', 'N/A'))
-        #     else:
-        #         profissionais_nomes_associados.append(f"Profissional Desconhecido ({prof_id})")
-
         peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
 
         new_pei_data = {
@@ -509,10 +499,14 @@ def add_pei(paciente_doc_id):
             'criado_em': datetime.datetime.now(SAO_PAULO_TZ),
             'profissional_criador_nome': session.get('user_name', 'N/A'),
             'profissionais_ids': profissionais_ids_selecionados,
-            # REMOVIDO: Não armazena mais os nomes diretamente
-            # 'profissionais_nomes_associados': profissionais_nomes_associados
         }
-        peis_ref.add(new_pei_data)
+        
+        # Adiciona o PEI e obtém a referência do documento
+        _, pei_doc_ref = peis_ref.add(new_pei_data)
+        
+        # Atualiza o documento recém-criado com o pei_id
+        pei_doc_ref.update({'pei_id': pei_doc_ref.id})
+
         flash('PEI adicionado com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao adicionar PEI: {e}', 'danger')
