@@ -197,11 +197,12 @@ def _delete_goal_transaction(transaction, clinica_id, pei_id, goal_id_to_delete,
 
 
 @firestore.transactional
-def _update_target_status_transaction(transaction, clinica_id, pei_id, meta_id, target_id, new_target_status):
+def _update_target_status_transaction(transaction, db_instance, clinica_id, pei_id, meta_id, target_id, new_target_status):
     """
     Atualiza o status de um alvo específico e suas ajudas associadas.
     Args:
         transaction: Objeto de transação do Firestore.
+        db_instance: Instância do Firestore DB.
         clinica_id: ID da clínica.
         pei_id: ID do PEI pai.
         meta_id: ID da meta pai.
@@ -419,12 +420,13 @@ def _add_pei_activity_transaction(transaction, clinica_id, pei_id, activity_cont
     transaction.set(activity_doc_ref, new_activity_data)
 
 @firestore.transactional
-def _update_target_and_aid_data_transaction(transaction, clinica_id, pei_id, meta_id, target_id, aid_id=None, new_attempts_count=None, new_target_status=None):
+def _update_target_and_aid_data_transaction(transaction, db_instance, clinica_id, pei_id, meta_id, target_id, aid_id=None, new_attempts_count=None, new_target_status=None):
     """
     Atualiza os dados de um alvo específico ou de uma ajuda dentro de um alvo no PEI.
     Pode atualizar a contagem de tentativas de uma ajuda ou o status geral de um alvo.
     Args:
         transaction: Objeto de transação do Firestore.
+        db_instance: Instância do Firestore DB.
         clinica_id: ID da clínica.
         pei_id: ID do PEI pai.
         meta_id: ID da meta pai.
@@ -1060,7 +1062,7 @@ def update_target_and_aid_data(paciente_doc_id):
                 return jsonify({'success': False, 'message': 'Você não tem permissão para atualizar este alvo.'}), 403
 
         transaction = db_instance.transaction()
-        _update_target_and_aid_data_transaction(transaction, clinica_id, pei_id, goal_id, target_id, aid_id, new_attempts_count, new_target_status)
+        _update_target_and_aid_data_transaction(transaction, db_instance, clinica_id, pei_id, goal_id, target_id, aid_id, new_attempts_count, new_target_status)
         transaction.commit()
 
         all_peis = []
