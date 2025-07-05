@@ -36,7 +36,7 @@ def _format_professional_names(db_instance, clinica_id, professional_ids):
 def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals_map=None):
     """
     Converte um documento PEI em um dicionário e formatar campos para exibição no template,
-    incluindo metas, alvos e ajudas de coleções de nível superior.
+    incluindo metas, alvos e ajudas de subcoleções.
     Args:
         db_instance: Instância do Firestore DB.
         clinica_id: ID da clínica.
@@ -65,9 +65,9 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
     else:
         pei['profissionais_nomes_associados_fmt'] = _format_professional_names(db_instance, clinica_id, prof_ids)
 
-    # Busca atividades da coleção 'activities' filtrando por pei_id
+    # Busca atividades da subcoleção 'activities'
     pei['activities'] = []
-    activities_ref = db_instance.collection(f'clinicas/{clinica_id}/activities').where(filter=FieldFilter('pei_id', '==', pei_doc.id))
+    activities_ref = db_instance.collection(f'clinicas/{clinica_id}/peis/{pei_doc.id}/activities')
     activities_docs = activities_ref.order_by('timestamp', direction=firestore.Query.ASCENDING).stream()
     for activity_doc in activities_docs:
         activity = convert_doc_to_dict(activity_doc)
@@ -84,36 +84,38 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
             activity['timestamp_fmt'] = 'N/A'
         pei['activities'].append(activity)
     
-    # Busca metas da coleção 'metas' filtrando por pei_id
+    # Busca metas e alvos das subcoleções
     pei['goals'] = []
-    metas_ref = db_instance.collection(f'clinicas/{clinica_id}/metas').where(filter=FieldFilter('pei_id', '==', pei_doc.id))
+    metas_ref = db_instance.collection(f'clinicas/{clinica_id}/peis/{pei_doc.id}/metas')
     metas_docs = metas_ref.stream()
 
     for meta_doc in metas_docs:
         meta = convert_doc_to_dict(meta_doc)
         meta['id'] = meta_doc.id
+        # Garante que meta_id esteja no dicionário, se for salvo como campo
         meta['meta_id'] = meta_doc.id 
         meta['targets'] = [] # Inicializa a lista de alvos para esta meta
 
-        # Busca alvos da coleção 'alvos' filtrando por pei_id e meta_id
-        alvos_ref = db_instance.collection(f'clinicas/{clinica_id}/alvos').where(filter=FieldFilter('pei_id', '==', pei_doc.id)).where(filter=FieldFilter('meta_id', '==', meta_doc.id))
+        alvos_ref = db_instance.collection(f'clinicas/{clinica_id}/peis/{pei_doc.id}/metas/{meta_doc.id}/alvos')
         alvos_docs = alvos_ref.stream()
 
         for alvo_doc in alvos_docs:
             alvo = convert_doc_to_dict(alvo_doc)
             alvo['id'] = alvo_doc.id
+            # Garante que alvo_id esteja no dicionário, se for salvo como campo
             alvo['alvo_id'] = alvo_doc.id
             if 'status' not in alvo:
                 alvo['status'] = 'pendente'
             alvo['concluido'] = (alvo['status'] == 'finalizada') # Para compatibilidade
 
-            # Busca as ajudas da coleção 'ajudas' filtrando por pei_id, meta_id e alvo_id
+            # Busca as ajudas da subcoleção 'ajudas' para cada alvo
             alvo['aids'] = []
-            ajudas_ref = db_instance.collection(f'clinicas/{clinica_id}/ajudas').where(filter=FieldFilter('pei_id', '==', pei_doc.id)).where(filter=FieldFilter('meta_id', '==', meta_doc.id)).where(filter=FieldFilter('alvo_id', '==', alvo_doc.id))
+            ajudas_ref = db_instance.collection(f'clinicas/{clinica_id}/peis/{pei_doc.id}/metas/{meta_doc.id}/alvos/{alvo_doc.id}/ajudas')
             ajudas_docs = ajudas_ref.stream()
             for ajuda_doc in ajudas_docs:
                 ajuda = convert_doc_to_dict(ajuda_doc)
                 ajuda['id'] = ajuda_doc.id
+                # Garante que ajuda_id esteja no dicionário, se for salvo como campo
                 ajuda['ajuda_id'] = ajuda_doc.id
                 if 'status' not in ajuda:
                     ajuda['status'] = 'pendente'
@@ -134,7 +136,6 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
 def _recursive_delete_collection(db_instance, coll_ref, batch_size=50):
     """
     Deleta recursivamente documentos e subcoleções de uma coleção.
-    Esta função é genérica e pode ser usada para coleções de nível superior.
     Args:
         db_instance: Instância do Firestore DB.
         coll_ref: Referência da coleção a ser deletada.
@@ -143,15 +144,27 @@ def _recursive_delete_collection(db_instance, coll_ref, batch_size=50):
     docs = coll_ref.limit(batch_size).stream()
     deleted = 0
     for doc in docs:
-        # Para coleções de nível superior, não esperamos subcoleções aninhadas
-        # diretamente sob os documentos que estamos deletando aqui.
-        # A lógica de deleção de subcoleções aninhadas (como alvos/ajudas de metas)
-        # será tratada explicitamente nas rotas de exclusão ou transações.
+        # Deleta subcoleções primeiro
+        # Usando doc.reference.collections() que é o método recomendado em versões mais recentes
+        # Adicionado try-except para compatibilidade com versões mais antigas que podem não ter 'collections()'
+        try:
+            for sub_coll_ref in doc.reference.collections():
+                print(f"Deletando subcoleção: {sub_coll_ref.id} de documento {doc.id}")
+                _recursive_delete_collection(db_instance, sub_coll_ref)
+        except AttributeError:
+            print(f"AVISO: DocumentReference {doc.id} não possui o método 'collections()'. "
+                  "Isso pode indicar uma versão desatualizada da biblioteca google-cloud-firestore. "
+                  "Subcoleções deste documento podem não ser deletadas recursivamente.")
+            # Se 'collections()' não estiver disponível, não podemos deletar subcoleções genéricas.
+            # As subcoleções conhecidas (alvos, ajudas) são tratadas por chamadas explícitas nas rotas de exclusão.
+            pass
+
         try:
             doc.reference.delete()
-            print(f"Documento deletado: {doc.id} do caminho {coll_ref.path}")
+            print(f"Documento deletado: {doc.id}")
         except Exception as e:
-            print(f"Erro ao deletar documento {doc.id} do caminho {coll_ref.path}: {e}")
+            print(f"Erro ao deletar documento {doc.id}: {e}")
+            # Loga o erro, mas continua se possível, ou relança se for crítico
             raise # Relança para garantir que a transação/operação falhe se um documento não puder ser deletado
         deleted += 1
     if deleted >= batch_size:
@@ -159,137 +172,108 @@ def _recursive_delete_collection(db_instance, coll_ref, batch_size=50):
         _recursive_delete_collection(db_instance, coll_ref, batch_size)
 
 @firestore.transactional
-def _delete_goal_transaction(transaction, clinica_id, pei_id, goal_id_to_delete, db_instance):
+def _delete_goal_transaction(transaction, pei_ref, goal_id_to_delete, db_instance):
     """
-    Deleta uma meta específica e suas subcoleções (alvos e ajudas) de forma transacional.
+    Deleta uma meta específica de um PEI e suas subcoleções (alvos).
     Args:
         transaction: Objeto de transação do Firestore.
-        clinica_id: ID da clínica.
-        pei_id: ID do PEI pai.
+        pei_ref: Referência do documento PEI.
         goal_id_to_delete: ID da meta a ser deletada.
         db_instance: Instância do Firestore DB (necessário para deletar subcoleções).
     Raises:
         Exception: Se a meta não for encontrada.
     """
-    goal_doc_ref = db_instance.collection(f'clinicas/{clinica_id}/metas').document(goal_id_to_delete)
+    goal_doc_ref = pei_ref.collection('metas').document(goal_id_to_delete)
     goal_snapshot = goal_doc_ref.get(transaction=transaction)
 
     if not goal_snapshot.exists:
         raise Exception("Meta não encontrada para exclusão.")
     
-    # Deletar alvos associados a esta meta
-    alvos_query = db_instance.collection(f'clinicas/{clinica_id}/alvos').where(filter=FieldFilter('meta_id', '==', goal_id_to_delete)).where(filter=FieldFilter('pei_id', '==', pei_id))
-    alvos_docs = alvos_query.stream()
-    for alvo_doc in alvos_docs:
-        # Deletar ajudas associadas a este alvo
-        ajudas_query = db_instance.collection(f'clinicas/{clinica_id}/ajudas').where(filter=FieldFilter('alvo_id', '==', alvo_doc.id)).where(filter=FieldFilter('meta_id', '==', goal_id_to_delete)).where(filter=FieldFilter('pei_id', '==', pei_id))
-        ajudas_docs_to_delete = ajudas_query.stream()
-        for ajuda_doc in ajudas_docs_to_delete:
-            transaction.delete(ajuda_doc.reference)
-            print(f"Ajuda deletada transacionalmente: {ajuda_doc.id}")
-        
-        transaction.delete(alvo_doc.reference)
-        print(f"Alvo deletado transacionalmente: {alvo_doc.id}")
-
-    # Finalmente, deletar a meta
+    # A deleção recursiva das subcoleções 'alvos' e 'ajudas' será feita na rota Flask.
     transaction.delete(goal_doc_ref)
-    print(f"Meta deletada transacionalmente: {goal_id_to_delete}")
-
 
 @firestore.transactional
-def _update_target_status_transaction(transaction, db_instance, clinica_id, pei_id, meta_id, target_id, new_target_status):
+def _update_target_status_transaction(transaction, target_ref, new_target_status):
     """
-    Atualiza o status de um alvo específico e suas ajudas associadas.
+    Atualiza o status de um alvo específico.
     Args:
         transaction: Objeto de transação do Firestore.
-        db_instance: Instância do Firestore DB.
-        clinica_id: ID da clínica.
-        pei_id: ID do PEI pai.
-        meta_id: ID da meta pai.
-        target_id: ID do alvo.
+        target_ref: Referência do documento do alvo.
         new_target_status: Novo status do alvo (pendente, andamento, finalizada).
     Raises:
         Exception: Se o alvo não for encontrado.
     """
-    target_ref = db_instance.collection(f'clinicas/{clinica_id}/alvos').document(target_id)
     snapshot = target_ref.get(transaction=transaction)
     if not snapshot.exists:
         raise Exception("Alvo não encontrado.")
     
     updated_data = {'status': new_target_status}
     transaction.update(target_ref, updated_data)
-    print(f"Alvo {target_id} atualizado para status '{new_target_status}'.")
 
     # Se o alvo for marcado como finalizado, todas as ajudas associadas também são finalizadas.
     if new_target_status == 'finalizada':
-        ajudas_query = db_instance.collection(f'clinicas/{clinica_id}/ajudas').where(filter=FieldFilter('alvo_id', '==', target_id)).where(filter=FieldFilter('meta_id', '==', meta_id)).where(filter=FieldFilter('pei_id', '==', pei_id))
-        ajudas_docs = ajudas_query.stream()
+        ajudas_ref = target_ref.collection('ajudas')
+        ajudas_docs = ajudas_ref.stream()
         for ajuda_doc in ajudas_docs:
             transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
-            print(f"Ajuda {ajuda_doc.id} do alvo {target_id} finalizada.")
 
 
 @firestore.transactional
-def _finalize_goal_transaction(transaction, clinica_id, pei_id, goal_id, db_instance):
+def _finalize_goal_transaction(transaction, goal_ref, db_instance):
     """
     Finaliza uma meta específica, marcando-a como 'finalizado'
     e todos os seus alvos e ajudas como concluídos/finalizados.
     Args:
         transaction: Objeto de transação do Firestore.
-        clinica_id: ID da clínica.
-        pei_id: ID do PEI pai.
-        goal_id: ID da meta.
+        goal_ref: Referência do documento da meta.
         db_instance: Instância do Firestore DB (necessário para buscar subcoleções).
     Raises:
         Exception: Se a meta não for encontrada.
     """
-    print(f"DEBUG: Iniciando _finalize_goal_transaction para meta: {goal_id} no PEI {pei_id}")
-    goal_ref = db_instance.collection(f'clinicas/{clinica_id}/metas').document(goal_id)
+    print(f"DEBUG: Iniciando _finalize_goal_transaction para meta: {goal_ref.id}")
     snapshot = goal_ref.get(transaction=transaction)
     if not snapshot.exists:
-        print(f"ERROR: Em _finalize_goal_transaction: Meta {goal_id} não encontrada.")
+        print(f"ERROR: Em _finalize_goal_transaction: Meta {goal_ref.id} não encontrada.")
         raise Exception("Meta não encontrada para finalizar.")
 
     updated_goal_data = {'status': 'finalizado'}
     transaction.update(goal_ref, updated_goal_data)
-    print(f"DEBUG: Meta {goal_id} atualizada para status 'finalizado'.")
+    print(f"DEBUG: Meta {goal_ref.id} atualizada para status 'finalizado'.")
 
-    # Atualizar alvos associados a esta meta
-    alvos_query = db_instance.collection(f'clinicas/{clinica_id}/alvos').where(filter=FieldFilter('meta_id', '==', goal_id)).where(filter=FieldFilter('pei_id', '==', pei_id))
-    alvos_docs = alvos_query.stream()
+    # Atualizar alvos na subcoleção
+    alvos_ref = goal_ref.collection('alvos')
+    alvos_docs = alvos_ref.stream()
 
     for alvo_doc in alvos_docs:
-        print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'finalizada' dentro da meta {goal_id}.")
+        print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'finalizada' dentro da meta {goal_ref.id}.")
         updated_alvo_data = {'status': 'finalizada'}
         transaction.update(alvo_doc.reference, updated_alvo_data)
 
-        # Atualizar ajudas associadas a este alvo
-        ajudas_query = db_instance.collection(f'clinicas/{clinica_id}/ajudas').where(filter=FieldFilter('alvo_id', '==', alvo_doc.id)).where(filter=FieldFilter('meta_id', '==', goal_id)).where(filter=FieldFilter('pei_id', '==', pei_id))
-        ajudas_docs = ajudas_query.stream()
+        # Atualizar ajudas na subcoleção do alvo
+        ajudas_ref = alvo_doc.reference.collection('ajudas')
+        ajudas_docs = ajudas_ref.stream()
         for ajuda_doc in ajudas_docs:
             print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'finalizada' dentro do alvo {alvo_doc.id}.")
             transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
-    print(f"DEBUG: Finalizado _finalize_goal_transaction para meta: {goal_id}")
+    print(f"DEBUG: Finalizado _finalize_goal_transaction para meta: {goal_ref.id}")
 
 
 @firestore.transactional
-def _finalize_pei_transaction(transaction, clinica_id, pei_id, db_instance):
+def _finalize_pei_transaction(transaction, pei_ref, db_instance):
     """
     Finaliza um PEI, marcando-o como 'finalizado' e todas as suas metas ativas
     e respectivos alvos como 'finalizado'/'concluido'.
     Args:
         transaction: Objeto de transação do Firestore.
-        clinica_id: ID da clínica.
-        pei_id: ID do PEI.
-        db_instance: Instância do Firestore DB (necessário para buscar coleções).
+        pei_ref: Referência do documento PEI.
+        db_instance: Instância do Firestore DB (necessário para buscar subcoleções).
         Raises:
         Exception: Se o PEI não for encontrado.
     """
-    print(f"DEBUG: Iniciando _finalize_pei_transaction para PEI: {pei_id}")
-    pei_ref = db_instance.collection(f'clinicas/{clinica_id}/peis').document(pei_id)
+    print(f"DEBUG: Iniciando _finalize_pei_transaction para PEI: {pei_ref.id}")
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists:
-        print(f"ERROR: Em _finalize_pei_transaction: PEI {pei_id} não encontrado.")
+        print(f"ERROR: Em _finalize_pei_transaction: PEI {pei_ref.id} não encontrado.")
         raise Exception("PEI não encontrado.")
 
     try:
@@ -297,27 +281,27 @@ def _finalize_pei_transaction(transaction, clinica_id, pei_id, db_instance):
             'status': 'finalizado',
             'data_finalizacao': datetime.datetime.now(SAO_PAULO_TZ),
         })
-        print(f"DEBUG: PEI {pei_id} atualizado para status 'finalizado' e data de finalização.")
+        print(f"DEBUG: PEI {pei_ref.id} atualizado para status 'finalizado' e data de finalização.")
     except Exception as e:
-        print(f"ERROR: Falha ao atualizar o documento PEI {pei_id}: {e}")
+        print(f"ERROR: Falha ao atualizar o documento PEI {pei_ref.id}: {e}")
         raise # Re-raise the exception to fail the transaction
 
     # Finalizar todas as metas e seus alvos
-    metas_query = db_instance.collection(f'clinicas/{clinica_id}/metas').where(filter=FieldFilter('pei_id', '==', pei_id))
-    metas_docs = metas_query.stream()
+    metas_ref = pei_ref.collection('metas')
+    metas_docs = metas_ref.stream()
 
     for meta_doc in metas_docs:
         meta_data = meta_doc.to_dict()
         if meta_data.get('status') == 'ativo':
             try:
-                print(f"DEBUG: Atualizando meta {meta_doc.id} para 'finalizado' dentro do PEI {pei_id}.")
+                print(f"DEBUG: Atualizando meta {meta_doc.id} para 'finalizado' dentro do PEI {pei_ref.id}.")
                 transaction.update(meta_doc.reference, {'status': 'finalizado'})
             except Exception as e:
                 print(f"ERROR: Falha ao atualizar meta {meta_doc.id}: {e}")
                 raise # Re-raise the exception
 
-            alvos_query = db_instance.collection(f'clinicas/{clinica_id}/alvos').where(filter=FieldFilter('meta_id', '==', meta_doc.id)).where(filter=FieldFilter('pei_id', '==', pei_id))
-            alvos_docs = alvos_query.stream()
+            alvos_ref = meta_doc.reference.collection('alvos')
+            alvos_docs = alvos_ref.stream()
 
             for alvo_doc in alvos_docs:
                 try:
@@ -328,9 +312,9 @@ def _finalize_pei_transaction(transaction, clinica_id, pei_id, db_instance):
                     print(f"ERROR: Falha ao atualizar alvo {alvo_doc.id}: {e}")
                     raise # Re-raise the exception
 
-                # Atualizar ajudas associadas ao alvo
-                ajudas_query = db_instance.collection(f'clinicas/{clinica_id}/ajudas').where(filter=FieldFilter('alvo_id', '==', alvo_doc.id)).where(filter=FieldFilter('meta_id', '==', meta_doc.id)).where(filter=FieldFilter('pei_id', '==', pei_id))
-                ajudas_docs = ajudas_query.stream()
+                # Atualizar ajudas na subcoleção do alvo
+                ajudas_ref = alvo_doc.reference.collection('ajudas')
+                ajudas_docs = ajudas_ref.stream()
                 for ajuda_doc in ajudas_docs:
                     try:
                         print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'finalizada' dentro do alvo {alvo_doc.id}.")
@@ -340,40 +324,37 @@ def _finalize_pei_transaction(transaction, clinica_id, pei_id, db_instance):
                         raise # Re-raise the exception
         else:
             print(f"DEBUG: Meta {meta_doc.id} já está finalizada ou inativa, pulando atualização.")
-    print(f"DEBUG: Finalizado _finalize_pei_transaction para PEI: {pei_id}")
+    print(f"DEBUG: Finalizado _finalize_pei_transaction para PEI: {pei_ref.id}")
 
 
 @firestore.transactional
-def _add_target_to_goal_transaction(transaction, clinica_id, pei_id, goal_id, new_target_description):
+def _add_target_to_goal_transaction(transaction, goal_ref, new_target_description):
     """
-    Adiciona um novo alvo a uma meta existente.
+    Adiciona um novo alvo a uma meta existente dentro de um PEI.
     Args:
         transaction: Objeto de transação do Firestore.
-        clinica_id: ID da clínica.
-        pei_id: ID do PEI pai.
-        goal_id: ID da meta pai.
+        goal_ref: Referência do documento da meta.
         new_target_description: Descrição do novo alvo.
     Raises:
         Exception: Se a meta não for encontrada.
     """
-    goal_ref = db_instance.collection(f'clinicas/{clinica_id}/metas').document(goal_id)
     snapshot = goal_ref.get(transaction=transaction)
     if not snapshot.exists:
         raise Exception("Meta não encontrada.")
 
-    # Cria o novo alvo como um documento na coleção 'alvos'
+    # Cria o novo alvo como um documento na subcoleção 'alvos'
     new_alvo_data = {
         'descricao': new_target_description,
         'status': 'pendente',
-        'meta_id': goal_id,
-        'pei_id': pei_id
+        'meta_id': goal_ref.id,
+        'pei_id': goal_ref.parent.parent.id # Obtém o ID do PEI pai
     }
-    alvos_collection_ref = db_instance.collection(f'clinicas/{clinica_id}/alvos')
-    alvo_doc_ref = alvos_collection_ref.document()
-    new_alvo_data['alvo_id'] = alvo_doc_ref.id
-    transaction.set(alvo_doc_ref, new_alvo_data)
+    # Obtém uma nova referência de documento para o alvo dentro da transação
+    alvo_doc_ref = goal_ref.collection('alvos').document()
+    new_alvo_data['alvo_id'] = alvo_doc_ref.id # Adiciona o ID do alvo ao dado
+    transaction.set(alvo_doc_ref, new_alvo_data) # Usa transaction.set() para adicionar o alvo
 
-    # Definindo as ajudas fixas para o novo alvo e adicionando-as na coleção 'ajudas'
+    # Definindo as ajudas fixas para o novo alvo e adicionando-as como subcoleção
     fixed_aids = [
         {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente'},
         {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente'},
@@ -381,29 +362,30 @@ def _add_target_to_goal_transaction(transaction, clinica_id, pei_id, goal_id, ne
         {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente'},
         {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente'},
     ]
-    ajudas_collection_ref = db_instance.collection(f'clinicas/{clinica_id}/ajudas')
     for aid_data in fixed_aids:
-        aid_doc_ref = ajudas_collection_ref.document()
-        aid_data['ajuda_id'] = aid_doc_ref.id
-        aid_data['pei_id'] = pei_id
-        aid_data['meta_id'] = goal_id
-        aid_data['alvo_id'] = alvo_doc_ref.id
-        transaction.set(aid_doc_ref, aid_data)
+        # Adiciona cada ajuda como um documento na subcoleção 'ajudas' do alvo
+        # Obtém uma nova referência de documento para a ajuda dentro da transação
+        aid_doc_ref = alvo_doc_ref.collection('ajudas').document()
+        aid_data['ajuda_id'] = aid_doc_ref.id # Adiciona o ID da ajuda ao dado
+        # Adiciona os IDs dos ancestrais (pei_id, meta_id, alvo_id) ao documento da ajuda
+        aid_data['pei_id'] = new_alvo_data['pei_id']
+        aid_data['meta_id'] = new_alvo_data['meta_id']
+        aid_data['alvo_id'] = new_alvo_data['alvo_id']
+        transaction.set(aid_doc_ref, aid_data) # Usa transaction.set() para adicionar a ajuda
+
 
 @firestore.transactional
-def _add_pei_activity_transaction(transaction, clinica_id, pei_id, activity_content, user_name):
+def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_name):
     """
-    Adiciona uma nova atividade ao histórico de atividades de um PEI.
+    Adiciona uma nova atividade ao histórico de atividades de um PEI como um documento em subcoleção.
     Args:
         transaction: Objeto de transação do Firestore.
-        clinica_id: ID da clínica.
-        pei_id: ID do PEI.
+        pei_ref: Referência do documento PEI.
         activity_content: Conteúdo da atividade.
         user_name: Nome do usuário que registrou a atividade.
     Raises:
         Exception: Se o PEI não for encontrado.
     """
-    pei_ref = db_instance.collection(f'clinicas/{clinica_id}/peis').document(pei_id)
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists:
         raise Exception("PEI not found.")
@@ -412,32 +394,27 @@ def _add_pei_activity_transaction(transaction, clinica_id, pei_id, activity_cont
         'content': activity_content,
         'timestamp': datetime.datetime.now(SAO_PAULO_TZ),
         'user_name': user_name,
-        'pei_id': pei_id
+        'pei_id': pei_ref.id # Adiciona o ID do PEI
     }
-    activities_collection_ref = db_instance.collection(f'clinicas/{clinica_id}/activities')
-    activity_doc_ref = activities_collection_ref.document()
-    new_activity_data['activity_id'] = activity_doc_ref.id
-    transaction.set(activity_doc_ref, new_activity_data)
+    # Obtém uma nova referência de documento para a atividade dentro da transação
+    activity_doc_ref = pei_ref.collection('activities').document()
+    new_activity_data['activity_id'] = activity_doc_ref.id # Adiciona o ID da atividade ao dado
+    transaction.set(activity_doc_ref, new_activity_data) # Usa transaction.set() para adicionar a atividade
 
 @firestore.transactional
-def _update_target_and_aid_data_transaction(transaction, db_instance, clinica_id, pei_id, meta_id, target_id, aid_id=None, new_attempts_count=None, new_target_status=None):
+def _update_target_and_aid_data_transaction(transaction, target_ref, aid_id=None, new_attempts_count=None, new_target_status=None):
     """
     Atualiza os dados de um alvo específico ou de uma ajuda dentro de um alvo no PEI.
     Pode atualizar a contagem de tentativas de uma ajuda ou o status geral de um alvo.
     Args:
         transaction: Objeto de transação do Firestore.
-        db_instance: Instância do Firestore DB.
-        clinica_id: ID da clínica.
-        pei_id: ID do PEI pai.
-        meta_id: ID da meta pai.
-        target_id: ID do alvo.
+        target_ref: Referência do documento do alvo.
         aid_id: Opcional. ID da ajuda específica a ser atualizada.
         new_attempts_count: Opcional. O novo valor TOTAL da contagem de tentativas para a ajuda.
         new_target_status: Opcional. Novo status geral do alvo.
     Raises:
         Exception: Se o alvo ou a ajuda não forem encontrados, ou se houver erro de tipo.
     """
-    target_ref = db_instance.collection(f'clinicas/{clinica_id}/alvos').document(target_id)
     snapshot = target_ref.get(transaction=transaction)
     if not snapshot.exists:
         raise Exception("Alvo não encontrado.")
@@ -447,14 +424,14 @@ def _update_target_and_aid_data_transaction(transaction, db_instance, clinica_id
         transaction.update(target_ref, {'status': new_target_status})
         # Se o alvo for marcado como finalizado, todas as ajudas devem ser finalizadas
         if new_target_status == 'finalizada':
-            ajudas_query = db_instance.collection(f'clinicas/{clinica_id}/ajudas').where(filter=FieldFilter('alvo_id', '==', target_id)).where(filter=FieldFilter('meta_id', '==', meta_id)).where(filter=FieldFilter('pei_id', '==', pei_id))
-            ajudas_docs = ajudas_query.stream()
+            ajudas_ref = target_ref.collection('ajudas')
+            ajudas_docs = ajudas_ref.stream()
             for ajuda_doc in ajudas_docs:
                 transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
 
     # Atualiza dados de uma ajuda específica, se aid_id for fornecido
     if aid_id is not None:
-        aid_ref = db_instance.collection(f'clinicas/{clinica_id}/ajudas').document(aid_id)
+        aid_ref = target_ref.collection('ajudas').document(aid_id)
         aid_snapshot = aid_ref.get(transaction=transaction)
         if not aid_snapshot.exists:
             raise Exception("Ajuda (Aid) não encontrada no alvo.")
@@ -617,8 +594,8 @@ def add_pei(paciente_doc_id):
 def delete_pei(paciente_doc_id):
     db_instance = get_db()
     clinica_id = session['clinica_id']
-    user_role = session.get('user_role') 
-    is_admin = user_role == 'admin' 
+    user_role = session.get('user_role') # Explicitly define user_role
+    is_admin = user_role == 'admin' # Explicitly define is_admin
     
     try:
         pei_id = request.form.get('pei_id')
@@ -629,35 +606,22 @@ def delete_pei(paciente_doc_id):
         else:
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
             
-            # Verifica se o PEI existe antes de tentar deletar documentos associados
+            # Verifica se o PEI existe antes de tentar deletar subcoleções
             pei_doc_snapshot = pei_ref.get()
             if not pei_doc_snapshot.exists:
                 flash('PEI não encontrado para exclusão.', 'danger')
                 print(f"Erro: PEI com ID {pei_id} não encontrado.")
                 return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
 
-            # Deletar metas associadas
-            print(f"Iniciando exclusão de metas para PEI: {pei_id}")
-            metas_query = db_instance.collection(f'clinicas/{clinica_id}/metas').where(filter=FieldFilter('pei_id', '==', pei_id))
-            _recursive_delete_collection(db_instance, metas_query) # Passa a query como CollectionReference
+
+            print(f"Iniciando exclusão recursiva de metas para PEI: {pei_id}")
+            metas_ref = pei_ref.collection('metas') # This is a CollectionReference
+            _recursive_delete_collection(db_instance, metas_ref) # This call is correct
             print(f"Exclusão de metas concluída para PEI: {pei_id}")
 
-            # Deletar alvos associados
-            print(f"Iniciando exclusão de alvos para PEI: {pei_id}")
-            alvos_query = db_instance.collection(f'clinicas/{clinica_id}/alvos').where(filter=FieldFilter('pei_id', '==', pei_id))
-            _recursive_delete_collection(db_instance, alvos_query)
-            print(f"Exclusão de alvos concluída para PEI: {pei_id}")
-
-            # Deletar ajudas associadas
-            print(f"Iniciando exclusão de ajudas para PEI: {pei_id}")
-            ajudas_query = db_instance.collection(f'clinicas/{clinica_id}/ajudas').where(filter=FieldFilter('pei_id', '==', pei_id))
-            _recursive_delete_collection(db_instance, ajudas_query)
-            print(f"Exclusão de ajudas concluída para PEI: {pei_id}")
-
-            # Deletar atividades associadas
-            print(f"Iniciando exclusão de atividades para PEI: {pei_id}")
-            activities_query = db_instance.collection(f'clinicas/{clinica_id}/activities').where(filter=FieldFilter('pei_id', '==', pei_id))
-            _recursive_delete_collection(db_instance, activities_query)
+            print(f"Iniciando exclusão recursiva de atividades para PEI: {pei_id}")
+            activities_ref = pei_ref.collection('activities') # This is a CollectionReference
+            _recursive_delete_collection(db_instance, activities_ref) # This call is correct
             print(f"Exclusão de atividades concluída para PEI: {pei_id}")
 
             # Finalmente, deletar o documento PEI
@@ -714,13 +678,13 @@ def finalize_pei(paciente_doc_id):
             if logged_in_professional_id not in associated_professionals_ids:
                 print(f"Erro de permissão: Profissional {logged_in_professional_id} não está associado ao PEI {pei_id}.")
                 return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar este PEI.'}), 403
-            print(f"Permissão concedida: Usuário é profissional associado.")
+            print(f"Permissão concedida: Usuário é administrador.")
         else:
             print("Permissão concedida: Usuário é administrador.")
 
         print(f"Iniciando transação de finalização para PEI: {pei_id}")
         transaction = db_instance.transaction()
-        _finalize_pei_transaction(transaction, clinica_id, pei_id, db_instance)
+        _finalize_pei_transaction(transaction, pei_ref, db_instance)
         transaction.commit()
         print(f"Transação de finalização para PEI {pei_id} concluída com sucesso.")
 
@@ -749,8 +713,8 @@ def finalize_pei(paciente_doc_id):
 def add_goal(paciente_doc_id):
     db_instance = get_db()
     clinica_id = session['clinica_id']
-    user_role = session.get('user_role') 
-    is_admin = user_role == 'admin' 
+    user_role = session.get('user_role') # Explicitly define user_role
+    is_admin = user_role == 'admin' # Explicitly define is_admin
 
     try:
         data = request.form
@@ -762,16 +726,16 @@ def add_goal(paciente_doc_id):
             flash('Dados insuficientes para adicionar meta.', 'danger')
             return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
 
-        # Adiciona a meta na coleção de metas de nível superior
-        metas_collection_ref = db_instance.collection(f'clinicas/{clinica_id}/metas')
+        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+        metas_ref = pei_ref.collection('metas')
 
         new_goal_data = {
             'descricao': descricao_goal.strip(),
             'status': 'ativo',
-            'pei_id': pei_id # Adiciona o ID do PEI para associação
+            'pei_id': pei_id
         }
         
-        meta_doc_ref = metas_collection_ref.document()
+        meta_doc_ref = metas_ref.document()
         new_goal_data['meta_id'] = meta_doc_ref.id
         meta_doc_ref.set(new_goal_data)
 
@@ -782,10 +746,6 @@ def add_goal(paciente_doc_id):
             {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente'},
             {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente'},
         ]
-
-        alvos_collection_ref = db_instance.collection(f'clinicas/{clinica_id}/alvos')
-        ajudas_collection_ref = db_instance.collection(f'clinicas/{clinica_id}/ajudas')
-
         for desc in targets_desc:
             if desc.strip():
                 new_alvo_data = {
@@ -794,12 +754,12 @@ def add_goal(paciente_doc_id):
                     'meta_id': meta_doc_ref.id,
                     'pei_id': pei_id
                 }
-                alvo_doc_ref = alvos_collection_ref.document()
+                alvo_doc_ref = meta_doc_ref.collection('alvos').document()
                 new_alvo_data['alvo_id'] = alvo_doc_ref.id
                 alvo_doc_ref.set(new_alvo_data)
 
                 for aid_data in fixed_aids_template:
-                    ajuda_doc_ref = ajudas_collection_ref.document()
+                    ajuda_doc_ref = alvo_doc_ref.collection('ajudas').document()
                     aid_data['ajuda_id'] = ajuda_doc_ref.id
                     aid_data['pei_id'] = pei_id
                     aid_data['meta_id'] = meta_doc_ref.id
@@ -818,8 +778,8 @@ def add_goal(paciente_doc_id):
 def add_target_to_goal(paciente_doc_id):
     db_instance = get_db()
     clinica_id = session['clinica_id']
-    user_role = session.get('user_role') 
-    is_admin = user_role == 'admin' 
+    user_role = session.get('user_role') # Explicitly define user_role
+    is_admin = user_role == 'admin' # Explicitly define is_admin
 
     try:
         data = request.get_json()
@@ -830,12 +790,14 @@ def add_target_to_goal(paciente_doc_id):
         if not all([pei_id, goal_id, target_description]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar alvo.'}), 400
 
-        # A transação agora precisa dos IDs da clínica e do PEI
+        goal_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).collection('metas').document(goal_id)
+        
         transaction = db_instance.transaction()
-        _add_target_to_goal_transaction(transaction, clinica_id, pei_id, goal_id, target_description)
+        _add_target_to_goal_transaction(transaction, goal_ref, target_description)
         transaction.commit()
 
         all_peis = []
+        # user_role = session.get('user_role') # Redundant here, already defined above
         logged_in_professional_id = None
         if user_role == 'medico':
             user_doc = db_instance.collection('User').document(session.get('user_uid')).get()
@@ -867,8 +829,8 @@ def add_target_to_goal(paciente_doc_id):
 def delete_goal(paciente_doc_id):
     db_instance = get_db()
     clinica_id = session['clinica_id']
-    user_role = session.get('user_role') 
-    is_admin = user_role == 'admin' 
+    user_role = session.get('user_role') # Explicitly define user_role
+    is_admin = user_role == 'admin' # Explicitly define is_admin
 
     try:
         pei_id = request.form.get('pei_id')
@@ -878,17 +840,24 @@ def delete_goal(paciente_doc_id):
             flash('Dados insuficientes para excluir meta.', 'danger')
             print("Erro: Dados insuficientes para excluir meta.")
         else:
-            # Verifica se a meta existe antes de tentar deletar
-            goal_doc_ref = db_instance.collection(f'clinicas/{clinica_id}/metas').document(goal_id)
+            pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
+            goal_doc_ref = pei_ref.collection('metas').document(goal_id)
+
             goal_doc_snapshot = goal_doc_ref.get()
             if not goal_doc_snapshot.exists:
                 flash('Meta não encontrada para exclusão.', 'danger')
-                print(f"Erro: Meta com ID {goal_id} não encontrada.")
+                print(f"Erro: Meta com ID {goal_id} não encontrada no PEI {pei_id}.")
                 return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
-            
-            # Deletar a meta e seus alvos/ajudas associados via transação
+
+            # Deletar recursivamente a subcoleção 'alvos' da meta, incluindo suas subcoleções 'ajudas'
+            print(f"Iniciando exclusão recursiva de alvos para meta: {goal_id}")
+            alvos_ref = goal_doc_ref.collection('alvos')
+            _recursive_delete_collection(db_instance, alvos_ref)
+            print(f"Exclusão de alvos concluída para meta: {goal_id}")
+
+            # Deletar o documento da meta
             transaction = db_instance.transaction()
-            _delete_goal_transaction(transaction, clinica_id, pei_id, goal_id, db_instance)
+            _delete_goal_transaction(transaction, pei_ref, goal_id, db_instance)
             transaction.commit()
             print(f"Meta principal deletada: {goal_id}")
             
@@ -923,7 +892,7 @@ def finalize_goal(paciente_doc_id):
         if not all([pei_id, goal_id]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para finalizar meta.'}), 400
 
-        goal_ref = db_instance.collection(f'clinicas/{clinica_id}/metas').document(goal_id)
+        goal_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).collection('metas').document(goal_id)
         goal_doc = goal_ref.get()
         if not goal_doc.exists:
             return jsonify({'success': False, 'message': 'Meta não encontrada.'}), 404
@@ -936,7 +905,7 @@ def finalize_goal(paciente_doc_id):
                 return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar esta meta.'}), 403
 
         transaction = db_instance.transaction()
-        _finalize_goal_transaction(transaction, clinica_id, pei_id, goal_id, db_instance)
+        _finalize_goal_transaction(transaction, goal_ref, db_instance)
         transaction.commit()
 
         all_peis = []
@@ -996,7 +965,7 @@ def add_pei_activity(paciente_doc_id):
 
         user_name = session.get('user_name', 'Desconhecido')
         transaction = db_instance.transaction()
-        _add_pei_activity_transaction(transaction, clinica_id, pei_id, activity_content, user_name)
+        _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_name)
         transaction.commit()
 
         all_peis = []
@@ -1049,7 +1018,7 @@ def update_target_and_aid_data(paciente_doc_id):
         if not all([pei_id, goal_id, target_id]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para atualizar alvo.'}), 400
 
-        target_ref = db_instance.collection(f'clinicas/{clinica_id}/alvos').document(target_id)
+        target_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).collection('metas').document(goal_id).collection('alvos').document(target_id)
         target_doc = target_ref.get()
         if not target_doc.exists:
             return jsonify({'success': False, 'message': 'Alvo não encontrado.'}), 404
@@ -1062,7 +1031,7 @@ def update_target_and_aid_data(paciente_doc_id):
                 return jsonify({'success': False, 'message': 'Você não tem permissão para atualizar este alvo.'}), 403
 
         transaction = db_instance.transaction()
-        _update_target_and_aid_data_transaction(transaction, db_instance, clinica_id, pei_id, goal_id, target_id, aid_id, new_attempts_count, new_target_status)
+        _update_target_and_aid_data_transaction(transaction, target_ref, aid_id, new_attempts_count, new_target_status)
         transaction.commit()
 
         all_peis = []
