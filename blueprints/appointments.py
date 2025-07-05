@@ -122,7 +122,7 @@ def register_appointments_routes(app):
                 stats_cards[status]['count'] += 1
                 stats_cards[status]['total_valor'] += preco
 
-        return render_template('agendamentos.html',    
+        return render_template('agendamentos.html',     
                                 agendamentos=agendamentos_lista,
                                 stats_cards=stats_cards,
                                 profissionais_para_filtro=profissionais_para_filtro,
@@ -153,7 +153,7 @@ def register_appointments_routes(app):
             preco_servico = float(preco_str.replace(',', '.'))
 
             paciente_ref_query = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')\
-                                         .where(filter=FieldFilter('nome', '==', paciente_nome)).limit(1).get()
+                                            .where(filter=FieldFilter('nome', '==', paciente_nome)).limit(1).get()
             
             paciente_doc_id = None
             if paciente_ref_query:
@@ -162,12 +162,15 @@ def register_appointments_routes(app):
                     break
             
             if not paciente_doc_id:
-                novo_paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').add({
+                # Cria o novo paciente e obtém a referência do documento
+                _, novo_paciente_doc_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').add({
                     'nome': paciente_nome,
                     'contato_telefone': paciente_telefone if paciente_telefone else None,
                     'data_cadastro': firestore.SERVER_TIMESTAMP
                 })
-                paciente_doc_id = novo_paciente_ref[1].id
+                # Atualiza o documento do novo paciente com o id_paciente
+                novo_paciente_doc_ref.update({'id_paciente': novo_paciente_doc_ref.id})
+                paciente_doc_id = novo_paciente_doc_ref.id
 
             profissional_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get()
             servico_procedimento_doc = db_instance.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get()
@@ -204,6 +207,7 @@ def register_appointments_routes(app):
             flash(f'Erro de valor ao registrar atendimento: {ve}', 'danger')
         except Exception as e:
             flash(f'Erro ao registrar atendimento manual: {e}', 'danger')
+            print(f"Erro registrar_atendimento_manual: {e}") # Adicionado print para depuração
         return redirect(url_for('listar_agendamentos'))
 
 
