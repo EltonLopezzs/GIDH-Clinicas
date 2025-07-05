@@ -35,7 +35,7 @@ def _format_professional_names(db_instance, clinica_id, professional_ids):
 
 def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals_map=None):
     """
-    Converte um documento PEI em um dicionário e formata campos para exibição no template,
+    Converte um documento PEI em um dicionário e formatar campos para exibição no template,
     incluindo metas, alvos e ajudas de subcoleções.
     Args:
         db_instance: Instância do Firestore DB.
@@ -230,18 +230,22 @@ def _finalize_goal_transaction(transaction, goal_ref, db_instance):
     Raises:
         Exception: Se a meta não for encontrada.
     """
+    print(f"DEBUG: Iniciando _finalize_goal_transaction para meta: {goal_ref.id}")
     snapshot = goal_ref.get(transaction=transaction)
     if not snapshot.exists:
+        print(f"ERROR: Em _finalize_goal_transaction: Meta {goal_ref.id} não encontrada.")
         raise Exception("Meta não encontrada para finalizar.")
 
     updated_goal_data = {'status': 'finalizado'}
     transaction.update(goal_ref, updated_goal_data)
+    print(f"DEBUG: Meta {goal_ref.id} atualizada para status 'finalizado'.")
 
     # Atualizar alvos na subcoleção
     alvos_ref = goal_ref.collection('alvos')
     alvos_docs = alvos_ref.stream()
 
     for alvo_doc in alvos_docs:
+        print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'finalizada' dentro da meta {goal_ref.id}.")
         updated_alvo_data = {'status': 'finalizada'}
         transaction.update(alvo_doc.reference, updated_alvo_data)
 
@@ -249,7 +253,9 @@ def _finalize_goal_transaction(transaction, goal_ref, db_instance):
         ajudas_ref = alvo_doc.reference.collection('ajudas')
         ajudas_docs = ajudas_ref.stream()
         for ajuda_doc in ajudas_docs:
+            print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'finalizada' dentro do alvo {alvo_doc.id}.")
             transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
+    print(f"DEBUG: Finalizado _finalize_goal_transaction para meta: {goal_ref.id}")
 
 
 @firestore.transactional
@@ -264,14 +270,21 @@ def _finalize_pei_transaction(transaction, pei_ref, db_instance):
         Raises:
         Exception: Se o PEI não for encontrado.
     """
+    print(f"DEBUG: Iniciando _finalize_pei_transaction para PEI: {pei_ref.id}")
     snapshot = pei_ref.get(transaction=transaction)
     if not snapshot.exists:
+        print(f"ERROR: Em _finalize_pei_transaction: PEI {pei_ref.id} não encontrado.")
         raise Exception("PEI não encontrado.")
 
-    transaction.update(pei_ref, {
-        'status': 'finalizado',
-        'data_finalizacao': datetime.datetime.now(SAO_PAULO_TZ),
-    })
+    try:
+        transaction.update(pei_ref, {
+            'status': 'finalizado',
+            'data_finalizacao': datetime.datetime.now(SAO_PAULO_TZ),
+        })
+        print(f"DEBUG: PEI {pei_ref.id} atualizado para status 'finalizado' e data de finalização.")
+    except Exception as e:
+        print(f"ERROR: Falha ao atualizar o documento PEI {pei_ref.id}: {e}")
+        raise # Re-raise the exception to fail the transaction
 
     # Finalizar todas as metas e seus alvos
     metas_ref = pei_ref.collection('metas')
@@ -280,20 +293,38 @@ def _finalize_pei_transaction(transaction, pei_ref, db_instance):
     for meta_doc in metas_docs:
         meta_data = meta_doc.to_dict()
         if meta_data.get('status') == 'ativo':
-            transaction.update(meta_doc.reference, {'status': 'finalizado'})
+            try:
+                print(f"DEBUG: Atualizando meta {meta_doc.id} para 'finalizado' dentro do PEI {pei_ref.id}.")
+                transaction.update(meta_doc.reference, {'status': 'finalizado'})
+            except Exception as e:
+                print(f"ERROR: Falha ao atualizar meta {meta_doc.id}: {e}")
+                raise # Re-raise the exception
 
             alvos_ref = meta_doc.reference.collection('alvos')
             alvos_docs = alvos_ref.stream()
 
             for alvo_doc in alvos_docs:
-                updated_alvo_data = {'status': 'finalizada'}
-                transaction.update(alvo_doc.reference, updated_alvo_data)
+                try:
+                    print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'finalizada' dentro da meta {meta_doc.id}.")
+                    updated_alvo_data = {'status': 'finalizada'}
+                    transaction.update(alvo_doc.reference, updated_alvo_data)
+                except Exception as e:
+                    print(f"ERROR: Falha ao atualizar alvo {alvo_doc.id}: {e}")
+                    raise # Re-raise the exception
 
                 # Atualizar ajudas na subcoleção do alvo
                 ajudas_ref = alvo_doc.reference.collection('ajudas')
                 ajudas_docs = ajudas_ref.stream()
                 for ajuda_doc in ajudas_docs:
-                    transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
+                    try:
+                        print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'finalizada' dentro do alvo {alvo_doc.id}.")
+                        transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
+                    except Exception as e:
+                        print(f"ERROR: Falha ao atualizar ajuda {ajuda_doc.id}: {e}")
+                        raise # Re-raise the exception
+        else:
+            print(f"DEBUG: Meta {meta_doc.id} já está finalizada ou inativa, pulando atualização.")
+    print(f"DEBUG: Finalizado _finalize_pei_transaction para PEI: {pei_ref.id}")
 
 
 @firestore.transactional
@@ -612,33 +643,50 @@ def finalize_pei(paciente_doc_id):
     is_admin = user_role == 'admin'
     logged_in_professional_id = None
 
+    print(f"Iniciando tentativa de finalização de PEI para paciente: {paciente_doc_id}")
+    print(f"Usuário logado: UID={user_uid}, Role={user_role}, isAdmin={is_admin}")
+
     if not is_admin and user_uid:
         try:
             user_doc = db_instance.collection('User').document(user_uid).get()
             if user_doc.exists:
                 logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+                print(f"Profissional logado ID: {logged_in_professional_id}")
+            else:
+                print(f"Documento de usuário não encontrado para UID: {user_uid}")
         except Exception as e:
+            print(f"Erro ao buscar ID do profissional para o usuário {user_uid}: {e}")
             return jsonify({'success': False, 'message': f'Erro ao verificar permissões: {e}'}), 500
 
     try:
         data = request.get_json()
         pei_id = data.get('pei_id')
+        print(f"Requisição de finalização recebida para PEI ID: {pei_id}")
         if not pei_id:
+            print("Erro: ID do PEI não fornecido na requisição.")
             return jsonify({'success': False, 'message': 'ID do PEI não fornecido.'}), 400
 
         pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
         pei_doc = pei_ref.get()
         if not pei_doc.exists:
+            print(f"Erro: PEI com ID {pei_id} não encontrado no Firestore.")
             return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
 
         if not is_admin:
             associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
+            print(f"Profissionais associados ao PEI: {associated_professionals_ids}")
             if logged_in_professional_id not in associated_professionals_ids:
+                print(f"Erro de permissão: Profissional {logged_in_professional_id} não está associado ao PEI {pei_id}.")
                 return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar este PEI.'}), 403
+            print(f"Permissão concedida: Usuário é administrador.")
+        else:
+            print("Permissão concedida: Usuário é administrador.")
 
+        print(f"Iniciando transação de finalização para PEI: {pei_id}")
         transaction = db_instance.transaction()
         _finalize_pei_transaction(transaction, pei_ref, db_instance)
         transaction.commit()
+        print(f"Transação de finalização para PEI {pei_id} concluída com sucesso.")
 
         all_peis = []
         profissionais_map = {}
@@ -656,7 +704,7 @@ def finalize_pei(paciente_doc_id):
 
         return jsonify({'success': True, 'message': 'PEI finalizado com sucesso!', 'peis': all_peis}), 200
     except Exception as e:
-        print(f"Erro ao finalizar PEI: {e}")
+        print(f"Erro crítico ao finalizar PEI {pei_id}: {e}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
 @peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/add_goal', methods=['POST'], endpoint='add_goal')
