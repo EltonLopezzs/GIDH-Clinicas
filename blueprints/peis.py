@@ -212,7 +212,7 @@ def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_n
     transaction.update(pei_ref, {'activities': activities})
 
 @firestore.transactional
-def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, target_id, aid_id=None, action=None, new_target_status=None):
+def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, target_id, aid_id=None, new_attempts_count=None, new_target_status=None):
     """
     Atualiza os dados de um alvo específico ou de uma ajuda dentro de um alvo no PEI.
     Pode atualizar a contagem de tentativas de uma ajuda ou o status geral de um alvo.
@@ -222,8 +222,8 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
         goal_id: ID da meta que contém o alvo.
         target_id: ID do alvo a ser atualizado.
         aid_id: Opcional. ID da ajuda específica a ser atualizada.
-        action: Opcional. 'increment' ou 'decrement' para tentativas.
-        new_target_status: Opcional. Novo status geral do alvo.
+        new_attempts_count: Opcional. Nova contagem de tentativas para a ajuda.
+        new_target_status: Opcional. Novo status do alvo (pendente, andamento, finalizada).
     Raises:
         Exception: Se o PEI, a meta, o alvo ou a ajuda não forem encontrados, ou se houver erro de tipo.
     """
@@ -253,27 +253,19 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
                         # Atualiza 'concluido' para compatibilidade
                         target['concluido'] = (new_target_status == 'finalizada')
 
-                    # Atualiza dados de uma ajuda específica ou do alvo, se action for fornecido
-                    if action is not None:
-                        if aid_id is not None and 'aids' in target: # Atualiza tentativas de uma ajuda
-                            aid_found = False
-                            for aid in target['aids']:
-                                if aid.get('id') == aid_id:
-                                    aid_found = True
-                                    current_attempts = aid.get('attempts_count', 0)
-                                    if action == 'increment':
-                                        aid['attempts_count'] = current_attempts + 1
-                                    elif action == 'decrement':
-                                        aid['attempts_count'] = max(0, current_attempts - 1)
-                                    break
-                            if not aid_found:
-                                raise Exception("Ajuda (Aid) não encontrada no alvo.")
-                        elif aid_id is None: # Atualiza tentativas do alvo (se o campo 'tentativas' existir no alvo)
-                            current_attempts = target.get('tentativas', 0)
-                            if action == 'increment':
-                                target['tentativas'] = current_attempts + 1
-                            elif action == 'decrement':
-                                target['tentativas'] = max(0, current_attempts - 1)
+                    # Atualiza dados de uma ajuda específica (contagem de tentativas)
+                    if aid_id is not None and 'aids' in target:
+                        aid_found = False
+                        for aid in target['aids']:
+                            if aid.get('id') == aid_id:
+                                aid_found = True
+                                if new_attempts_count is not None:
+                                    aid['attempts_count'] = new_attempts_count
+                                break
+                        if not aid_found:
+                            raise Exception("Ajuda (Aid) não encontrada no alvo.")
+                    # Removido o bloco `elif aid_id is None:` que tentava atualizar `target['tentativas']`
+                    # pois as tentativas são armazenadas por ajuda individualmente.
                     break
             if not target_found:
                 raise Exception("Alvo não encontrado na meta.")
@@ -852,7 +844,7 @@ def add_pei_activity(paciente_doc_id):
     try:
         data = request.get_json()
         pei_id = data.get('pei_id')
-        activity_content = data.get('description') 
+        activity_content = data.get('content') 
         
         if not all([pei_id, activity_content]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar atividade.'}), 400
@@ -939,11 +931,10 @@ def update_target_and_aid_data(paciente_doc_id):
         goal_id = data.get('goal_id')
         target_id = data.get('target_id')
         aid_id = data.get('aid_id')
-        action = data.get('action')
+        new_attempts_count = data.get('new_attempts_count') # Novo nome para o campo de tentativas
         new_target_status = data.get('new_target_status')
-        update_type = data.get('type')
 
-        print(f"DEBUG: Recebida requisição update_target_and_aid_data: pei_id={pei_id}, goal_id={goal_id}, target_id={target_id}, aid_id={aid_id}, action={action}, new_target_status={new_target_status}, update_type={update_type}")
+        print(f"DEBUG: Recebida requisição update_target_and_aid_data: pei_id={pei_id}, goal_id={goal_id}, target_id={target_id}, aid_id={aid_id}, new_attempts_count={new_attempts_count}, new_target_status={new_target_status}")
 
 
         if not all([pei_id, goal_id, target_id]):
@@ -967,7 +958,7 @@ def update_target_and_aid_data(paciente_doc_id):
             goal_id, 
             target_id, 
             aid_id=aid_id, 
-            action=action,
+            new_attempts_count=new_attempts_count, # Passa o novo nome do campo
             new_target_status=new_target_status
         )
         transaction.commit()
@@ -1138,4 +1129,3 @@ def mark_target_complete(paciente_doc_id, pei_id, goal_id, target_id):
     except Exception as e:
         print(f"ERRO: Ao marcar alvo como concluído: {e}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
-
