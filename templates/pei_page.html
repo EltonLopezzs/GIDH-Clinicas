@@ -1579,10 +1579,10 @@
                                 <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
                                        class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                                 <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            `;
                         document.getElementById('addGoalModal').classList.add('active'); // Abre o modal
                         return;
                     }
@@ -1696,11 +1696,13 @@
 
                         try {
                             if (currentDeleteAction === 'delete_pei') {
+                                console.log('Preparando para submeter formulário de exclusão de PEI para ID:', currentDeleteData.peiId);
                                 // Define os valores e submete o formulário de exclusão de PEI
                                 formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
                                 formApagarPei.action = `/pacientes/${PACIENTE_DOC_ID}/peis/delete_pei`;
                                 formApagarPei.submit(); // Isso causará um recarregamento completo da página
                             } else if (currentDeleteAction === 'delete_goal') {
+                                console.log('Preparando para submeter formulário de exclusão de meta para PEI:', currentDeleteData.peiId, 'Meta:', currentDeleteData.goalId);
                                 // Define os valores e submete o formulário de exclusão de meta
                                 formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
                                 formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
@@ -1717,7 +1719,11 @@
                             console.error('Erro durante a ação de confirmação:', error);
                             displayFlashMessage('danger', `Ocorreu um erro ao processar a solicitação: ${error.message}`); // Feedback ao usuário
                         } finally {
-                            hideLoading(); // Oculta o indicador de carregamento
+                            // Para submissões de formulário, hideLoading() pode não ser chamado antes do reload.
+                            // Para chamadas AJAX, ele é importante.
+                            if (!currentDeleteAction.includes('delete')) { // Apenas para AJAX (finalize)
+                                hideLoading(); // Oculta o indicador de carregamento
+                            }
                             currentDeleteAction = null; // Reseta a ação
                             currentDeleteData = {}; // Limpa os dados
                         }
