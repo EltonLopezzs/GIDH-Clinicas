@@ -35,7 +35,7 @@ def register_patients_routes(app):
 
             if search_query:
                 query_nome = pacientes_ref.where(filter=FieldFilter('nome', '>=', search_query))\
-                                         .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
+                                             .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
                 query_telefone = pacientes_ref.order_by('contato_telefone')\
                                              .where(filter=FieldFilter('contato_telefone', '>=', search_query))\
                                              .where(filter=FieldFilter('contato_telefone', '<=', search_query + '\uf8ff'))
@@ -162,7 +162,13 @@ def register_patients_routes(app):
                     'data_cadastro': firestore.SERVER_TIMESTAMP
                 }
                 
-                db_instance.collection('clinicas').document(clinica_id).collection('pacientes').add(paciente_data)
+                # Adiciona o paciente e obtém a referência do documento
+                # Correção: Desempacota a tupla retornada por .add() para obter a referência do documento
+                _, doc_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').add(paciente_data)
+                
+                # Atualiza o documento recém-criado com o id_paciente, usando o ID gerado pelo Firestore
+                doc_ref.update({'id_paciente': doc_ref.id})
+
                 flash('Paciente adicionado com sucesso!', 'success')
                 return redirect(url_for('listar_pacientes'))
             except Exception as e:
