@@ -12,8 +12,8 @@
 
     <style>
         /* ============================================
-         --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
-         ============================================
+          --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
+          ============================================
         */
         :root {
             --bg: #f1f5f9;
@@ -60,13 +60,12 @@
             min-height: 100vh;
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
-            /* Removido overflow: hidden; para permitir que os toasts apareçam */
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
         /* ============================================
-         --- SIDEBAR ---
-         ============================================
+          --- SIDEBAR ---
+          ============================================
         */
         .sidebar {
             width: 260px;
@@ -127,14 +126,13 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         
         /* ============================================
-         --- CONTEÚDO PRINCIPAL & TOPBAR ---
-         ============================================
+          --- CONTEÚDO PRINCIPAL & TOPBAR ---
+          ============================================
         */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
             display: flex; flex-direction: column; width: calc(100% - 260px);
-            height: calc(100vh - 2px); /* Definindo a altura do main-content */
-            /* Removido overflow: hidden; para permitir que os toasts apareçam */
+            height: calc(100vh - 2px);
         }
         .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
 
@@ -162,20 +160,20 @@
         main { 
             flex-grow: 1; 
             padding: 1.5rem; 
-            overflow-y: auto; /* Permite rolagem dentro do main */
+            overflow-y: auto;
             display: flex;
-            flex-direction: column; /* Empilha os cartões verticalmente */
-            gap: 1.5rem; /* Espaçamento entre os cartões */
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         /* ============================================
-         --- LISTA DE CARDS ---
-         ============================================
+          --- LISTA DE CARDS ---
+          ============================================
         */
         .card-list-container {
             display: grid;
-            grid-template-columns: 1fr; /* Uma coluna para mobile e desktop */
-            gap: 1.5rem; /* Espaçamento entre os cartões */
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
             width: 100%;
         }
 
@@ -203,15 +201,15 @@
             align-items: center;
             padding-bottom: 0.75rem;
             border-bottom: 1px solid var(--border-color);
-            flex-wrap: wrap; /* Permite que os itens quebrem a linha */
-            gap: 0.5rem; /* Espaçamento entre os itens do cabeçalho */
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
         .profissional-card-header h4 {
             font-size: 1.4rem;
             font-weight: 700;
             color: var(--text);
             margin: 0;
-            flex-grow: 1; /* Permite que o título ocupe o espaço disponível */
+            flex-grow: 1;
         }
         [data-theme="dark"] .profissional-card-header h4 {
             color: var(--dark-text);
@@ -221,6 +219,7 @@
             display: flex;
             gap: 0.5rem;
             align-items: center;
+            position: relative; /* Adicionado para posicionar o dropdown */
         }
 
         .status-badge {
@@ -231,7 +230,7 @@
             color: white;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            flex-shrink: 0; /* Evita que o badge encolha */
+            flex-shrink: 0;
         }
         .status-badge.active { background-color: var(--success); }
         .status-badge.inactive { background-color: var(--danger); }
@@ -261,32 +260,17 @@
         .profissional-card-item .value {
             font-weight: 500;
             color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            /* Removido white-space: nowrap; overflow: hidden; text-overflow: ellipsis; */
+            word-break: break-word; /* Adicionado para quebrar palavras longas */
             flex-grow: 1;
         }
         [data-theme="dark"] .profissional-card-item .value {
             color: var(--dark-text);
         }
 
-        /* Removido .card-actions-footer pois os botões foram movidos para o header */
-        /* .card-actions-footer {
-            padding-top: 1rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-        .card-actions-footer .btn {
-            flex-grow: 1;
-            min-width: 120px;
-        } */
-
         /* ============================================
-         --- BOTÕES ---
-         ============================================
+          --- BOTÕES ---
+          ============================================
         */
         .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
         .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
@@ -306,10 +290,62 @@
         .btn-toggle-inactive { background-color: #4b5563; color: white; }
         .btn-toggle-inactive:hover { background-color: #374151; }
 
+        /* --- Dropdown de Ações --- */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: var(--card);
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            right: 0; /* Alinha o dropdown à direita do botão */
+            top: 100%; /* Posiciona abaixo do botão */
+            margin-top: 8px; /* Espaçamento entre o botão e o dropdown */
+            border: 1px solid var(--border-color);
+        }
+
+        .dropdown-content a, .dropdown-content button {
+            color: var(--text);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: flex; /* Alterado para flex para alinhar ícone e texto */
+            align-items: center; /* Alinha verticalmente */
+            gap: 8px; /* Espaçamento entre ícone e texto */
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .dropdown-content a:hover, .dropdown-content button:hover {
+            background-color: var(--bg);
+            color: var(--primary);
+        }
+        
+        [data-theme="dark"] .dropdown-content a:hover, [data-theme="dark"] .dropdown-content button:hover {
+            background-color: var(--dark-border-color);
+            color: var(--primary);
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
         /* --- Flash Messages (Toast-like) --- */
         .toast-container {
             position: fixed;
-            top: 85px; /* Abaixo do topbar */
+            top: 85px;
             right: 20px;
             z-index: 9999;
             display: flex;
@@ -432,18 +468,18 @@
             color: var(--text); 
             border-radius: 16px; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-            width: 95%; /* Aumentado para 95% */
-            max-width: 500px; /* Ajustado para o modal de confirmação */
+            width: 95%;
+            max-width: 500px;
             transform: translateY(-20px); 
             transition: transform 0.25s ease; 
             max-height: calc(100vh - 40px); 
             display: flex; 
             flex-direction: column; 
-            text-align: center; /* Centraliza o texto no modal de confirmação */
+            text-align: center;
             padding: 2rem;
         }
         .modal-overlay.active .modal-content { transform: translateY(0); }
-        .modal-icon { font-size: 3rem; margin-bottom: 1rem; color: var(--warning); } /* Ícone de aviso */
+        .modal-icon { font-size: 3rem; margin-bottom: 1rem; color: var(--warning); }
         .modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
         .modal-text { font-size: 1rem; color: var(--muted); margin-bottom: 1.5rem; }
         .modal-actions { display: flex; justify-content: center; gap: 0.75rem; }
@@ -466,7 +502,7 @@
             .topbar { padding: 0 1rem; }
             
             .card-list-container {
-                grid-template-columns: 1fr; /* Uma coluna para mobile */
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -527,25 +563,32 @@
                         <div class="profissional-card-header">
                             <h4>{{ profissional.nome }}</h4>
                             <div class="actions">
-                                <form action="{{ url_for('ativar_desativar_profissional', profissional_doc_id=profissional.id) }}" method="post" class="form-confirm-action">
-                                    {% if profissional.ativo %}
-                                        <button type="button" class="btn btn-sm btn-toggle-inactive btn-confirm-trigger" title="Desativar">
-                                            <i class="fas fa-toggle-off"></i>
-                                        </button>
-                                    {% else %}
-                                        <button type="button" class="btn btn-sm btn-info btn-confirm-trigger" title="Ativar">
-                                            <i class="fas fa-toggle-on"></i>
-                                        </button>
-                                    {% endif %}
-                                </form>
-                                <a href="{{ url_for('editar_profissional', profissional_doc_id=profissional.id) }}" class="btn btn-sm btn-warning" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
                                 {% if profissional.ativo %}
                                     <span class="status-badge active">Ativo</span>
                                 {% else %}
                                     <span class="status-badge inactive">Inativo</span>
                                 {% endif %}
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-secondary dropdown-toggle" title="Mais Ações">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="dropdown-content">
+                                        <form action="{{ url_for('ativar_desativar_profissional', profissional_doc_id=profissional.id) }}" method="post" class="form-confirm-action">
+                                            {% if profissional.ativo %}
+                                                <button type="button" class="btn-confirm-trigger" data-action="desativar">
+                                                    Desativar
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn-confirm-trigger" data-action="ativar">
+                                                    Ativar
+                                                </button>
+                                            {% endif %}
+                                        </form>
+                                        <a href="{{ url_for('editar_profissional', profissional_doc_id=profissional.id) }}">
+                                            <i class="fas fa-edit"></i> Editar
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="profissional-card-body">
@@ -562,7 +605,6 @@
                                 <span class="value">{{ profissional.crm_ou_registro or 'N/A' }}</span>
                             </div>
                         </div>
-                        <!-- Removido o card-actions-footer, pois os botões foram movidos -->
                     </div>
                     {% else %}
                         <p style="text-align: center; color: var(--muted); padding: 2rem; width: 100%;">Nenhum profissional cadastrado.</p>
@@ -651,7 +693,7 @@
                 setTimeout(() => {
                     toast.classList.add('fade-out');
                     toast.addEventListener('animationend', () => toast.remove());
-                }, 5000); // A notificação desaparece após 5 segundos
+                }, 5000);
             }
 
             // --- Processa mensagens flash do backend e as exibe como toasts ---
@@ -748,16 +790,23 @@
                         event.preventDefault();
                         formToSubmit = this.closest('form.form-confirm-action');
                         
-                        let actionText = this.getAttribute('title') || (this.querySelector('span') ? this.querySelector('span').textContent.trim() : '');
-                        if (actionText === 'Desativar') {
-                            messageEl.textContent = `Tem certeza que deseja desativar este profissional? Ele não poderá ser agendado.`;
-                        } else if (actionText === 'Ativar') {
-                            messageEl.textContent = `Tem certeza que deseja ativar este profissional? Ele voltará a ser agendado.`;
-                        } else {
-                            messageEl.textContent = `Tem certeza que deseja realizar esta ação?`;
-                        }
-                        titleEl.textContent = `Confirmar ${actionText}`;
+                        let actionType = this.dataset.action; // 'ativar' ou 'desativar'
+                        let title = '';
+                        let message = '';
 
+                        if (actionType === 'desativar') {
+                            title = 'Confirmar Desativação';
+                            message = `Tem certeza que deseja desativar este profissional? Ele não poderá ser agendado.`;
+                        } else if (actionType === 'ativar') {
+                            title = 'Confirmar Ativação';
+                            message = `Tem certeza que deseja ativar este profissional? Ele voltará a ser agendado.`;
+                        } else {
+                            title = 'Confirmar Ação';
+                            message = `Tem certeza que deseja realizar esta ação?`;
+                        }
+                        
+                        titleEl.textContent = title;
+                        messageEl.textContent = message;
                         modal.classList.add('active');
                     });
                 });
@@ -774,11 +823,38 @@
                 });
             }
 
+            // --- Lógica do Dropdown de Ações ---
+            function setupDropdowns() {
+                document.querySelectorAll('.dropdown-toggle').forEach(button => {
+                    button.addEventListener('click', function(event) {
+                        event.stopPropagation(); // Evita que o clique se propague para o document
+                        const dropdownContent = this.nextElementSibling; // Pega o .dropdown-content
+                        // Fecha todos os outros dropdowns abertos
+                        document.querySelectorAll('.dropdown-content.show').forEach(openDropdown => {
+                            if (openDropdown !== dropdownContent) {
+                                openDropdown.classList.remove('show');
+                            }
+                        });
+                        dropdownContent.classList.toggle('show');
+                    });
+                });
+
+                // Fecha o dropdown se clicar fora dele
+                document.addEventListener('click', function(event) {
+                    document.querySelectorAll('.dropdown-content.show').forEach(openDropdown => {
+                        if (!openDropdown.contains(event.target) && !event.target.closest('.dropdown-toggle')) {
+                            openDropdown.classList.remove('show');
+                        }
+                    });
+                });
+            }
+
             // --- Inicialização ---
             setupSidebar();
             setupTheme();
             setupLogout();
             setupConfirmationModal();
+            setupDropdowns(); // Adiciona a inicialização dos dropdowns
         });
     </script>
 </body>
