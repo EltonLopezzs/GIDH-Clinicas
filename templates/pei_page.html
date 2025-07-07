@@ -240,6 +240,11 @@
             display: flex;
             flex-direction: column;
             animation: slideInUp 0.3s ease;
+            z-index: 2001; /* Ensure modal content is above overlay */
+        }
+        /* Increased max-width for addGoalModal */
+        #addGoalModal .modal-content {
+            max-width: 1200px; /* Make it larger */
         }
         .modal-header {
             padding: 1rem 1.5rem;
@@ -319,6 +324,12 @@
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 1.5rem 2.5rem; /* Increased gap */
             font-size: 1rem; /* Slightly larger text */
+        }
+        .paciente-info-item {
+            /* Ensure items align properly in grid */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
         }
         .paciente-info-item strong {
             color: var(--muted);
@@ -423,6 +434,7 @@
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 1rem;
             margin-bottom: 1rem;
+            position: relative; /* Added for status tag positioning */
         }
         .pei-summary-card-header h4 {
             font-size: 1.3rem;
@@ -451,6 +463,26 @@
         .pei-summary-card-content li { margin-bottom: 0.3rem; }
         .pei-summary-card-content li i { margin-right: 0.5rem; color: var(--info); }
 
+        /* Status tag styling for PEI summary card */
+        .pei-summary-card .status-tag {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--info); /* Default for active */
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0 16px 0 8px; /* Rounded top-right and bottom-right */
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: -2px 2px 5px rgba(0,0,0,0.1);
+            transform: translateY(-1px); /* Slightly lift it */
+        }
+
+        .pei-summary-card.finalizado .status-tag {
+            background-color: var(--success);
+        }
 
         /* PEI Details Modal Styles */
         .pei-details-modal-body {
@@ -951,6 +983,66 @@
         .activity-input-group .btn {
             flex-shrink: 0;
         }
+
+        /* Tab styles */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            gap: 0.5rem;
+        }
+        .tab-button {
+            padding: 0.75rem 1.25rem;
+            background-color: var(--bg);
+            color: var(--muted);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .tab-button:hover {
+            background-color: var(--card);
+            color: var(--primary);
+        }
+        .tab-button.active {
+            background-color: var(--card);
+            color: var(--primary);
+            border-color: var(--primary);
+            border-bottom-color: var(--card); /* Overlap border */
+            transform: translateY(1px);
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+            z-index: 1;
+        }
+        .tab-content {
+            display: none;
+            padding-top: 0.5rem; /* Adjust for tab button overlap */
+            position: relative;
+            z-index: 0;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .empty-state-small {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background-color: var(--card);
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        .empty-state-small i {
+            font-size: 2rem;
+            color: var(--muted);
+        }
     </style>
 </head>
 <body>
@@ -1037,6 +1129,7 @@
                 {% endif %}
 
                 <!-- MACRO for rendering a PEI summary card (MACRO para renderizar um cartão PEI resumido) -->
+                {# This macro is now primarily for reference, as JS renders the cards #}
                 {% macro render_pei_summary_card(pei) %}
                 <div class="pei-summary-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" data-pei-id="{{ pei.id }}">
                     <div class="pei-summary-card-header">
@@ -1044,8 +1137,9 @@
                         <div class="pei-summary-card-meta">
                             <span><i class="fas fa-calendar-alt"></i> Criado em: {{ pei.data_criacao }}</span>
                             <span><i class="fas fa-user-tie"></i> Profissionais: {{ pei.profissionais_nomes_associados_fmt | default('N/A') }}</span>
-                            <span>Status: <span class="goal-status {% if pei.status == 'ativo' %}active-status{% else %}finalizado-status{% endif %}">{{ pei.status | capitalize }}</span></span>
+                            {# Status is now a separate tag #}
                         </div>
+                        <div class="status-tag">{{ pei.status | capitalize }}</div>
                     </div>
                     <div class="pei-summary-card-content">
                         <strong>Metas Ativas:</strong>
@@ -1068,19 +1162,25 @@
 
 
                 <div class="pei-container space-y-8">
-                    <section class="pei-section">
-                        <h3>PEIs Ativos</h3>
+                    <!-- Tabs for PEIs -->
+                    <div class="tabs">
+                        <button class="tab-button active" data-tab="active-peis">PEIs Ativos</button>
+                        <button class="tab-button" data-tab="finalized-peis">PEIs Finalizados</button>
+                    </div>
+
+                    <!-- Tab Content for Active PEIs -->
+                    <div id="active-peis-tab-content" class="tab-content active">
                         <div id="active-peis-list" class="pei-list">
-                            {# PEIs ativos serão renderizados aqui via JavaScript ou Jinja2 #}
+                            {# PEIs ativos serão renderizados aqui via JavaScript #}
                         </div>
-                    </section>
-                
-                    <section class="pei-section">
-                        <h3>PEIs Finalizados</h3>
+                    </div>
+                   
+                    <!-- Tab Content for Finalized PEIs -->
+                    <div id="finalized-peis-tab-content" class="tab-content">
                         <div id="finalized-peis-list" class="pei-list">
-                            {# PEIs finalizados serão renderizados aqui via JavaScript ou Jinja2 #}
+                            {# PEIs finalizados serão renderizados aqui via JavaScript #}
                         </div>
-                    </section>
+                    </div>
                 </div>
             </main>
         </div>
@@ -1105,17 +1205,17 @@
                         <div class="form-group">
                             <label for="pei_titulo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título do PEI</label>
                             <input type="text" id="pei_titulo" name="titulo" required placeholder="Ex: Plano para Desenvolvimento Motor"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                         </div>
                         <div class="form-group">
                             <label for="pei_data_criacao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Criação</label>
                             <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                         </div>
                         <div class="form-group">
                             <label for="profissionais_ids" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profissionais Associados (Múltiplos)</label>
                             <select id="profissionais_ids" name="profissionais_ids[]" multiple required
-                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                                 {% for professional in all_professionals %}
                                     <option value="{{ professional.id }}">{{ professional.nome }}</option>
                                 {% endfor %}
@@ -1149,14 +1249,14 @@
                         <div class="form-group">
                             <label for="goal_descricao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição da Meta</label>
                             <input type="text" id="goal_descricao" name="descricao" required placeholder="Ex: Desenvolver a coordenação olho-mão"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                         </div>
                         <div class="form-group">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alvos da Meta</label>
                             <div id="targets-input-container" class="space-y-3">
                                 <div class="target-input-item flex items-center space-x-2">
                                     <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                           class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                                class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                                     <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -1525,11 +1625,22 @@
                     }
                     // Adicionado para fechar modal ao clicar no overlay escuro
                     if(target.matches('.modal-overlay')) {
-                         closeModalById(target.id);
-                         return;
+                           closeModalById(target.id);
+                           return;
                     }
                     if(target.closest('[data-close-modal]')) {
                         closeModalById(target.closest('[data-close-modal]').dataset.closeModal);
+                        return;
+                    }
+
+                    // Tab switching logic
+                    const tabButton = target.closest('.tab-button');
+                    if (tabButton) {
+                        const tabId = tabButton.dataset.tab;
+                        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                        tabButton.classList.add('active');
+                        document.getElementById(`${tabId}-tab-content`).classList.add('active');
                         return;
                     }
 
@@ -1577,12 +1688,12 @@
                         document.getElementById('targets-input-container').innerHTML = `
                             <div class="target-input-item flex items-center space-x-2">
                                 <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                       class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                            class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                                 <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            `;
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
                         document.getElementById('addGoalModal').classList.add('active'); // Abre o modal
                         return;
                     }
@@ -1600,7 +1711,7 @@
                         const targetCount = container.children.length + 1; // Conta os alvos existentes para o placeholder
                         newItem.innerHTML = `
                             <input type="text" name="targets[]" placeholder="Descrição do Alvo ${targetCount}" required
-                                   class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                        class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                             <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -1780,13 +1891,13 @@
                         } else if (aidDecrementBtn) {
                             currentAttempts = Math.max(0, currentAttempts - 1); // Não permite tentativas negativas
                         }
-                        
+                       
                         // Envia a atualização para o backend, incluindo o aid_id
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, currentAttempts, null);
                         return;
                     }
                 });
-                
+               
                 // **NOVO**: Event listener separado para 'change' em vez de 'click'
                 document.body.addEventListener('change', async function(e) {
                     const target = e.target;
@@ -1810,7 +1921,7 @@
                             }
                             return;
                         }
-                        
+                       
                         // Envia apenas o novo status do alvo
                         await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, null, newStatus);
                         return;
@@ -1834,7 +1945,7 @@
                             if (response.ok && data.success) {
                                 allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
                                 displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
-                                
+                               
                                 // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
                                 renderPeis(allPeisData);
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
@@ -1875,7 +1986,7 @@
                             if (response.ok && data.success) {
                                 allPeisData = data.peis; // Atualiza os dados locais
                                 displayFlashMessage('success', data.message);
-                                
+                               
                                 // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
                                 if (updatedPeiData) {
@@ -1930,7 +2041,7 @@
                                 if (data.peis) {
                                     allPeisData = data.peis;
                                 }
-                                
+                               
                                 // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
                                 renderPeis(allPeisData); // Atualiza os cards da página principal
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
@@ -1991,7 +2102,7 @@
                                 if (data.peis) {
                                     allPeisData = data.peis;
                                 }
-                                
+                               
                                 // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
                                 renderPeis(allPeisData);
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
@@ -2087,13 +2198,13 @@
                     });
 
                     if (!hasActivePeis) {
-                        activePeisList.innerHTML = `<div class="col-span-full text-center p-8 text-gray-500"><i class="fas fa-folder-open fa-2x mb-2"></i><p>Nenhum PEI ativo para este paciente.</p></div>`;
+                        activePeisList.innerHTML = `<div class="empty-state-small"><i class="fas fa-folder-open fa-2x mb-2"></i><p>Nenhum PEI ativo para este paciente.</p></div>`;
                     }
                     if (!hasFinalizedPeis) {
-                        finalizedPeisList.innerHTML = `<div class="col-span-full text-center p-8 text-gray-500"><i class="fas fa-check-double fa-2x mb-2"></i><p>Nenhum PEI finalizado para este paciente.</p></div>`;
+                        finalizedPeisList.innerHTML = `<div class="empty-state-small"><i class="fas fa-check-double fa-2x mb-2"></i><p>Nenhum PEI finalizado para este paciente.</p></div>`;
                     }
                 }
-                
+               
                 function renderPeiSummaryCardHtml(pei) {
                     const activeGoals = pei.goals ? pei.goals.filter(goal => goal.status === 'ativo') : [];
                     const activeGoalsCount = activeGoals.length;
@@ -2117,8 +2228,8 @@
                             <div class="pei-summary-card-meta">
                                 <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
                                 <span><i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}</span>
-                                <span>Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span></span>
                             </div>
+                            <div class="status-tag">${pei.status === 'ativo' ? 'Ativo' : 'Finalizado'}</div>
                         </div>
                         <div class="pei-summary-card-content">
                             <strong>Metas Ativas:</strong>
@@ -2199,7 +2310,7 @@
                             </div>`;
                     }
 
-                    // Adiciona campo de entrada de atividade
+                    // Add activity input field
                     if (canModifyPeiContent) {
                         peiModalActivityInputContainer.innerHTML = `
                             <div class="activity-input-group mt-3">
