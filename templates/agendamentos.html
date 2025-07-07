@@ -3,20 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendamentos - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+    <title>Gerenciar Horários - {{ session.clinica_nome_display or 'Clínica On' }}</title>
     
-    <!-- Favicon para a aba do navegador -->
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     
-    <!-- Fontes e ícones externos: Inter e Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
     <style>
-        /* ============================================
-         --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
-         ============================================
-        */
         :root {
             --bg: #f1f5f9;
             --card: #ffffff;
@@ -24,12 +18,10 @@
             --muted: #64748b;
             --accent: #0f172a;
             --primary: #0d9488; /* Teal-600 */
-            --primary-light: #ccfbf1; /* Teal-100 */
-            --primary-dark: #115e59; /* Teal-800 */
+            --primary-dark: #115e59;
             --secondary: #f59e0b; /* Amber-500 */
-            --danger: #dc2626;
-            --danger-dark: #b91c1c;
-            --success: #16a34a;
+            --danger: #dc2626; /* Red-600 */
+            --success: #16a34a; /* Green-600 */
             --warning: #f59e0b;
             --info: #0ea5e9;
             --border-color: #e2e8f0;
@@ -79,8 +71,8 @@
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
         /* ============================================
-         --- SIDEBAR ---
-         ============================================
+          --- SIDEBAR ---
+          ============================================
         */
         .sidebar {
             width: 260px;
@@ -141,8 +133,8 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         
         /* ============================================
-         --- CONTEÚDO PRINCIPAL & TOPBAR ---
-         ============================================
+          --- CONTEÚDO PRINCIPAL & TOPBAR ---
+          ============================================
         */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
@@ -236,6 +228,7 @@
         }
         .view-toggle-buttons .btn.active:hover {
             background-color: var(--primary-dark);
+            color: white;
         }
         .view-toggle-buttons .btn:first-child { border-top-left-radius: 7px; border-bottom-left-radius: 7px; }
         .view-toggle-buttons .btn:last-child { border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
@@ -263,8 +256,8 @@
         }
 
         /* ============================================
-         --- CALENDÁRIO SEMANAL (NOVO) ---
-         ============================================
+          --- CALENDÁRIO SEMANAL (NOVO) ---
+          ============================================
         */
         .weekly-calendar-container {
             background-color: var(--card);
@@ -458,8 +451,8 @@
         }
 
         /* ============================================
-         --- LISTA DE CARDS (NOVO) ---
-         ============================================
+          --- LISTA DE CARDS (NOVO) ---
+          ============================================
         */
         .card-list-container {
             background-color: var(--card);
@@ -554,8 +547,8 @@
 
 
         /* ============================================
-         --- MODAIS (REUTILIZADOS) ---
-         ============================================
+          --- MODAIS (REUTILIZADOS) ---
+          ============================================
         */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.25s ease; }
         .modal-overlay.active { opacity: 1; display: flex; }
@@ -637,8 +630,8 @@
             outline: none;
         }
         /* ============================================
-         --- BOTÕES ---
-         ============================================
+          --- BOTÕES ---
+          ============================================
         */
         .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
         .btn-primary { background-color: var(--primary); color: white; }
@@ -650,8 +643,8 @@
         [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
         
         /* ============================================
-         --- RESPONSIVIDADE ---
-         ============================================
+          --- RESPONSIVIDADE ---
+          ============================================
         */
         @media (max-width: 992px) { /* Ajuste para telas menores que 992px */
             main { flex-direction: column; overflow: auto; }
@@ -708,8 +701,8 @@
         }
 
         /* ============================================
-         --- MINI CALENDÁRIO LATERAL (NOVO) ---
-         ============================================
+          --- MINI CALENDÁRIO LATERAL (NOVO) ---
+          ============================================
         */
         .mini-calendar-wrapper {
             /* Removido: width: 350px; - agora controlado por .left-panel */
@@ -1726,7 +1719,7 @@
                     
                     // Verifica se o agendamento está dentro do mês selecionado no mini-calendário
                     const isSameMonth = appDate.getMonth() === currentFilterMonth.getMonth() &&
-                                        appDate.getFullYear() === currentFilterMonth.getFullYear();
+                                         appDate.getFullYear() === currentFilterMonth.getFullYear();
 
                     // console.log(`  App: ${app.paciente_nome} (${app.data_agendamento}) - isSameMonth: ${isSameMonth}, matchesProf: ${matchesProfessional}`);
 
@@ -1865,33 +1858,39 @@
                 const addManualAppointmentBtn = document.getElementById('addManualAppointmentBtn');
 
                 prevWeekBtn.addEventListener('click', () => {
-                    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-                    // Ao navegar por semana, mantemos o filtro de mês atual, mas ajustamos a semana de exibição
-                    const year = currentFilterMonth.getFullYear();
-                    const month = currentFilterMonth.getMonth();
-                    const startDate = new Date(year, month, 1);
-                    const endDate = new Date(year, month + 1, 0);
-                    const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-                    const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                    // Calcula a nova data de início da semana
+                    const newWeekStart = new Date(currentWeekStart);
+                    newWeekStart.setDate(newWeekStart.getDate() - 7);
+                    
+                    // Formata a data para a URL
+                    const formattedNewWeekStart = `${newWeekStart.getFullYear()}-${String(newWeekStart.getMonth() + 1).padStart(2, '0')}-${String(newWeekStart.getDate()).padStart(2, '0')}`;
+                    
+                    // Calcula a data de fim da nova semana
+                    const newWeekEnd = new Date(newWeekStart);
+                    newWeekEnd.setDate(newWeekEnd.getDate() + 6);
+                    const formattedNewWeekEnd = `${newWeekEnd.getFullYear()}-${String(newWeekEnd.getMonth() + 1).padStart(2, '0')}-${String(newWeekEnd.getDate()).padStart(2, '0')}`;
 
                     const baseUrl = window.location.origin + window.location.pathname;
-                    const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-                    window.location.href = newUrl; // Recarrega a página para filtrar a semana correta
+                    const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedNewWeekEnd}&profissional_id=${professionalFilterId}`;
+                    window.location.href = newUrl; 
                 });
 
                 nextWeekBtn.addEventListener('click', () => {
-                    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-                    // Ao navegar por semana, mantemos o filtro de mês atual, mas ajustamos a semana de exibição
-                    const year = currentFilterMonth.getFullYear();
-                    const month = currentFilterMonth.getMonth();
-                    const startDate = new Date(year, month, 1);
-                    const endDate = new Date(year, month + 1, 0);
-                    const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-                    const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                    // Calcula a nova data de início da semana
+                    const newWeekStart = new Date(currentWeekStart);
+                    newWeekStart.setDate(newWeekStart.getDate() + 7);
+
+                    // Formata a data para a URL
+                    const formattedNewWeekStart = `${newWeekStart.getFullYear()}-${String(newWeekStart.getMonth() + 1).padStart(2, '0')}-${String(newWeekStart.getDate()).padStart(2, '0')}`;
+                    
+                    // Calcula a data de fim da nova semana
+                    const newWeekEnd = new Date(newWeekStart);
+                    newWeekEnd.setDate(newWeekEnd.getDate() + 6);
+                    const formattedNewWeekEnd = `${newWeekEnd.getFullYear()}-${String(newWeekEnd.getMonth() + 1).padStart(2, '0')}-${String(newWeekEnd.getDate()).padStart(2, '0')}`;
                     
                     const baseUrl = window.location.origin + window.location.pathname;
-                    const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-                    window.location.href = newUrl; // Recarrega a página para filtrar a semana correta
+                    const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedNewWeekEnd}&profissional_id=${professionalFilterId}`;
+                    window.location.href = newUrl; 
                 });
 
                 addManualAppointmentBtn.addEventListener('click', () => {
@@ -1996,9 +1995,9 @@
                         try {
                             // Em uma aplicação real, isso seria uma chamada fetch para o seu backend Flask:
                             // const response = await fetch(`/api/appointments/${appointmentId}/status`, {
-                            //     method: 'POST', // ou PUT, dependendo da sua API
-                            //     headers: { 'Content-Type': 'application/json' },
-                            //     body: JSON.stringify({ status: newStatus })
+                            //      method: 'POST', // ou PUT, dependendo da sua API
+                            //      headers: { 'Content-Type': 'application/json' },
+                            //      body: JSON.stringify({ status: newStatus })
                             // });
                             // if (!response.ok) throw new Error('Falha ao atualizar o status');
                             // const result = await response.json(); // Se o seu backend retornar dados atualizados
@@ -2334,5 +2333,4 @@
             renderMiniCalendar(currentMiniCalendarDate); // Garante que o mini-calendário reflita a semana inicial
         });
     </script>
-</body>
 </html>
