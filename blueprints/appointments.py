@@ -137,6 +137,7 @@ def register_appointments_routes(app):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         try:
+            paciente_id = request.form.get('paciente_id') # Novo: para paciente existente
             paciente_nome = request.form.get('cliente_nome_manual')
             paciente_telefone = request.form.get('cliente_telefone_manual')
             profissional_id_manual = request.form.get('barbeiro_id_manual')
@@ -146,31 +147,50 @@ def register_appointments_routes(app):
             preco_str = request.form.get('preco_manual')
             status_manual = request.form.get('status_manual')
 
+            recorrente = request.form.get('recorrente_checkbox') == 'true'
+            dias_semana = request.form.getlist('dias_semana') # Lista de strings (ex: ['1', '2'])
+            data_fim_recorrencia_str = request.form.get('data_fim_recorrencia')
+
             if not all([paciente_nome, profissional_id_manual, servico_procedimento_id_manual, data_agendamento_str, hora_agendamento_str, preco_str, status_manual]):
                 flash('Todos os campos obrigatórios devem ser preenchidos.', 'danger')
                 return redirect(url_for('listar_agendamentos'))
 
+            if recorrente and (not dias_semana or not data_fim_recorrencia_str):
+                flash('Para agendamentos recorrentes, selecione os dias da semana e a data de fim da recorrência.', 'danger')
+                return redirect(url_for('listar_agendamentos'))
+
             preco_servico = float(preco_str.replace(',', '.'))
 
-            paciente_ref_query = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')\
-                                            .where(filter=FieldFilter('nome', '==', paciente_nome)).limit(1).get()
-            
+            # Lógica para encontrar ou criar paciente
             paciente_doc_id = None
-            if paciente_ref_query:
-                for doc in paciente_ref_query:
-                    paciente_doc_id = doc.id
-                    break
-            
-            if not paciente_doc_id:
-                # Cria o novo paciente e obtém a referência do documento
-                _, novo_paciente_doc_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').add({
-                    'nome': paciente_nome,
-                    'contato_telefone': paciente_telefone if paciente_telefone else None,
-                    'data_cadastro': firestore.SERVER_TIMESTAMP
-                })
-                # Atualiza o documento do novo paciente com o id_paciente
-                novo_paciente_doc_ref.update({'id_paciente': novo_paciente_doc_ref.id})
-                paciente_doc_id = novo_paciente_doc_ref.id
+            if paciente_id: # Se um paciente existente foi selecionado
+                paciente_doc = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_id).get()
+                if paciente_doc.exists:
+                    paciente_doc_id = paciente_doc.id
+                    paciente_nome = paciente_doc.to_dict().get('nome', paciente_nome)
+                    paciente_telefone = paciente_doc.to_dict().get('contato_telefone', paciente_telefone)
+                else:
+                    flash('Paciente selecionado não encontrado.', 'danger')
+                    return redirect(url_for('listar_agendamentos'))
+            else: # Se um novo paciente foi digitado
+                paciente_ref_query = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')\
+                                                .where(filter=FieldFilter('nome', '==', paciente_nome)).limit(1).get()
+                
+                if paciente_ref_query:
+                    for doc in paciente_ref_query:
+                        paciente_doc_id = doc.id
+                        break
+                
+                if not paciente_doc_id:
+                    # Cria o novo paciente e obtém a referência do documento
+                    _, novo_paciente_doc_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').add({
+                        'nome': paciente_nome,
+                        'contato_telefone': paciente_telefone if paciente_telefone else None,
+                        'data_cadastro': firestore.SERVER_TIMESTAMP
+                    })
+                    # Atualiza o documento do novo paciente com o id_paciente
+                    novo_paciente_doc_ref.update({'id_paciente': novo_paciente_doc_ref.id})
+                    paciente_doc_id = novo_paciente_doc_ref.id
 
             profissional_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get()
             servico_procedimento_doc = db_instance.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get()
@@ -178,31 +198,109 @@ def register_appointments_routes(app):
             profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
             servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A'
             
-            dt_agendamento_naive = datetime.datetime.strptime(f"{data_agendamento_str} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
-            dt_agendamento_sp = SAO_PAULO_TZ.localize(dt_agendamento_naive)
-            data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
+            # Lista para armazenar os agendamentos a serem criados
+            agendamentos_a_criar = []
 
-            novo_agendamento_dados = {
-                'paciente_id': paciente_doc_id,
-                'paciente_nome': paciente_nome,
-                'paciente_numero': paciente_telefone if paciente_telefone else None,
-                'profissional_id': profissional_id_manual,
-                'profissional_nome': profissional_nome,
-                'servico_procedimento_id': servico_procedimento_id_manual,
-                'servico_procedimento_nome': servico_procedimento_nome,
-                'data_agendamento': data_agendamento_str,
-                'hora_agendamento': hora_agendamento_str,
-                'data_agendamento_ts': data_agendamento_ts_utc,
-                'servico_procedimento_preco': preco_servico,
-                'status': status_manual,
-                'tipo_agendamento': 'manual_dashboard',
-                'data_criacao': firestore.SERVER_TIMESTAMP,
-                'atualizado_em': firestore.SERVER_TIMESTAMP
-            }
-            
-            db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').add(novo_agendamento_dados)
-            
-            flash('Atendimento registrado manualmente com sucesso!', 'success')
+            if recorrente:
+                data_inicio_recorrencia = datetime.datetime.strptime(data_agendamento_str, '%Y-%m-%d').date()
+                data_fim_recorrencia = datetime.datetime.strptime(data_fim_recorrencia_str, '%Y-%m-%d').date()
+                
+                # Converte os dias da semana selecionados para inteiros
+                dias_semana_int = [int(d) for d in dias_semana]
+
+                current_date = data_inicio_recorrencia
+                while current_date <= data_fim_recorrencia:
+                    # weekday() retorna 0 para segunda-feira, 6 para domingo.
+                    # getDay() no JS retorna 0 para domingo, 6 para sábado.
+                    # Ajuste: Python's weekday() + 1, e se for 7 (domingo), vira 0.
+                    # Ou, mais simples: Python's isocalendar().weekday (1=Mon, 7=Sun)
+                    # Ou usar getDay() equivalentemente: current_date.weekday() para Python (0=Mon, 6=Sun)
+                    # e mapear para o JS (0=Sun, 1=Mon, ..., 6=Sat)
+                    # Python: 0=Mon, 1=Tue, ..., 6=Sun
+                    # JS: 0=Sun, 1=Mon, ..., 6=Sat
+                    # Mapeamento:
+                    # Python Mon (0) -> JS Mon (1)
+                    # Python Tue (1) -> JS Tue (2)
+                    # ...
+                    # Python Sat (5) -> JS Sat (6)
+                    # Python Sun (6) -> JS Sun (0)
+                    
+                    # Para converter o weekday do Python (0=Seg, ..., 6=Dom) para o do JS (0=Dom, ..., 6=Sáb)
+                    # dia_da_semana_js = (current_date.weekday() + 1) % 7 
+                    # Simplesmente use o valor do checkbox do JS diretamente para o dia da semana do Python
+                    # O checkbox value="0" para Domingo no JS corresponde ao dia da semana 6 no Python (Sunday)
+                    # O checkbox value="1" para Segunda no JS corresponde ao dia da semana 0 no Python (Monday)
+                    # ...
+                    # O checkbox value="6" para Sábado no JS corresponde ao dia da semana 5 no Python (Saturday)
+                    
+                    # Mapeamento correto:
+                    # JS (0=Dom, 1=Seg, ..., 6=Sáb)
+                    # Python (0=Seg, 1=Ter, ..., 6=Dom)
+                    
+                    # Convertendo o dia da semana do Python para o padrão JS (0=Dom, 1=Seg...)
+                    python_weekday = current_date.weekday() # 0=Seg, 1=Ter, ..., 6=Dom
+                    js_equivalent_weekday = (python_weekday + 1) % 7 # 0=Dom, 1=Seg, ..., 6=Sáb
+
+                    if js_equivalent_weekday in dias_semana_int:
+                        dt_agendamento_naive = datetime.datetime.strptime(f"{current_date.strftime('%Y-%m-%d')} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
+                        dt_agendamento_sp = SAO_PAULO_TZ.localize(dt_agendamento_naive)
+                        data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
+
+                        agendamentos_a_criar.append({
+                            'paciente_id': paciente_doc_id,
+                            'paciente_nome': paciente_nome,
+                            'paciente_numero': paciente_telefone if paciente_telefone else None,
+                            'profissional_id': profissional_id_manual,
+                            'profissional_nome': profissional_nome,
+                            'servico_procedimento_id': servico_procedimento_id_manual,
+                            'servico_procedimento_nome': servico_procedimento_nome,
+                            'data_agendamento': current_date.strftime('%Y-%m-%d'),
+                            'hora_agendamento': hora_agendamento_str,
+                            'data_agendamento_ts': data_agendamento_ts_utc,
+                            'servico_procedimento_preco': preco_servico,
+                            'status': status_manual,
+                            'tipo_agendamento': 'recorrente',
+                            'data_criacao': firestore.SERVER_TIMESTAMP,
+                            'atualizado_em': firestore.SERVER_TIMESTAMP
+                        })
+                    current_date += datetime.timedelta(days=1)
+                
+                if agendamentos_a_criar:
+                    batch = db_instance.batch()
+                    for agendamento_data in agendamentos_a_criar:
+                        new_doc_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').document()
+                        batch.set(new_doc_ref, agendamento_data)
+                    batch.commit()
+                    flash(f'{len(agendamentos_a_criar)} agendamentos recorrentes registrados com sucesso!', 'success')
+                else:
+                    flash('Nenhum agendamento recorrente foi gerado com os critérios fornecidos.', 'warning')
+
+            else: # Agendamento único
+                dt_agendamento_naive = datetime.datetime.strptime(f"{data_agendamento_str} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
+                dt_agendamento_sp = SAO_PAULO_TZ.localize(dt_agendamento_naive)
+                data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
+
+                novo_agendamento_dados = {
+                    'paciente_id': paciente_doc_id,
+                    'paciente_nome': paciente_nome,
+                    'paciente_numero': paciente_telefone if paciente_telefone else None,
+                    'profissional_id': profissional_id_manual,
+                    'profissional_nome': profissional_nome,
+                    'servico_procedimento_id': servico_procedimento_id_manual,
+                    'servico_procedimento_nome': servico_procedimento_nome,
+                    'data_agendamento': data_agendamento_str,
+                    'hora_agendamento': hora_agendamento_str,
+                    'data_agendamento_ts': data_agendamento_ts_utc,
+                    'servico_procedimento_preco': preco_servico,
+                    'status': status_manual,
+                    'tipo_agendamento': 'manual_dashboard',
+                    'data_criacao': firestore.SERVER_TIMESTAMP,
+                    'atualizado_em': firestore.SERVER_TIMESTAMP
+                }
+                
+                db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').add(novo_agendamento_dados)
+                flash('Atendimento registrado manualmente com sucesso!', 'success')
+
         except ValueError as ve:
             flash(f'Erro de valor ao registrar atendimento: {ve}', 'danger')
         except Exception as e:
@@ -251,6 +349,9 @@ def register_appointments_routes(app):
             hora_agendamento_str = request.form.get('hora_agendamento_manual')
             preco_str = request.form.get('preco_manual')
             status_manual = request.form.get('status_manual')
+
+            # Não permitimos edição de recorrência em agendamentos existentes.
+            # Os campos de recorrência não devem ser processados aqui.
 
             if not all([paciente_nome, profissional_id_manual, servico_procedimento_id_manual, data_agendamento_str, hora_agendamento_str, preco_str, status_manual]):
                 flash('Todos os campos obrigatórios devem ser preenchidos para editar.', 'danger')
@@ -306,3 +407,4 @@ def register_appointments_routes(app):
             flash(f'Erro ao apagar agendamento: {e}', 'danger')
             print(f"Erro delete_appointment: {e}")
         return redirect(url_for('listar_agendamentos'))
+

@@ -1038,6 +1038,54 @@
         .professional-list-item.selected:hover {
             background-color: var(--primary-dark);
         }
+
+        /* Styles for recurring appointment section */
+        .recurring-options {
+            display: none; /* Hidden by default */
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .day-checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .day-checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-weight: normal; /* Override form-group label default */
+            color: var(--text);
+        }
+
+        .day-checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            transform: scale(1.2); /* Make checkbox slightly larger */
+            accent-color: var(--primary); /* Change checkbox color */
+        }
+
+        /* New class for consistent input styling */
+        .form-input {
+            font-size: 0.95rem;
+            padding: 0.7rem 0.8rem;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+        }
     </style>
 </head>
 <body>
@@ -1173,7 +1221,7 @@
                     <h4 class="form-section-title">Informações do Paciente</h4>
                     <div class="form-group">
                         <label for="paciente_id_manual">Paciente Existente</label>
-                        <select id="paciente_id_manual" name="paciente_id">
+                        <select id="paciente_id_manual" name="paciente_id" class="form-input">
                             <option value="">-- Selecione ou cadastre um novo abaixo --</option>
                             {% for paciente in pacientes_para_filtro %}
                                 <option value="{{ paciente.id }}" data-telefone="{{ paciente.contato_telefone or '' }}">{{ paciente.nome }}</option>
@@ -1183,18 +1231,18 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="cliente_nome_manual">Selecione o paciente ou digite o nome</label>
-                            <input type="text" id="cliente_nome_manual" name="cliente_nome_manual" placeholder="Digite se for um novo paciente">
+                            <input type="text" id="cliente_nome_manual" name="cliente_nome_manual" placeholder="Digite se for um novo paciente" class="form-input">
                         </div>
                         <div class="form-group">
                             <label for="cliente_telefone_manual">Telefone</label>
-                            <input type="tel" id="cliente_telefone_manual" name="cliente_telefone_manual" placeholder="(XX) XXXXX-XXXX">
+                            <input type="tel" id="cliente_telefone_manual" name="cliente_telefone_manual" placeholder="(XX) XXXXX-XXXX" class="form-input">
                         </div>
                     </div>
 
                     <h4 class="form-section-title">Detalhes do Agendamento</h4>
                     <div class="form-group">
                         <label for="profissional_id_manual">Profissional</label>
-                        <select id="profissional_id_manual" name="barbeiro_id_manual" required>
+                        <select id="profissional_id_manual" name="barbeiro_id_manual" required class="form-input">
                         <option value="">Selecione o profissional</option>
                             {% for professional in profissionais_para_filtro %} 
                             <option value="{{ professional.id }}">{{ professional.nome }}</option>
@@ -1203,7 +1251,7 @@
                     </div>
                     <div class="form-group">
                         <label for="servico_id_manual">Serviço/Procedimento</label>
-                        <select id="servico_id_manual" name="servico_id_manual" required>
+                        <select id="servico_id_manual" name="servico_id_manual" required class="form-input">
                             <option value="">Selecione o serviço/procedimento</option>
                             {% for servico_proc in servicos_ativos %} 
                             <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }} (R$ {{ "%.2f"|format(servico_proc.preco|float) }})</option>
@@ -1213,21 +1261,21 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="data_agendamento_manual">Data</label>
-                            <input type="date" id="data_agendamento_manual" name="data_agendamento_manual" required>
+                            <input type="date" id="data_agendamento_manual" name="data_agendamento_manual" required class="form-input">
                         </div>
                         <div class="form-group">
                             <label for="hora_agendamento_manual">Hora</labeL>
-                            <input type="time" id="hora_agendamento_manual" name="hora_agendamento_manual" required>
+                            <input type="time" id="hora_agendamento_manual" name="hora_agendamento_manual" required class="form-input">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="preco_manual">Preço (R$)</label>
-                            <input type="number" id="preco_manual" name="preco_manual" step="0.01" min="0" required readonly>
+                            <input type="number" id="preco_manual" name="preco_manual" step="0.01" min="0" required readonly class="form-input">
                         </div>
                         <div class="form-group">
                             <label for="status_manual">Status</label>
-                            <select id="status_manual" name="status_manual" required>
+                            <select id="status_manual" name="status_manual" required class="form-input">
                                 <option value="confirmado" selected>Confirmado</option>
                                 <option value="concluido">Concluido</option>
                                 <option value="pendente">Pendente</option>
@@ -1235,6 +1283,36 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- New: Recurring Appointment Options -->
+                    <div class="form-group">
+                        <label for="recorrente_checkbox" class="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200 cursor-pointer">
+                            <input type="checkbox" id="recorrente_checkbox" name="recorrente_checkbox" value="true" class="w-auto h-auto transform scale-125 accent-primary">
+                            Agendamento Recorrente
+                        </label>
+                    </div>
+
+                    <div id="recurringOptions" class="recurring-options">
+                        <h4 class="form-section-title">Opções de Recorrência</h4>
+                        <div class="form-group">
+                            <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Repetir em:</label>
+                            <div class="day-checkbox-group">
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="1" class="w-auto h-auto transform scale-110 accent-primary"> Segunda</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="2" class="w-auto h-auto transform scale-110 accent-primary"> Terça</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="3" class="w-auto h-auto transform scale-110 accent-primary"> Quarta</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="4" class="w-auto h-auto transform scale-110 accent-primary"> Quinta</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="5" class="w-auto h-auto transform scale-110 accent-primary"> Sexta</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="6" class="w-auto h-auto transform scale-110 accent-primary"> Sábado</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="0" class="w-auto h-auto transform scale-110 accent-primary"> Domingo</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="data_fim_recorrencia">Data de Fim da Recorrência</label>
+                            <input type="date" id="data_fim_recorrencia" name="data_fim_recorrencia" class="form-input">
+                        </div>
+                    </div>
+                    <!-- End New: Recurring Appointment Options -->
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
@@ -1909,12 +1987,48 @@
             const btnApagar = document.getElementById('btnApagarAgendamento');
             const formApagar = document.getElementById('formApagarAgendamento');
 
+            // Recurring appointment elements
+            const recorrenteCheckbox = document.getElementById('recorrente_checkbox');
+            const recurringOptionsDiv = document.getElementById('recurringOptions');
+            const dataFimRecorrenciaInput = document.getElementById('data_fim_recorrencia');
+            const diasSemanaCheckboxes = document.querySelectorAll('input[name="dias_semana"]');
+
+            // Toggle recurring options visibility
+            if (recorrenteCheckbox && recurringOptionsDiv) {
+                recorrenteCheckbox.addEventListener('change', () => {
+                    if (recorrenteCheckbox.checked) {
+                        recurringOptionsDiv.style.display = 'block';
+                        dataFimRecorrenciaInput.setAttribute('required', 'true');
+                        // Removed setting 'required' on individual day checkboxes
+                        // Validation for at least one day selected will be handled by backend or custom JS
+                    } else {
+                        recurringOptionsDiv.style.display = 'none';
+                        dataFimRecorrenciaInput.removeAttribute('required');
+                        diasSemanaCheckboxes.forEach(checkbox => {
+                            checkbox.checked = false; // Uncheck days when recurring is off
+                            // No need to remove 'required' as it's not set here anymore
+                        });
+                    }
+                });
+            }
+
+
             // Abre o modal de registro/edição
             function openBookingModal(date, time) {
                 modalFormRegistro.reset();
                 modalFormRegistro.action = "{{ url_for('registrar_atendimento_manual') }}";
                 modalTitleRegistro.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> Registrar Atendimento';
                 document.getElementById('agendamento_id_manual').value = '';
+
+                // Reset recurring fields
+                if (recorrenteCheckbox) recorrenteCheckbox.checked = false;
+                if (recurringOptionsDiv) recurringOptionsDiv.style.display = 'none';
+                if (dataFimRecorrenciaInput) dataFimRecorrenciaInput.removeAttribute('required');
+                if (diasSemanaCheckboxes) diasSemanaCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.removeAttribute('required'); // IMPORTANT: Ensure required is removed on reset
+                });
+
 
                 // CORREÇÃO: Formata a data manualmente para evitar problemas de fuso horário com toISOString().
                 const year = date.getFullYear();
@@ -2068,6 +2182,16 @@
                 document.getElementById('preco_manual').value = parseFloat(agendamento.servico_procedimento_preco).toFixed(2);
                 document.getElementById('status_manual').value = agendamento.status;
                 
+                // Recurring fields should not be editable for existing appointments
+                if (recorrenteCheckbox) recorrenteCheckbox.checked = false;
+                if (recurringOptionsDiv) recurringOptionsDiv.style.display = 'none';
+                if (dataFimRecorrenciaInput) dataFimRecorrenciaInput.removeAttribute('required');
+                if (diasSemanaCheckboxes) diasSemanaCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.removeAttribute('required');
+                });
+
+
                 // Preenche o select de pacientes existentes e seleciona o paciente correto
                 const pacienteSelectManual = document.getElementById('paciente_id_manual');
                 pacienteSelectManual.innerHTML = '<option value="">-- Selecione um paciente existente --</option>';
