@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
+        /* ============================================
+         --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
+         ============================================
+        */
         :root {
             --bg: #f1f5f9;
             --card: #ffffff;
@@ -18,6 +22,7 @@
             --muted: #64748b;
             --accent: #0f172a;
             --primary: #0d9488; /* Teal-600 */
+            --primary-light: #ccfbf1; /* Teal-100 */
             --primary-dark: #115e59;
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
@@ -44,8 +49,9 @@
             color-scheme: dark;
         }
 
+        /* Reset básico e box-sizing */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; overflow-x: hidden; }
+        html, body { height: 100%; }
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
@@ -53,27 +59,40 @@
             min-height: 100vh;
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
+            /* Removido overflow-x: hidden; para permitir que os toasts apareçam */
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* --- Sidebar --- */
+        /* ============================================
+         --- SIDEBAR ---
+         ============================================
+        */
         .sidebar {
             width: 260px;
             background: linear-gradient(180deg, var(--primary), var(--accent));
             color: white;
             position: fixed;
-            top: 0; left: 0; height: 100vh;
+            top: 0; left: 0;
+            height: 100vh;
             transition: width 0.3s ease, transform 0.3s ease;
-            z-index: 1000; display: flex; flex-direction: column;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
         }
         .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
         .sidebar-header {
-            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
+            padding: 0 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .sidebar-header .logo {
             font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
-            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
+            display: flex; align-items: center; gap: 0.75rem;
+            white-space: nowrap; overflow: hidden;
         }
         .sidebar-header .logo i { font-size: 1.8rem; }
         .sidebar.collapsed { width: 78px; }
@@ -108,6 +127,7 @@
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
             display: flex; flex-direction: column; width: calc(100% - 260px);
+            /* Removido overflow: hidden; para permitir que os toasts apareçam */
         }
         .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
         .topbar {
@@ -158,30 +178,248 @@
         .btn-warning { background-color: var(--warning); color: #854d0e; }
         [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
         .btn-warning:hover { background-color: #fcd34d; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
 
-        /* --- Table --- */
-        .table-container {
-            width: 100%; overflow-x: auto; background: var(--card);
-            border-radius: 12px; padding: 1rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        /* --- Card Layout for Patients --- */
+        .card-list-container {
+            display: grid;
+            grid-template-columns: 1fr; /* Uma coluna para mobile e desktop, esticando */
+            gap: 1.5rem; /* Espaçamento entre os cartões */
+            width: 100%;
         }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 800px; }
-        th, td {
-            padding: 0.9rem 1rem; font-size: 0.9rem; text-align: left; vertical-align: middle;
+
+        .paciente-card {
+            background-color: var(--card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: default;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .paciente-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .paciente-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.75rem;
             border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
-        thead th {
-            font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.8rem;
-            background-color: var(--bg); border-bottom-width: 2px;
+        .paciente-card-header h4 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+            flex-grow: 1;
         }
-        thead th:first-child { border-top-left-radius: 8px; }
-        thead th:last-child { border-top-right-radius: 8px; }
-        tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
-        tbody tr:last-child td { border-bottom: none; }
-        tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
-        tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
-        .table-actions { display: flex; gap: 0.5rem; }
-        .no-results td { text-align: center; padding: 2rem; color: var(--muted); }
+        [data-theme="dark"] .paciente-card-header h4 {
+            color: var(--dark-text);
+        }
+
+        .paciente-card-header .actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .paciente-card-body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.95rem;
+            align-items: center;
+        }
+
+        .paciente-card-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text);
+            flex: 1;
+        }
+        .paciente-card-item i {
+            color: var(--muted);
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .paciente-card-item .value {
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-grow: 1;
+        }
+        [data-theme="dark"] .paciente-card-item .value {
+            color: var(--dark-text);
+        }
+
+        /* --- Pagination Controls --- */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .pagination-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-weight: 600;
+        }
+        .pagination-button:hover:not(:disabled) {
+            background-color: var(--primary-dark);
+        }
+        .pagination-button:disabled {
+            background-color: var(--muted);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .pagination-info {
+            font-size: 1rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* --- Flash Messages (Toast-like) --- */
+        .toast-container {
+            position: fixed;
+            top: 85px; /* Abaixo do topbar */
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 360px;
+        }
+
+        .toast {
+            background-color: var(--card);
+            color: var(--text);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1), 0 5px 5px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            border: 1px solid var(--border-color);
+            animation: toast-slide-in 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast.success { border-left: 5px solid var(--success); }
+        .toast.danger { border-left: 5px solid var(--danger); }
+        .toast.warning { border-left: 5px solid var(--warning); }
+        .toast.info { border-left: 5px solid var(--info); }
+
+        .toast-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.danger .toast-icon { color: var(--danger); }
+        .toast.warning .toast-icon { color: var(--warning); }
+        .toast.info .toast-icon { color: var(--info); }
+
+        .toast-content {
+            flex-grow: 1;
+        }
+        .toast-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        .toast-message {
+            font-size: 0.9rem;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            opacity: 0.7;
+            transition: opacity 0.2s ease, color 0.2s ease;
+            flex-shrink: 0;
+        }
+        .toast-close:hover {
+            opacity: 1;
+            color: var(--text);
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            width: 100%;
+            animation: toast-progress-bar 5s linear forwards;
+        }
+        .toast.success .toast-progress { background-color: var(--success); }
+        .toast.danger .toast-progress { background-color: var(--danger); }
+        .toast.warning .toast-progress { background-color: var(--warning); }
+        .toast.info .toast-progress { background-color: var(--info); }
+
+        @keyframes toast-slide-in {
+            from {
+                opacity: 0;
+                transform: translateX(110%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes toast-fade-out {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+        .toast.fade-out {
+            animation: toast-fade-out 0.4s ease-in forwards;
+        }
+
+        @keyframes toast-progress-bar {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
 
         /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
@@ -205,39 +443,23 @@
             .topbar { flex-wrap: wrap; height: auto; row-gap: 1rem; padding-top: 1rem; padding-bottom: 1rem;}
             .topbar-left, .topbar-actions { width: 100%; justify-content: space-between; }
             .search-form { flex-grow: 1; }
-            .table-container { display: none; }
-            .mobile-cards-wrapper { display: block; }
+            .table-container { display: none; } /* Hide table on mobile */
+            .mobile-cards-wrapper { display: block; } /* Show mobile cards on mobile (now replaced by card-list-container) */
+            
+            .paciente-card-header .actions {
+                flex-direction: column; /* Empilha os botões de ação no cabeçalho em mobile */
+                align-items: flex-end;
+            }
+            .paciente-card-header .actions .btn {
+                width: auto; /* Permite que os botões se ajustem ao conteúdo */
+                padding: 0.4rem 0.8rem; /* Reduz o padding para botões menores */
+                font-size: 0.8rem; /* Reduz o tamanho da fonte */
+            }
         }
-
-        /* --- Mobile Cards --- */
-        .mobile-cards-wrapper { display: none; }
-        .paciente-card-mobile {
-            background-color: var(--card); border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            margin-bottom: 1rem; overflow: hidden;
-        }
-        .card-header-paciente {
-            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);
-        }
-        .card-header-paciente h4 { font-weight: 600; font-size: 1.1rem; margin: 0; }
-        .card-details-body { padding: 0.5rem 0; }
-        .card-detail-item {
-            display: flex; justify-content: space-between; padding: 0.7rem 1.5rem; font-size: 0.9rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .card-detail-item:last-child { border-bottom: none; }
-        .card-detail-item-label { color: var(--muted); font-weight: 500; }
-        .card-detail-item-value { font-weight: 600; }
-        .card-actions-footer {
-            padding: 1rem 1.5rem; background-color: var(--bg); display: flex;
-            gap: 0.75rem;
-        }
-        .card-actions-footer .btn, .card-actions-footer form { flex-grow: 1; }
-        .card-actions-footer .btn { justify-content: center; }
-        .card-actions-footer .btn i { margin-right: 0.5rem; }
     </style>
 </head>
 <body>
+    <div id="toast-container"></div>
     <div class="layout">
         <aside class="sidebar">
             <div class="sidebar-inner-content">
@@ -281,8 +503,8 @@
                     <h1 class="page-title">Gerenciar Pacientes</h1>
                 </div>
                 <div class="topbar-actions">
-                    <form action="{{ url_for('listar_pacientes') }}" method="GET" class="search-form">
-                        <input type="text" name="search" placeholder="Buscar paciente..." class="search-input" value="{{ search_query or '' }}">
+                    <form id="searchForm" class="search-form"> {# Adicionado ID para o formulário #}
+                        <input type="text" id="searchInput" name="search" placeholder="Buscar paciente..." class="search-input" value="{{ search_query or '' }}">
                         <button type="submit" class="search-button"><i class="fas fa-search"></i></button>
                     </form>
                     <a href="{{ url_for('adicionar_paciente') }}" class="btn btn-primary">
@@ -292,99 +514,24 @@
             </header>
 
             <main>
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="flash-messages">
-                            {% for category, message in messages %}
-                                <div class="flash-message {{ category }}">{{ message }}</div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
+                {# O bloco de flash messages será tratado via JS/Toast #}
 
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>CPF</th>
-                                <th>Telefone</th>
-                                <th>E-mail</th>
-                                <th>Convênio</th>
-                                <th style="width: 280px;">Ações</th> <!-- Aumentado o width para acomodar o novo botão -->
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for paciente in pacientes %}
-                            <tr>
-                                <td>{{ paciente.nome }}</td>
-                                <td>{{ paciente.cpf or 'N/A' }}</td>
-                                <td>{{ paciente.contato_telefone or 'N/A' }}</td>
-                                <td>{{ paciente.contato_email or 'N/A' }}</td>
-                                <td>{{ paciente.convenio_nome or 'Particular' }}</td> {# Now populated by backend #}
-                                <td class="table-actions">
-                                    <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-info">
-                                        <i class="fas fa-notes-medical"></i> Prontuário
-                                    </a>
-                                    <a href="{{ url_for('peis.ver_peis_paciente', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-child-reaching"></i> PEI <!-- Novo botão PEI -->
-                                    </a>
-                                    <a href="{{ url_for('editar_paciente', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-warning">
-                                        <i class="fas fa-edit"></i> Editar
-                                    </a>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr class="no-results">
-                                <td colspan="6">Nenhum paciente encontrado.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="card-list-container">
+                    {# Os cards de paciente serão renderizados aqui via JavaScript #}
                 </div>
+                <p id="no-results-message" style="text-align: center; color: var(--muted); padding: 2rem; width: 100%; display: none;">Nenhum paciente encontrado.</p>
 
-                <div class="mobile-cards-wrapper">
-                    {% for paciente in pacientes %}
-                    <div class="paciente-card-mobile">
-                        <div class="card-header-paciente">
-                            <h4>{{ paciente.nome }}</h4>
-                        </div>
-                        <div class="card-details-body">
-                            <div class="card-detail-item">
-                                <span class="card-detail-item-label">CPF</span>
-                                <span class="card-detail-item-value">{{ paciente.cpf or 'N/A' }}</span>
-                            </div>
-                            <div class="card-detail-item">
-                                <span class="card-detail-item-label">Telefone</span>
-                                <span class="card-detail-item-value">{{ paciente.contato_telefone or 'N/A' }}</span>
-                            </div>
-                            <div class="card-detail-item">
-                                <span class="card-detail-item-label">Convênio</span>
-                                <span class="card-detail-item-value">{{ paciente.convenio_nome or 'Particular' }}</span> {# Now populated by backend #}
-                            </div>
-                        </div>
-                        <div class="card-actions-footer">
-                           <a href="{{ url_for('ver_prontuario', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-info">
-                                <i class="fas fa-notes-medical"></i> Prontuário
-                            </a>
-                            <a href="{{ url_for('peis.ver_peis_paciente', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-child-reaching"></i> PEI <!-- Novo botão PEI -->
-                            </a>
-                            <a href="{{ url_for('editar_paciente', paciente_doc_id=paciente.id) }}" class="btn btn-sm btn-warning">
-                                <i class="fas fa-edit"></i> Editar
-                            </a>
-                        </div>
-                    </div>
-                    {% else %}
-                        <div class="table-container" style="text-align: center; padding: 2rem;">Nenhum paciente encontrado.</div>
-                    {% endfor %}
+                <div class="pagination-controls">
+                    <button id="prevPageBtn" class="pagination-button"><i class="fas fa-chevron-left"></i> Anterior</button>
+                    <span id="pageInfo" class="pagination-info"></span>
+                    <button id="nextPageBtn" class="pagination-button">Próximo <i class="fas fa-chevron-right"></i></button>
                 </div>
             </main>
         </div>
     </div>
 
     <script type="module">
-        // Placeholder for Firebase
+        // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
         const FAKE_FIREBASE = {
             initializeApp: () => ({}),
             getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
@@ -394,6 +541,11 @@
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         let auth = getAuth(initializeApp(firebaseConfig));
 
+        // Define os modelos de URL usando Jinja2 para serem avaliados no servidor
+        const prontuarioUrlTemplate = "{{ url_for('ver_prontuario', paciente_doc_id='__ID__') }}";
+        const peiUrlTemplate = "{{ url_for('peis.ver_peis_paciente', paciente_doc_id='__ID__') }}";
+        const editUrlTemplate = "{{ url_for('editar_paciente', paciente_doc_id='__ID__') }}";
+
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
             const sidebar = document.querySelector('.sidebar');
@@ -402,8 +554,79 @@
             const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
             const themeToggle = document.querySelector('#theme-toggle');
             const logoutButton = document.getElementById('logoutButton');
+            const cardListContainer = document.querySelector('.card-list-container');
+            const noResultsMessage = document.getElementById('no-results-message');
 
-            // --- Sidebar Logic ---
+            const searchForm = document.getElementById('searchForm');
+            const searchInput = document.getElementById('searchInput');
+            const prevPageBtn = document.getElementById('prevPageBtn');
+            const nextPageBtn = document.getElementById('nextPageBtn');
+            const pageInfo = document.getElementById('pageInfo');
+
+            // Dados de pacientes passados pelo Jinja2
+            const allPatients = {{ pacientes | tojson | safe }};
+            let filteredPatients = []; // Lista de pacientes após a filtragem
+
+            let currentPage = 1;
+            const itemsPerPage = 20; // 20 cards por página
+
+            // --- Lógica para Notificações Toast ---
+            const toastContainer = document.getElementById('toast-container');
+            function showToast(message, category = 'info') {
+                if (!toastContainer) return;
+
+                const toast = document.createElement('div');
+                toast.className = `toast ${category}`;
+                
+                let iconClass = 'fa-solid fa-circle-info';
+                let title = 'Informação';
+                if (category === 'success') {
+                    iconClass = 'fa-solid fa-check-circle';
+                    title = 'Sucesso';
+                }
+                if (category === 'danger') {
+                    iconClass = 'fa-solid fa-times-circle';
+                    title = 'Erro';
+                }
+                if (category === 'warning') {
+                    iconClass = 'fa-solid fa-exclamation-triangle';
+                    title = 'Atenção';
+                }
+
+                toast.innerHTML = `
+                    <div class="toast-icon">
+                        <i class="${iconClass}"></i>
+                    </div>
+                    <div class="toast-content">
+                        <strong class="toast-title">${title}</strong>
+                        <span class="toast-message">${message}</span>
+                    </div>
+                    <button class="toast-close">&times;</button>
+                    <div class="toast-progress"></div>
+                `;
+                
+                toastContainer.appendChild(toast);
+
+                const closeButton = toast.querySelector('.toast-close');
+                closeButton.addEventListener('click', () => {
+                    toast.classList.add('fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
+                });
+
+                setTimeout(() => {
+                    toast.classList.add('fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
+                }, 5000); // A notificação desaparece após 5 segundos
+            }
+
+            // --- Processa mensagens flash do backend e as exibe como toasts ---
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    showToast({{ message|tojson|safe }}, "{{ category }}");
+                {% endfor %}
+            {% endwith %}
+
+            // --- Lógica da Sidebar ---
             function setupSidebar() {
                 if (!sidebar || !mainContent) return;
                 const updateDesktopToggleIcon = () => {
@@ -446,7 +669,7 @@
                 window.addEventListener('resize', applyInitialState);
             }
 
-            // --- Theme Logic ---
+            // --- Lógica do Tema ---
             function setupTheme() {
                 if (!themeToggle) return;
                 const updateThemeUI = (theme) => {
@@ -463,7 +686,7 @@
                 });
             }
 
-            // --- Logout Logic ---
+            // --- Lógica de Logout ---
             function setupLogout() {
                 if (!logoutButton) return;
                 logoutButton.addEventListener('click', async (event) => {
@@ -474,10 +697,114 @@
                 });
             }
 
-            // --- Initialization ---
+            // --- Função para filtrar pacientes ---
+            function filterPatients(query) {
+                if (!query) {
+                    return allPatients;
+                }
+                const lowerCaseQuery = query.toLowerCase();
+                return allPatients.filter(paciente => {
+                    const matchesName = paciente.nome && paciente.nome.toLowerCase().includes(lowerCaseQuery);
+                    const matchesPhone = paciente.contato_telefone && paciente.contato_telefone.toLowerCase().includes(lowerCaseQuery);
+                    const matchesCpf = paciente.cpf && paciente.cpf.toLowerCase().includes(lowerCaseQuery);
+                    return matchesName || matchesPhone || matchesCpf;
+                });
+            }
+
+            // --- Renderização dos Cartões de Paciente ---
+            function renderPatientCards() {
+                cardListContainer.innerHTML = ''; // Limpa os cartões existentes
+                
+                const currentSearchQuery = searchInput.value;
+                filteredPatients = filterPatients(currentSearchQuery);
+
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const patientsToRender = filteredPatients.slice(startIndex, endIndex);
+
+                if (patientsToRender.length === 0) {
+                    noResultsMessage.style.display = 'block';
+                } else {
+                    noResultsMessage.style.display = 'none';
+                    patientsToRender.forEach(paciente => {
+                        const card = document.createElement('div');
+                        card.className = 'paciente-card';
+                        card.innerHTML = `
+                            <div class="paciente-card-header">
+                                <h4>${paciente.nome}</h4>
+                                <div class="actions">
+                                    <a href="${prontuarioUrlTemplate.replace('__ID__', paciente.id)}" class="btn btn-sm btn-info" title="Ver Prontuário">
+                                        <i class="fas fa-notes-medical"></i>
+                                    </a>
+                                    <a href="${peiUrlTemplate.replace('__ID__', paciente.id)}" class="btn btn-sm btn-primary" title="Ver PEI">
+                                        <i class="fas fa-child-reaching"></i>
+                                    </a>
+                                    <a href="${editUrlTemplate.replace('__ID__', paciente.id)}" class="btn btn-sm btn-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="paciente-card-body">
+                                <div class="paciente-card-item">
+                                    <i class="fas fa-id-card"></i>
+                                    <span class="value">${paciente.cpf || 'N/A'}</span>
+                                </div>
+                                <div class="paciente-card-item">
+                                    <i class="fas fa-phone"></i>
+                                    <span class="value">${paciente.contato_telefone || 'N/A'}</span>
+                                </div>
+                                <div class="paciente-card-item">
+                                    <i class="fas fa-envelope"></i>
+                                    <span class="value">${paciente.contato_email || 'N/A'}</span>
+                                </div>
+                                <div class="paciente-card-item">
+                                    <i class="fas fa-handshake"></i>
+                                    <span class="value">${paciente.convenio_nome || 'Particular'}</span>
+                                </div>
+                            </div>
+                        `;
+                        cardListContainer.appendChild(card);
+                    });
+                }
+                renderPaginationControls(); // Atualiza os controles de paginação
+            }
+
+            // --- Lógica dos Controles de Paginação ---
+            function renderPaginationControls() {
+                const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
+                pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages;
+            }
+
+            // --- Event Listener para o Formulário de Busca ---
+            searchForm.addEventListener('submit', (event) => {
+                event.preventDefault(); // Impede o envio padrão do formulário
+                currentPage = 1; // Reseta a página para 1 ao realizar uma nova busca
+                renderPatientCards(); // Renderiza os cards com o filtro aplicado
+            });
+
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPatientCards();
+                }
+            });
+
+            nextPageBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderPatientCards();
+                }
+            });
+
+            // --- Inicialização ---
             setupSidebar();
             setupTheme();
             setupLogout();
+            renderPatientCards(); // Renderiza os cartões e controles de paginação inicialmente
         });
     </script>
 </body>
