@@ -342,21 +342,23 @@ def index():
     hoje_date = hoje_dt.date()
     for i in range(15):
         data = hoje_date - datetime.timedelta(days=i)
-        atendimentos_por_dia[data.strftime('%d/%m')] = 0
-        receita_por_dia[data.strftime('%d/%m')] = 0
+        # Armazena o objeto date diretamente como chave, não a string formatada
+        atendimentos_por_dia[data] = 0
+        receita_por_dia[data] = 0
 
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
         if ag_ts:
           ag_date = ag_ts.date()
           if (hoje_date - ag_date).days < 15:
-              dia_str = ag_date.strftime('%d/%m')
-              atendimentos_por_dia[dia_str] += 1
-              receita_por_dia[dia_str] += float(ag.get('servico_procedimento_preco', 0))
+              # Usa o objeto date como chave
+              atendimentos_por_dia[ag_date] += 1
+              receita_por_dia[ag_date] += float(ag.get('servico_procedimento_preco', 0))
 
-    labels_atend_receita = sorted(atendimentos_por_dia.keys(), key=lambda x: datetime.datetime.strptime(x, '%d/%m'))
+    # Ordena as chaves (objetos date) e depois as formata para exibição
+    labels_atend_receita = sorted(atendimentos_por_dia.keys())
     dados_atendimento_vs_receita = {
-        "labels": labels_atend_receita,
+        "labels": [label.strftime('%d/%m') for label in labels_atend_receita], # Formata para exibição aqui
         "atendimentos": [atendimentos_por_dia[label] for label in labels_atend_receita],
         "receitas": [receita_por_dia[label] for label in labels_atend_receita]
     }

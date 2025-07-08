@@ -224,6 +224,25 @@
             min-width: 120px;
         }
 
+        /* Estilo para o checkbox */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto; /* Permite que o checkbox tenha seu tamanho natural */
+            margin-right: 0.5rem;
+            transform: scale(1.2); /* Aumenta um pouco o checkbox para melhor visibilidade */
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0; /* Remove margem inferior padrão */
+            cursor: pointer;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .main-content { margin-left: 0; width: 100%; }
@@ -334,6 +353,12 @@
                         <div class="form-group">
                             <label for="observacao">Observação</label>
                             <textarea id="observacao" name="observacao" rows="3">{{ item.observacao or request.form.get('observacao', '') }}</textarea>
+                        </div>
+                        
+                        <!-- Novo checkbox para criar conta a pagar -->
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="criar_conta_pagar" name="criar_conta_pagar" {% if request.form.get('criar_conta_pagar') %}checked{% endif %}>
+                            <label for="criar_conta_pagar">Gerar conta a pagar para este item</label>
                         </div>
                         
                         <div class="form-actions">

@@ -77,13 +77,15 @@ def register_patrimonio_routes(app):
             local_armazenamento = request.form.get('local_armazenamento', '').strip()
             valor_str = request.form.get('valor', '0').strip()
             observacao = request.form.get('observacao', '').strip()
-            criar_conta_pagar = 'criar_conta_pagar' in request.form # Verifica se o checkbox foi marcado
+            # Verifica se o checkbox foi marcado
+            criar_conta_pagar = 'criar_conta_pagar' in request.form 
 
             if not nome:
                 flash('O nome do patrimônio é obrigatório.', 'danger')
                 return render_template('patrimonio_form.html', item=request.form, action_url=url_for('patrimonio.adicionar_patrimonio'))
             
             try:
+                # Converte o valor para float, tratando a vírgula como separador decimal
                 valor = float(valor_str.replace(',', '.')) if valor_str else 0.0
                 
                 data_aquisicao_dt = None
@@ -106,13 +108,13 @@ def register_patrimonio_routes(app):
                 # Adiciona o item de patrimônio e obtém sua referência
                 new_patrimonio_ref = db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').add(patrimonio_data)[1]
                 
-                # Se a opção de criar conta a pagar foi marcada, cria a conta
+                # Se a opção de criar conta a pagar foi marcada e o valor é maior que zero, cria a conta
                 if criar_conta_pagar and valor > 0:
                     contas_a_pagar_data = {
                         'descricao': f"Aquisição de Patrimônio: {nome}",
                         'valor': valor,
                         'data_vencimento': data_aquisicao_dt if data_aquisicao_dt else datetime.datetime.now(SAO_PAULO_TZ),
-                        'status': 'pendente',
+                        'status': 'pendente', # Assume pendente ao criar
                         'data_lancamento': datetime.datetime.now(SAO_PAULO_TZ),
                         'usuario_responsavel': session.get('user_name', 'N/A'),
                         'patrimonio_id': new_patrimonio_ref.id, # Vincula ao ID do patrimônio recém-criado
@@ -151,13 +153,15 @@ def register_patrimonio_routes(app):
             local_armazenamento = request.form.get('local_armazenamento', '').strip()
             valor_str = request.form.get('valor', '0').strip()
             observacao = request.form.get('observacao', '').strip()
-            criar_conta_pagar = 'criar_conta_pagar' in request.form # Verifica se o checkbox foi marcado
+            # Verifica se o checkbox foi marcado
+            criar_conta_pagar = 'criar_conta_pagar' in request.form 
 
             if not nome:
                 flash('O nome do patrimônio é obrigatório.', 'danger')
                 return render_template('patrimonio_form.html', item=request.form, action_url=url_for('patrimonio.editar_patrimonio', item_doc_id=item_doc_id))
             
             try:
+                # Converte o valor para float, tratando a vírgula como separador decimal
                 valor = float(valor_str.replace(',', '.')) if valor_str else 0.0
                 
                 data_aquisicao_dt = None
@@ -205,6 +209,8 @@ def register_patrimonio_routes(app):
                         db_instance.collection('clinicas').document(clinica_id).collection('contas_a_pagar').add(contas_a_pagar_data)
                         flash('Item de patrimônio atualizado e nova conta a pagar criada!', 'success')
                 else:
+                    # Se o checkbox não foi marcado, mas existia uma conta vinculada, você pode optar por removê-la ou não fazer nada.
+                    # Por enquanto, não faremos nada se o checkbox não estiver marcado.
                     flash('Item de patrimônio atualizado com sucesso!', 'success')
 
 
@@ -226,6 +232,10 @@ def register_patrimonio_routes(app):
                     else:
                         item['data_aquisicao_input'] = ''
                     
+                    # Verifica se já existe uma conta a pagar para este patrimônio para pré-marcar o checkbox
+                    contas_existentes_query = db_instance.collection('clinicas').document(clinica_id).collection('contas_a_pagar').where(filter=FieldFilter('patrimonio_id', '==', item_doc_id)).limit(1).stream()
+                    item['criar_conta_pagar'] = bool(list(contas_existentes_query)) # True se encontrar uma conta, False caso contrário
+
                     return render_template('patrimonio_form.html', item=item, action_url=url_for('patrimonio.editar_patrimonio', item_doc_id=item_doc_id))
             else:
                 flash('Item de patrimônio não encontrado.', 'danger')

@@ -5,13 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - GIDH</title>
 
-    <!-- Ícone da Aba e PWA -->
-    <link rel="icon" type="image/png" href="https://i.imgur.com/ja769n8.png"> <!-- Novo ícone -->
-    <link rel="apple-touch-icon" href="https://i.imgur.com/ja769n8.png"> <!-- Novo ícone -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/ja769n8.png"> <link rel="apple-touch-icon" href="https://i.imgur.com/ja769n8.png"> <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#29788d">
 
-    <!-- Fontes e Ícones -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -127,6 +123,21 @@
             border-color: var(--primary-color);
             box-shadow: 0 0 0 4px var(--input-focus-shadow); /* Sombra de foco mais visível */
             background-color: var(--card-bg); /* Fundo branco ao focar */
+        }
+
+        /* Estilos para o botão de toggle da senha */
+        .password-toggle {
+            position: absolute;
+            right: 18px; /* Posição à direita dentro do campo */
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted-color);
+            cursor: pointer;
+            font-size: 1.1rem;
+            z-index: 10; /* Garante que o ícone esteja acima do input */
+        }
+        .password-toggle:hover {
+            color: var(--primary-color);
         }
         
         .btn-login {
@@ -386,6 +397,11 @@
                 left: 12px;
                 font-size: 1rem;
             }
+            /* Ajuste para o botão de senha em telas menores */
+            .password-toggle {
+                right: 12px;
+                font-size: 1rem;
+            }
             .btn-login {
                 padding: 14px;
                 font-size: 1rem;
@@ -427,6 +443,9 @@
                 <div class="form-group">
                     <i class="fas fa-lock input-icon"></i>
                     <input type="password" id="password" name="password" placeholder="Sua senha" required>
+                    <span class="password-toggle" id="togglePassword">
+                        <i class="fas fa-eye"></i>
+                    </span>
                 </div>
                 <button type="submit" class="btn-login">Entrar</button>
             </form>
@@ -443,7 +462,6 @@
         </div>
     </div>
     
-    <!-- Modal de Redefinição de Senha -->
     <div id="resetPasswordModal" class="modal-overlay">
         <div class="modal-card">
             <button class="close-modal-btn" id="closeResetModalBtn">&times;</button>
@@ -460,7 +478,6 @@
         </div>
     </div>
 
-    <!-- Notificações PWA -->
     <div id="install-notification-android" class="install-notification" style="display: none;">
         <img src="https://i.imgur.com/ja769n8.png" alt="Logo da Clínica">
         <span class="install-text">Instale o app para acesso rápido!</span>
@@ -475,7 +492,7 @@
     </div>
 
     <script type="module">
-       
+        
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
         
@@ -510,6 +527,8 @@
         const loginForm = document.getElementById('loginForm');
         const firebaseErrorMessage = document.getElementById('firebase-error-message');
         const loadingIndicator = document.getElementById('loading-indicator');
+        const passwordInput = document.getElementById('password'); // Adicionado
+        const togglePassword = document.getElementById('togglePassword'); // Adicionado
 
         // Elementos do DOM para o modal de redefinição de senha
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
@@ -599,6 +618,17 @@
             console.error('[DEBUG - Element Not Found]: Elemento loginForm não encontrado. Ouvinte de evento não anexado.');
             document.getElementById('firebase-error-message').textContent = 'Erro interno: Formulário de login não encontrado. Por favor, contacte o suporte.';
             document.getElementById('firebase-error-message').style.display = 'block';
+        }
+
+        // --- Lógica para o botão de visualizar senha ---
+        if (togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', function () {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                // Alterna o ícone de olho
+                this.querySelector('i').classList.toggle('fa-eye');
+                this.querySelector('i').classList.toggle('fa-eye-slash');
+            });
         }
 
         // --- Lógica para o Modal de Redefinição de Senha ---
