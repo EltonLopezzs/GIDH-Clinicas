@@ -356,11 +356,11 @@ def _add_target_to_goal_transaction(transaction, goal_ref, new_target_descriptio
 
     # Definindo as ajudas fixas para o novo alvo e adicionando-as como subcoleção
     fixed_aids = [
-        {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente'},
-        {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente'},
-        {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente'},
-        {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente'},
-        {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente'},
+        {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFT'},
+        {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFP'},
+        {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AG'},
+        {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AE'},
+        {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'I'},
     ]
     for aid_data in fixed_aids:
         # Adiciona cada ajuda como um documento na subcoleção 'ajudas' do alvo
@@ -740,11 +740,11 @@ def add_goal(paciente_doc_id):
         meta_doc_ref.set(new_goal_data)
 
         fixed_aids_template = [
-            {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente'},
-            {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente'},
-            {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente'},
-            {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente'},
-            {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente'},
+            {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFT'},
+            {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFP'},
+            {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AG'},
+            {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AE'},
+            {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'I'},
         ]
         for desc in targets_desc:
             if desc.strip():
