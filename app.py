@@ -20,9 +20,10 @@ from blueprints.covenants import register_covenants_routes
 from blueprints.schedules import register_schedules_routes
 from blueprints.appointments import register_appointments_routes
 from blueprints.medical_records import register_medical_records_routes
-from blueprints.estoque import register_estoque_routes # Importar o novo blueprint
-from blueprints.contas_a_pagar import register_contas_a_pagar_routes
-from blueprints.peis import peis_bp # NOVO: Importar o blueprint de PEIs
+from blueprints.estoque import register_estoque_routes # Importar o blueprint de Estoque
+from blueprints.contas_a_pagar import register_contas_a_pagar_routes # Importar o blueprint de Contas a Pagar
+from blueprints.peis import peis_bp # Importar o blueprint de PEIs
+from blueprints.patrimonio import register_patrimonio_routes # NOVO: Importar o blueprint de Patrimônio
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -443,6 +444,7 @@ register_medical_records_routes(app)
 register_estoque_routes(app)
 register_contas_a_pagar_routes(app)
 app.register_blueprint(peis_bp) 
+register_patrimonio_routes(app) 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True) 
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)

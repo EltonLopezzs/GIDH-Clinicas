@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Convênios - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+    <title>Gerenciar Patrimônio - {{ session.clinica_nome_display or 'Clínica On' }}</title>
     
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script> {# Adicionado Tailwind CSS #}
 
     <style>
+        /* Variáveis de tema */
         :root {
             --bg: #f1f5f9;
             --card: #ffffff;
@@ -23,6 +25,7 @@
             --danger: #dc2626; /* Red-600 */
             --success: #16a34a; /* Green-600 */
             --warning: #f59e0b;
+            --info: #0ea5e9; /* Sky-500 */
             --border-color: #e2e8f0;
             
             --dark-bg: #0f172a;
@@ -43,6 +46,7 @@
             color-scheme: dark;
         }
 
+        /* Estilos globais e layout */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; overflow-x: hidden; }
         body {
@@ -143,6 +147,10 @@
         .btn-warning { background-color: var(--warning); color: #854d0e; }
         [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
         .btn-warning:hover { background-color: #fcd34d; }
+        .btn-info { background-color: var(--info); color: white; }
+        .btn-info:hover { background-color: #0369a1; }
+        .btn-toggle-inactive { background-color: #4b5563; color: white; }
+        .btn-toggle-inactive:hover { background-color: #374151; }
 
         /* --- Table --- */
         .table-container {
@@ -150,7 +158,7 @@
             border-radius: 12px; padding: 1rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 600px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 800px; }
         th, td {
             padding: 0.9rem 1rem; font-size: 0.9rem; text-align: left; vertical-align: middle;
             border-bottom: 1px solid var(--border-color);
@@ -167,6 +175,11 @@
         tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
         .table-actions { display: flex; gap: 0.5rem; }
         .no-results td { text-align: center; padding: 2rem; color: var(--muted); }
+        .status-badge {
+            padding: 0.4em 0.8em; border-radius: 20px; font-size: 0.75em;
+            font-weight: 600; text-transform: uppercase; color: white;
+        }
+        /* Adicione classes de status se houver, ex: .status-badge.ativo, .status-badge.inativo */
 
         /* --- Modal --- */
         .modal-overlay {
@@ -182,14 +195,61 @@
             text-align: center; padding: 2rem;
         }
         .modal-overlay.active .modal-content { transform: translateY(0); }
-        .modal-icon { font-size: 3rem; color: var(--danger); margin-bottom: 1rem; }
+        .modal-icon { font-size: 3rem; margin-bottom: 1rem; }
         .modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
         .modal-text { font-size: 1rem; color: var(--muted); margin-bottom: 1.5rem; }
         .modal-actions { display: flex; justify-content: center; gap: 0.75rem; }
 
-        /* --- Responsive --- */
+        /* Custom styles for the topbar actions */
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Espaçamento entre os elementos */
+            flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha em telas pequenas */
+            justify-content: flex-end; /* Alinha à direita por padrão */
+        }
+
+        .topbar-actions .search-form {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden; /* Garante que o input e o botão fiquem dentro do border-radius */
+            background-color: var(--bg);
+            flex-grow: 1; /* Permite que o formulário de busca ocupe espaço disponível */
+            max-width: 300px; /* Limita a largura em telas maiores */
+        }
+        [data-theme="dark"] .topbar-actions .search-form {
+            background-color: var(--dark-bg);
+            border-color: var(--dark-border-color);
+        }
+
+        .topbar-actions .search-input {
+            border: none;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            background-color: transparent;
+            color: var(--text);
+            flex-grow: 1;
+            outline: none; /* Remove o contorno de foco padrão */
+        }
+        .topbar-actions .search-input::placeholder {
+            color: var(--muted);
+        }
+
+        .topbar-actions .search-form .btn {
+            border-radius: 0; /* Remove border-radius para se juntar ao input */
+            padding: 0.6rem 1rem;
+            height: 100%; /* Garante que o botão tenha a mesma altura do input */
+        }
+        .topbar-actions .search-form .btn i {
+            margin: 0; /* Remove margin extra do ícone */
+        }
+
+        /* Responsive */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
+        span.btn-text-desktop { display: none; }
 
         @media(min-width: 769px) {
             .toggle-btn-desktop { display: grid; }
@@ -205,9 +265,41 @@
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
             .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
             main { padding: 1rem; }
-            .topbar { padding: 0 1rem; }
-            .table-actions { flex-direction: column; }
+            .topbar { padding: 0 1rem; flex-wrap: wrap; height: auto; row-gap: 1rem; padding-top: 1rem; padding-bottom: 1rem;}
+            .topbar-left { width: 100%; justify-content: space-between; }
+            .topbar-actions { width: 100%; justify-content: flex-end; }
+            .topbar-actions .search-form { flex-grow: 1; }
+            .table-container { display: none; }
+            .mobile-cards-wrapper { display: block; }
         }
+
+        /* --- Mobile Cards --- */
+        .mobile-cards-wrapper { display: none; }
+        .patrimonio-card-mobile {
+            background-color: var(--card); border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 1rem; overflow: hidden;
+        }
+        .card-header-patrimonio {
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .card-header-patrimonio h4 { font-weight: 600; font-size: 1.1rem; margin: 0; }
+        .card-details-body { padding: 0.5rem 0; }
+        .card-detail-item {
+            display: flex; justify-content: space-between; padding: 0.7rem 1.5rem; font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .card-detail-item:last-child { border-bottom: none; }
+        .card-detail-item-label { color: var(--muted); font-weight: 500; }
+        .card-detail-item-value { font-weight: 600; }
+        .card-actions-footer {
+            padding: 1rem 1.5rem; background-color: var(--bg); display: grid;
+            grid-template-columns: 1fr 1fr; gap: 0.75rem;
+        }
+        .card-actions-footer .btn, .card-actions-footer form { width: 100%; }
+        .card-actions-footer .btn { justify-content: center; }
+        .card-actions-footer .btn i { margin-right: 0.5rem; }
     </style>
 </head>
 <body>
@@ -226,7 +318,7 @@
                         <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
                         <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
                         <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
                         <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
                         <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
@@ -234,7 +326,7 @@
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
                         <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
                         <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
+                        <li class="active"><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -252,12 +344,17 @@
                 <div class="topbar-left">
                     <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">Gerenciar Convênios</h1>
+                    <h1 class="page-title">Gerenciar Patrimônio</h1>
                 </div>
-                <a href="{{ url_for('adicionar_convenio') }}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i>
-                    <span class="btn-text-desktop">Adicionar Convênio</span>
-                </a>
+                <div class="topbar-actions">
+                    <form action="{{ url_for('patrimonio.listar_patrimonio') }}" method="GET" class="search-form" id="searchForm">
+                        <input type="text" name="search" placeholder="Buscar patrimônio..." class="search-input" value="{{ search_query or '' }}">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+                    </form>
+                    <a href="{{ url_for('patrimonio.adicionar_patrimonio') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Patrimônio</span>
+                    </a>
+                </div>
             </header>
 
             <main>
@@ -276,23 +373,29 @@
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Registro ANS</th>
-                                <th>Tipo de Plano</th>
+                                <th>Código</th>
+                                <th>Tipo</th>
+                                <th>Aquisição</th>
+                                <th>Local</th>
+                                <th>Valor</th>
                                 <th style="width: 150px;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for convenio in convenios %}
+                            {% for item in patrimonio_itens %}
                             <tr>
-                                <td>{{ convenio.nome }}</td>
-                                <td>{{ convenio.registro_ans or 'N/A' }}</td>
-                                <td>{{ convenio.tipo_plano or 'N/A' }}</td>
+                                <td>{{ item.nome }}</td>
+                                <td>{{ item.codigo or 'N/A' }}</td>
+                                <td>{{ item.tipo or 'N/A' }}</td>
+                                <td>{{ item.data_aquisicao_fmt or 'N/A' }}</td>
+                                <td>{{ item.local_armazenamento or 'N/A' }}</td>
+                                <td>R$ {{ "%.2f"|format(item.valor) if item.valor is not none else '0.00' }}</td>
                                 <td class="table-actions">
-                                    <a href="{{ url_for('editar_convenio', convenio_doc_id=convenio.id) }}" class="btn btn-sm btn-warning">
+                                    <a href="{{ url_for('patrimonio.editar_patrimonio', item_doc_id=item.id) }}" class="btn btn-sm btn-warning" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ url_for('excluir_convenio', convenio_doc_id=convenio.id) }}" method="post" class="form-delete-convenio">
-                                        <button type="button" class="btn btn-sm btn-danger btn-delete-convenio-trigger">
+                                    <form action="{{ url_for('patrimonio.excluir_patrimonio', item_doc_id=item.id) }}" method="post" class="form-confirm-action">
+                                        <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger" title="Excluir">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -300,21 +403,67 @@
                             </tr>
                             {% else %}
                             <tr class="no-results">
-                                <td colspan="4">Nenhum convênio cadastrado.</td>
+                                <td colspan="7">Nenhum item de patrimônio encontrado.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                
+                <div class="mobile-cards-wrapper">
+                    {% for item in patrimonio_itens %}
+                    <div class="patrimonio-card-mobile">
+                        <div class="card-header-patrimonio">
+                            <h4>{{ item.nome }}</h4>
+                            {# Adicionar status badge se houver, ex: <span class="status-badge active">Ativo</span> #}
+                        </div>
+                        <div class="card-details-body">
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Código</span>
+                                <span class="card-detail-item-value">{{ item.codigo or 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Tipo</span>
+                                <span class="card-detail-item-value">{{ item.tipo or 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Aquisição</span>
+                                <span class="card-detail-item-value">{{ item.data_aquisicao_fmt or 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Local</span>
+                                <span class="card-detail-item-value">{{ item.local_armazenamento or 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Valor</span>
+                                <span class="card-detail-item-value">R$ {{ "%.2f"|format(item.valor) if item.valor is not none else '0.00' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Observação</span>
+                                <span class="card-detail-item-value">{{ item.observacao or 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="card-actions-footer">
+                            <a href="{{ url_for('patrimonio.editar_patrimonio', item_doc_id=item.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Editar</a>
+                            <form action="{{ url_for('patrimonio.excluir_patrimonio', item_doc_id=item.id) }}" method="post" class="form-confirm-action">
+                                <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger"><i class="fas fa-trash"></i> Excluir</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                        <div class="table-container" style="text-align: center; padding: 2rem;">Nenhum item de patrimônio encontrado.</div>
+                    {% endfor %}
+                </div>
             </main>
         </div>
     </div>
-
+    
+    <!-- Modal de Confirmação (Reutilizado) -->
     <div class="modal-overlay" id="customConfirmModal">
         <div class="modal-content">
             <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
-            <h3 class="modal-title">Confirmar Exclusão</h3>
-            <p class="modal-text">Tem certeza que deseja excluir este convênio? Esta ação não pode ser desfeita.</p>
+            <h3 class="modal-title" id="customConfirmTitle">Confirmar Ação</h3>
+            <p class="modal-text" id="customConfirmMessage"></p>
             <div class="modal-actions">
                 <button id="customConfirmCancel" class="btn btn-secondary">Cancelar</button>
                 <button id="customConfirmOk" class="btn btn-danger">Confirmar</button>
@@ -342,7 +491,7 @@
             const themeToggle = document.querySelector('#theme-toggle');
             const logoutButton = document.getElementById('logoutButton');
 
-            // --- Sidebar Logic ---
+            // --- Sidebar Logic (Copiado de base.html) ---
             function setupSidebar() {
                 if (!sidebar || !mainContent) return;
                 const updateDesktopToggleIcon = () => {
@@ -385,7 +534,7 @@
                 window.addEventListener('resize', applyInitialState);
             }
 
-            // --- Theme Logic ---
+            // --- Theme Logic (Copiado de base.html) ---
             function setupTheme() {
                 if (!themeToggle) return;
                 const updateThemeUI = (theme) => {
@@ -402,7 +551,7 @@
                 });
             }
 
-            // --- Logout Logic ---
+            // --- Logout Logic (Copiado de base.html) ---
             function setupLogout() {
                 if (!logoutButton) return;
                 logoutButton.addEventListener('click', async (event) => {
@@ -412,49 +561,49 @@
                         .catch(() => window.location.href = "{{ url_for('login_page') }}");
                 });
             }
-            
-            // --- Confirmation Modal Logic ---
-            function setupConfirmationModal() {
-                const customConfirmModal = document.getElementById('customConfirmModal');
-                if (!customConfirmModal) return;
 
-                const customConfirmOk = document.getElementById('customConfirmOk');
-                const customConfirmCancel = document.getElementById('customConfirmCancel');
+            // --- Confirmation Modal Logic (Copiado de estoque.html) ---
+            function setupConfirmationModal() {
+                const modal = document.getElementById('customConfirmModal');
+                if (!modal) return;
+                
+                const titleEl = document.getElementById('customConfirmTitle');
+                const messageEl = document.getElementById('customConfirmMessage');
+                const okBtn = document.getElementById('customConfirmOk');
+                const cancelBtn = document.getElementById('customConfirmCancel');
                 let formToSubmit = null;
 
-                document.querySelectorAll('.btn-delete-convenio-trigger').forEach(button => {
+                document.querySelectorAll('.btn-confirm-trigger').forEach(button => {
                     button.addEventListener('click', function(event) {
                         event.preventDefault();
-                        formToSubmit = this.closest('form.form-delete-convenio');
-                        if (customConfirmModal && formToSubmit) {
-                            customConfirmModal.classList.add('active');
+                        formToSubmit = this.closest('form.form-confirm-action');
+                        
+                        let action = 'confirmar';
+                        let message = 'Tem certeza que deseja continuar?';
+
+                        if(this.title && this.title.includes('Excluir')){
+                             action = 'Excluir';
+                             message = 'Tem certeza que deseja excluir este item de patrimônio? Esta ação não pode ser desfeita.';
                         }
+
+                        titleEl.textContent = `Confirmar ${action}`;
+                        messageEl.textContent = message;
+
+                        modal.classList.add('active');
                     });
                 });
 
-                if (customConfirmOk) {
-                    customConfirmOk.addEventListener('click', () => {
-                        if (formToSubmit) {
-                            formToSubmit.submit();
-                        }
-                        customConfirmModal.classList.remove('active');
-                    });
-                }
-
-                if (customConfirmCancel) {
-                    customConfirmCancel.addEventListener('click', () => {
-                        customConfirmModal.classList.remove('active');
-                        formToSubmit = null;
-                    });
-                }
-                
-                customConfirmModal.addEventListener('click', (e) => {
-                    if(e.target === customConfirmModal) {
-                        customConfirmModal.classList.remove('active');
+                okBtn.addEventListener('click', () => {
+                    if (formToSubmit) {
+                        formToSubmit.submit();
                     }
-                })
-            }
+                });
 
+                cancelBtn.addEventListener('click', () => modal.classList.remove('active'));
+                modal.addEventListener('click', (e) => {
+                    if(e.target === modal) modal.classList.remove('active');
+                });
+            }
 
             // --- Initialization ---
             setupSidebar();

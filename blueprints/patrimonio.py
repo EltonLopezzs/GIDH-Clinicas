@@ -1,0 +1,206 @@
+from flask import render_template, session, flash, redirect, url_for, request, jsonify, Blueprint
+from google.cloud.firestore_v1.base_query import FieldFilter
+from google.cloud import firestore
+import datetime
+import pytz
+
+# Importar utils
+from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_doc_to_dict, parse_date_input
+
+patrimonio_bp = Blueprint('patrimonio', __name__)
+
+def register_patrimonio_routes(app):
+    """
+    Registra as rotas relacionadas ao gerenciamento de patrimônio no aplicativo Flask.
+    """
+
+    @patrimonio_bp.route('/patrimonio', endpoint='listar_patrimonio')
+    @login_required
+    @admin_required # Apenas administradores podem gerenciar o patrimônio
+    def listar_patrimonio():
+        """
+        Exibe a lista de todos os itens de patrimônio.
+        Permite buscar por nome, código, tipo ou local de armazenamento.
+        """
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        patrimonio_ref = db_instance.collection('clinicas').document(clinica_id).collection('patrimonio')
+        patrimonio_lista = []
+
+        search_query = request.args.get('search', '').strip()
+
+        query = patrimonio_ref.order_by('nome', direction=firestore.Query.ASCENDING)
+
+        try:
+            docs = query.stream()
+            for doc in docs:
+                item = doc.to_dict()
+                if item:
+                    item['id'] = doc.id
+                    # Formatar data de aquisição para exibição
+                    if 'data_aquisicao' in item and isinstance(item['data_aquisicao'], datetime.datetime):
+                        item['data_aquisicao_fmt'] = item['data_aquisicao'].strftime('%d/%m/%Y')
+                    else:
+                        item['data_aquisicao_fmt'] = 'N/A'
+                    
+                    # Adicionar à lista se corresponder à busca
+                    if search_query:
+                        if (search_query.lower() in item.get('nome', '').lower() or
+                            search_query.lower() in item.get('codigo', '').lower() or
+                            search_query.lower() in item.get('tipo', '').lower() or
+                            search_query.lower() in item.get('local_armazenamento', '').lower()):
+                            patrimonio_lista.append(item)
+                    else:
+                        patrimonio_lista.append(item)
+
+        except Exception as e:
+            flash(f'Erro ao listar patrimônio: {e}. Verifique seus índices do Firestore.', 'danger')
+            print(f"ERRO: [listar_patrimonio] {e}")
+
+        return render_template('patrimonio.html', patrimonio_itens=patrimonio_lista, search_query=search_query)
+
+    @patrimonio_bp.route('/patrimonio/novo', methods=['GET', 'POST'], endpoint='adicionar_patrimonio')
+    @login_required
+    @admin_required
+    def adicionar_patrimonio():
+        """
+        Permite adicionar um novo item de patrimônio.
+        """
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+
+        if request.method == 'POST':
+            nome = request.form['nome'].strip()
+            codigo = request.form.get('codigo', '').strip()
+            tipo = request.form.get('tipo', '').strip()
+            data_aquisicao_str = request.form.get('data_aquisicao', '').strip()
+            local_armazenamento = request.form.get('local_armazenamento', '').strip()
+            valor_str = request.form.get('valor', '0').strip()
+            observacao = request.form.get('observacao', '').strip()
+
+            if not nome:
+                flash('O nome do patrimônio é obrigatório.', 'danger')
+                return render_template('patrimonio_form.html', item=request.form, action_url=url_for('patrimonio.adicionar_patrimonio'))
+            
+            try:
+                valor = float(valor_str.replace(',', '.')) if valor_str else 0.0
+                
+                data_aquisicao_dt = None
+                if data_aquisicao_str:
+                    parsed_date = datetime.datetime.strptime(data_aquisicao_str, '%Y-%m-%d')
+                    data_aquisicao_dt = SAO_PAULO_TZ.localize(parsed_date)
+
+                patrimonio_data = {
+                    'nome': nome,
+                    'codigo': codigo,
+                    'tipo': tipo,
+                    'data_aquisicao': data_aquisicao_dt,
+                    'local_armazenamento': local_armazenamento,
+                    'valor': valor,
+                    'observacao': observacao,
+                    'data_cadastro': datetime.datetime.now(SAO_PAULO_TZ),
+                    'usuario_cadastro': session.get('user_name', 'N/A')
+                }
+
+                db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').add(patrimonio_data)
+                flash('Item de patrimônio adicionado com sucesso!', 'success')
+                return redirect(url_for('patrimonio.listar_patrimonio'))
+            except ValueError:
+                flash('Valor deve ser um número válido.', 'danger')
+            except Exception as e:
+                flash(f'Erro ao adicionar item de patrimônio: {e}', 'danger')
+                print(f"ERRO: [adicionar_patrimonio] {e}")
+        
+        return render_template('patrimonio_form.html', item=None, action_url=url_for('patrimonio.adicionar_patrimonio'))
+
+    @patrimonio_bp.route('/patrimonio/editar/<string:item_doc_id>', methods=['GET', 'POST'], endpoint='editar_patrimonio')
+    @login_required
+    @admin_required
+    def editar_patrimonio(item_doc_id):
+        """
+        Permite editar um item de patrimônio existente.
+        """
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        item_ref = db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').document(item_doc_id)
+        
+        if request.method == 'POST':
+            nome = request.form['nome'].strip()
+            codigo = request.form.get('codigo', '').strip()
+            tipo = request.form.get('tipo', '').strip()
+            data_aquisicao_str = request.form.get('data_aquisicao', '').strip()
+            local_armazenamento = request.form.get('local_armazenamento', '').strip()
+            valor_str = request.form.get('valor', '0').strip()
+            observacao = request.form.get('observacao', '').strip()
+
+            if not nome:
+                flash('O nome do patrimônio é obrigatório.', 'danger')
+                return render_template('patrimonio_form.html', item=request.form, action_url=url_for('patrimonio.editar_patrimonio', item_doc_id=item_doc_id))
+            
+            try:
+                valor = float(valor_str.replace(',', '.')) if valor_str else 0.0
+                
+                data_aquisicao_dt = None
+                if data_aquisicao_str:
+                    parsed_date = datetime.datetime.strptime(data_aquisicao_str, '%Y-%m-%d')
+                    data_aquisicao_dt = SAO_PAULO_TZ.localize(parsed_date)
+                
+                update_data = {
+                    'nome': nome,
+                    'codigo': codigo,
+                    'tipo': tipo,
+                    'data_aquisicao': data_aquisicao_dt,
+                    'local_armazenamento': local_armazenamento,
+                    'valor': valor,
+                    'observacao': observacao,
+                    'atualizado_em': firestore.SERVER_TIMESTAMP
+                }
+
+                item_ref.update(update_data)
+                flash('Item de patrimônio atualizado com sucesso!', 'success')
+                return redirect(url_for('patrimonio.listar_patrimonio'))
+            except ValueError:
+                flash('Valor deve ser um número válido.', 'danger')
+            except Exception as e:
+                flash(f'Erro ao atualizar item de patrimônio: {e}', 'danger')
+                print(f"ERRO: [editar_patrimonio POST] {e}")
+
+        try:
+            item_doc = item_ref.get()
+            if item_doc.exists:
+                item = item_doc.to_dict()
+                if item:
+                    item['id'] = item_doc.id
+                    if 'data_aquisicao' in item and isinstance(item['data_aquisicao'], datetime.datetime):
+                        item['data_aquisicao_input'] = item['data_aquisicao'].strftime('%Y-%m-%d')
+                    else:
+                        item['data_aquisicao_input'] = ''
+                    
+                    return render_template('patrimonio_form.html', item=item, action_url=url_for('patrimonio.editar_patrimonio', item_doc_id=item_doc_id))
+            else:
+                flash('Item de patrimônio não encontrado.', 'danger')
+                return redirect(url_for('patrimonio.listar_patrimonio'))
+        except Exception as e:
+            flash(f'Erro ao carregar item de patrimônio para edição: {e}', 'danger')
+            print(f"ERRO: [editar_patrimonio GET] {e}")
+            return redirect(url_for('patrimonio.listar_patrimonio'))
+
+    @patrimonio_bp.route('/patrimonio/excluir/<string:item_doc_id>', methods=['POST'], endpoint='excluir_patrimonio')
+    @login_required
+    @admin_required
+    def excluir_patrimonio(item_doc_id):
+        """
+        Exclui um item de patrimônio.
+        """
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        try:
+            db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').document(item_doc_id).delete()
+            flash('Item de patrimônio excluído com sucesso!', 'success')
+        except Exception as e:
+            flash(f'Erro ao excluir item de patrimônio: {e}.', 'danger')
+            print(f"ERRO: [excluir_patrimonio] {e}")
+        return redirect(url_for('patrimonio.listar_patrimonio'))
+
+    app.register_blueprint(patrimonio_bp)
+

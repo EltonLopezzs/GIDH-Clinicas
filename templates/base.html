@@ -1,395 +1,824 @@
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Clínica On{% endblock %}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Controle - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+  <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    /* ============================================
+     --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
+     ============================================
+    */
+   :root {
+     --bg: #f1f5f9;
+     --card: #ffffff;
+     --text: #0f172a;
+     --muted: #64748b;
+     --accent: #0f172a;
+     --primary: #0d9488; /* Teal-600 */
+     --primary-light: #ccfbf1; /* Teal-100 */
+     --primary-dark: #115e59; /* Teal-800 */
+     --secondary: #f59e0b; /* Amber-500 */
+     --danger: #dc2626;
+     --success: #16a34a;
+     --warning: #f59e0b;
+     --info: #0ea5e9;
+     --border-color: #e2e8f0;
 
-    <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
+     --dark-bg: #0f172a;
+     --dark-card: #1e293b;
+     --dark-text: #f1f5f9;
+     --dark-muted: #94a3b8;
+     --dark-border-color: #334155;
+     
+     color-scheme: light;
+   }
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    {% block head_extra %}{% endblock %} {# Para CSS ou scripts específicos da página #}
+   [data-theme="dark"] {
+     --bg: var(--dark-bg);
+     --text: var(--dark-text);
+     --card: var(--dark-card);
+     --muted: var(--dark-muted);
+     --border-color: var(--dark-border-color);
+     color-scheme: dark;
+   }
 
-    {# Estilos globais para o layout, cores, sidebar e topbar #}
-    <style>
-        :root {
-            --bg: #f1f5f9;
-            --card: #ffffff;
-            --text: #0f172a;
-            --muted: #64748b;
-            --accent: #0f172a;
-            --primary: #0d9488; /* Teal-600 */
-            --primary-dark: #115e59;
-            --secondary: #f59e0b; /* Amber-500 */
-            --danger: #dc2626; /* Red-600 */
-            --success: #16a34a; /* Green-600 */
-            --warning: #f59e0b;
-            --info: #0ea5e9; /* Sky-500 */
-            --border-color: #e2e8f0;
+   * { box-sizing: border-box; margin: 0; padding: 0; }
+   html, body { height: 100%; overflow-x: hidden; }
+   body {
+     font-family: 'Inter', sans-serif;
+     background-color: var(--bg);
+     color: var(--text);
+     min-height: 100vh;
+     line-height: 1.6;
+     transition: background-color 0.3s ease, color 0.3s ease;
+   }
+   .layout { display: flex; min-height: 100vh; width: 100%; }
 
-            --dark-bg: #0f172a;
-            --dark-card: #1e293b;
-            --dark-text: #f1f5f9;
-            --dark-muted: #94a3b8;
-            --dark-border-color: #334155;
+    /* ============================================
+     --- SIDEBAR ---
+     ============================================
+    */
+   .sidebar {
+     width: 260px;
+     background: linear-gradient(180deg, var(--primary), var(--accent));
+     color: white;
+     position: fixed;
+     top: 0; left: 0;
+     height: 100vh;
+     transition: width 0.3s ease, transform 0.3s ease;
+     z-index: 1000;
+     display: flex;
+     flex-direction: column;
+   }
+   .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
+   .sidebar-header {
+     padding: 0 1rem;
+     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+     flex-shrink: 0;
+     height: 70px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+   }
+   .sidebar-header .logo {
+     font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
+     display: flex; align-items: center; gap: 0.75rem;
+     white-space: nowrap; overflow: hidden;
+   }
+   .sidebar-header .logo i { font-size: 1.8rem; }
+   
+   .sidebar.collapsed { width: 78px; }
+   .sidebar.collapsed .sidebar-header .logo span { display: none; }
+   .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
 
-            color-scheme: light;
-        }
+   .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
+   .sidebar.collapsed nav { padding: 0 0.5rem; }
+   .sidebar nav ul { list-style: none; padding: 0; }
+   .sidebar nav ul li { margin-bottom: 0.5rem; }
+   .sidebar nav ul li a {
+     color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
+     padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
+     font-weight: 500; white-space: nowrap; overflow: hidden;
+     transition: background 0.2s ease, color 0.2s ease;
+   }
+   .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+   .sidebar.collapsed nav ul li a span { display: none; }
+   .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
+   .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+   .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
 
-        [data-theme="dark"] {
-            --bg: var(--dark-bg);
-            --text: var(--dark-text);
-            --card: var(--dark-card);
-            --muted: var(--dark-muted);
-            --border-color: var(--dark-border-color);
-            color-scheme: dark;
-        }
+   .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
+   .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
+   .sidebar-footer button, .sidebar-footer a {
+     background: none; border: none; cursor: pointer; color: #e2e8f0;
+     padding: 0.75rem 1rem; border-radius: 8px; width: 100%;
+     display: flex; align-items: center; gap: 1rem;
+     transition: background 0.2s ease, color 0.2s ease;
+     font-family: 'Inter', sans-serif; font-size: 0.95rem; text-decoration: none;
+   }
+   .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+   .sidebar.collapsed .sidebar-footer span { display: none; }
+   .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; overflow-x: hidden; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            line-height: 1.6;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        .layout { display: flex; min-height: 100vh; width: 100%; }
+    /* ============================================
+     --- CONTEÚDO PRINCIPAL & TOPBAR ---
+     ============================================
+    */
+   .main-content {
+     flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
+     display: flex; flex-direction: column; width: calc(100% - 260px);
+   }
+   .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
 
-        /* --- Sidebar --- */
-        .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, var(--primary), var(--accent));
-            color: white;
-            position: fixed;
-            top: 0; left: 0; height: 100vh;
-            transition: width 0.3s ease, transform 0.3s ease;
-            z-index: 1000; display: flex; flex-direction: column;
-        }
-        .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
-        .sidebar-header {
-            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
-        }
-        .sidebar-header .logo {
-            font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
-            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
-        }
-        .sidebar-header .logo i { font-size: 1.8rem; }
-        .sidebar.collapsed { width: 78px; }
-        .sidebar.collapsed .sidebar-header .logo span { display: none; }
-        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
-        .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
-        .sidebar nav ul { list-style: none; padding: 0; }
-        .sidebar nav ul li { margin-bottom: 0.5rem; }
-        .sidebar nav ul li a {
-            color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
-            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
-            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
-        }
-        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
-        .sidebar.collapsed nav ul li a span { display: none; }
-        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
-        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
-        .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
-        .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
-        .sidebar-footer button, .sidebar-footer a {
-            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
-            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
-            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
-            font-size: 0.95rem; text-decoration: none;
-        }
-        .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        .sidebar.collapsed .sidebar-footer span { display: none; }
-        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+   .topbar {
+     background-color: var(--card); color: var(--text); padding: 0 1.5rem;
+     display: flex; align-items: center; justify-content: space-between;
+     border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
+     position: sticky; top: 0; z-index: 900;
+   }
+   .topbar-left { display: flex; align-items: center; gap: 1rem; }
+   .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
+   .toggle-btn {
+     background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
+     width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+     transition: background 0.2s ease, color 0.2s ease;
+   }
+   .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+   .toggle-btn-desktop { display: none; }
+   .menu-btn-mobile { display: block; }
+   @media(min-width: 769px) {
+     .toggle-btn-desktop { display: grid; }
+     .menu-btn-mobile { display: none; }
+   }
 
-        /* --- Main Content & Topbar --- */
-        .main-content {
-            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 260px);
-        }
-        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
-        .topbar {
-            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
-            position: sticky; top: 0; z-index: 900;
-        }
-        .topbar-left { display: flex; align-items: center; gap: 1rem; }
-        .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
-        .toggle-btn {
-            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
-            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-        .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
-        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+   main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+   
+    /* ============================================
+     --- CARDS DE RESUMO (KPIs) ---
+     ============================================
+    */
+   .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+   .card {
+     background: var(--card); padding: 1.5rem; border-radius: 12px;
+     color: var(--text); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+     border-top: 4px solid var(--primary);
+     transition: transform 0.2s ease, box-shadow 0.2s ease;
+   }
+   .card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+   .card h3 { font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+   .card .stat-number { font-size: 2rem; font-weight: 700; margin: 0.25rem 0; color: var(--text); }
+   
+   .stat-comparison {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-top: 0.75rem;
+   }
+   .stat-comparison.success { color: var(--success); }
+   .stat-comparison.danger { color: var(--danger); }
+   .stat-comparison.info { color: var(--muted); }
 
-        /* --- Buttons --- */
-        .btn {
-            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
-            font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
-            gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
-        }
-        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
-        .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: var(--primary-dark); }
-        .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
-        .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
-        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
-        [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
-        .btn-danger { background-color: var(--danger); color: white; }
-        .btn-danger:hover { background-color: #b91c1c; }
-        .btn-warning { background-color: var(--warning); color: #854d0e; }
-        [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
-        .btn-warning:hover { background-color: #fcd34d; }
-        .btn-info { background-color: var(--info); color: white; }
-        .btn-info:hover { background-color: #0369a1; }
-        .btn-toggle-inactive { background-color: #4b5563; color: white; }
-        .btn-toggle-inactive:hover { background-color: #374151; }
+    /* ============================================
+     --- GRÁFICOS E TABELAS ---
+     ============================================
+    */
+   .charts-section-full {
+      margin-bottom: 1.5rem;
+   }
+   .charts-section-split {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin: 2.5rem 0;
+   }
+   @media(min-width: 1024px) {
+      .charts-section-split { grid-template-columns: 1fr 1fr; }
+   }
+   .graph-card {
+     background: var(--card); padding: 1.5rem; border-radius: 12px;
+     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+     min-height: 400px; display: flex; flex-direction: column;
+   }
+   .graph-card h3.chart-title {
+     font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--text); font-weight: 600; text-align: left;
+   }
+   .chart-container { position: relative; flex-grow: 1; }
+   canvas { max-height: 100%; max-width: 100%; }
 
-        /* Flash Messages */
-        .flash-messages {
-            margin-bottom: 1.5rem;
-        }
-        .flash-message {
-            padding: 0.75rem 1.25rem;
-            border-radius: 8px;
-            margin-bottom: 0.75rem;
-            font-weight: 500;
-            border: 1px solid transparent;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .flash-message.success {
-            background-color: color-mix(in srgb, var(--success) 15%, transparent);
-            color: var(--success);
-            border-color: color-mix(in srgb, var(--success) 30%, transparent);
-        }
-        .flash-message.danger {
-            background-color: color-mix(in srgb, var(--danger) 15%, transparent);
-            color: var(--danger);
-            border-color: color-mix(in srgb, var(--danger) 30%, transparent);
-        }
-        .flash-message.warning {
-            background-color: color-mix(in srgb, var(--warning) 15%, transparent);
-            color: var(--warning);
-            border-color: color-mix(in srgb, var(--warning) 30%, transparent);
-        }
-        .flash-message.info {
-            background-color: color-mix(in srgb, var(--info) 15%, transparent);
-            color: var(--info);
-            border-color: color-mix(in srgb, var(--info) 30%, transparent);
-        }
+   .list-section h2.section-title {
+     margin-bottom: 1.5rem; font-size: 1.4rem; color: var(--text); font-weight: 600;
+   }
+   .table-container {
+     width: 100%; overflow-x: auto; background: var(--card);
+     border-radius: 12px; padding: 1rem;
+     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+   }
+   table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); }
+   th, td {
+     padding: 0.9rem 1rem; font-size: 0.9rem; text-align: left; vertical-align: middle;
+     border-bottom: 1px solid var(--border-color);
+   }
+   thead th {
+     font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.8rem;
+     background-color: var(--bg); border-bottom-width: 2px;
+   }
+   thead th:first-child { border-top-left-radius: 8px; }
+   thead th:last-child { border-top-right-radius: 8px; }
+   tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
+   tbody tr:last-child td { border-bottom: none; }
+   tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+   tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
 
-        /* Modais (geral) */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
-            z-index: 2000; opacity: 0; transition: opacity 0.25s ease;
-        }
-        .modal-overlay.active { opacity: 1; display: flex; }
-        .modal-content {
-            background-color: var(--card); color: var(--text); border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 450px;
-            transform: translateY(-20px); transition: transform 0.25s ease;
-            text-align: center; padding: 2rem;
-        }
-        .modal-overlay.active .modal-content { transform: translateY(0); }
-        .modal-icon { font-size: 3rem; margin-bottom: 1rem; }
-        .modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
-        .modal-text { font-size: 1rem; color: var(--muted); margin-bottom: 1.5rem; }
-        .modal-actions { display: flex; justify-content: center; gap: 0.75rem; }
 
-        /* Responsive */
-        .toggle-btn-desktop { display: none; }
-        .menu-btn-mobile { display: block; }
+    /* ============================================
+     --- RESPONSIVIDADE E MOBILE ---
+     ============================================
+    */
+   @media (max-width: 991px) {
+     .table-container { display: none; }
+     .mobile-cards-wrapper { display: block; }
+   }
+   @media (max-width: 768px) {
+     .sidebar { transform: translateX(-100%); }
+     .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+     .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
+     .sidebar.collapsed nav ul li a,
+     .sidebar.collapsed .sidebar-footer button,
+     .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
+     .sidebar.collapsed nav ul li a span,
+     .sidebar.collapsed .sidebar-footer span { display: inline; }
+     .sidebar.collapsed .sidebar-header .logo span { display: inline; }
 
-        @media(min-width: 769px) {
-            .toggle-btn-desktop { display: grid; }
-            .menu-btn-mobile { display: none; }
-            span.btn-text-desktop { display: inline; }
-        }
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
-            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
-            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
-            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
-            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
-            main { padding: 1rem; }
-            .form-card { padding: 1.5rem; margin: 1rem auto; }
-            .form-card-header h2 { font-size: 1.25rem; }
-            .form-actions { flex-direction: column; gap: 0.5rem; }
-            .form-actions .btn { width: 100%; }
-        }
-    </style>
+     .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
+     main { padding: 1rem; }
+     .topbar { padding: 0 1rem; }
+     .summary-cards { grid-template-columns: 1fr; gap: 1rem; }
+   }
+
+   .mobile-cards-wrapper { display: none; }
+   .appointments-container-mobile { position: relative; padding: 0 45px; }
+   .agendamento-card-mobile {
+      display: none; background-color: var(--card); border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08); margin-bottom: 1rem;
+      max-width: 400px; margin-left: auto; margin-right: auto;
+   }
+   .agendamento-card-mobile.card-visible { display: block; }
+   .card-transfer-header {
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem; gap: 1rem; border-bottom: 1px solid var(--border-color);
+   }
+   .card-transfer-party { font-weight: 600; font-size: 1rem; text-align: center; }
+   .card-transfer-arrow { color: var(--muted); }
+   .card-details-body { padding: 0.5rem 0; }
+   .card-detail-item {
+      display: flex; justify-content: space-between; padding: 0.7rem 1rem; font-size: 0.9rem;
+   }
+   .card-detail-item-label { color: var(--muted); font-weight: 500; }
+   .card-detail-item-value { font-weight: 600; }
+   .card-slider-controls { text-align: center; margin: 1.5rem 0 1rem 0; }
+   #card-counter { font-weight: 600; color: var(--muted); margin-right: 1rem; }
+   .btn-link { background: none; border: none; color: var(--primary); text-decoration: underline; font-weight: 600; padding: 0; cursor: pointer; }
+   .card-nav-btn {
+      display: flex; align-items: center; justify-content: center;
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
+      background-color: var(--card); color: var(--text); border: 1px solid var(--border-color);
+      border-radius: 50%; width: 36px; height: 36px; font-size: 0.9rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;
+   }
+   .card-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+   #prev-card-btn { left: 0; }
+   #next-card-btn { right: 0; }
+   .appointments-container-mobile.expanded-view { padding: 0; }
+   .appointments-container-mobile.expanded-view .card-nav-btn,
+   .appointments-container-mobile.expanded-view #card-counter { display: none; }
+    .flash-message {
+      padding: 1rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent;
+      border-radius: 0.5rem; font-size: 0.95rem; font-weight: 500;
+   }
+   .flash-message.success { color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
+   .flash-message.danger, .flash-message.error { color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+   .flash-message.info { color: var(--info); background-color: color-mix(in srgb, var(--info) 15%, transparent); border-color: color-mix(in srgb, var(--info) 30%, transparent); }
+   .flash-message.warning { color: #854d0e; background-color: #fefce8; border-color: #fde047; }
+   [data-theme="dark"] .flash-message.warning { color: #fde047; background-color: #422006; border-color: #854d0e; }
+
+  </style>
 </head>
 <body>
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-inner-content">
+        <div class="sidebar-header">
+          <a href="{{ url_for('index') }}" class="logo">
+            <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
+          </a>
+        </div>
                 <nav>
                     <ul>
-                        <li {% if request.endpoint == 'index' %}class="active"{% endif %}><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li {% if 'pacientes' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li {% if 'prontuario' in request.endpoint or 'anamnese' in request.endpoint or 'peis' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li {% if 'profissionais' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li {% if 'servicos' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li {% if 'convenios' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li {% if 'horarios' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li {% if 'agendamentos' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        <li class="active"><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
-                        <li {% if 'usuarios' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li {% if 'modelos_anamnese' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li {% if 'estoque' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li {% if 'contas_a_pagar' in request.endpoint %}class="active"{% endif %}><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
+                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
+                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
+                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
-                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-                    </button>
-                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
+        <div class="sidebar-footer">
+          <button id="theme-toggle" aria-label="Alternar tema">
+            <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
+          </button>
+          <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
+          <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
+          <h1 class="page-title">Painel de Controle</h1>
+        </div>
+      </header>
+
+      <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash-message {{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <section class="summary-cards">
+            <div class="card">
+                <h3>Receita do Mês ({{ mes_atual_nome or 'N/A' }})</h3>
+                <p class="stat-number">R$ {{ "%.2f"|format(kpi.receita_mes_atual|float) | replace('.', ',') }}</p>
+                <div class="stat-comparison {{ 'success' if kpi.variacao_receita >= 0 else 'danger' }}">
+                    <i class="fa-solid {{ 'fa-arrow-trend-up' if kpi.variacao_receita >= 0 else 'fa-arrow-trend-down' }}"></i>
+                    <span>{{ "%.1f"|format(kpi.variacao_receita|float) | replace('.', ',') }}% vs Mês Anterior</span>
                 </div>
             </div>
-        </aside>
 
-        <div class="main-content">
-            <header class="topbar">
-                <div class="topbar-left">
-                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
-                    <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">{% block page_title_header %}{% endblock %}</h1>
+            <div class="card">
+                <h3>Atendimentos no Mês</h3>
+                <p class="stat-number">{{ kpi.atendimentos_mes_atual }}</p>
+                <div class="stat-comparison {{ 'success' if kpi.variacao_atendimentos >= 0 else 'danger' }}">
+                    <i class="fa-solid {{ 'fa-arrow-trend-up' if kpi.variacao_atendimentos >= 0 else 'fa-arrow-trend-down' }}"></i>
+                    <span>{{ "%.1f"|format(kpi.variacao_atendimentos|float) | replace('.', ',') }}% vs Mês Anterior</span>
                 </div>
-                {% block topbar_actions %}{% endblock %}
-            </header>
+            </div>
+            
+            <div class="card">
+                <h3>Novos Pacientes (Mês)</h3>
+                <p class="stat-number">{{ kpi.novos_pacientes_mes }}</p>
+                <div class="stat-comparison success">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Total de novos cadastros</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Taxa de Ocupação</h3>
+                <p class="stat-number">N/A</p>
+                <div class="stat-comparison info">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Em desenvolvimento</span>
+                </div>
+            </div>
+        </section>
 
-            <main>
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
-                    <div class="flash-messages">
-                      {% for category, message in messages %}
-                        <div class="flash-message {{ category }}">{{ message }}</div>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-                {% endwith %}
+        <section class="charts-section-full">
+            <div class="graph-card">
+                <h3 class="chart-title">Visão Geral: Atendimentos vs. Receita (Últimos 15 dias)</h3>
+                <div class="chart-container">
+                    <canvas id="atendimentoVsReceitaChart"></canvas>
+                </div>
+            </div>
+        </section>
 
-                {% block content %}{% endblock %}
-            </main>
-        </div>
+        <section class="charts-section-split">
+            <div class="graph-card">
+                <h3 class="chart-title">Top 5 Procedimentos por Receita (Mês)</h3>
+                <div class="chart-container">
+                    <canvas id="receitaPorProcedimentoChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="graph-card">
+                <h3 class="chart-title">Top 5 Profissionais por Atendimentos (Mês)</h3>
+                <div class="chart-container">
+                    <canvas id="desempenhoProfissionalChart"></canvas>
+                </div>
+            </div>
+        </section>
+        
+        <section class="list-section">
+            <h2 class="section-title">Próximos Agendamentos Confirmados</h2>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th><th>Hora</th><th>Paciente</th><th>Profissional</th><th>Serviço/Procedimento</th><th>Preço</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set items_rendered = namespace(count=0) %}
+                        {% for agendamento in proximos_agendamentos %}
+                            {# --- LÓGICA DE VISUALIZAÇÃO --- #}
+                            {# Condição: mostra o agendamento se o usuário for 'admin' OU se o agendamento pertencer ao usuário logado. #}
+                            {# IMPORTANTE: Certifique-se que 'agendamento.id_profissional' e 'session.user_id' correspondem aos nomes das variáveis no seu backend #}
+                            {% if session.user_role == 'admin' or agendamento.id_profissional == session.user_id %}
+                                {% set items_rendered.count = items_rendered.count + 1 %}
+                                <tr>
+                                    <td>{{ agendamento.data_agendamento }}</td>
+                                    <td>{{ agendamento.hora_agendamento }}</td>
+                                    <td>{{ agendamento.cliente_nome }}</td>
+                                    <td>{{ agendamento.profissional_nome }}</td>
+                                    <td>{{ agendamento.servico_procedimento_nome }}</td>
+                                    <td>R$ {{ "%.2f"|format(agendamento.preco|float) | replace('.', ',') }}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {# Mensagem se, após o filtro, nenhum agendamento for exibido #}
+                        {% if items_rendered.count == 0 %}
+                            <tr><td colspan="6" style="text-align: center; padding: 2rem;">Nenhum próximo agendamento para exibir.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mobile-cards-wrapper">
+                <div class="appointments-container-mobile">
+                    {% set mobile_items_rendered = namespace(count=0) %}
+                    {% for agendamento in proximos_agendamentos %}
+                        {% if session.user_role == 'admin' or agendamento.id_profissional == session.user_id %}
+                            {% set mobile_items_rendered.count = mobile_items_rendered.count + 1 %}
+                            <div class="agendamento-card-mobile">
+                                <div class="card-transfer-header">
+                                    <div class="card-transfer-party">{{ agendamento.cliente_nome }}</div>
+                                    <div class="card-transfer-arrow"><i class="fa-solid fa-right-long"></i></div>
+                                    <div class="card-transfer-party">{{ agendamento.profissional_nome }}</div>
+                                </div>
+                                <div class="card-details-body">
+                                    <div class="card-detail-item"><span class="card-detail-item-label">Serviço</span> <span class="card-detail-item-value">{{ agendamento.servico_procedimento_nome }}</span></div>
+                                    <div class="card-detail-item"><span class="card-detail-item-label">Data</span> <span class="card-detail-item-value">{{ agendamento.data_agendamento }} às {{ agendamento.hora_agendamento }}</span></div>
+                                    <div class="card-detail-item"><span class="card-detail-item-label">Preço</span> <span class="card-detail-item-value">R$ {{ "%.2f"|format(agendamento.preco|float) | replace('.', ',') }}</span></div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if mobile_items_rendered.count > 0 %}
+                    <button class="card-nav-btn" id="prev-card-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button class="card-nav-btn" id="next-card-btn"><i class="fa-solid fa-chevron-right"></i></button>
+                    {% endif %}
+                </div>
+                
+                {% if mobile_items_rendered.count > 0 %}
+                <div class="card-slider-controls">
+                    <span id="card-counter"></span>
+                    <button class="btn-link" id="toggle-view-btn">Ver Todos</button>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 2rem; background: var(--card); border-radius: 12px; margin-top: 1rem;">
+                    Nenhum próximo agendamento para exibir.
+                </div>
+                {% endif %}
+            </section>
+      </main>
+
+      <footer style="margin-top: auto; text-align: center; padding: 1.5rem; font-size: 0.9rem; color: var(--muted);">
+        <p>&copy; {{ current_year or '2025' }} Clínica On. Todos os direitos reservados.</p>
+      </footer>
     </div>
-    {% block modals %}{% endblock %} {# Para modais que são globais mas renderizados por cada página #}
+  </div>
 
-    <script type="module">
-        // Placeholder for Firebase - adjust with your actual config
-        const FAKE_FIREBASE = {
-            initializeApp: () => ({}),
-            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
+<script type="module" id="dashboard-script"
+    data-atendimento-vs-receita='{{ dados_atendimento_vs_receita | safe }}'
+    data-receita-procedimento='{{ dados_receita_procedimento | safe }}'
+    data-desempenho-profissional='{{ dados_desempenho_profissional | safe }}'>
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+    const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+    const themeToggle = document.querySelector('#theme-toggle');
+    const htmlEl = document.documentElement;
+
+    let charts = {};
+
+    const getCssVar = (varName) => getComputedStyle(htmlEl).getPropertyValue(varName).trim();
+    
+    function setupSidebar() {
+      if (!sidebar || !mainContent) return;
+      const updateDesktopToggleIcon = () => {
+        if (!toggleBtnDesktop) return;
+        const icon = toggleBtnDesktop.querySelector('i');
+        if (sidebar.classList.contains('collapsed')) {
+          icon.classList.replace('fa-bars-staggered', 'fa-bars');
+        } else {
+          icon.classList.replace('fa-bars', 'fa-bars-staggered');
+        }
+      };
+      const applyInitialState = () => {
+        if (window.innerWidth > 768) {
+          if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('collapsed');
+          }
+        } else {
+            sidebar.classList.remove('open', 'collapsed');
+            mainContent.classList.remove('collapsed');
+        }
+        updateDesktopToggleIcon();
+      };
+      toggleBtnDesktop?.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('collapsed');
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        updateDesktopToggleIcon();
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
+      });
+      menuBtnMobile?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.toggle('open');
+        const icon = menuBtnMobile.querySelector('i');
+        icon.classList.toggle('fa-times', sidebar.classList.contains('open'));
+        icon.classList.toggle('fa-bars', !sidebar.classList.contains('open'));
+      });
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
+          sidebar.classList.remove('open');
+          const icon = menuBtnMobile.querySelector('i');
+          icon.classList.remove('fa-times');
+          icon.classList.add('fa-bars');
+        }
+      });
+      applyInitialState();
+      window.addEventListener('resize', applyInitialState);
+    }
+    
+    function setupTheme() {
+        if (!themeToggle) return;
+        const updateThemeIcon = (theme) => {
+            const icon = themeToggle.querySelector('i');
+            if (theme === 'dark') {
+                icon.classList.replace('fa-sun', 'fa-moon');
+            } else {
+                icon.classList.replace('fa-moon', 'fa-sun');
+            }
         };
-        const { initializeApp } = FAKE_FIREBASE;
-        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        let auth = getAuth(initializeApp(firebaseConfig));
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const htmlEl = document.documentElement;
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
-            const logoutButton = document.getElementById('logoutButton');
-
-            // --- Sidebar Logic ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
-                }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
-                });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
-            }
-
-            // --- Theme Logic ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
-
-            // --- Logout Logic ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
-
-            // --- Initialization ---
-            setupSidebar();
-            setupTheme();
-            setupLogout();
+        const applyInitialTheme = () => {
+            const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            htmlEl.setAttribute('data-theme', storedTheme);
+            updateThemeIcon(storedTheme);
+        };
+        themeToggle.addEventListener('click', () => {
+            const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            htmlEl.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
         });
-    </script>
-    {% block scripts %}{% endblock %} {# Para scripts específicos da página #}
+        applyInitialTheme();
+    }
+
+    function renderCharts() {
+        Object.values(charts).forEach(chart => chart?.destroy());
+
+        const scriptEl = document.getElementById('dashboard-script');
+        
+        const dadosAtendVsReceita = JSON.parse(scriptEl.dataset.atendimentoVsReceita || '{}');
+        const dadosReceitaProc = JSON.parse(scriptEl.dataset.receitaProcedimento || '{}');
+        const dadosDesempenhoProf = JSON.parse(scriptEl.dataset.desempenhoProfissional || '{}');
+
+        const themeColors = {
+            text: getCssVar('--text'),
+            grid: getCssVar('--border-color'),
+            primary: getCssVar('--primary'),
+            secondary: getCssVar('--secondary'),
+        };
+        
+        Chart.defaults.color = themeColors.text;
+        Chart.defaults.borderColor = themeColors.grid;
+        Chart.defaults.plugins.tooltip.backgroundColor = getCssVar('--dark-bg');
+        Chart.defaults.plugins.tooltip.titleColor = getCssVar('--dark-text');
+        Chart.defaults.plugins.tooltip.bodyColor = getCssVar('--dark-text');
+        Chart.defaults.plugins.tooltip.boxPadding = 3;
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        
+        try {
+            const atendVsReceitaCtx = document.getElementById('atendimentoVsReceitaChart')?.getContext('2d');
+            if (atendVsReceitaCtx && dadosAtendVsReceita.labels?.length) {
+                charts.atendimentoVsReceita = new Chart(atendVsReceitaCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: dadosAtendVsReceita.labels,
+                        datasets: [
+                            {
+                                type: 'line',
+                                label: 'Receita (R$)',
+                                data: dadosAtendVsReceita.receitas,
+                                borderColor: themeColors.secondary,
+                                backgroundColor: themeColors.secondary,
+                                tension: 0.3,
+                                yAxisID: 'y1',
+                                pointRadius: 4,
+                                pointBackgroundColor: themeColors.secondary,
+                            },
+                            {
+                                type: 'bar',
+                                label: 'Atendimentos',
+                                data: dadosAtendVsReceita.atendimentos,
+                                backgroundColor: themeColors.primary,
+                                borderRadius: 6,
+                                yAxisID: 'y',
+                            }
+                        ]
+                    },
+                    options: {
+                        maintainAspectRatio: false, responsive: true,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            x: { grid: { display: false } },
+                            y: {
+                                type: 'linear', display: true, position: 'left',
+                                title: { display: true, text: 'Nº de Atendimentos' },
+                                grid: { drawOnChartArea: false },
+                                ticks: { precision: 0, beginAtZero: true }
+                            },
+                            y1: {
+                                type: 'linear', display: true, position: 'right',
+                                title: { display: true, text: 'Receita (R$)' },
+                                grid: { drawOnChartArea: true, borderDash: [2, 4], color: themeColors.grid },
+                                ticks: {
+                                    callback: (value) => `R$ ${value >= 1000 ? (value/1000).toFixed(1) + 'k' : value}`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const receitaProcedimentoCtx = document.getElementById('receitaPorProcedimentoChart')?.getContext('2d');
+            if (receitaProcedimentoCtx && dadosReceitaProc.labels?.length) {
+                charts.receitaPorProcedimento = new Chart(receitaProcedimentoCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: dadosReceitaProc.labels,
+                        datasets: [{
+                            label: 'Receita Gerada',
+                            data: dadosReceitaProc.valores,
+                            backgroundColor: [getCssVar('--primary'), getCssVar('--secondary'), '#3b82f6', '#8b5cf6', '#ec4899'],
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', maintainAspectRatio: false, responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { callback: (value) => `R$ ${value}` } }
+                        }
+                    }
+                });
+            }
+
+            const desempenhoProfissionalCtx = document.getElementById('desempenhoProfissionalChart')?.getContext('2d');
+            if (desempenhoProfissionalCtx && dadosDesempenhoProf.labels?.length) {
+                charts.desempenhoProfissional = new Chart(desempenhoProfissionalCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: dadosDesempenhoProf.labels,
+                        datasets: [{
+                            label: 'Nº de Atendimentos',
+                            data: dadosDesempenhoProf.valores,
+                            backgroundColor: [getCssVar('--primary'), getCssVar('--secondary'), '#3b82f6', '#8b5cf6', '#ec4899'],
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', maintainAspectRatio: false, responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { x: { ticks: { precision: 0, beginAtZero: true } } }
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Erro ao renderizar os gráficos:", e);
+        }
+    }
+
+    function setupMobileSlider() {
+      const container = document.querySelector('.appointments-container-mobile');
+      if (!container) return;
+      // Seleciona apenas os cards que foram renderizados (não estão escondidos pelo Jinja)
+      const cards = container.querySelectorAll('.agendamento-card-mobile');
+      const prevBtn = document.getElementById('prev-card-btn');
+      const nextBtn = document.getElementById('next-card-btn');
+      const counter = document.getElementById('card-counter');
+      const toggleBtn = document.getElementById('toggle-view-btn');
+      
+      if (cards.length === 0) return;
+
+      let currentIndex = 0;
+      let isExpanded = false;
+
+      const updateView = () => {
+          if (isExpanded) {
+              container.classList.add('expanded-view');
+              cards.forEach(card => card.style.display = 'block');
+              if(toggleBtn) toggleBtn.textContent = 'Ver Todos';
+          } else {
+              container.classList.remove('expanded-view');
+              cards.forEach((card, index) => {
+                  card.style.display = (index === currentIndex) ? 'block' : 'none';
+              });
+              if(counter) counter.textContent = `${currentIndex + 1} de ${cards.length}`;
+              if(prevBtn) prevBtn.disabled = currentIndex === 0;
+              if(nextBtn) nextBtn.disabled = currentIndex >= cards.length - 1;
+              if(toggleBtn) toggleBtn.textContent = 'Ver um por um';
+          }
+      };
+
+      prevBtn?.addEventListener('click', () => { if(currentIndex > 0) { currentIndex--; updateView(); } });
+      nextBtn?.addEventListener('click', () => { if(currentIndex < cards.length - 1) { currentIndex++; updateView(); } });
+      toggleBtn?.addEventListener('click', () => { isExpanded = !isExpanded; updateView(); });
+      
+      updateView();
+    }
+
+    // --- CORREÇÃO DO LOGOUT ---
+    // A lógica foi movida para aqui, unificada e corrigida.
+    function setupLogout() {
+        const logoutButton = document.getElementById('logoutButton');
+        if (!logoutButton) return;
+
+        logoutButton.addEventListener('click', (event) => {
+            // Previne o comportamento padrão do link (que é navegar para '#')
+            event.preventDefault(); 
+            
+            console.log("Tentando fazer logout...");
+
+            // Faz a requisição POST para a sua rota de logout no Flask
+            fetch("{{ url_for('logout') }}", { 
+                method: 'POST',
+                // Adicionar headers se necessário (ex: CSRF token)
+            })
+            .then(response => {
+                // Após a tentativa de logout ser bem-sucedida ou não, 
+                // redireciona o usuário para a página de login.
+                // O backend deve ter limpado a sessão.
+                window.location.href = "{{ url_for('login_page') }}";
+            })
+            .catch(error => {
+                console.error('Erro ao tentar fazer logout:', error);
+                // Mesmo se a requisição fetch falhar (ex: problema de rede),
+                // ainda tenta redirecionar para a página de login.
+                window.location.href = "{{ url_for('login_page') }}";
+            });
+        });
+    }
+
+    // --- INICIALIZAÇÃO DAS FUNÇÕES ---
+    setupSidebar();
+    setupTheme();
+    setupLogout(); // Chamada da função de logout corrigida
+    renderCharts();
+    setupMobileSlider();
+
+    // Observador para redesenhar gráficos ao mudar o tema
+    const themeObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+                setTimeout(renderCharts, 50); 
+            }
+        });
+    });
+    themeObserver.observe(htmlEl, { attributes: true });
+
+  });
+</script>
 </body>
 </html>
