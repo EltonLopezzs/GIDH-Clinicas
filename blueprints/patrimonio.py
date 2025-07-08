@@ -77,6 +77,7 @@ def register_patrimonio_routes(app):
             local_armazenamento = request.form.get('local_armazenamento', '').strip()
             valor_str = request.form.get('valor', '0').strip()
             observacao = request.form.get('observacao', '').strip()
+            criar_conta_pagar = 'criar_conta_pagar' in request.form # Verifica se o checkbox foi marcado
 
             if not nome:
                 flash('O nome do patrimônio é obrigatório.', 'danger')
@@ -102,8 +103,26 @@ def register_patrimonio_routes(app):
                     'usuario_cadastro': session.get('user_name', 'N/A')
                 }
 
-                db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').add(patrimonio_data)
-                flash('Item de patrimônio adicionado com sucesso!', 'success')
+                # Adiciona o item de patrimônio e obtém sua referência
+                new_patrimonio_ref = db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').add(patrimonio_data)[1]
+                
+                # Se a opção de criar conta a pagar foi marcada, cria a conta
+                if criar_conta_pagar and valor > 0:
+                    contas_a_pagar_data = {
+                        'descricao': f"Aquisição de Patrimônio: {nome}",
+                        'valor': valor,
+                        'data_vencimento': data_aquisicao_dt if data_aquisicao_dt else datetime.datetime.now(SAO_PAULO_TZ),
+                        'status': 'pendente',
+                        'data_lancamento': datetime.datetime.now(SAO_PAULO_TZ),
+                        'usuario_responsavel': session.get('user_name', 'N/A'),
+                        'patrimonio_id': new_patrimonio_ref.id, # Vincula ao ID do patrimônio recém-criado
+                        'patrimonio_nome': nome # Salva o nome para fácil referência
+                    }
+                    db_instance.collection('clinicas').document(clinica_id).collection('contas_a_pagar').add(contas_a_pagar_data)
+                    flash('Item de patrimônio e conta a pagar adicionados com sucesso!', 'success')
+                else:
+                    flash('Item de patrimônio adicionado com sucesso!', 'success')
+
                 return redirect(url_for('patrimonio.listar_patrimonio'))
             except ValueError:
                 flash('Valor deve ser um número válido.', 'danger')
@@ -132,6 +151,7 @@ def register_patrimonio_routes(app):
             local_armazenamento = request.form.get('local_armazenamento', '').strip()
             valor_str = request.form.get('valor', '0').strip()
             observacao = request.form.get('observacao', '').strip()
+            criar_conta_pagar = 'criar_conta_pagar' in request.form # Verifica se o checkbox foi marcado
 
             if not nome:
                 flash('O nome do patrimônio é obrigatório.', 'danger')
@@ -157,7 +177,37 @@ def register_patrimonio_routes(app):
                 }
 
                 item_ref.update(update_data)
-                flash('Item de patrimônio atualizado com sucesso!', 'success')
+
+                # Lógica para criar/atualizar conta a pagar vinculada
+                if criar_conta_pagar and valor > 0:
+                    # Tenta encontrar uma conta a pagar existente para este patrimônio
+                    contas_existentes_query = db_instance.collection('clinicas').document(clinica_id).collection('contas_a_pagar').where(filter=FieldFilter('patrimonio_id', '==', item_doc_id)).limit(1).stream()
+                    contas_existentes = list(contas_existentes_query)
+
+                    contas_a_pagar_data = {
+                        'descricao': f"Aquisição de Patrimônio: {nome}",
+                        'valor': valor,
+                        'data_vencimento': data_aquisicao_dt if data_aquisicao_dt else datetime.datetime.now(SAO_PAULO_TZ),
+                        'status': 'pendente', # Assume pendente ao editar, pode ser ajustado
+                        'data_lancamento': datetime.datetime.now(SAO_PAULO_TZ), # Pode manter o original se existir
+                        'usuario_responsavel': session.get('user_name', 'N/A'),
+                        'patrimonio_id': item_doc_id,
+                        'patrimonio_nome': nome
+                    }
+
+                    if contas_existentes:
+                        # Atualiza a conta existente
+                        conta_existente_ref = contas_existentes[0].reference
+                        conta_existente_ref.update(contas_a_pagar_data)
+                        flash('Item de patrimônio e conta a pagar vinculada atualizados com sucesso!', 'success')
+                    else:
+                        # Cria uma nova conta se não existir
+                        db_instance.collection('clinicas').document(clinica_id).collection('contas_a_pagar').add(contas_a_pagar_data)
+                        flash('Item de patrimônio atualizado e nova conta a pagar criada!', 'success')
+                else:
+                    flash('Item de patrimônio atualizado com sucesso!', 'success')
+
+
                 return redirect(url_for('patrimonio.listar_patrimonio'))
             except ValueError:
                 flash('Valor deve ser um número válido.', 'danger')
@@ -195,8 +245,14 @@ def register_patrimonio_routes(app):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         try:
+            # Opcional: Remover contas a pagar vinculadas ao patrimônio
+            contas_vinculadas_query = db_instance.collection('clinicas').document(clinica_id).collection('contas_a_pagar').where(filter=FieldFilter('patrimonio_id', '==', item_doc_id)).stream()
+            for conta_doc in contas_vinculadas_query:
+                conta_doc.reference.delete()
+                print(f"Conta a pagar vinculada {conta_doc.id} excluída.")
+
             db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').document(item_doc_id).delete()
-            flash('Item de patrimônio excluído com sucesso!', 'success')
+            flash('Item de patrimônio e contas a pagar vinculadas (se houver) excluídos com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao excluir item de patrimônio: {e}.', 'danger')
             print(f"ERRO: [excluir_patrimonio] {e}")

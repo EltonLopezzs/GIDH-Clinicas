@@ -58,9 +58,12 @@ def register_contas_a_pagar_routes(app):
                         if filter_status != 'vencida': # Adiciona mesmo sem data de vencimento se não for filtro de vencida
                             contas_lista.append(conta)
 
-            # Filtrar por search_query (nome do produto ou descrição)
+            # Filtrar por search_query (nome do produto, nome do patrimônio ou descrição)
             if search_query:
-                contas_lista = [c for c in contas_lista if search_query.lower() in c.get('descricao', '').lower() or search_query.lower() in c.get('produto_nome', '').lower()]
+                contas_lista = [c for c in contas_lista if \
+                                search_query.lower() in c.get('descricao', '').lower() or \
+                                search_query.lower() in c.get('produto_nome', '').lower() or \
+                                search_query.lower() in c.get('patrimonio_nome', '').lower()] # NOVO: Busca por nome do patrimônio
             
             # Re-filtrar para "vencida" se não foi feito acima ou para garantir
             if filter_status == 'vencida':
@@ -88,6 +91,7 @@ def register_contas_a_pagar_routes(app):
             data_vencimento_str = request.form.get('data_vencimento', '').strip()
             status = request.form.get('status', 'pendente').strip()
             produto_id = request.form.get('produto_id', '').strip() # Pode vir de uma seleção manual
+            patrimonio_id = request.form.get('patrimonio_id', '').strip() # NOVO: Pode vir de uma seleção manual
 
             if not descricao or not valor_str:
                 flash('Descrição e Valor são obrigatórios.', 'danger')
@@ -115,6 +119,14 @@ def register_contas_a_pagar_routes(app):
                     produto_doc = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').document(produto_id).get()
                     if produto_doc.exists:
                         conta_data['produto_nome'] = produto_doc.to_dict().get('nome')
+                
+                # NOVO: Adiciona vínculo com patrimônio
+                if patrimonio_id:
+                    conta_data['patrimonio_id'] = patrimonio_id
+                    patrimonio_doc = db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').document(patrimonio_id).get()
+                    if patrimonio_doc.exists:
+                        conta_data['patrimonio_nome'] = patrimonio_doc.to_dict().get('nome')
+
 
                 db_instance.collection('clinicas').document(clinica_id).collection('contas_a_pagar').add(conta_data)
                 flash('Conta a pagar adicionada com sucesso!', 'success')
@@ -125,19 +137,28 @@ def register_contas_a_pagar_routes(app):
                 flash(f'Erro ao adicionar conta a pagar: {e}', 'danger')
                 print(f"ERRO: [adicionar_conta_a_pagar] {e}")
         
-        # Carrega produtos ativos para o select no formulário (opcional)
+        # Carrega produtos ativos e itens de patrimônio para o select no formulário (opcional)
         produtos_ativos = []
+        patrimonio_itens = [] # NOVO
         try:
-            docs = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
-            for doc in docs:
+            docs_produtos = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+            for doc in docs_produtos:
                 p_data = doc.to_dict()
                 if p_data:
                     produtos_ativos.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)})
-        except Exception as e:
-            print(f"ERRO: [adicionar_conta_a_pagar GET] Erro ao carregar produtos ativos: {e}")
-            flash('Erro ao carregar produtos para vincular.', 'warning')
+            
+            # NOVO: Busca itens de patrimônio
+            docs_patrimonio = db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').order_by('nome').stream()
+            for doc in docs_patrimonio:
+                item_data = doc.to_dict()
+                if item_data:
+                    patrimonio_itens.append({'id': doc.id, 'nome': item_data.get('nome', doc.id)})
 
-        return render_template('conta_a_pagar_form.html', conta=None, action_url=url_for('adicionar_conta_a_pagar'), produtos_ativos=produtos_ativos)
+        except Exception as e:
+            print(f"ERRO: [adicionar_conta_a_pagar GET] Erro ao carregar produtos/patrimônio: {e}")
+            flash('Erro ao carregar produtos/patrimônio para vincular.', 'warning')
+
+        return render_template('conta_a_pagar_form.html', conta=None, action_url=url_for('adicionar_conta_a_pagar'), produtos_ativos=produtos_ativos, patrimonio_itens=patrimonio_itens)
 
     @app.route('/contas_a_pagar/editar/<string:conta_doc_id>', methods=['GET', 'POST'], endpoint='editar_conta_a_pagar')
     @login_required
@@ -153,6 +174,7 @@ def register_contas_a_pagar_routes(app):
             data_vencimento_str = request.form.get('data_vencimento', '').strip()
             status = request.form.get('status', 'pendente').strip()
             produto_id = request.form.get('produto_id', '').strip()
+            patrimonio_id = request.form.get('patrimonio_id', '').strip() # NOVO
 
             if not descricao or not valor_str:
                 flash('Descrição e Valor são obrigatórios.', 'danger')
@@ -173,6 +195,8 @@ def register_contas_a_pagar_routes(app):
                     'status': status,
                     'atualizado_em': firestore.SERVER_TIMESTAMP
                 }
+
+                # Lógica para produto_id
                 if produto_id:
                     update_data['produto_id'] = produto_id
                     produto_doc = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').document(produto_id).get()
@@ -181,6 +205,16 @@ def register_contas_a_pagar_routes(app):
                 else:
                     update_data['produto_id'] = firestore.DELETE_FIELD
                     update_data['produto_nome'] = firestore.DELETE_FIELD
+
+                # NOVO: Lógica para patrimonio_id
+                if patrimonio_id:
+                    update_data['patrimonio_id'] = patrimonio_id
+                    patrimonio_doc = db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').document(patrimonio_id).get()
+                    if patrimonio_doc.exists:
+                        update_data['patrimonio_nome'] = patrimonio_doc.to_dict().get('nome')
+                else:
+                    update_data['patrimonio_id'] = firestore.DELETE_FIELD
+                    update_data['patrimonio_nome'] = firestore.DELETE_FIELD
 
 
                 conta_ref.update(update_data)
@@ -203,19 +237,28 @@ def register_contas_a_pagar_routes(app):
                     else:
                         conta['data_vencimento_input'] = ''
                     
-                    # Carrega produtos ativos para o select no formulário
+                    # Carrega produtos ativos e itens de patrimônio para o select no formulário
                     produtos_ativos = []
+                    patrimonio_itens = [] # NOVO
                     try:
-                        docs = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
-                        for doc in docs:
+                        docs_produtos = db_instance.collection('clinicas').document(clinica_id).collection('estoque_produtos').where(filter=FieldFilter('ativo', '==', True)).order_by('nome').stream()
+                        for doc in docs_produtos:
                             p_data = doc.to_dict()
                             if p_data:
                                 produtos_ativos.append({'id': doc.id, 'nome': p_data.get('nome', doc.id)})
-                    except Exception as e:
-                        print(f"ERRO: [editar_conta_a_pagar GET] Erro ao carregar produtos ativos: {e}")
-                        flash('Erro ao carregar produtos para vincular.', 'warning')
+                        
+                        # NOVO: Busca itens de patrimônio
+                        docs_patrimonio = db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').order_by('nome').stream()
+                        for doc in docs_patrimonio:
+                            item_data = doc.to_dict()
+                            if item_data:
+                                patrimonio_itens.append({'id': doc.id, 'nome': item_data.get('nome', doc.id)})
 
-                    return render_template('conta_a_pagar_form.html', conta=conta, action_url=url_for('editar_conta_a_pagar', conta_doc_id=conta_doc_id), produtos_ativos=produtos_ativos)
+                    except Exception as e:
+                        print(f"ERRO: [editar_conta_a_pagar GET] Erro ao carregar produtos/patrimônio: {e}")
+                        flash('Erro ao carregar produtos/patrimônio para vincular.', 'warning')
+
+                    return render_template('conta_a_pagar_form.html', conta=conta, action_url=url_for('editar_conta_a_pagar', conta_doc_id=conta_doc_id), produtos_ativos=produtos_ativos, patrimonio_itens=patrimonio_itens)
             else:
                 flash('Conta a pagar não encontrada.', 'danger')
                 return redirect(url_for('listar_contas_a_pagar'))

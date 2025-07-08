@@ -180,7 +180,7 @@
         .status-badge.pendente { background-color: var(--danger); }
         .status-badge.paga { background-color: var(--success); }
         .status-badge.vencida { background-color: var(--warning); color: #854d0e; }
-        [data-theme="dark"] .status-badge.vencida { color: var(--dark-bg); }
+        [data-theme="dark"] .status-badge.vencida { color: #fde047; }
 
         /* --- Mobile Cards --- */
         .mobile-cards-wrapper { display: none; }
@@ -315,6 +315,7 @@
                         <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
                         <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
                         <li class="active"><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
+                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -368,6 +369,7 @@
                             <tr>
                                 <th>Descrição</th>
                                 <th>Produto (se vinculado)</th>
+                                <th>Patrimônio (se vinculado)</th> {# NOVO: Coluna para Patrimônio #}
                                 <th>Valor</th>
                                 <th>Vencimento</th>
                                 <th>Status</th>
@@ -381,6 +383,7 @@
                             <tr>
                                 <td>{{ conta.descricao }}</td>
                                 <td>{{ conta.produto_nome or 'N/A' }}</td>
+                                <td>{{ conta.patrimonio_nome or 'N/A' }}</td> {# NOVO: Exibe o nome do Patrimônio #}
                                 <td>R$ {{ "%.2f"|format(conta.valor) }}</td>
                                 <td>{{ conta.data_vencimento_fmt or 'N/A' }}</td>
                                 <td>
@@ -416,7 +419,7 @@
                             </tr>
                             {% else %}
                             <tr class="no-results">
-                                <td colspan="8">Nenhuma conta a pagar encontrada.</td>
+                                <td colspan="9">Nenhuma conta a pagar encontrada.</td> {# Atualizado o colspan #}
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -442,6 +445,10 @@
                             <div class="card-detail-item">
                                 <span class="card-detail-item-label">Produto</span>
                                 <span class="card-detail-item-value">{{ conta.produto_nome or 'N/A' }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Patrimônio</span> {# NOVO #}
+                                <span class="card-detail-item-value">{{ conta.patrimonio_nome or 'N/A' }}</span> {# NOVO #}
                             </div>
                             <div class="card-detail-item">
                                 <span class="card-detail-item-label">Valor</span>
