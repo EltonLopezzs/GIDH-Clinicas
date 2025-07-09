@@ -121,7 +121,7 @@
         }
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar.collapsed .sidebar-footer span { display: none; }
-        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center, padding: 0.75rem; }
+        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
 
         /* --- Main Content & Topbar --- */
         .main-content {
@@ -418,6 +418,15 @@
             background: var(--bg);
         }
 
+        .dropdown-item-danger {
+            color: var(--danger);
+        }
+
+        .dropdown-item-danger:hover {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--danger);
+        }
+
         .dropdown-item i {
             width: 16px;
             text-align: center;
@@ -495,6 +504,29 @@
             text-overflow: ellipsis;
             overflow: hidden;
             white-space: nowrap;
+        }
+
+        .detail-empty {
+            color: var(--muted);
+            font-style: italic;
+            opacity: 0.7;
+            position: relative;
+        }
+
+        .detail-empty::before {
+            content: "⚪";
+            margin-right: 0.5rem;
+            font-style: normal;
+            opacity: 0.6;
+        }
+
+        /* Styling para ícones de campos vazios */
+        .detail-item:has(.detail-empty) .detail-icon {
+            opacity: 0.5;
+        }
+
+        .detail-item:has(.detail-empty) .detail-icon i {
+            color: var(--muted);
         }
 
         .convenio-badge {
@@ -1151,14 +1183,150 @@
         #patient-steps-modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15,23,42,0.25);
+            background: rgba(15,23,42,0.6);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 3500;
-            transition: opacity 0.3s;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
         }
-        #patient-steps-modal-overlay.visible { opacity: 1; }
+        #patient-steps-modal-overlay.visible { 
+            opacity: 1; 
+            pointer-events: auto;
+        }
+        
+        /* --- Modal de Confirmação de Exclusão --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15,23,42,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 4000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .delete-modal {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 480px;
+            width: 90vw;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.show .delete-modal {
+            transform: scale(1);
+        }
+        
+        .delete-modal .modal-header {
+            padding: 2rem 2rem 1rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-icon-danger {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(220, 38, 38, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem auto;
+            color: var(--danger);
+            font-size: 2rem;
+        }
+        
+        .delete-modal .modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .delete-modal .modal-body {
+            padding: 2rem;
+        }
+        
+        .delete-modal .modal-body p {
+            margin-bottom: 1rem;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .warning-text {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #d97706;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .warning-text i {
+            margin-top: 0.1rem;
+            flex-shrink: 0;
+        }
+        
+        .delete-modal .modal-footer {
+            padding: 1rem 2rem 2rem 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        .delete-modal .modal-footer .btn {
+            min-width: 120px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .delete-modal .modal-footer .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .delete-modal .modal-footer .btn-secondary {
+            background: var(--muted);
+            color: white;
+        }
+        
+        .delete-modal .modal-footer .btn-secondary:hover:not(:disabled) {
+            background: var(--text);
+        }
+        
+        .delete-modal .modal-footer .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .delete-modal .modal-footer .btn-danger:hover:not(:disabled) {
+            background: #b91c1c;
+        }
+        
         #patient-steps-modal {
             background: var(--card);
             border-radius: 18px;
@@ -1622,7 +1790,7 @@
     </div>
 
     <!-- Modal de Steps para Adicionar/Editar Paciente (visual igual ao paciente_form) -->
-    <div id="patient-steps-modal-overlay" class="modal-overlay" style="display:none; z-index:3500; align-items:center; justify-content:center;">
+    <div id="patient-steps-modal-overlay" style="display:none; z-index:3500; align-items:center; justify-content:center;">
         <div id="patient-steps-modal" style="background:var(--card); border-radius:18px; box-shadow:0 10px 32px rgba(0,0,0,0.18); overflow:auto; position:relative; padding:0; display:flex; flex-direction:column;">
             <form id="steps-patient-form" class="patient-form" action="{{ url_for('adicionar_paciente') }}" method="post" style="width:100%;">
                 <div class="form-card" style="align-items:stretch;">
@@ -1759,6 +1927,145 @@
             }
         }
 
+        // Variáveis globais para as funções de exclusão
+        let allPatientsGlobal = [];
+        let showToastGlobal = null;
+        let currentPageGlobal = 1;
+        let renderPatientCardsGlobal = null;
+
+        function deletePatient(patientId, patientName) {
+            // Fechar o dropdown
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.remove('show');
+            });
+
+            // Criar modal de confirmação personalizado
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay delete-modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content delete-modal">
+                    <div class="modal-header">
+                        <div class="modal-icon-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3>Confirmar Exclusão</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p>Tem certeza que deseja excluir o paciente <strong>${patientName}</strong>?</p>
+                        <p class="warning-text">
+                            <i class="fas fa-warning"></i>
+                            Esta ação não pode ser desfeita. Todos os dados do paciente, incluindo prontuários e histórico médico, serão permanentemente removidos.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete('${patientId}')">
+                            <i class="fas fa-trash"></i>
+                            Sim, Excluir
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Animação de entrada
+            requestAnimationFrame(() => {
+                modal.classList.add('show');
+            });
+        }
+
+        function closeDeleteModal() {
+            // Buscar especificamente pela modal de exclusão
+            const modal = document.querySelector('.delete-modal-overlay');
+            if (modal) {
+                modal.classList.remove('show');
+                
+                // Aguardar a transição antes de remover o modal
+                const handleTransitionEnd = () => {
+                    if (modal.parentNode) {
+                        modal.parentNode.removeChild(modal);
+                    }
+                    modal.removeEventListener('transitionend', handleTransitionEnd);
+                };
+                
+                modal.addEventListener('transitionend', handleTransitionEnd);
+                
+                // Fallback: remover após timeout se a transição não funcionar
+                setTimeout(() => {
+                    if (modal.parentNode) {
+                        modal.parentNode.removeChild(modal);
+                    }
+                    modal.removeEventListener('transitionend', handleTransitionEnd);
+                }, 350);
+            }
+        }
+
+        // Função para fechar o modal instantaneamente (para usar após exclusão)
+        function forceCloseDeleteModal() {
+            const modal = document.querySelector('.delete-modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function confirmDelete(patientId) {
+            // Mostrar loading
+            const confirmBtn = document.querySelector('.modal-footer .btn-danger');
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+            confirmBtn.disabled = true;
+
+            // Fazer requisição para excluir o paciente
+            fetch(`/pacientes/${patientId}/excluir`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Erro ao excluir paciente');
+                }
+            })
+            .then(data => {
+                forceCloseDeleteModal();
+                
+                // Remover o paciente da lista local
+                if (allPatientsGlobal && allPatientsGlobal.length > 0) {
+                    const index = allPatientsGlobal.findIndex(p => p.id === patientId);
+                    if (index > -1) {
+                        allPatientsGlobal.splice(index, 1);
+                    }
+                }
+                
+                // Recarregar a lista
+                if (renderPatientCardsGlobal) {
+                    // Usar a função global que atualizará a variável currentPage no escopo local
+                    renderPatientCardsGlobal();
+                }
+                
+                // Mostrar mensagem de sucesso
+                if (showToastGlobal) {
+                    showToastGlobal('Paciente excluído com sucesso!', 'success');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao excluir paciente:', error);
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+                if (showToastGlobal) {
+                    showToastGlobal('Erro ao excluir paciente. Tente novamente.', 'danger');
+                }
+            });
+        }
+
         // Fechar dropdowns ao clicar fora
         document.addEventListener('click', function(event) {
             if (!event.target.closest('.patient-actions-dropdown')) {
@@ -1809,6 +2116,10 @@
             let currentPage = 1;
             const itemsPerPage = 20; // 20 cards por página
 
+            // Conectar variáveis locais com as globais para as funções de exclusão
+            allPatientsGlobal = allPatients;
+            currentPageGlobal = currentPage;
+
             // --- Lógica para Notificações Toast ---
             const toastContainer = document.getElementById('toast-container');
             function showToast(message, category = 'info') {
@@ -1857,6 +2168,9 @@
                     toast.addEventListener('animationend', () => toast.remove());
                 }, 5000); // A notificação desaparece após 5 segundos
             }
+
+            // Conectar a função showToast com a global
+            showToastGlobal = showToast;
 
             // --- Processa mensagens flash do backend e as exibe como toasts ---
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -2016,7 +2330,7 @@
                 
                 // Calcular idade se houver data de nascimento
                 const idade = calculateAge(paciente.data_nascimento);
-                const idadeText = idade ? `${idade} anos` : 'N/A';
+                const idadeText = formatAge(idade);
                 
                 // Determinar avatar baseado no gênero
                 const avatarIcon = getAvatarIcon(paciente.genero);
@@ -2082,73 +2396,84 @@
                                             ${paciente.contato_email}
                                         </button>
                                     ` : ''}
+                                    <div class="dropdown-divider"></div>
+                                    <button type="button" class="dropdown-item dropdown-item-danger" onclick="deletePatient('${paciente.id}', '${paciente.nome}')">
+                                        <i class="fas fa-trash"></i>
+                                        Excluir Paciente
+                                    </button>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="patient-details">
                             <div class="detail-grid">
-                                ${paciente.cpf ? `
-                                    <div class="detail-item">
-                                        <div class="detail-icon">
-                                            <i class="fas fa-id-card"></i>
-                                        </div>
-                                        <div class="detail-content">
-                                            <span class="detail-label">CPF</span>
-                                            <span class="detail-value">${formatCPF(paciente.cpf)}</span>
-                                        </div>
+                                <!-- CPF - sempre exibido -->
+                                <div class="detail-item">
+                                    <div class="detail-icon">
+                                        <i class="fas fa-id-card"></i>
                                     </div>
-                                ` : ''}
-                                
-                                ${paciente.contato_telefone ? `
-                                    <div class="detail-item clickable" onclick="callPatient('${paciente.contato_telefone}')">
-                                        <div class="detail-icon">
-                                            <i class="fas fa-phone"></i>
-                                        </div>
-                                        <div class="detail-content">
-                                            <span class="detail-label">Telefone</span>
-                                            <span class="detail-value">${formatPhone(paciente.contato_telefone)}</span>
-                                        </div>
+                                    <div class="detail-content">
+                                        <span class="detail-label">CPF</span>
+                                        <span class="detail-value ${!paciente.cpf ? 'detail-empty' : ''}">${paciente.cpf ? formatCPF(paciente.cpf) : 'Não informado'}</span>
                                     </div>
-                                ` : ''}
+                                </div>
                                 
-                                ${paciente.contato_email ? `
-                                    <div class="detail-item clickable" onclick="emailPatient('${paciente.contato_email}')">
-                                        <div class="detail-icon">
-                                            <i class="fas fa-envelope"></i>
-                                        </div>
-                                        <div class="detail-content">
-                                            <span class="detail-label">E-mail</span>
-                                            <span class="detail-value">${paciente.contato_email}</span>
-                                        </div>
+                                <!-- Telefone - sempre exibido -->
+                                <div class="detail-item ${paciente.contato_telefone ? 'clickable' : ''}" ${paciente.contato_telefone ? `onclick="callPatient('${paciente.contato_telefone}')"` : ''}>
+                                    <div class="detail-icon">
+                                        <i class="fas fa-phone"></i>
                                     </div>
-                                ` : ''}
+                                    <div class="detail-content">
+                                        <span class="detail-label">Telefone</span>
+                                        <span class="detail-value ${!paciente.contato_telefone ? 'detail-empty' : ''}">${paciente.contato_telefone ? formatPhone(paciente.contato_telefone) : 'Não informado'}</span>
+                                    </div>
+                                </div>
                                 
+                                <!-- Email - sempre exibido -->
+                                <div class="detail-item ${paciente.contato_email ? 'clickable' : ''}" ${paciente.contato_email ? `onclick="emailPatient('${paciente.contato_email}')"` : ''}>
+                                    <div class="detail-icon">
+                                        <i class="fas fa-envelope"></i>
+                                    </div>
+                                    <div class="detail-content">
+                                        <span class="detail-label">E-mail</span>
+                                        <span class="detail-value ${!paciente.contato_email ? 'detail-empty' : ''}">${paciente.contato_email || 'Não informado'}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Convênio - sempre exibido -->
                                 <div class="detail-item">
                                     <div class="detail-icon">
                                         <i class="fas fa-handshake"></i>
                                     </div>
                                     <div class="detail-content">
                                         <span class="detail-label">Convênio</span>
-                                        <span class="detail-value">
-                                            <span class="convenio-badge" style="background-color: ${convenioColor};">
-                                                ${paciente.convenio_nome || 'Particular'}
-                                            </span>
+                                        <span class="detail-value ${!paciente.convenio_nome ? 'detail-empty' : ''}">
+                                            ${paciente.convenio_nome ? `<span class="convenio-badge" style="background-color: ${convenioColor};">${paciente.convenio_nome}</span>` : 'Não informado'}
                                         </span>
                                     </div>
                                 </div>
                                 
-                                ${paciente.data_nascimento ? `
-                                    <div class="detail-item">
-                                        <div class="detail-icon">
-                                            <i class="fas fa-calendar-alt"></i>
-                                        </div>
-                                        <div class="detail-content">
-                                            <span class="detail-label">Nascimento</span>
-                                            <span class="detail-value">${formatDate(paciente.data_nascimento)}</span>
-                                        </div>
+                                <!-- Data de Nascimento - sempre exibido -->
+                                <div class="detail-item">
+                                    <div class="detail-icon">
+                                        <i class="fas fa-calendar-alt"></i>
                                     </div>
-                                ` : ''}
+                                    <div class="detail-content">
+                                        <span class="detail-label">Nascimento</span>
+                                        <span class="detail-value ${!paciente.data_nascimento ? 'detail-empty' : ''}">${paciente.data_nascimento ? formatDate(paciente.data_nascimento) : 'Não informado'}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Gênero - sempre exibido -->
+                                <div class="detail-item">
+                                    <div class="detail-icon">
+                                        <i class="fas fa-${paciente.genero === 'masculino' ? 'mars' : paciente.genero === 'feminino' ? 'venus' : 'genderless'}"></i>
+                                    </div>
+                                    <div class="detail-content">
+                                        <span class="detail-label">Gênero</span>
+                                        <span class="detail-value ${!paciente.genero ? 'detail-empty' : ''}">${paciente.genero || 'Não informado'}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -2158,12 +2483,6 @@
                                     <i class="fas fa-calendar-plus"></i>
                                     <span>Cadastrado em ${formatDate(paciente.data_cadastro)}</span>
                                 </div>
-                                ${paciente.genero ? `
-                                    <div class="stat-item">
-                                        <i class="fas fa-${paciente.genero === 'masculino' ? 'mars' : paciente.genero === 'feminino' ? 'venus' : 'genderless'}"></i>
-                                        <span>${paciente.genero}</span>
-                                    </div>
-                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -2239,14 +2558,71 @@
             // Funções auxiliares para formatação e interação
             function calculateAge(birthDate) {
                 if (!birthDate) return null;
+                
                 const today = new Date();
                 const birth = new Date(birthDate);
-                let age = today.getFullYear() - birth.getFullYear();
-                const monthDiff = today.getMonth() - birth.getMonth();
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-                    age--;
+                
+                // Evitar problemas de timezone
+                today.setHours(0, 0, 0, 0);
+                birth.setHours(0, 0, 0, 0);
+                
+                // Calcular anos
+                let years = today.getFullYear() - birth.getFullYear();
+                let months = today.getMonth() - birth.getMonth();
+                
+                // Ajustar se ainda não fez aniversário este ano
+                if (months < 0 || (months === 0 && today.getDate() < birth.getDate())) {
+                    years--;
+                    months += 12;
                 }
-                return age;
+                
+                // Ajustar meses se ainda não completou o mês
+                if (today.getDate() < birth.getDate()) {
+                    months--;
+                    if (months < 0) {
+                        months = 11;
+                        years--;
+                    }
+                }
+                
+                return {
+                    years: Math.max(0, years),
+                    months: Math.max(0, months),
+                    totalMonths: Math.max(0, years * 12 + months)
+                };
+            }
+
+            function formatAge(ageData) {
+                if (!ageData) return 'N/A';
+                
+                const { years, months, totalMonths } = ageData;
+                
+                // Para bebês menores de 2 anos, mostrar em meses
+                if (years < 2) {
+                    if (totalMonths === 0) {
+                        return 'Recém-nascido';
+                    } else if (totalMonths === 1) {
+                        return '1 mês';
+                    } else if (totalMonths < 12) {
+                        return `${totalMonths} meses`;
+                    } else if (totalMonths < 24) {
+                        const remainingMonths = totalMonths - 12;
+                        if (remainingMonths === 0) {
+                            return '1 ano';
+                        } else if (remainingMonths === 1) {
+                            return '1 ano e 1 mês';
+                        } else {
+                            return `1 ano e ${remainingMonths} meses`;
+                        }
+                    }
+                }
+                
+                // Para crianças e adultos, mostrar em anos
+                if (years === 1) {
+                    return '1 ano';
+                } else {
+                    return `${years} anos`;
+                }
             }
 
             function getAvatarIcon(genero) {
@@ -2368,13 +2744,170 @@
                 }
             });
 
+            // Função auxiliar para bloquear interação com elementos de fundo
+            function createModalBackdrop() {
+                const backdrop = document.createElement('div');
+                backdrop.id = 'modal-backdrop';
+                backdrop.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background: rgba(0, 0, 0, 0.5);
+                    z-index: 3400;
+                    pointer-events: auto;
+                `;
+                document.body.appendChild(backdrop);
+                return backdrop;
+            }
+
+            function removeModalBackdrop() {
+                const backdrop = document.getElementById('modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+            }
+
             // --- Lógica da Função openPatientStepsModal ---
             window.openPatientStepsModal = function(patientId) {
+                // Fechar qualquer modal de exclusão que possa estar aberta
+                const deleteModal = document.querySelector('.delete-modal-overlay');
+                if (deleteModal) {
+                    deleteModal.remove();
+                }
+                
                 const overlay = document.getElementById('patient-steps-modal-overlay');
                 const modal = document.getElementById('patient-steps-modal');
+                
+                // Verificação de segurança
+                if (!overlay || !modal) {
+                    console.error('Modal de steps não encontrada!');
+                    return;
+                }
+                
                 const steps = modal.querySelectorAll('.paciente-step');
                 const sections = modal.querySelectorAll('.paciente-card-section');
                 const form = document.getElementById('steps-patient-form');
+                
+                // Verificação adicional
+                if (!form) {
+                    console.error('Formulário de steps não encontrado!');
+                    return;
+                }
+                
+                console.log('openPatientStepsModal: Elementos encontrados:', { overlay, modal, steps: steps.length, sections: sections.length });
+                
+                // Configurar navegação dos steps TODA VEZ que a modal for aberta
+                function setupStepsForThisModal() {
+                    let currentStep = 0;
+                    
+                    function showStep(idx) {
+                        steps.forEach((s,i) => {
+                            s.classList.toggle('active', i === idx);
+                        });
+                        sections.forEach((sec,i) => {
+                            sec.style.display = i === idx ? 'block' : 'none';
+                        });
+                        currentStep = idx;
+                    }
+                    
+                    // Verificar se os elementos existem
+                    if (steps.length === 0) {
+                        console.error('Nenhum step encontrado!');
+                        return;
+                    }
+                    if (sections.length === 0) {
+                        console.error('Nenhuma section encontrada!');
+                        return;
+                    }
+                    
+                    // Configurar cliques nas abas
+                    steps.forEach((step, i) => {
+                        // Limpar eventos antigos
+                        step.onclick = null;
+                        step.removeEventListener('click', step._clickHandler);
+                        
+                        // Criar novo handler
+                        const clickHandler = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showStep(i);
+                        };
+                        
+                        // Armazenar referência para poder remover depois
+                        step._clickHandler = clickHandler;
+                        
+                        // Adicionar evento
+                        step.addEventListener('click', clickHandler);
+                        
+                        step.style.cursor = 'pointer';
+                        step.style.userSelect = 'none';
+                        step.setAttribute('data-step-index', i);
+                    });
+                    
+                    // Configurar botões de navegação
+                    const nextBtns = modal.querySelectorAll('.steps-next');
+                    const prevBtns = modal.querySelectorAll('.steps-prev');
+                    
+                    nextBtns.forEach((btn, index) => {
+                        btn.onclick = null; // Limpar eventos antigos
+                        btn.addEventListener('click', () => {
+                            showStep(Math.min(currentStep + 1, sections.length - 1));
+                        });
+                    });
+                    
+                    prevBtns.forEach((btn, index) => {
+                        btn.onclick = null; // Limpar eventos antigos
+                        btn.addEventListener('click', () => {
+                            showStep(Math.max(currentStep - 1, 0));
+                        });
+                    });
+                    
+                    // Mostrar primeiro step
+                    showStep(0);
+                    
+                    // Configurar botão de fechar
+                    const closeBtn = modal.querySelector('.steps-modal-close');
+                    if (closeBtn) {
+                        closeBtn.onclick = () => {
+                            overlay.classList.remove('visible');
+                            // Restaurar scroll do body
+                            document.body.style.overflow = 'auto';
+                            // Remover trap de foco
+                            if (modal._focusTrap) {
+                                document.removeEventListener('keydown', modal._focusTrap);
+                                modal._focusTrap = null;
+                            }
+                            // Remover backdrop
+                            if (modal._backdrop) {
+                                modal._backdrop.remove();
+                                modal._backdrop = null;
+                            }
+                            setTimeout(() => overlay.style.display = 'none', 300);
+                        };
+                    }
+                    
+                    // Configurar clique no overlay para fechar
+                    overlay.onclick = (e) => {
+                        if (e.target === overlay) {
+                            overlay.classList.remove('visible');
+                            // Restaurar scroll do body
+                            document.body.style.overflow = 'auto';
+                            // Remover trap de foco
+                            if (modal._focusTrap) {
+                                document.removeEventListener('keydown', modal._focusTrap);
+                                modal._focusTrap = null;
+                            }
+                            // Remover backdrop
+                            if (modal._backdrop) {
+                                modal._backdrop.remove();
+                                modal._backdrop = null;
+                            }
+                            setTimeout(() => overlay.style.display = 'none', 300);
+                        }
+                    };
+                }
                 
                 // Carregar convênios para o select
                 loadConveniosForModal();
@@ -2418,10 +2951,64 @@
                 } else {
                     form.action = "{{ url_for('adicionar_paciente') }}";
                 }
+                
                 overlay.style.display='flex';
-                setTimeout(()=>overlay.classList.add('visible'),10);
-                steps.forEach((s,i)=>s.classList.toggle('active',i===0));
-                sections.forEach((sec,i)=>sec.style.display=i===0?'block':'none');
+                
+                // Criar backdrop adicional para garantir bloqueio
+                const backdrop = createModalBackdrop();
+                
+                setTimeout(() => {
+                    overlay.classList.add('visible');
+                    
+                    // Bloquear scroll do body quando modal estiver aberta
+                    document.body.style.overflow = 'hidden';
+                    
+                    // Configurar navegação dos steps APÓS a modal ser exibida
+                    setupStepsForThisModal();
+                    
+                    // Focar no primeiro input da modal
+                    const firstInput = modal.querySelector('input:not([type="hidden"]), select, textarea');
+                    if (firstInput) {
+                        firstInput.focus();
+                    }
+                    
+                    // Trap de foco - garantir que o Tab não saia da modal
+                    const focusableElements = modal.querySelectorAll(
+                        'button, [href], input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])'
+                    );
+                    const firstFocusableElement = focusableElements[0];
+                    const lastFocusableElement = focusableElements[focusableElements.length - 1];
+                    
+                    // Função para interceptar Tab
+                    const trapFocus = (e) => {
+                        if (e.key === 'Tab') {
+                            if (e.shiftKey) {
+                                // Shift + Tab
+                                if (document.activeElement === firstFocusableElement) {
+                                    lastFocusableElement.focus();
+                                    e.preventDefault();
+                                }
+                            } else {
+                                // Tab
+                                if (document.activeElement === lastFocusableElement) {
+                                    firstFocusableElement.focus();
+                                    e.preventDefault();
+                                }
+                            }
+                        }
+                        // Fechar modal com Escape
+                        if (e.key === 'Escape') {
+                            closeBtn?.click();
+                        }
+                    };
+                    
+                    // Adicionar trap de foco
+                    document.addEventListener('keydown', trapFocus);
+                    
+                    // Armazenar referência para poder remover depois
+                    modal._focusTrap = trapFocus;
+                    modal._backdrop = backdrop;
+                }, 10);
             };
 
             // Função para carregar convênios no modal
@@ -2577,123 +3164,15 @@
             }
 
             // Após window.openPatientStepsModal = openPatientStepsModal;
-            // Configura navegação dos steps do modal
-            (function(){
-                const overlay = document.getElementById('patient-steps-modal-overlay');
-                const modal = document.getElementById('patient-steps-modal');
-                const steps = modal.querySelectorAll('.paciente-step');
-                const sections = modal.querySelectorAll('.paciente-card-section');
-                const nextBtns = modal.querySelectorAll('.steps-next');
-                const prevBtns = modal.querySelectorAll('.steps-prev');
-                const form = document.getElementById('steps-patient-form');
-                let currentStep = 0;
-                
-                function showStep(idx) {
-                    steps.forEach((s,i)=>s.classList.toggle('active',i===idx));
-                    sections.forEach((sec,i)=>sec.style.display=i===idx?'block':'none');
-                    currentStep = idx;
-                }
-                
-                nextBtns.forEach(btn=>btn.onclick=()=>showStep(Math.min(currentStep+1,sections.length-1)));
-                prevBtns.forEach(btn=>btn.onclick=()=>showStep(Math.max(currentStep-1,0)));
-                steps.forEach((step,i)=>step.onclick=()=>showStep(i));
-                modal.querySelector('.steps-modal-close').onclick=()=>{
-                    overlay.classList.remove('visible');
-                    setTimeout(()=>overlay.style.display='none',300);
-                };
-                overlay.onclick=(e)=>{if(e.target===overlay){modal.querySelector('.steps-modal-close').onclick();}};
-                
-                // Validação no submit
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const invalidFields = validateAllRequiredFields();
-                    
-                    if (invalidFields.length > 0) {
-                        // Encontrar a primeira aba com campo inválido
-                        const firstInvalidStep = findStepWithInvalidField(invalidFields[0]);
-                        if (firstInvalidStep !== -1) {
-                            showStep(firstInvalidStep);
-                        }
-                        
-                        // Mostrar mensagem de erro
-                        showToast('Por favor, preencha todos os campos obrigatórios corretamente.', 'danger');
-                        
-                        // Focar no primeiro campo inválido
-                        invalidFields[0].focus();
-                        
-                        return false;
-                    }
-                    
-                    // Se todos os campos estão válidos, submeter o formulário
-                    this.submit();
-                });
-                
-                // Função para validar todos os campos obrigatórios
-                function validateAllRequiredFields() {
-                    const requiredFields = form.querySelectorAll('.paciente-field.required input:not([type="hidden"]), .paciente-field.required select, .paciente-field.required textarea');
-                    const invalidFields = [];
-                    
-                    // Limpar indicadores de erro dos steps
-                    steps.forEach(step => step.classList.remove('has-error'));
-                    
-                    requiredFields.forEach(field => {
-                        if (!validateRequiredField(field)) {
-                            invalidFields.push(field);
-                            
-                            // Adicionar animação de shake
-                            field.classList.add('shake');
-                            setTimeout(() => field.classList.remove('shake'), 500);
-                            
-                            // Marcar o step como tendo erro
-                            const stepIndex = findStepWithInvalidField(field);
-                            if (stepIndex !== -1) {
-                                steps[stepIndex].classList.add('has-error');
-                            }
-                        }
-                    });
-                    
-                    return invalidFields;
-                }
-                
-                // Função para encontrar em qual step está o campo inválido
-                function findStepWithInvalidField(field) {
-                    const fieldContainer = field.closest('.paciente-card-section');
-                    if (!fieldContainer) return -1;
-                    
-                    const stepContent = fieldContainer.getAttribute('data-step-content');
-                    if (!stepContent) return -1;
-                    
-                    return parseInt(stepContent) - 1; // Converter para índice base 0
-                }
-                
-                // Função para limpar erros quando o usuário navega entre steps
-                function clearStepErrors() {
-                    steps.forEach(step => step.classList.remove('has-error'));
-                }
-                
-                // Adicionar limpeza de erros aos botões de navegação
-                nextBtns.forEach(btn => {
-                    btn.addEventListener('click', clearStepErrors);
-                });
-                prevBtns.forEach(btn => {
-                    btn.addEventListener('click', clearStepErrors);
-                });
-                steps.forEach(step => {
-                    step.addEventListener('click', clearStepErrors);
-                });
-                
-                // Expor funções globalmente para uso em outras partes do código
-                window.showStepModal = showStep;
-                window.validateAllRequiredFieldsModal = validateAllRequiredFields;
-            })();
-
             // --- Inicialização ---
             setupSidebar();
             setupTheme();
             setupLogout();
             setupRequiredFieldValidation();
             renderPatientCards(); // Renderiza os cartões e controles de paginação inicialmente
+            
+            // Conectar a função renderPatientCards com a global
+            renderPatientCardsGlobal = renderPatientCards;
         });
 
         function formatDateToYMD(dateStr) {

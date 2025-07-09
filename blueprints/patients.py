@@ -1,4 +1,4 @@
-from flask import render_template, session, flash, redirect, url_for, request
+from flask import render_template, session, flash, redirect, url_for, request, jsonify
 import json
 import datetime
 from google.cloud.firestore_v1.base_query import FieldFilter
@@ -279,3 +279,29 @@ def register_patients_routes(app):
             flash(f'Erro ao carregar paciente para edição: {e}', 'danger')
             print(f"Erro edit_patient (GET): {e}")
             return redirect(url_for('listar_pacientes'))
+
+    @app.route('/pacientes/<paciente_doc_id>/excluir', methods=['POST'], endpoint='excluir_paciente')
+    @login_required
+    def excluir_paciente(paciente_doc_id):
+        try:
+            db_instance = get_db()
+            clinica_id = session['clinica_id']
+            
+            # Verificar se o paciente existe
+            paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+            paciente_doc = paciente_ref.get()
+            
+            if not paciente_doc.exists:
+                return jsonify({'success': False, 'message': 'Paciente não encontrado'}), 404
+            
+            paciente_nome = paciente_doc.to_dict().get('nome', 'Paciente')
+            
+            # Excluir o paciente
+            paciente_ref.delete()
+            
+            flash(f'Paciente {paciente_nome} excluído com sucesso.', 'success')
+            return jsonify({'success': True, 'message': f'Paciente {paciente_nome} excluído com sucesso'}), 200
+            
+        except Exception as e:
+            print(f"Erro ao excluir paciente: {e}")
+            return jsonify({'success': False, 'message': 'Erro interno do servidor'}), 500
