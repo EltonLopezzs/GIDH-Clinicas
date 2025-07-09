@@ -2450,6 +2450,46 @@
             // Renderiza a visualização inicial com base no localStorage
             switchView(currentView);
             renderMiniCalendar(currentMiniCalendarDate); // Garante que o mini-calendário reflita a semana inicial
+
+
+            // --- NOVA VALIDAÇÃO DE AGENDAMENTO ---
+            modalFormRegistro.addEventListener('submit', function(event) {
+                const profissionalId = document.getElementById('profissional_id_manual').value;
+                const dataAgendamento = document.getElementById('data_agendamento_manual').value;
+                const horaAgendamento = document.getElementById('hora_agendamento_manual').value;
+                const agendamentoIdSendoEditado = document.getElementById('agendamento_id_manual').value; // ID do agendamento se estiver editando
+
+                // Verifica se é um agendamento recorrente e se algum dia da semana foi selecionado
+                const isRecorrente = document.getElementById('recorrente_checkbox').checked;
+                const selectedDays = Array.from(diasSemanaCheckboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
+
+                if (isRecorrente && selectedDays.length === 0) {
+                    openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes, selecione pelo menos um dia da semana.", "danger");
+                    event.preventDefault(); // Impede o envio do formulário
+                    return;
+                }
+
+                // Validação de conflito apenas para agendamentos não recorrentes ou para a primeira instância de um recorrente
+                if (!isRecorrente) {
+                    const conflito = allAppointments.some(app => {
+                        // Ignora o próprio agendamento se estiver em modo de edição
+                        if (agendamentoIdSendoEditado && app.id === agendamentoIdSendoEditado) {
+                            return false;
+                        }
+                        return app.profissional_id === profissionalId &&
+                               app.data_agendamento === dataAgendamento &&
+                               app.hora_agendamento === horaAgendamento;
+                    });
+
+                    if (conflito) {
+                        openNotificationModal("Erro de Agendamento", "Este profissional já possui um agendamento para o mesmo dia e horário.", "danger");
+                        event.preventDefault(); // Impede o envio do formulário
+                        return;
+                    }
+                }
+                // Se for um agendamento recorrente, a validação de conflito para cada instância será feita no backend.
+                // O frontend apenas valida a seleção de pelo menos um dia da semana.
+            });
         });
     </script>
 </html>
