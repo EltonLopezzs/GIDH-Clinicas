@@ -71,8 +71,8 @@
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
         /* ============================================
-          --- SIDEBAR ---
-          ============================================
+           --- SIDEBAR ---
+           ============================================
         */
         .sidebar {
             width: 260px;
@@ -133,8 +133,8 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         
         /* ============================================
-          --- CONTEÚDO PRINCIPAL & TOPBAR ---
-          ============================================
+           --- CONTEÚDO PRINCIPAL & TOPBAR ---
+           ============================================
         */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
@@ -256,8 +256,8 @@
         }
 
         /* ============================================
-          --- CALENDÁRIO SEMANAL (NOVO) ---
-          ============================================
+           --- CALENDÁRIO SEMANAL (NOVO) ---
+           ============================================
         */
         .weekly-calendar-container {
             background-color: var(--card);
@@ -291,6 +291,7 @@
         .calendar-nav span { /* Estilo para o display da semana atual */
             font-weight: 600;
             color: var(--text);
+            margin: 0;
         }
         .calendar-nav select, .calendar-nav button, .btn-filter {
             background: none;
@@ -451,8 +452,8 @@
         }
 
         /* ============================================
-          --- LISTA DE CARDS (NOVO) ---
-          ============================================
+           --- LISTA DE CARDS (NOVO) ---
+           ============================================
         */
         .card-list-container {
             background-color: var(--card);
@@ -547,8 +548,8 @@
 
 
         /* ============================================
-          --- MODAIS (REUTILIZADOS) ---
-          ============================================
+           --- MODAIS (REUTILIZADOS) ---
+           ============================================
         */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.25s ease; }
         .modal-overlay.active { opacity: 1; display: flex; }
@@ -576,6 +577,9 @@
             overflow-y: auto; 
             padding: 2rem; 
             flex-grow: 1; /* Permite que o corpo do modal ocupe o espaço disponível e role */
+            /* Ajuste a altura máxima para garantir a rolagem dentro do corpo da modal. */
+            /* Considera 90vh da modal-content menos a altura aproximada do header e footer. */
+            max-height: calc(90vh - 200px); /* 90vh (max-height da modal-content) - ~70px (header) - ~70px (footer) */
         }
         .form-group { margin-bottom: 1.5rem; }
         .form-group:last-child { margin-bottom: 0; }
@@ -635,8 +639,8 @@
             outline: none;
         }
         /* ============================================
-          --- BOTÕES ---
-          ============================================
+           --- BOTÕES ---
+           ============================================
         */
         .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
         .btn-primary { background-color: var(--primary); color: white; }
@@ -648,8 +652,8 @@
         [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
         
         /* ============================================
-          --- RESPONSIVIDADE ---
-          ============================================
+           --- RESPONSIVIDADE ---
+           ============================================
         */
         @media (max-width: 992px) { /* Ajuste para telas menores que 992px */
             main { flex-direction: column; overflow: auto; }
@@ -706,8 +710,8 @@
         }
 
         /* ============================================
-          --- MINI CALENDÁRIO LATERAL (NOVO) ---
-          ============================================
+           --- MINI CALENDÁRIO LATERAL (NOVO) ---
+           ============================================
         */
         .mini-calendar-wrapper {
             /* Removido: width: 350px; - agora controlado por .left-panel */
@@ -2000,7 +2004,7 @@
                         const startDate = new Date(year, month, 1);
                         const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
                         
-                        // Calcula a data de fim como 3 meses a partir do primeiro dia do mês atual do mini-calendário
+                        // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
                         const endDate = new Date(year, month + 3, 0); 
                         const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
                         
