@@ -11,10 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* ============================================
-         --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
-         ============================================
-        */
+        /* Estilos principais */
         :root {
             --bg: #f1f5f9;
             --card: #ffffff;
@@ -63,10 +60,7 @@
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* ============================================
-         --- SIDEBAR ---
-         ============================================
-        */
+        /* Sidebar */
         .sidebar {
             width: 260px;
             background: linear-gradient(180deg, var(--primary), var(--accent));
@@ -216,7 +210,7 @@
         }
 
         /* Melhorias para desktop médio - 2 cards por linha */
-        @media (min-width: 1000px) and (max-width: 1399px) {
+        @media (min-width: 1000px) and (max-width: 1550px) {
             .card-list-container {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 1.5rem;
@@ -261,6 +255,7 @@
             animation-delay: var(--animation-delay, 0s);
             width: 100%;
             box-sizing: border-box;
+            border-radius: 16px !important;
             height: 100%;
         }
 
@@ -276,9 +271,8 @@
         }
 
         .patient-card-modern:hover {
-            transform: translateY(-4px);
+            scale: 1.01;
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-            border-color: var(--primary);
         }
 
         /* Header do card */
@@ -349,6 +343,12 @@
 
         .patient-meta i {
             font-size: 0.75rem;
+        }
+
+        .patient-id, .patient-age {
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
         }
 
         /* Dropdown de ações */
@@ -436,6 +436,38 @@
             height: 1px;
             background: var(--border-color);
             margin: 0.5rem 0;
+        }
+
+        .dropdown-section-label {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 1rem;
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            opacity: 0.7;
+            margin: 0.25rem 0 0.1rem 0;
+        }
+
+        [data-theme="dark"] .dropdown-section-label {
+            color: var(--dark-muted);
+            opacity: 0.6;
+        }
+
+        .dropdown-section-label i {
+            font-size: 0.55rem;
+            opacity: 0.5;
+        }
+
+        .dropdown-section-label + .dropdown-item {
+            margin-top: 0.1rem;
+        }
+
+        .dropdown-section-label + .dropdown-divider {
+            margin-top: 0.5rem;
         }
 
         /* Detalhes do paciente */
@@ -1164,17 +1196,15 @@
             .topbar { flex-wrap: wrap; height: auto; row-gap: 1rem; padding-top: 1rem; padding-bottom: 1rem;}
             .topbar-left, .topbar-actions { width: 100%; justify-content: space-between; }
             .search-form { flex-grow: 1; }
-            .table-container { display: none; } /* Hide table on mobile */
-            .mobile-cards-wrapper { display: block; } /* Show mobile cards on mobile (now replaced by card-list-container) */
             
             .paciente-card-header .actions {
-                flex-direction: column; /* Empilha os botões de ação no cabeçalho em mobile */
+                flex-direction: column;
                 align-items: flex-end;
             }
             .paciente-card-header .actions .btn {
-                width: auto; /* Permite que os botões se ajustem ao conteúdo */
-                padding: 0.4rem 0.8rem; /* Reduz o padding para botões menores */
-                font-size: 0.8rem; /* Reduz o tamanho da fonte */
+                width: auto;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
             }
         }
 
@@ -2077,16 +2107,6 @@
     </script>
 
     <script type="module">
-        // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
-        const FAKE_FIREBASE = {
-            initializeApp: () => ({}),
-            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
-        };
-        const { initializeApp } = FAKE_FIREBASE;
-        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        let auth = getAuth(initializeApp(firebaseConfig));
-
         // Define os modelos de URL usando Jinja2 para serem avaliados no servidor
         const prontuarioUrlTemplate = "{{ url_for('ver_prontuario', paciente_doc_id='__ID__') }}";
         const peiUrlTemplate = "{{ url_for('peis.ver_peis_paciente', paciente_doc_id='__ID__') }}";
@@ -2346,7 +2366,7 @@
                         <div class="patient-header" style="background: ${gradientColor};">
                             <div class="patient-avatar">
                                 <i class="${avatarIcon}"></i>
-                                <div class="patient-status-indicator ${getPatientStatusClass()}"></div>
+                                <div class="patient-status-indicator status-active"></div>
                             </div>
                             <div class="patient-info">
                                 <h3 class="patient-name">${paciente.nome}</h3>
@@ -2366,11 +2386,22 @@
                                     <i class="fas fa-ellipsis-v"></i>
                                 </button>
                                 <div class="dropdown-menu" id="actions-${paciente.id}">
+                                    <div class="dropdown-section-label">
+                                        <i class="fas fa-cog"></i> Ações
+                                    </div>
                                     <button type="button" class="dropdown-item" onclick="openPatientStepsModal('${paciente.id}')">
                                         <i class="fas fa-edit"></i>
                                         Editar Dados
                                     </button>
+                                    <button type="button" class="dropdown-item dropdown-item-danger" onclick="deletePatient('${paciente.id}', '${paciente.nome}')">
+                                        <i class="fas fa-trash"></i>
+                                        Excluir Paciente
+                                    </button>
+                                    
                                     <div class="dropdown-divider"></div>
+                                    <div class="dropdown-section-label">
+                                        <i class="fas fa-file-medical"></i> Dados Médicos
+                                    </div>
                                     <a href="${prontuarioUrlTemplate.replace('__ID__', paciente.id)}" class="dropdown-item">
                                         <i class="fas fa-notes-medical"></i>
                                         Ver Prontuário
@@ -2379,8 +2410,13 @@
                                         <i class="fas fa-child-reaching"></i>
                                         Ver PEI
                                     </a>
-                                    ${paciente.contato_telefone ? `
+                                    ${paciente.contato_telefone || paciente.contato_email ? `
                                         <div class="dropdown-divider"></div>
+                                        <div class="dropdown-section-label">
+                                            <i class="fas fa-address-book"></i> Contatos
+                                        </div>
+                                    ` : ''}
+                                    ${paciente.contato_telefone ? `
                                         <button type="button" class="dropdown-item" onclick="callPatient('${paciente.contato_telefone}')">
                                             <i class="fab fa-whatsapp"></i>
                                             ${formatPhone(paciente.contato_telefone)}
@@ -2396,11 +2432,6 @@
                                             ${paciente.contato_email}
                                         </button>
                                     ` : ''}
-                                    <div class="dropdown-divider"></div>
-                                    <button type="button" class="dropdown-item dropdown-item-danger" onclick="deletePatient('${paciente.id}', '${paciente.nome}')">
-                                        <i class="fas fa-trash"></i>
-                                        Excluir Paciente
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -2633,10 +2664,6 @@
                 }
             }
 
-            function getPatientStatusClass() {
-                return 'status-active'; // Pode ser expandido para diferentes status
-            }
-
             function getConvenioColor(convenio) {
                 if (!convenio || convenio === 'Particular') return '#6b7280';
                 const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
@@ -2780,9 +2807,7 @@
                 const overlay = document.getElementById('patient-steps-modal-overlay');
                 const modal = document.getElementById('patient-steps-modal');
                 
-                // Verificação de segurança
                 if (!overlay || !modal) {
-                    console.error('Modal de steps não encontrada!');
                     return;
                 }
                 
@@ -2790,13 +2815,9 @@
                 const sections = modal.querySelectorAll('.paciente-card-section');
                 const form = document.getElementById('steps-patient-form');
                 
-                // Verificação adicional
                 if (!form) {
-                    console.error('Formulário de steps não encontrado!');
                     return;
                 }
-                
-                console.log('openPatientStepsModal: Elementos encontrados:', { overlay, modal, steps: steps.length, sections: sections.length });
                 
                 // Configurar navegação dos steps TODA VEZ que a modal for aberta
                 function setupStepsForThisModal() {
@@ -2812,33 +2833,21 @@
                         currentStep = idx;
                     }
                     
-                    // Verificar se os elementos existem
-                    if (steps.length === 0) {
-                        console.error('Nenhum step encontrado!');
-                        return;
-                    }
-                    if (sections.length === 0) {
-                        console.error('Nenhuma section encontrada!');
+                    if (steps.length === 0 || sections.length === 0) {
                         return;
                     }
                     
-                    // Configurar cliques nas abas
                     steps.forEach((step, i) => {
-                        // Limpar eventos antigos
                         step.onclick = null;
                         step.removeEventListener('click', step._clickHandler);
                         
-                        // Criar novo handler
                         const clickHandler = (e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             showStep(i);
                         };
                         
-                        // Armazenar referência para poder remover depois
                         step._clickHandler = clickHandler;
-                        
-                        // Adicionar evento
                         step.addEventListener('click', clickHandler);
                         
                         step.style.cursor = 'pointer';
@@ -2846,40 +2855,34 @@
                         step.setAttribute('data-step-index', i);
                     });
                     
-                    // Configurar botões de navegação
                     const nextBtns = modal.querySelectorAll('.steps-next');
                     const prevBtns = modal.querySelectorAll('.steps-prev');
                     
                     nextBtns.forEach((btn, index) => {
-                        btn.onclick = null; // Limpar eventos antigos
+                        btn.onclick = null;
                         btn.addEventListener('click', () => {
                             showStep(Math.min(currentStep + 1, sections.length - 1));
                         });
                     });
                     
                     prevBtns.forEach((btn, index) => {
-                        btn.onclick = null; // Limpar eventos antigos
+                        btn.onclick = null;
                         btn.addEventListener('click', () => {
                             showStep(Math.max(currentStep - 1, 0));
                         });
                     });
                     
-                    // Mostrar primeiro step
                     showStep(0);
                     
-                    // Configurar botão de fechar
                     const closeBtn = modal.querySelector('.steps-modal-close');
                     if (closeBtn) {
                         closeBtn.onclick = () => {
                             overlay.classList.remove('visible');
-                            // Restaurar scroll do body
                             document.body.style.overflow = 'auto';
-                            // Remover trap de foco
                             if (modal._focusTrap) {
                                 document.removeEventListener('keydown', modal._focusTrap);
                                 modal._focusTrap = null;
                             }
-                            // Remover backdrop
                             if (modal._backdrop) {
                                 modal._backdrop.remove();
                                 modal._backdrop = null;
@@ -2888,18 +2891,14 @@
                         };
                     }
                     
-                    // Configurar clique no overlay para fechar
                     overlay.onclick = (e) => {
                         if (e.target === overlay) {
                             overlay.classList.remove('visible');
-                            // Restaurar scroll do body
                             document.body.style.overflow = 'auto';
-                            // Remover trap de foco
                             if (modal._focusTrap) {
                                 document.removeEventListener('keydown', modal._focusTrap);
                                 modal._focusTrap = null;
                             }
-                            // Remover backdrop
                             if (modal._backdrop) {
                                 modal._backdrop.remove();
                                 modal._backdrop = null;
@@ -2909,25 +2908,18 @@
                     };
                 }
                 
-                // Carregar convênios para o select
-                loadConveniosForModal();
-                
                 form.reset();
-                // Limpar classes de validação
                 clearValidationClasses();
                 
-                // Define o action correto
                 if (patientId) {
                     form.action = editUrlTemplate.replace('__ID__', patientId);
                     const paciente = allPatients.find(p => String(p.id) === String(patientId));
                     if (paciente) {
                         form.elements['nome'].value = paciente.nome || '';
-                        // Setar data de nascimento no formato YYYY-MM-DD para o input nativo
                         const dataNascimento = paciente.data_nascimento;
                         if (dataNascimento) {
                             const formattedDate = formatDateToYMD(dataNascimento);
                             form.elements['data_nascimento'].value = formattedDate;
-                            // Atualizar o display também
                             const displayInput = document.getElementById('steps-data_nascimento_display');
                             if (displayInput && formattedDate) {
                                 displayInput.value = formatDateToDMY(formattedDate);
@@ -3011,20 +3003,6 @@
                 }, 10);
             };
 
-            // Função para carregar convênios no modal
-            function loadConveniosForModal() {
-                fetch("{{ url_for('listar_convenios') }}")
-                    .then(response => response.text())
-                    .then(html => {
-                        // Extrair convênios do HTML retornado (simplificado)
-                        const convenioSelect = document.getElementById('steps-convenio_id');
-                        // Manter apenas a opção padrão por enquanto
-                        // Em uma implementação real, você faria uma requisição AJAX para obter os convênios
-                    })
-                    .catch(error => console.error('Erro ao carregar convênios:', error));
-            }
-
-            // Função para limpar classes de validação
             function clearValidationClasses() {
                 const requiredFields = document.querySelectorAll('.paciente-field.required input, .paciente-field.required select, .paciente-field.required textarea');
                 requiredFields.forEach(field => {
@@ -3035,14 +3013,11 @@
                 });
             }
 
-            // Adicionar validação em tempo real para campos obrigatórios
             function setupRequiredFieldValidation() {
                 const requiredFields = document.querySelectorAll('.paciente-field.required input, .paciente-field.required select, .paciente-field.required textarea');
                 requiredFields.forEach(field => {
-                    // Pular o campo hidden da data
                     if (field.type === 'hidden') return;
                     
-                    // Aplicar máscara de CPF se necessário
                     if (field.name === 'cpf') {
                         applyCPFMask(field);
                     }
@@ -3052,12 +3027,10 @@
                     });
                     
                     field.addEventListener('input', function() {
-                        // Remover classe de erro ao começar a digitar
                         if (this.classList.contains('invalid')) {
                             this.classList.remove('invalid');
                         }
                         
-                        // Validação em tempo real para CPF
                         if (this.name === 'cpf' && this.value.replace(/\D/g, '').length === 11) {
                             validateRequiredField(this);
                         }
@@ -3065,22 +3038,18 @@
                 });
             }
 
-            // Função para validar campo obrigatório
             function validateRequiredField(field) {
                 let isValid = false;
                 
-                // Validação específica para CPF
                 if (field.name === 'cpf') {
                     isValid = validateCPF(field.value);
                 } else if (field.classList.contains('date-input-display')) {
-                    // Validação para campo de data customizado
                     const hiddenInput = document.getElementById('steps-data_nascimento');
                     isValid = hiddenInput && hiddenInput.value.trim() !== '' && isValidDate(hiddenInput.value);
                 } else {
                     isValid = field.value.trim() !== '';
                 }
                 
-                // Aplicar classes visuais
                 if (isValid) {
                     field.classList.remove('invalid');
                     field.classList.add('valid');
@@ -3100,18 +3069,13 @@
                 return isValid;
             }
 
-            // Função para validar CPF
             function validateCPF(cpf) {
-                // Remove caracteres não numéricos
                 cpf = cpf.replace(/\D/g, '');
                 
-                // Verifica se tem 11 dígitos
                 if (cpf.length !== 11) return false;
                 
-                // Verifica se todos os dígitos são iguais
                 if (/^(\d)\1+$/.test(cpf)) return false;
                 
-                // Validação do primeiro dígito verificador
                 let sum = 0;
                 for (let i = 0; i < 9; i++) {
                     sum += parseInt(cpf[i]) * (10 - i);
@@ -3121,7 +3085,6 @@
                 
                 if (parseInt(cpf[9]) !== digit1) return false;
                 
-                // Validação do segundo dígito verificador
                 sum = 0;
                 for (let i = 0; i < 10; i++) {
                     sum += parseInt(cpf[i]) * (11 - i);
@@ -3132,17 +3095,14 @@
                 return parseInt(cpf[10]) === digit2;
             }
 
-            // Função para aplicar máscara de CPF
             function applyCPFMask(input) {
                 input.addEventListener('input', function(e) {
                     let value = e.target.value.replace(/\D/g, '');
                     
-                    // Limita a 11 dígitos
                     if (value.length > 11) {
                         value = value.slice(0, 11);
                     }
                     
-                    // Aplica a máscara
                     if (value.length > 9) {
                         value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
                     } else if (value.length > 6) {
@@ -3154,7 +3114,6 @@
                     e.target.value = value;
                 });
                 
-                // Bloquear teclas que não são números
                 input.addEventListener('keypress', function(e) {
                     if (!/[0-9]/.test(e.key) && 
                         !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -3163,23 +3122,18 @@
                 });
             }
 
-            // Após window.openPatientStepsModal = openPatientStepsModal;
-            // --- Inicialização ---
             setupSidebar();
             setupTheme();
             setupLogout();
             setupRequiredFieldValidation();
-            renderPatientCards(); // Renderiza os cartões e controles de paginação inicialmente
+            renderPatientCards();
             
-            // Conectar a função renderPatientCards com a global
             renderPatientCardsGlobal = renderPatientCards;
         });
 
         function formatDateToYMD(dateStr) {
             if (!dateStr) return '';
-            // Se já está no formato YYYY-MM-DD
             if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-            // Tenta converter de outros formatos
             const d = new Date(dateStr);
             if (!isNaN(d.getTime())) {
                 const y = d.getFullYear();
@@ -3187,13 +3141,11 @@
                 const day = String(d.getDate()).padStart(2, '0');
                 return `${y}-${m}-${day}`;
             }
-            // Se não conseguir converter, retorna vazio
             return '';
         }
 
         function formatDateToDMY(dateStr) {
             if (!dateStr) return '';
-            // Se está no formato YYYY-MM-DD
             if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
                 const [year, month, day] = dateStr.split('-');
                 return `${day}/${month}/${year}`;
@@ -3203,9 +3155,7 @@
 
         function parseDateFromDMY(dateStr) {
             if (!dateStr) return '';
-            // Remove caracteres que não são dígitos ou barras
             const cleanStr = dateStr.replace(/[^\d\/]/g, '');
-            // Verifica se está no formato DD/MM/YYYY
             const match = cleanStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
             if (match) {
                 const [, day, month, year] = match;
@@ -3220,22 +3170,18 @@
             return !isNaN(d.getTime()) && d.getFullYear() > 1900 && d.getTime() <= Date.now();
         }
 
-        // Inicializar máscara de data
         document.addEventListener('DOMContentLoaded', function() {
             const displayInput = document.getElementById('steps-data_nascimento_display');
             const hiddenInput = document.getElementById('steps-data_nascimento');
             
             if (displayInput && hiddenInput) {
-                // Aplicar máscara ao digitar
                 displayInput.addEventListener('input', function(e) {
-                    let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+                    let value = e.target.value.replace(/\D/g, '');
                     
-                    // Limita a 8 dígitos
                     if (value.length > 8) {
                         value = value.slice(0, 8);
                     }
                     
-                    // Aplica a máscara
                     if (value.length >= 5) {
                         value = value.replace(/(\d{2})(\d{2})(\d{0,4})/, '$1/$2/$3');
                     } else if (value.length >= 3) {
@@ -3244,11 +3190,9 @@
                     
                     e.target.value = value;
                     
-                    // Atualiza o campo hidden
                     const parsedDate = parseDateFromDMY(value);
                     hiddenInput.value = parsedDate;
                     
-                    // Validação visual
                     if (value.length === 10) {
                         if (isValidDate(parsedDate)) {
                             e.target.classList.remove('error');
@@ -3262,7 +3206,6 @@
                     }
                 });
                 
-                // Bloquear teclas que não são números
                 displayInput.addEventListener('keypress', function(e) {
                     if (!/[0-9]/.test(e.key) && 
                         !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -3270,7 +3213,6 @@
                     }
                 });
                 
-                // Impedir colar conteúdo inválido
                 displayInput.addEventListener('paste', function(e) {
                     e.preventDefault();
                     const pastedText = (e.clipboardData || window.clipboardData).getData('text');
@@ -3287,7 +3229,6 @@
                         displayInput.value = formatted;
                         hiddenInput.value = parseDateFromDMY(formatted);
                         
-                        // Trigger input event para validação
                         displayInput.dispatchEvent(new Event('input'));
                     }
                 });
