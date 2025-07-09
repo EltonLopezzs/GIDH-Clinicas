@@ -1,4 +1,3 @@
-# blueprints/peis.py
 from flask import Blueprint, render_template, session, flash, redirect, url_for, request, jsonify
 import datetime
 import uuid
@@ -47,6 +46,12 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
     """
     pei = convert_doc_to_dict(pei_doc)
     pei['id'] = pei_doc.id # Adiciona o ID do PEI
+    # Adiciona o doc_reference para o PEI
+    # Verifica se doc_reference existe e é uma DocumentReference, caso contrário, gera o caminho da string
+    if 'doc_reference' in pei and isinstance(pei['doc_reference'], firestore.DocumentReference):
+        pei['doc_reference'] = pei['doc_reference'].path
+    else:
+        pei['doc_reference'] = f'clinicas/{clinica_id}/peis/{pei_doc.id}'
 
     # Formata data de criação
     if 'data_criacao' in pei and isinstance(pei['data_criacao'], datetime.datetime):
@@ -72,6 +77,11 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
     for activity_doc in activities_docs:
         activity = convert_doc_to_dict(activity_doc)
         activity['id'] = activity_doc.id
+        # Adiciona o doc_reference para a atividade
+        if 'doc_reference' in activity and isinstance(activity['doc_reference'], firestore.DocumentReference):
+            activity['doc_reference'] = activity['doc_reference'].path
+        else:
+            activity['doc_reference'] = f'clinicas/{clinica_id}/peis/{pei_doc.id}/activities/{activity_doc.id}'
         if 'timestamp' in activity and isinstance(activity['timestamp'], datetime.datetime):
             activity['timestamp_fmt'] = activity['timestamp'].astimezone(SAO_PAULO_TZ).strftime('%d/%m/%Y %H:%M')
         elif isinstance(activity.get('timestamp'), str):
@@ -94,6 +104,11 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
         meta['id'] = meta_doc.id
         # Garante que meta_id esteja no dicionário, se for salvo como campo
         meta['meta_id'] = meta_doc.id 
+        # Adiciona o doc_reference para a meta
+        if 'doc_reference' in meta and isinstance(meta['doc_reference'], firestore.DocumentReference):
+            meta['doc_reference'] = meta['doc_reference'].path
+        else:
+            meta['doc_reference'] = f'clinicas/{clinica_id}/peis/{pei_doc.id}/metas/{meta_doc.id}'
         meta['targets'] = [] # Inicializa a lista de alvos para esta meta
 
         alvos_ref = db_instance.collection(f'clinicas/{clinica_id}/peis/{pei_doc.id}/metas/{meta_doc.id}/alvos')
@@ -104,6 +119,11 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
             alvo['id'] = alvo_doc.id
             # Garante que alvo_id esteja no dicionário, se for salvo como campo
             alvo['alvo_id'] = alvo_doc.id
+            # Adiciona o doc_reference para o alvo
+            if 'doc_reference' in alvo and isinstance(alvo['doc_reference'], firestore.DocumentReference):
+                alvo['doc_reference'] = alvo['doc_reference'].path
+            else:
+                alvo['doc_reference'] = f'clinicas/{clinica_id}/peis/{pei_doc.id}/metas/{meta_doc.id}/alvos/{alvo_doc.id}'
             if 'status' not in alvo:
                 alvo['status'] = 'pendente'
             alvo['concluido'] = (alvo['status'] == 'finalizada') # Para compatibilidade
@@ -117,6 +137,11 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
                 ajuda['id'] = ajuda_doc.id
                 # Garante que ajuda_id esteja no dicionário, se for salvo como campo
                 ajuda['ajuda_id'] = ajuda_doc.id
+                # Adiciona o doc_reference para a ajuda
+                if 'doc_reference' in ajuda and isinstance(ajuda['doc_reference'], firestore.DocumentReference):
+                    ajuda['doc_reference'] = ajuda['doc_reference'].path
+                else:
+                    ajuda['doc_reference'] = f'clinicas/{clinica_id}/peis/{pei_doc.id}/metas/{meta_doc.id}/alvos/{alvo_doc.id}/ajudas/{ajuda_doc.id}'
                 if 'status' not in ajuda:
                     ajuda['status'] = 'pendente'
                 if 'attempts_count' not in ajuda:
@@ -352,6 +377,8 @@ def _add_target_to_goal_transaction(transaction, goal_ref, new_target_descriptio
     # Obtém uma nova referência de documento para o alvo dentro da transação
     alvo_doc_ref = goal_ref.collection('alvos').document()
     new_alvo_data['alvo_id'] = alvo_doc_ref.id # Adiciona o ID do alvo ao dado
+    # Adiciona o doc_reference para o alvo
+    new_alvo_data['doc_reference'] = alvo_doc_ref # Salva a referência do documento
     transaction.set(alvo_doc_ref, new_alvo_data) # Usa transaction.set() para adicionar o alvo
 
     # Definindo as ajudas fixas para o novo alvo e adicionando-as como subcoleção
@@ -371,6 +398,8 @@ def _add_target_to_goal_transaction(transaction, goal_ref, new_target_descriptio
         aid_data['pei_id'] = new_alvo_data['pei_id']
         aid_data['meta_id'] = new_alvo_data['meta_id']
         aid_data['alvo_id'] = new_alvo_data['alvo_id']
+        # Adiciona o doc_reference para a ajuda
+        aid_data['doc_reference'] = aid_doc_ref # Salva a referência do documento
         transaction.set(aid_doc_ref, aid_data) # Usa transaction.set() para adicionar a ajuda
 
 
@@ -399,6 +428,8 @@ def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_n
     # Obtém uma nova referência de documento para a atividade dentro da transação
     activity_doc_ref = pei_ref.collection('activities').document()
     new_activity_data['activity_id'] = activity_doc_ref.id # Adiciona o ID da atividade ao dado
+    # Adiciona o doc_reference para a atividade
+    new_activity_data['doc_reference'] = activity_doc_ref # Salva a referência do documento
     transaction.set(activity_doc_ref, new_activity_data) # Usa transaction.set() para adicionar a atividade
 
 @firestore.transactional
@@ -579,8 +610,11 @@ def add_pei(paciente_doc_id):
         # Adiciona o PEI e obtém a referência do documento
         _, pei_doc_ref = peis_ref.add(new_pei_data)
         
-        # Salva o ID do PEI no próprio documento, conforme solicitado
-        pei_doc_ref.update({'pei_id': pei_doc_ref.id})
+        # Salva o ID do PEI e o doc_reference no próprio documento
+        pei_doc_ref.update({
+            'pei_id': pei_doc_ref.id,
+            'doc_reference': pei_doc_ref # Salva a referência do documento
+        })
 
         flash('PEI adicionado com sucesso!', 'success')
     except Exception as e:
@@ -651,7 +685,6 @@ def finalize_pei(paciente_doc_id):
             user_doc = db_instance.collection('User').document(user_uid).get()
             if user_doc.exists:
                 logged_in_professional_id = user_doc.to_dict().get('profissional_id')
-                print(f"Profissional logado ID: {logged_in_professional_id}")
             else:
                 print(f"Documento de usuário não encontrado para UID: {user_uid}")
         except Exception as e:
@@ -737,6 +770,8 @@ def add_goal(paciente_doc_id):
         
         meta_doc_ref = metas_ref.document()
         new_goal_data['meta_id'] = meta_doc_ref.id
+        # Adiciona o doc_reference para a meta
+        new_goal_data['doc_reference'] = meta_doc_ref # Salva a referência do documento
         meta_doc_ref.set(new_goal_data)
 
         fixed_aids_template = [
@@ -756,6 +791,8 @@ def add_goal(paciente_doc_id):
                 }
                 alvo_doc_ref = meta_doc_ref.collection('alvos').document()
                 new_alvo_data['alvo_id'] = alvo_doc_ref.id
+                # Adiciona o doc_reference para o alvo
+                new_alvo_data['doc_reference'] = alvo_doc_ref # Salva a referência do documento
                 alvo_doc_ref.set(new_alvo_data)
 
                 for aid_data in fixed_aids_template:
@@ -764,6 +801,8 @@ def add_goal(paciente_doc_id):
                     aid_data['pei_id'] = pei_id
                     aid_data['meta_id'] = meta_doc_ref.id
                     aid_data['alvo_id'] = alvo_doc_ref.id
+                    # Adiciona o doc_reference para a ajuda
+                    aid_data['doc_reference'] = ajuda_doc_ref # Salva a referência do documento
                     ajuda_doc_ref.set(aid_data)
 
         flash('Meta e alvos adicionados com sucesso ao PEI!', 'success')
