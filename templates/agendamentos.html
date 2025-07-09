@@ -1336,7 +1336,7 @@
                 <button type="button" class="modal-close-btn" data-close-multi>&times;</button>
             </div>
             <div class="modal-body" id="multiAppointmentsList">
-                <!-- Lista de agendamentos será preenchida via JS -->
+                <!-- Lista de agendamentos será preenchida aqui via JS -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-close-multi>Fechar</button>
@@ -1607,7 +1607,9 @@
             const calendarViewBtn = document.getElementById('calendarViewBtn');
             const listViewBtn = document.getElementById('listViewBtn');
             const calendarViewContainer = document.getElementById('calendarViewContainer');
-            const listViewContainer = document.getElementById('listViewContainer');
+            listViewContainer.style.display = 'none'; // Esconde a lista por padrão
+            const listViewContainerInitialDisplay = listViewContainer.style.display;
+
 
             // Estado da visualização atual
             let currentView = localStorage.getItem('appointmentView') || 'calendar'; // Padrão é 'calendar'
@@ -1649,7 +1651,7 @@
                 calendarGridWeek.innerHTML = ''; // Limpa a grade existente
 
                 console.log('renderWeeklyGrid called for week starting:', weekStartDate.toISOString().split('T')[0]);
-                console.log('Current filter month for weekly grid:', currentFilterMonth.toISOString().split('T')[0]);
+                console.log('Current filter month for weekly grid (from mini-calendar):', currentFilterMonth.toISOString().split('T')[0]);
 
                 // Define as colunas do grid: 90px para a coluna de tempo, e 7 colunas flexíveis para os dias
                 calendarGridWeek.style.gridTemplateColumns = '90px repeat(7, minmax(120px, 1fr))'; // Aumentado min-width para 120px
@@ -1695,20 +1697,14 @@
                             eventCell.dataset.date = dateString;
                             eventCell.dataset.time = timeStr;
 
-                            // Filtra agendamentos para este slot específico E para o mês selecionado
+                            // Filtra agendamentos para este slot específico e para o profissional selecionado.
+                            // A restrição de mês foi removida para exibir agendamentos de meses adjacentes na semana.
                             const appointmentsInSlot = allAppointments.filter(app => {
-                                const appDate = new Date(app.data_agendamento + 'T00:00:00'); // Garante fuso horário local
                                 const matchesDate = app.data_agendamento === dateString;
                                 const matchesTime = app.hora_agendamento === timeStr;
                                 const matchesProfessional = !professionalFilterId || app.profissional_id === professionalFilterId;
                                 
-                                // Verifica se o agendamento está dentro do mês selecionado no mini-calendário
-                                const isSameMonth = appDate.getMonth() === currentFilterMonth.getMonth() &&
-                                                    appDate.getFullYear() === currentFilterMonth.getFullYear();
-
-                                // console.log(`  App: ${app.paciente_nome} (${app.data_agendamento} ${app.hora_agendamento}) - matchesDate: ${matchesDate}, isSameMonth: ${isSameMonth}, matchesProf: ${matchesProfessional}`);
-
-                                return matchesDate && matchesTime && matchesProfessional && isSameMonth;
+                                return matchesDate && matchesTime && matchesProfessional;
                             });
 
                             // Sort appointments for consistent horizontal order
@@ -1792,6 +1788,7 @@
                 console.log('renderCardView called. Current filter month:', currentFilterMonth.toISOString().split('T')[0]);
 
                 // Filtra os agendamentos com base no profissional selecionado E no mês selecionado
+                // A restrição de mês permanece para a visualização em lista
                 const filteredAppointments = allAppointments.filter(app => {
                     const appDate = new Date(app.data_agendamento + 'T00:00:00'); // Garante fuso horário local
                     const matchesProfessional = !professionalFilterId || app.profissional_id === professionalFilterId;
@@ -1799,8 +1796,6 @@
                     // Verifica se o agendamento está dentro do mês selecionado no mini-calendário
                     const isSameMonth = appDate.getMonth() === currentFilterMonth.getMonth() &&
                                          appDate.getFullYear() === currentFilterMonth.getFullYear();
-
-                    // console.log(`  App: ${app.paciente_nome} (${app.data_agendamento}) - isSameMonth: ${isSameMonth}, matchesProf: ${matchesProfessional}`);
 
                     return matchesProfessional && isSameMonth;
                 });
@@ -1884,8 +1879,10 @@
                     professionalFilterId = '';
                     // Ao mudar o filtro de profissional, também recarrega a página para que o backend filtre
                     const baseUrl = window.location.origin + window.location.pathname;
-                    const year = currentFilterMonth.getFullYear();
-                    const month = currentFilterMonth.getMonth();
+                    // Ao clicar em 'Todos os Profissionais', queremos resetar o filtro de profissional
+                    // e manter o mês atual do mini-calendário como referência para a busca de 3 meses.
+                    const year = currentMiniCalendarDate.getFullYear();
+                    const month = currentMiniCalendarDate.getMonth();
                     const startDate = new Date(year, month, 1);
                     const endDate = new Date(year, month + 1, 0);
                     const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
@@ -1905,8 +1902,9 @@
                         professionalFilterId = professional.id;
                         // Ao mudar o filtro de profissional, também recarrega a página para que o backend filtre
                         const baseUrl = window.location.origin + window.location.pathname;
-                        const year = currentFilterMonth.getFullYear();
-                        const month = currentFilterMonth.getMonth();
+                        // Ao clicar em um profissional, queremos manter o mês atual do mini-calendário como referência para a busca de 3 meses.
+                        const year = currentMiniCalendarDate.getFullYear();
+                        const month = currentMiniCalendarDate.getMonth();
                         const startDate = new Date(year, month, 1);
                         const endDate = new Date(year, month + 1, 0);
                         const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
@@ -2311,22 +2309,17 @@
                     }
                     
                     dayElement.addEventListener('click', () => {
-                        // CORREÇÃO: Adiciona 'T00:00:00' para garantir que a data seja interpretada no fuso horário local.
                         const clickedDate = new Date(`${dayElement.dataset.date}T00:00:00`);
-                        // currentWeekStart = getMonday(clickedDate); // Isso não é mais necessário aqui, pois a página será recarregada
-                        currentFilterMonth = new Date(clickedDate.getFullYear(), clickedDate.getMonth(), 1); // Atualiza o mês do filtro
                         
-                        // Calcula as datas de início e fim para o novo mês
-                        const year = currentFilterMonth.getFullYear();
-                        const month = currentFilterMonth.getMonth(); // Mês 0-indexado
+                        // Calcula o início e o fim da semana do dia clicado
+                        const startOfWeek = getMonday(clickedDate);
+                        const endOfWeek = new Date(startOfWeek);
+                        endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-                        const startDate = new Date(year, month, 1);
-                        const endDate = new Date(year, month + 1, 0); // Último dia do mês
+                        const formattedStartDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
+                        const formattedEndDate = `${endOfWeek.getFullYear()}-${String(endOfWeek.getMonth() + 1).padStart(2, '0')}-${String(endOfWeek.getDate()).padStart(2, '0')}`;
 
-                        const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-                        const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-
-                        // Constrói a nova URL com os parâmetros de data e profissional
+                        // Redireciona a página com os parâmetros da semana
                         const baseUrl = window.location.origin + window.location.pathname;
                         const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                         
@@ -2344,20 +2337,15 @@
                 miniPrevMonthBtn.addEventListener('click', () => {
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() - 1);
                     renderMiniCalendar(currentMiniCalendarDate);
-                    // Atualiza o filtro de mês para o novo mês
-                    currentFilterMonth = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
+                    // Ao mudar o mês no mini-calendário, redireciona para a primeira semana desse mês
+                    const firstDayOfMonth = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
+                    const startOfWeek = getMonday(firstDayOfMonth);
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-                    // Calcula as datas de início e fim para o novo mês
-                    const year = currentFilterMonth.getFullYear();
-                    const month = currentFilterMonth.getMonth(); // Mês 0-indexado
+                    const formattedStartDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
+                    const formattedEndDate = `${endOfWeek.getFullYear()}-${String(endOfWeek.getMonth() + 1).padStart(2, '0')}-${String(endOfWeek.getDate()).padStart(2, '0')}`;
 
-                    const startDate = new Date(year, month, 1);
-                    const endDate = new Date(year, month + 1, 0); // Último dia do mês
-
-                    const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-                    const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-
-                    // Constrói a nova URL com os parâmetros de data e profissional
                     const baseUrl = window.location.origin + window.location.pathname;
                     const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                     
@@ -2368,20 +2356,15 @@
                 miniNextMonthBtn.addEventListener('click', () => {
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() + 1);
                     renderMiniCalendar(currentMiniCalendarDate);
-                    // Atualiza o filtro de mês para o novo mês
-                    currentFilterMonth = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
+                    // Ao mudar o mês no mini-calendário, redireciona para a primeira semana desse mês
+                    const firstDayOfMonth = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
+                    const startOfWeek = getMonday(firstDayOfMonth);
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-                    // Calcula as datas de início e fim para o novo mês
-                    const year = currentFilterMonth.getFullYear();
-                    const month = currentFilterMonth.getMonth(); // Mês 0-indexado
+                    const formattedStartDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
+                    const formattedEndDate = `${endOfWeek.getFullYear()}-${String(endOfWeek.getMonth() + 1).padStart(2, '0')}-${String(endOfWeek.getDate()).padStart(2, '0')}`;
 
-                    const startDate = new Date(year, month, 1);
-                    const endDate = new Date(year, month + 1, 0); // Último dia do mês
-
-                    const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-                    const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-
-                    // Constrói a nova URL com os parâmetros de data e profissional
                     const baseUrl = window.location.origin + window.location.pathname;
                     const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
 
