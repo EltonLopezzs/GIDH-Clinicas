@@ -5,6 +5,7 @@ import json
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud import firestore # Importar no topo
 
+
 # Importar utils
 from utils import get_db, login_required, SAO_PAULO_TZ
 
@@ -305,6 +306,7 @@ def register_appointments_routes(app):
 
             old_status = original_agendamento_data.get('status', 'N/A')
             
+            # Detalhes da alteração para a notificação
             detalhes_alteracao = f"Status alterado de '{old_status}' para '{novo_status}' para o agendamento de {original_agendamento_data.get('paciente_nome', 'N/A')} em {original_agendamento_data.get('data_agendamento', 'N/A')} às {original_agendamento_data.get('hora_agendamento', 'N/A')}."
 
             agendamento_doc_ref.update({
@@ -338,6 +340,7 @@ def register_appointments_routes(app):
                 flash('Agendamento não encontrado para edição.', 'danger')
                 return redirect(url_for('listar_agendamentos'))
             
+            # Obter dados do formulário
             paciente_nome = request.form.get('cliente_nome_manual')
             profissional_id_manual = request.form.get('barbeiro_id_manual')
             servico_procedimento_id_manual = request.form.get('servico_id_manual')
@@ -346,16 +349,19 @@ def register_appointments_routes(app):
             preco_str = request.form.get('preco_manual')
             status_manual = request.form.get('status_manual')
 
+            # Validação básica
             if not all([paciente_nome, profissional_id_manual, servico_procedimento_id_manual, data_agendamento_str, hora_agendamento_str, preco_str, status_manual]):
                 flash('Todos os campos obrigatórios devem ser preenchidos para editar.', 'danger')
                 return redirect(url_for('listar_agendamentos'))
             
+            # Obter nomes completos para notificação
             profissional_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(profissional_id_manual).get()
             servico_procedimento_doc = db_instance.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').document(servico_procedimento_id_manual).get()
 
             profissional_nome = profissional_doc.to_dict().get('nome', 'N/A') if profissional_doc.exists else 'N/A'
             servico_procedimento_nome = servico_procedimento_doc.to_dict().get('nome', 'N/A') if servico_procedimento_doc.exists else 'N/A'
             
+            # Converter data e hora para timestamp UTC
             dt_agendamento_naive = datetime.datetime.strptime(f"{data_agendamento_str} {hora_agendamento_str}", "%Y-%m-%d %H:%M")
             dt_agendamento_sp = SAO_PAULO_TZ.localize(dt_agendamento_naive)
             data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
@@ -364,6 +370,7 @@ def register_appointments_routes(app):
             tipo_alteracao = 'atualizado'
             detalhes_alteracao = 'Agendamento atualizado.'
 
+            # Comparar com os dados originais para determinar o tipo de alteração
             if status_manual == 'cancelado' and original_agendamento_data.get('status') != 'cancelado':
                 tipo_alteracao = 'cancelado'
                 detalhes_alteracao = f"Agendamento de {original_agendamento_data.get('paciente_nome', 'N/A')} para {original_agendamento_data.get('data_agendamento', 'N/A')} às {original_agendamento_data.get('hora_agendamento', 'N/A')} foi CANCELADO."
@@ -420,7 +427,8 @@ def register_appointments_routes(app):
                 flash('Agendamento não encontrado para exclusão.', 'danger')
                 return redirect(url_for('listar_agendamentos'))
 
-            # Em vez de apagar, vamos marcar como "excluído" e "notificacao_pendente"
+            # Em vez de apagar o documento, vamos marcá-lo como "excluído" logicamente
+            # e definir a notificação pendente.
             detalhes_alteracao = f"Agendamento de {original_agendamento_data.get('paciente_nome', 'N/A')} para {original_agendamento_data.get('data_agendamento', 'N/A')} às {original_agendamento_data.get('hora_agendamento', 'N/A')} foi APAGADO (excluído logicamente) do sistema."
             
             agendamento_doc_ref.update({
@@ -436,4 +444,3 @@ def register_appointments_routes(app):
             print(f"Erro delete_appointment: {e}")
         return redirect(url_for('listar_agendamentos'))
 
-}
