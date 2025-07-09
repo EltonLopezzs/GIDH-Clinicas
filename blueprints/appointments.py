@@ -5,7 +5,6 @@ import json
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud import firestore # Importar no topo
 
-
 # Importar utils
 from utils import get_db, login_required, SAO_PAULO_TZ
 
@@ -210,34 +209,6 @@ def register_appointments_routes(app):
 
                 current_date = data_inicio_recorrencia
                 while current_date <= data_fim_recorrencia:
-                    # weekday() retorna 0 para segunda-feira, 6 para domingo.
-                    # getDay() no JS retorna 0 para domingo, 6 para sábado.
-                    # Ajuste: Python's weekday() + 1, e se for 7 (domingo), vira 0.
-                    # Ou, mais simples: Python's isocalendar().weekday (1=Mon, 7=Sun)
-                    # Ou usar getDay() equivalentemente: current_date.weekday() para Python (0=Mon, 6=Sun)
-                    # e mapear para o JS (0=Sun, 1=Mon, ..., 6=Sat)
-                    # Python: 0=Mon, 1=Tue, ..., 6=Sun
-                    # JS: 0=Sun, 1=Mon, ..., 6=Sat
-                    # Mapeamento:
-                    # Python Mon (0) -> JS Mon (1)
-                    # Python Tue (1) -> JS Tue (2)
-                    # ...
-                    # Python Sat (5) -> JS Sat (6)
-                    # Python Sun (6) -> JS Sun (0)
-                    
-                    # Para converter o weekday do Python (0=Seg, ..., 6=Dom) para o do JS (0=Dom, ..., 6=Sáb)
-                    # dia_da_semana_js = (current_date.weekday() + 1) % 7 
-                    # Simplesmente use o valor do checkbox do JS diretamente para o dia da semana do Python
-                    # O checkbox value="0" para Domingo no JS corresponde ao dia da semana 6 no Python (Sunday)
-                    # O checkbox value="1" para Segunda no JS corresponde ao dia da semana 0 no Python (Monday)
-                    # ...
-                    # O checkbox value="6" para Sábado no JS corresponde ao dia da semana 5 no Python (Saturday)
-                    
-                    # Mapeamento correto:
-                    # JS (0=Dom, 1=Seg, ..., 6=Sáb)
-                    # Python (0=Seg, 1=Ter, ..., 6=Dom)
-                    
-                    # Convertendo o dia da semana do Python para o padrão JS (0=Dom, 1=Seg...)
                     python_weekday = current_date.weekday() # 0=Seg, 1=Ter, ..., 6=Dom
                     js_equivalent_weekday = (python_weekday + 1) % 7 # 0=Dom, 1=Seg, ..., 6=Sáb
 
@@ -261,7 +232,10 @@ def register_appointments_routes(app):
                             'status': status_manual,
                             'tipo_agendamento': 'recorrente',
                             'data_criacao': firestore.SERVER_TIMESTAMP,
-                            'atualizado_em': firestore.SERVER_TIMESTAMP
+                            'atualizado_em': firestore.SERVER_TIMESTAMP,
+                            'notificacao_pendente': True, # NOVO: Marcar para notificação
+                            'tipo_alteracao': 'novo_agendamento', # NOVO: Tipo de alteração
+                            'detalhes_alteracao': f'Novo agendamento recorrente com {profissional_nome} para {servico_procedimento_nome} em {current_date.strftime("%d/%m/%Y")} às {hora_agendamento_str}.' # NOVO: Detalhes
                         })
                     current_date += datetime.timedelta(days=1)
                 
@@ -295,7 +269,10 @@ def register_appointments_routes(app):
                     'status': status_manual,
                     'tipo_agendamento': 'manual_dashboard',
                     'data_criacao': firestore.SERVER_TIMESTAMP,
-                    'atualizado_em': firestore.SERVER_TIMESTAMP
+                    'atualizado_em': firestore.SERVER_TIMESTAMP,
+                    'notificacao_pendente': True, # NOVO: Marcar para notificação
+                    'tipo_alteracao': 'novo_agendamento', # NOVO: Tipo de alteração
+                    'detalhes_alteracao': f'Novo agendamento com {profissional_nome} para {servico_procedimento_nome} em {data_agendamento_str} às {hora_agendamento_str}.' # NOVO: Detalhes
                 }
                 
                 db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').add(novo_agendamento_dados)
@@ -319,9 +296,23 @@ def register_appointments_routes(app):
             flash('Nenhum status foi fornecido.', 'warning')
             return redirect(url_for('listar_agendamentos'))
         try:
-            db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_doc_id).update({
+            agendamento_doc_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_doc_id)
+            original_agendamento_data = agendamento_doc_ref.get().to_dict()
+
+            if not original_agendamento_data:
+                flash('Agendamento não encontrado.', 'danger')
+                return redirect(url_for('listar_agendamentos'))
+
+            old_status = original_agendamento_data.get('status', 'N/A')
+            
+            detalhes_alteracao = f"Status alterado de '{old_status}' para '{novo_status}' para o agendamento de {original_agendamento_data.get('paciente_nome', 'N/A')} em {original_agendamento_data.get('data_agendamento', 'N/A')} às {original_agendamento_data.get('hora_agendamento', 'N/A')}."
+
+            agendamento_doc_ref.update({
                 'status': novo_status,
-                'atualizado_em': firestore.SERVER_TIMESTAMP
+                'atualizado_em': firestore.SERVER_TIMESTAMP,
+                'notificacao_pendente': True, # NOVO: Marcar para notificação
+                'tipo_alteracao': 'status_alterado', # NOVO: Tipo de alteração
+                'detalhes_alteracao': detalhes_alteracao # NOVO: Detalhes
             })
             flash(f'Status atualizado para "{novo_status}" com sucesso!', 'success')
         except Exception as e:
@@ -341,6 +332,11 @@ def register_appointments_routes(app):
 
         try:
             agendamento_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_id)
+            original_agendamento_data = agendamento_ref.get().to_dict()
+
+            if not original_agendamento_data:
+                flash('Agendamento não encontrado para edição.', 'danger')
+                return redirect(url_for('listar_agendamentos'))
             
             paciente_nome = request.form.get('cliente_nome_manual')
             profissional_id_manual = request.form.get('barbeiro_id_manual')
@@ -349,9 +345,6 @@ def register_appointments_routes(app):
             hora_agendamento_str = request.form.get('hora_agendamento_manual')
             preco_str = request.form.get('preco_manual')
             status_manual = request.form.get('status_manual')
-
-            # Não permitimos edição de recorrência em agendamentos existentes.
-            # Os campos de recorrência não devem ser processados aqui.
 
             if not all([paciente_nome, profissional_id_manual, servico_procedimento_id_manual, data_agendamento_str, hora_agendamento_str, preco_str, status_manual]):
                 flash('Todos os campos obrigatórios devem ser preenchidos para editar.', 'danger')
@@ -367,6 +360,22 @@ def register_appointments_routes(app):
             dt_agendamento_sp = SAO_PAULO_TZ.localize(dt_agendamento_naive)
             data_agendamento_ts_utc = dt_agendamento_sp.astimezone(pytz.utc)
 
+            # Lógica para determinar tipo_alteracao e detalhes_alteracao
+            tipo_alteracao = 'atualizado'
+            detalhes_alteracao = 'Agendamento atualizado.'
+
+            if status_manual == 'cancelado' and original_agendamento_data.get('status') != 'cancelado':
+                tipo_alteracao = 'cancelado'
+                detalhes_alteracao = f"Agendamento de {original_agendamento_data.get('paciente_nome', 'N/A')} para {original_agendamento_data.get('data_agendamento', 'N/A')} às {original_agendamento_data.get('hora_agendamento', 'N/A')} foi CANCELADO."
+            elif (data_agendamento_str != original_agendamento_data.get('data_agendamento') or \
+                  hora_agendamento_str != original_agendamento_data.get('hora_agendamento')):
+                tipo_alteracao = 'reagendado'
+                detalhes_alteracao = f"Agendamento de {original_agendamento_data.get('paciente_nome', 'N/A')} reagendado de {original_agendamento_data.get('data_agendamento', 'N/A')} às {original_agendamento_data.get('hora_agendamento', 'N/A')} para {data_agendamento_str} às {hora_agendamento_str}."
+            elif profissional_id_manual != original_agendamento_data.get('profissional_id'):
+                tipo_alteracao = 'profissional_alterado'
+                detalhes_alteracao = f"Profissional do agendamento de {original_agendamento_data.get('paciente_nome', 'N/A')} alterado de {original_agendamento_data.get('profissional_nome', 'N/A')} para {profissional_nome}."
+            # Você pode adicionar mais condições aqui para outros tipos de alteração (ex: serviço, preço)
+            
             update_data = {
                 'paciente_nome': paciente_nome,
                 'profissional_id': profissional_id_manual,
@@ -378,7 +387,10 @@ def register_appointments_routes(app):
                 'data_agendamento_ts': data_agendamento_ts_utc,
                 'servico_procedimento_preco': float(preco_str.replace(',', '.')),
                 'status': status_manual,
-                'atualizado_em': firestore.SERVER_TIMESTAMP
+                'atualizado_em': firestore.SERVER_TIMESTAMP,
+                'notificacao_pendente': True, # NOVO: Marcar para notificação
+                'tipo_alteracao': tipo_alteracao, # NOVO: Tipo de alteração
+                'detalhes_alteracao': detalhes_alteracao # NOVO: Detalhes
             }
 
             agendamento_ref.update(update_data)
@@ -401,10 +413,27 @@ def register_appointments_routes(app):
             return redirect(url_for('listar_agendamentos'))
 
         try:
-            db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_id).delete()
-            flash('Agendamento apagado com sucesso!', 'success')
+            agendamento_doc_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_id)
+            original_agendamento_data = agendamento_doc_ref.get().to_dict()
+
+            if not original_agendamento_data:
+                flash('Agendamento não encontrado para exclusão.', 'danger')
+                return redirect(url_for('listar_agendamentos'))
+
+            # Em vez de apagar, vamos marcar como "excluído" e "notificacao_pendente"
+            detalhes_alteracao = f"Agendamento de {original_agendamento_data.get('paciente_nome', 'N/A')} para {original_agendamento_data.get('data_agendamento', 'N/A')} às {original_agendamento_data.get('hora_agendamento', 'N/A')} foi APAGADO (excluído logicamente) do sistema."
+            
+            agendamento_doc_ref.update({
+                'status': 'excluido', # Novo status para exclusão lógica
+                'atualizado_em': firestore.SERVER_TIMESTAMP,
+                'notificacao_pendente': True, # NOVO: Marcar para notificação
+                'tipo_alteracao': 'agendamento_excluido', # NOVO: Tipo de alteração
+                'detalhes_alteracao': detalhes_alteracao # NOVO: Detalhes
+            })
+            flash('Agendamento apagado (logicamente) com sucesso e notificação pendente!', 'success')
         except Exception as e:
             flash(f'Erro ao apagar agendamento: {e}', 'danger')
             print(f"Erro delete_appointment: {e}")
         return redirect(url_for('listar_agendamentos'))
 
+}
