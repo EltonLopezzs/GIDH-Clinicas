@@ -561,10 +561,10 @@
             max-width: 1200px; /* Aumentado de 1000px para 1200px */
             transform: translateY(-20px); 
             transition: transform 0.25s ease; 
-            max-height: calc(100vh - 40px); 
+            max-height: 90vh; /* Limit modal height to 90% of viewport height */
             display: flex; 
             flex-direction: column; 
-            overflow: hidden; /* Garante que o conteúdo do modal seja cortado se exceder a altura */
+            overflow: hidden; /* Hide overflow on the modal content itself */
         }
         .modal-overlay.active .modal-content { transform: translateY(0); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
@@ -1045,46 +1045,96 @@
         }
 
         /* Styles for recurring appointment section */
-        .recurring-options {
-            display: none; /* Hidden by default */
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--border-color);
+        .form-section-container {
+            background-color: var(--bg); /* Light background for the section */
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem; /* Ample padding */
+            margin-top: 2rem; /* Space above */
+            margin-bottom: 2rem; /* Space below */
         }
 
-        .day-checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1.5rem; /* Increased gap for better spacing */
+        .recurring-options {
+            display: none; /* Hidden by default, controlled by JS */
+            padding-top: 1.5rem; /* Space between checkbox and options */
+            border-top: 1px solid var(--border-color);
+            margin-top: 1.5rem; /* Space between checkbox and options */
+        }
+
+        .day-checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Responsive grid for days */
+            gap: 0.75rem; /* Reduced gap for better packing */
             margin-bottom: 1.5rem;
         }
 
-        .day-checkbox-group label {
+        .day-checkbox-item {
             display: flex;
             align-items: center;
-            gap: 0.75rem; /* Increased gap between checkbox and text */
+            gap: 0.5rem; /* Smaller gap between checkbox and text */
             cursor: pointer;
-            font-weight: 500; /* Slightly bolder text */
+            font-weight: 500;
             color: var(--text);
-            padding: 0.4rem 0.6rem; /* Add some padding around each checkbox item */
-            border-radius: 6px;
+            padding: 0.5rem 0.75rem; /* Padding around each day item */
+            border-radius: 8px;
             transition: background-color 0.2s ease;
+            border: 1px solid var(--border-color); /* Add border to each item */
+            background-color: var(--card); /* Background for each item */
         }
 
-        .day-checkbox-group label:hover {
-            background-color: var(--bg); /* Subtle hover effect */
+        .day-checkbox-item:hover {
+            background-color: var(--bg);
         }
 
-        .day-checkbox-group input[type="checkbox"] {
-            width: 20px; /* Explicit width */
-            height: 20px; /* Explicit height */
+        .day-checkbox-item input[type="checkbox"] {
+            width: 18px; /* Slightly smaller checkbox */
+            height: 18px;
             margin: 0;
-            flex-shrink: 0; /* Prevent shrinking */
-            accent-color: var(--primary); /* Maintain primary color */
-            border: 1px solid var(--primary); /* Add a border for definition */
-            border-radius: 4px; /* Slightly rounded corners for checkbox */
+            flex-shrink: 0;
+            accent-color: var(--primary);
+            border: 1px solid var(--primary);
+            border-radius: 4px;
         }
 
+        /* Style for radio buttons */
+        .form-group input[type="radio"] {
+            width: 18px; /* Consistent size with checkboxes */
+            height: 18px;
+            accent-color: var(--primary);
+            margin-right: 0.5rem; /* Space between radio and label */
+        }
+
+        /* Ensure the date input for "Termina em" is styled correctly */
+        .form-group .flex-grow {
+            flex-grow: 1; /* Allows the date input to take available space */
+        }
+
+        /* Add custom scrollbar styles (if needed) */
+        /* This is a basic example, full custom scrollbars often require more specific browser prefixes */
+        .modal-body::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: var(--bg);
+            border-radius: 10px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: var(--muted);
+            border-radius: 10px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* For Firefox */
+        .modal-body {
+            scrollbar-width: thin;
+            scrollbar-color: var(--muted) var(--bg);
+        }
         /* New class for consistent input styling */
         .form-input {
             font-size: 0.95rem;
@@ -1300,35 +1350,54 @@
                         </div>
                     </div>
 
-                    <!-- New: Recurring Appointment Options -->
-                    <div class="form-group">
-                        <label for="recorrente_checkbox" class="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200 cursor-pointer">
+                    <!-- NEW: Recurring Appointment Section -->
+                    <div class="form-section-container"> <!-- New container for visual grouping -->
+                        <div class="form-group flex items-center gap-2 mb-4">
                             <input type="checkbox" id="recorrente_checkbox" name="recorrente_checkbox" value="true" class="w-auto h-auto transform scale-125 accent-primary">
-                            Agendamento Recorrente
-                        </label>
-                    </div>
+                            <label for="recorrente_checkbox" class="font-semibold text-gray-800 dark:text-gray-200 cursor-pointer">
+                                Agendamento Recorrente
+                            </label>
+                        </div>
 
-                    <div id="recurringOptions" class="recurring-options">
-                        <h4 class="form-section-title">Opções de Recorrência</h4>
-                        <div class="form-group">
-                            <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Repetir em:</label>
-                            <div class="day-checkbox-group">
-                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="1" > Segunda</label>
-                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="2" > Terça</label>
-                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="3" > Quarta</label>
-                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="4" > Quinta</label>
-                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="5" > Sexta</label>
-                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="6" > Sábado</label>
-                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="0" > Domingo</label>
+                        <div id="recurringOptions" class="recurring-options">
+                            <h4 class="form-section-title">Opções de Recorrência</h4>
+                            <div class="form-group">
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Repetir em:</label>
+                                <div class="day-checkbox-grid"> <!-- Changed to grid for better control -->
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="1" > Segunda</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="2" > Terça</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="3" > Quarta</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="4" > Quinta</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="5" > Sexta</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="6" > Sábado</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="0" > Domingo</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="frequencia_recorrencia" class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">Frequência:</label>
+                                <select id="frequencia_recorrencia" name="frequencia_recorrencia" class="form-input">
+                                    <option value="semanal">Semanalmente</option>
+                                    <option value="quinzenal">Quinzenalmente</option>
+                                    <option value="mensal">Mensalmente</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">Termina em:</label>
+                                <div class="flex items-center space-x-4">
+                                    <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200" for="ends-never">
+                                        <input type="radio" id="ends-never" name="termina_em" value="nunca" checked class="w-auto h-auto accent-primary"> Nunca
+                                    </label>
+                                    <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200" for="ends-on-date">
+                                        <input type="radio" id="ends-on-date" name="termina_em" value="data" class="w-auto h-auto accent-primary"> Em
+                                    </label>
+                                    <input type="date" id="data_fim_recorrencia" name="data_fim_recorrencia" class="form-input flex-grow" disabled>
+                                </div>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label for="data_fim_recorrencia">Data de Fim da Recorrência</label>
-                            <input type="date" id="data_fim_recorrencia" name="data_fim_recorrencia" class="form-input">
-                        </div>
                     </div>
-                    <!-- End New: Recurring Appointment Options -->
-
+                    <!-- End NEW: Recurring Appointment Section -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
@@ -1936,7 +2005,7 @@
                         const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
                         
                         const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-                        window.location.href = newUrl;
+                        window.location.href = newUrl; 
                     });
                     professionalFilterListContainer.appendChild(professionalItem);
                 });
@@ -2021,23 +2090,44 @@
             const recurringOptionsDiv = document.getElementById('recurringOptions');
             const dataFimRecorrenciaInput = document.getElementById('data_fim_recorrencia');
             const diasSemanaCheckboxes = document.querySelectorAll('input[name="dias_semana"]');
+            const terminaEmRadios = document.querySelectorAll('input[name="termina_em"]'); // New: radio buttons for "Termina em"
 
-            // Toggle recurring options visibility
-            if (recorrenteCheckbox && recurringOptionsDiv) {
+            // Toggle recurring options visibility and manage required attribute for data_fim_recorrencia
+            if (recorrenteCheckbox && recurringOptionsDiv && dataFimRecorrenciaInput) {
                 recorrenteCheckbox.addEventListener('change', () => {
                     if (recorrenteCheckbox.checked) {
                         recurringOptionsDiv.style.display = 'block';
-                        dataFimRecorrenciaInput.setAttribute('required', 'true');
-                        // Removed setting 'required' on individual day checkboxes
-                        // Validation for at least one day selected will be handled by backend or custom JS
+                        // Only set required if "Em data" is selected
+                        if (document.querySelector('input[name="termina_em"]:checked').value === 'data') {
+                            dataFimRecorrenciaInput.setAttribute('required', 'true');
+                            dataFimRecorrenciaInput.removeAttribute('disabled'); // Enable date input
+                        }
                     } else {
                         recurringOptionsDiv.style.display = 'none';
                         dataFimRecorrenciaInput.removeAttribute('required');
+                        dataFimRecorrenciaInput.setAttribute('disabled', 'true'); // Disable date input
                         diasSemanaCheckboxes.forEach(checkbox => {
                             checkbox.checked = false; // Uncheck days when recurring is off
-                            // No need to remove 'required' as it's not set here anymore
                         });
+                        // Reset "Termina em" radio to "Nunca"
+                        document.getElementById('ends-never').checked = true; // Assuming 'ends-never' is the ID for "Nunca" radio
                     }
+                });
+            }
+
+            // Add event listener for "Termina em" radio buttons
+            if (terminaEmRadios && dataFimRecorrenciaInput) {
+                terminaEmRadios.forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        if (radio.value === 'data') {
+                            dataFimRecorrenciaInput.setAttribute('required', 'true');
+                            dataFimRecorrenciaInput.removeAttribute('disabled');
+                        } else {
+                            dataFimRecorrenciaInput.removeAttribute('required');
+                            dataFimRecorrenciaInput.setAttribute('disabled', 'true');
+                            dataFimRecorrenciaInput.value = ''; // Clear the date when "Nunca" is selected
+                        }
+                    });
                 });
             }
 
@@ -2049,14 +2139,20 @@
                 modalTitleRegistro.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> Registrar Atendimento';
                 document.getElementById('agendamento_id_manual').value = '';
 
-                // Reset recurring fields
+                // Reset recurring fields and hide options
                 if (recorrenteCheckbox) recorrenteCheckbox.checked = false;
                 if (recurringOptionsDiv) recurringOptionsDiv.style.display = 'none';
-                if (dataFimRecorrenciaInput) dataFimRecorrenciaInput.removeAttribute('required');
+                if (dataFimRecorrenciaInput) {
+                    dataFimRecorrenciaInput.removeAttribute('required');
+                    dataFimRecorrenciaInput.setAttribute('disabled', 'true'); // Ensure it's disabled on reset
+                    dataFimRecorrenciaInput.value = ''; // Clear date
+                }
                 if (diasSemanaCheckboxes) diasSemanaCheckboxes.forEach(checkbox => {
                     checkbox.checked = false;
-                    checkbox.removeAttribute('required'); // IMPORTANT: Ensure required is removed on reset
                 });
+                if (terminaEmRadios) {
+                    document.querySelector('input[name="termina_em"][value="nunca"]').checked = true; // Set "Nunca" as default
+                }
 
 
                 // CORREÇÃO: Formata a data manualmente para evitar problemas de fuso horário com toISOString().
@@ -2212,13 +2308,20 @@
                 document.getElementById('status_manual').value = agendamento.status;
                 
                 // Recurring fields should not be editable for existing appointments
+                // Hide and disable them
                 if (recorrenteCheckbox) recorrenteCheckbox.checked = false;
                 if (recurringOptionsDiv) recurringOptionsDiv.style.display = 'none';
-                if (dataFimRecorrenciaInput) dataFimRecorrenciaInput.removeAttribute('required');
+                if (dataFimRecorrenciaInput) {
+                    dataFimRecorrenciaInput.removeAttribute('required');
+                    dataFimRecorrenciaInput.setAttribute('disabled', 'true');
+                    dataFimRecorrenciaInput.value = '';
+                }
                 if (diasSemanaCheckboxes) diasSemanaCheckboxes.forEach(checkbox => {
                     checkbox.checked = false;
-                    checkbox.removeAttribute('required');
                 });
+                if (terminaEmRadios) {
+                    document.querySelector('input[name="termina_em"][value="nunca"]').checked = true;
+                }
 
 
                 // Preenche o select de pacientes existentes e seleciona o paciente correto
@@ -2479,18 +2582,26 @@
                 const horaAgendamento = document.getElementById('hora_agendamento_manual').value;
                 const agendamentoIdSendoEditado = document.getElementById('agendamento_id_manual').value; // ID do agendamento se estiver editando
 
-                // Verifica se é um agendamento recorrente e se algum dia da semana foi selecionado
                 const isRecorrente = document.getElementById('recorrente_checkbox').checked;
                 const selectedDays = Array.from(diasSemanaCheckboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
+                const terminaEmValue = document.querySelector('input[name="termina_em"]:checked').value;
 
-                if (isRecorrente && selectedDays.length === 0) {
-                    openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes, selecione pelo menos um dia da semana.", "danger");
-                    event.preventDefault(); // Impede o envio do formulário
-                    return;
+                if (isRecorrente) {
+                    if (selectedDays.length === 0) {
+                        openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes, selecione pelo menos um dia da semana.", "danger");
+                        event.preventDefault(); // Impede o envio do formulário
+                        return;
+                    }
+                    if (terminaEmValue === 'data' && !dataFimRecorrenciaInput.value) {
+                        openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes com data de término, a data de fim da recorrência é obrigatória.", "danger");
+                        event.preventDefault(); // Impede o envio do formulário
+                        return;
+                    }
                 }
 
                 // Validação de conflito apenas para agendamentos não recorrentes ou para a primeira instância de um recorrente
-                if (!isRecorrente) {
+                // (A validação de conflito para instâncias futuras de agendamentos recorrentes deve ser feita no backend)
+                if (!isRecorrente) { // Only check for conflicts if it's a single appointment
                     const conflito = allAppointments.some(app => {
                         // Ignora o próprio agendamento se estiver em modo de edição
                         if (agendamentoIdSendoEditado && app.id === agendamentoIdSendoEditado) {
@@ -2507,8 +2618,8 @@
                         return;
                     }
                 }
-                // Se for um agendamento recorrente, a validação de conflito para cada instância será feita no backend.
-                // O frontend apenas valida a seleção de pelo menos um dia da semana.
+                // If it's a recurring appointment, the backend will handle potential conflicts for future instances.
+                // The frontend only validates the selection of at least one day and the end date if "Em data" is chosen.
             });
         });
     </script>
