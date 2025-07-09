@@ -1884,9 +1884,12 @@
                     const year = currentMiniCalendarDate.getFullYear();
                     const month = currentMiniCalendarDate.getMonth();
                     const startDate = new Date(year, month, 1);
-                    const endDate = new Date(year, month + 1, 0);
                     const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+                    
+                    // Calcula a data de fim como 3 meses a partir do primeiro dia do mês atual do mini-calendário
+                    const endDate = new Date(year, month + 3, 0); 
                     const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                    
                     const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                     window.location.href = newUrl;
                 });
@@ -1906,9 +1909,12 @@
                         const year = currentMiniCalendarDate.getFullYear();
                         const month = currentMiniCalendarDate.getMonth();
                         const startDate = new Date(year, month, 1);
-                        const endDate = new Date(year, month + 1, 0);
                         const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+                        
+                        // Calcula a data de fim como 3 meses a partir do primeiro dia do mês atual do mini-calendário
+                        const endDate = new Date(year, month + 3, 0); 
                         const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                        
                         const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                         window.location.href = newUrl;
                     });
@@ -1939,16 +1945,18 @@
                     const newWeekStart = new Date(currentWeekStart);
                     newWeekStart.setDate(newWeekStart.getDate() - 7);
                     
+                    // Atualiza a data do mini-calendário para refletir o mês da nova semana de início
+                    currentMiniCalendarDate = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth(), 1);
+
                     // Formata a data para a URL
                     const formattedNewWeekStart = `${newWeekStart.getFullYear()}-${String(newWeekStart.getMonth() + 1).padStart(2, '0')}-${String(newWeekStart.getDate()).padStart(2, '0')}`;
                     
-                    // Calcula a data de fim da nova semana
-                    const newWeekEnd = new Date(newWeekStart);
-                    newWeekEnd.setDate(newWeekEnd.getDate() + 6);
-                    const formattedNewWeekEnd = `${newWeekEnd.getFullYear()}-${String(newWeekEnd.getMonth() + 1).padStart(2, '0')}-${String(newWeekEnd.getDate()).padStart(2, '0')}`;
+                    // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
+                    const endDateForBackend = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
+                    const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
 
                     const baseUrl = window.location.origin + window.location.pathname;
-                    const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedNewWeekEnd}&profissional_id=${professionalFilterId}`;
+                    const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                     window.location.href = newUrl; 
                 });
 
@@ -1957,16 +1965,18 @@
                     const newWeekStart = new Date(currentWeekStart);
                     newWeekStart.setDate(newWeekStart.getDate() + 7);
 
+                    // Atualiza a data do mini-calendário para refletir o mês da nova semana de início
+                    currentMiniCalendarDate = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth(), 1);
+
                     // Formata a data para a URL
                     const formattedNewWeekStart = `${newWeekStart.getFullYear()}-${String(newWeekStart.getMonth() + 1).padStart(2, '0')}-${String(newWeekStart.getDate()).padStart(2, '0')}`;
                     
-                    // Calcula a data de fim da nova semana
-                    const newWeekEnd = new Date(newWeekStart);
-                    newWeekEnd.setDate(newWeekEnd.getDate() + 6);
-                    const formattedNewWeekEnd = `${newWeekEnd.getFullYear()}-${String(newWeekEnd.getMonth() + 1).padStart(2, '0')}-${String(newWeekEnd.getDate()).padStart(2, '0')}`;
+                    // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
+                    const endDateForBackend = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
+                    const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
                     
                     const baseUrl = window.location.origin + window.location.pathname;
-                    const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedNewWeekEnd}&profissional_id=${professionalFilterId}`;
+                    const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                     window.location.href = newUrl; 
                 });
 
@@ -2311,13 +2321,14 @@
                     dayElement.addEventListener('click', () => {
                         const clickedDate = new Date(`${dayElement.dataset.date}T00:00:00`);
                         
-                        // Calcula o início e o fim da semana do dia clicado
+                        // Calcula o início da semana do dia clicado
                         const startOfWeek = getMonday(clickedDate);
-                        const endOfWeek = new Date(startOfWeek);
-                        endOfWeek.setDate(startOfWeek.getDate() + 6);
 
                         const formattedStartDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
-                        const formattedEndDate = `${endOfWeek.getFullYear()}-${String(endOfWeek.getMonth() + 1).padStart(2, '0')}-${String(endOfWeek.getDate()).padStart(2, '0')}`;
+                        
+                        // Calcula a data de fim como 3 meses a partir do mês da semana de início
+                        const endDateForBackend = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
+                        const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
 
                         // Redireciona a página com os parâmetros da semana
                         const baseUrl = window.location.origin + window.location.pathname;
@@ -2335,16 +2346,16 @@
                 const miniNextMonthBtn = document.getElementById('mini-next-month-btn');
 
                 miniPrevMonthBtn.addEventListener('click', () => {
+                    // Atualiza a data do mini-calendário para o mês anterior
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() - 1);
-                    renderMiniCalendar(currentMiniCalendarDate);
-                    // Ao mudar o mês no mini-calendário, redireciona para a primeira semana desse mês
-                    const firstDayOfMonth = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
-                    const startOfWeek = getMonday(firstDayOfMonth);
-                    const endOfWeek = new Date(startOfWeek);
-                    endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-                    const formattedStartDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
-                    const formattedEndDate = `${endOfWeek.getFullYear()}-${String(endOfWeek.getMonth() + 1).padStart(2, '0')}-${String(endOfWeek.getDate()).padStart(2, '0')}`;
+                    
+                    // Calcula a nova data de início para a URL (primeiro dia do mês atualizado do mini-calendário)
+                    const newStartDate = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
+                    const formattedStartDate = `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`;
+                    
+                    // Calcula a data de fim como 3 meses a partir da newStartDate
+                    const endDateForBackend = new Date(newStartDate.getFullYear(), newStartDate.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
+                    const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
 
                     const baseUrl = window.location.origin + window.location.pathname;
                     const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
@@ -2354,16 +2365,16 @@
                 });
 
                 miniNextMonthBtn.addEventListener('click', () => {
+                    // Atualiza a data do mini-calendário para o próximo mês
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() + 1);
-                    renderMiniCalendar(currentMiniCalendarDate);
-                    // Ao mudar o mês no mini-calendário, redireciona para a primeira semana desse mês
-                    const firstDayOfMonth = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
-                    const startOfWeek = getMonday(firstDayOfMonth);
-                    const endOfWeek = new Date(startOfWeek);
-                    endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-                    const formattedStartDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
-                    const formattedEndDate = `${endOfWeek.getFullYear()}-${String(endOfWeek.getMonth() + 1).padStart(2, '0')}-${String(endOfWeek.getDate()).padStart(2, '0')}`;
+                    
+                    // Calcula a nova data de início para a URL (primeiro dia do mês atualizado do mini-calendário)
+                    const newStartDate = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
+                    const formattedStartDate = `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`;
+                    
+                    // Calcula a data de fim como 3 meses a partir da newStartDate
+                    const endDateForBackend = new Date(newStartDate.getFullYear(), newStartDate.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
+                    const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
 
                     const baseUrl = window.location.origin + window.location.pathname;
                     const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
