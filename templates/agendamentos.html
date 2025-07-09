@@ -1300,29 +1300,26 @@
                         </div>
                     </div>
 
-                    <h4 class="form-section-title">Repetição</h4>
+                    <!-- New: Recurring Appointment Options -->
                     <div class="form-group">
-                        <label for="recurrence_type_manual">Repetir</label>
-                        <select id="recurrence_type_manual" name="recurrence_type" class="form-input">
-                            <option value="none">Não se repete</option>
-                            <option value="daily">Todos os dias</option>
-                            <option value="weekly">Semanalmente (no mesmo dia da semana)</option>
-                            <option value="weekdays">Todos os dias da semana (segunda a sexta)</option>
-                            <option value="custom">Personalizar...</option>
-                        </select>
+                        <label for="recorrente_checkbox" class="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200 cursor-pointer">
+                            <input type="checkbox" id="recorrente_checkbox" name="recorrente_checkbox" value="true" class="w-auto h-auto transform scale-125 accent-primary">
+                            Agendamento Recorrente
+                        </label>
                     </div>
 
                     <div id="recurringOptions" class="recurring-options">
+                        <h4 class="form-section-title">Opções de Recorrência</h4>
                         <div class="form-group">
                             <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Repetir em:</label>
                             <div class="day-checkbox-group">
-                                <label><input type="checkbox" name="dias_semana" value="1"> Segunda</label>
-                                <label><input type="checkbox" name="dias_semana" value="2"> Terça</label>
-                                <label><input type="checkbox" name="dias_semana" value="3"> Quarta</label>
-                                <label><input type="checkbox" name="dias_semana" value="4"> Quinta</label>
-                                <label><input type="checkbox" name="dias_semana" value="5"> Sexta</label>
-                                <label><input type="checkbox" name="dias_semana" value="6"> Sábado</label>
-                                <label><input type="checkbox" name="dias_semana" value="0"> Domingo</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="1" > Segunda</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="2" > Terça</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="3" > Quarta</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="4" > Quinta</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="5" > Sexta</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="6" > Sábado</label>
+                                <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200"><input type="checkbox" name="dias_semana" value="0" > Domingo</label>
                             </div>
                         </div>
                         <div class="form-group">
@@ -1330,6 +1327,8 @@
                             <input type="date" id="data_fim_recorrencia" name="data_fim_recorrencia" class="form-input">
                         </div>
                     </div>
+                    <!-- End New: Recurring Appointment Options -->
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
@@ -2013,59 +2012,30 @@
             const formApagar = document.getElementById('formApagarAgendamento');
 
             // Recurring appointment elements
-            const recurrenceTypeSelect = document.getElementById('recurrence_type_manual');
+            const recorrenteCheckbox = document.getElementById('recorrente_checkbox');
             const recurringOptionsDiv = document.getElementById('recurringOptions');
             const dataFimRecorrenciaInput = document.getElementById('data_fim_recorrencia');
             const diasSemanaCheckboxes = document.querySelectorAll('input[name="dias_semana"]');
-            const recorrenteCheckbox = document.getElementById('recorrente_checkbox'); // This checkbox will be controlled by recurrenceTypeSelect
 
-            // Function to toggle visibility and required attributes of recurrence options
-            function toggleRecurrenceOptions() {
-                const selectedType = recurrenceTypeSelect.value;
-                const isCustomOrRecurring = (selectedType !== 'none');
-
-                if (selectedType === 'custom') {
-                    recurringOptionsDiv.style.display = 'block';
-                    dataFimRecorrenciaInput.setAttribute('required', 'true');
-                    recorrenteCheckbox.checked = true; // Mark as recurring
-                } else if (selectedType === 'none') {
-                    recurringOptionsDiv.style.display = 'none';
-                    dataFimRecorrenciaInput.removeAttribute('required');
-                    recorrenteCheckbox.checked = false; // Not recurring
-                    diasSemanaCheckboxes.forEach(checkbox => checkbox.checked = false); // Uncheck all days
-                } else { // daily, weekly, weekdays
-                    recurringOptionsDiv.style.display = 'block'; // Show the container
-                    dataFimRecorrenciaInput.setAttribute('required', 'true');
-                    recorrenteCheckbox.checked = true; // Mark as recurring
-                    diasSemanaCheckboxes.forEach(checkbox => checkbox.checked = false); // Uncheck all days first
-
-                    if (selectedType === 'daily') {
-                        // No specific days to check for daily
-                    } else if (selectedType === 'weekly') {
-                        // Check the day of the week of the initial appointment date
-                        const initialDate = new Date(document.getElementById('data_agendamento_manual').value + 'T00:00:00');
-                        const dayOfWeek = initialDate.getDay(); // 0 for Sunday, 1 for Monday...
+            // Toggle recurring options visibility
+            if (recorrenteCheckbox && recurringOptionsDiv) {
+                recorrenteCheckbox.addEventListener('change', () => {
+                    if (recorrenteCheckbox.checked) {
+                        recurringOptionsDiv.style.display = 'block';
+                        dataFimRecorrenciaInput.setAttribute('required', 'true');
+                        // Removed setting 'required' on individual day checkboxes
+                        // Validation for at least one day selected will be handled by backend or custom JS
+                    } else {
+                        recurringOptionsDiv.style.display = 'none';
+                        dataFimRecorrenciaInput.removeAttribute('required');
                         diasSemanaCheckboxes.forEach(checkbox => {
-                            if (parseInt(checkbox.value) === dayOfWeek) {
-                                checkbox.checked = true;
-                            }
-                        });
-                    } else if (selectedType === 'weekdays') {
-                        // Check Monday (1) to Friday (5)
-                        diasSemanaCheckboxes.forEach(checkbox => {
-                            const dayValue = parseInt(checkbox.value);
-                            if (dayValue >= 1 && dayValue <= 5) {
-                                checkbox.checked = true;
-                            }
+                            checkbox.checked = false; // Uncheck days when recurring is off
+                            // No need to remove 'required' as it's not set here anymore
                         });
                     }
-                }
+                });
             }
 
-            // Event listener for recurrence type select
-            if (recurrenceTypeSelect) {
-                recurrenceTypeSelect.addEventListener('change', toggleRecurrenceOptions);
-            }
 
             // Abre o modal de registro/edição
             function openBookingModal(date, time) {
@@ -2074,12 +2044,15 @@
                 modalTitleRegistro.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> Registrar Atendimento';
                 document.getElementById('agendamento_id_manual').value = '';
 
-                // Reset recurrence fields and hide options
-                recurrenceTypeSelect.value = 'none';
-                recorrenteCheckbox.checked = false;
-                recurringOptionsDiv.style.display = 'none';
-                dataFimRecorrenciaInput.removeAttribute('required');
-                diasSemanaCheckboxes.forEach(checkbox => checkbox.checked = false);
+                // Reset recurring fields
+                if (recorrenteCheckbox) recorrenteCheckbox.checked = false;
+                if (recurringOptionsDiv) recurringOptionsDiv.style.display = 'none';
+                if (dataFimRecorrenciaInput) dataFimRecorrenciaInput.removeAttribute('required');
+                if (diasSemanaCheckboxes) diasSemanaCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.removeAttribute('required'); // IMPORTANT: Ensure required is removed on reset
+                });
+
 
                 // CORREÇÃO: Formata a data manualmente para evitar problemas de fuso horário com toISOString().
                 const year = date.getFullYear();
@@ -2233,33 +2206,14 @@
                 document.getElementById('preco_manual').value = parseFloat(agendamento.servico_procedimento_preco).toFixed(2);
                 document.getElementById('status_manual').value = agendamento.status;
                 
-                // For editing, assume it's a non-recurring or custom recurring appointment
-                // The backend would ideally pass recurrence details for existing recurring events
-                recurrenceTypeSelect.value = 'none'; // Default to none for existing appointments
-                recorrenteCheckbox.checked = false;
-                recurringOptionsDiv.style.display = 'none';
-                dataFimRecorrenciaInput.removeAttribute('required');
-                diasSemanaCheckboxes.forEach(checkbox => checkbox.checked = false);
-
-                // If the existing appointment has recurrence data, set recurrenceTypeSelect to 'custom'
-                // This part would depend on how your backend sends recurrence info for existing appointments.
-                // For demonstration, if 'recorrente' flag exists and is true:
-                if (agendamento.recorrente) { // Assuming 'recorrente' is a boolean flag from backend
-                    recurrenceTypeSelect.value = 'custom';
-                    recorrenteCheckbox.checked = true;
-                    recurringOptionsDiv.style.display = 'block';
-                    dataFimRecorrenciaInput.setAttribute('required', 'true');
-                    if (agendamento.data_fim_recorrencia) {
-                        dataFimRecorrenciaInput.value = agendamento.data_fim_recorrencia;
-                    }
-                    if (agendamento.dias_semana && Array.isArray(agendamento.dias_semana)) {
-                        diasSemanaCheckboxes.forEach(checkbox => {
-                            if (agendamento.dias_semana.includes(parseInt(checkbox.value))) {
-                                checkbox.checked = true;
-                            }
-                        });
-                    }
-                }
+                // Recurring fields should not be editable for existing appointments
+                if (recorrenteCheckbox) recorrenteCheckbox.checked = false;
+                if (recurringOptionsDiv) recurringOptionsDiv.style.display = 'none';
+                if (dataFimRecorrenciaInput) dataFimRecorrenciaInput.removeAttribute('required');
+                if (diasSemanaCheckboxes) diasSemanaCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.removeAttribute('required');
+                });
 
 
                 // Preenche o select de pacientes existentes e seleciona o paciente correto
@@ -2519,60 +2473,19 @@
                 const dataAgendamento = document.getElementById('data_agendamento_manual').value;
                 const horaAgendamento = document.getElementById('hora_agendamento_manual').value;
                 const agendamentoIdSendoEditado = document.getElementById('agendamento_id_manual').value; // ID do agendamento se estiver editando
-                const recurrenceType = recurrenceTypeSelect.value;
 
-                // Handle recurrence type logic for submission
-                if (recurrenceType === 'none') {
-                    recorrenteCheckbox.checked = false;
-                    diasSemanaCheckboxes.forEach(checkbox => checkbox.checked = false);
-                    dataFimRecorrenciaInput.value = '';
-                } else if (recurrenceType === 'daily') {
-                    recorrenteCheckbox.checked = true;
-                    diasSemanaCheckboxes.forEach(checkbox => checkbox.checked = false); // No specific days for daily
-                } else if (recurrenceType === 'weekly') {
-                    recorrenteCheckbox.checked = true;
-                    diasSemanaCheckboxes.forEach(checkbox => checkbox.checked = false); // Clear all first
-                    const initialDate = new Date(dataAgendamento + 'T00:00:00');
-                    const dayOfWeek = initialDate.getDay();
-                    diasSemanaCheckboxes.forEach(checkbox => {
-                        if (parseInt(checkbox.value) === dayOfWeek) {
-                            checkbox.checked = true;
-                        }
-                    });
-                } else if (recurrenceType === 'weekdays') {
-                    recorrenteCheckbox.checked = true;
-                    diasSemanaCheckboxes.forEach(checkbox => {
-                        const dayValue = parseInt(checkbox.value);
-                        if (dayValue >= 1 && dayValue <= 5) { // Monday to Friday
-                            checkbox.checked = true;
-                        } else {
-                            checkbox.checked = false;
-                        }
-                    });
-                } else if (recurrenceType === 'custom') {
-                    recorrenteCheckbox.checked = true;
-                    const selectedDays = Array.from(diasSemanaCheckboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
-                    if (selectedDays.length === 0) {
-                        openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes personalizados, selecione pelo menos um dia da semana.", "danger");
-                        event.preventDefault();
-                        return;
-                    }
-                    if (!dataFimRecorrenciaInput.value) {
-                         openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes, a data de fim é obrigatória.", "danger");
-                        event.preventDefault();
-                        return;
-                    }
+                // Verifica se é um agendamento recorrente e se algum dia da semana foi selecionado
+                const isRecorrente = document.getElementById('recorrente_checkbox').checked;
+                const selectedDays = Array.from(diasSemanaCheckboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
+
+                if (isRecorrente && selectedDays.length === 0) {
+                    openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes, selecione pelo menos um dia da semana.", "danger");
+                    event.preventDefault(); // Impede o envio do formulário
+                    return;
                 }
 
-                // Re-check `isRecorrente` after recurrence type logic
-                const isRecorrenteFinal = recorrenteCheckbox.checked;
-                const selectedDaysFinal = Array.from(diasSemanaCheckboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
-
-
                 // Validação de conflito apenas para agendamentos não recorrentes ou para a primeira instância de um recorrente
-                // Se for um agendamento recorrente, a validação de conflito para cada instância será feita no backend.
-                // O frontend apenas valida a seleção de pelo menos um dia da semana e a data de fim para recorrentes.
-                if (!isRecorrenteFinal) { // Only validate for non-recurring appointments
+                if (!isRecorrente) {
                     const conflito = allAppointments.some(app => {
                         // Ignora o próprio agendamento se estiver em modo de edição
                         if (agendamentoIdSendoEditado && app.id === agendamentoIdSendoEditado) {
@@ -2589,6 +2502,8 @@
                         return;
                     }
                 }
+                // Se for um agendamento recorrente, a validação de conflito para cada instância será feita no backend.
+                // O frontend apenas valida a seleção de pelo menos um dia da semana.
             });
         });
     </script>
