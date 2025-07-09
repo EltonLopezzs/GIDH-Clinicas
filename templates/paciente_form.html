@@ -324,7 +324,7 @@
             background: var(--primary);
             color: #fff;
         } */
-        .paciente-btn:hover {
+        .paciente-btn:not(.cancel):hover {
             background: var(--primary-dark);
         }
         /* .paciente-actions-sticky {
@@ -426,8 +426,9 @@
                     {% endif %}
                 {% endwith %}
 
-                <form method="POST" action="{{ action_url|default('') }}">
+                <form id="patient-form" class="patient-form" method="POST" action="{{ action_url|default('') }}">
                     <div class="form-card">
+                        <button type="button" class="close-modal-btn" aria-label="Fechar modal">&times;</button>
                         <div class="paciente-steps">
                             <div class="paciente-step active" data-step="1">
                                 <i class="fa-solid fa-user"></i>
@@ -479,6 +480,17 @@
                                     <input type="text" id="rg" name="rg" value="{{ request.form.rg if 'rg' in request.form else paciente.rg if paciente else '' }}" placeholder="XX.XXX.XXX-X">
                                 </div>
                             </div> <!-- .paciente-card-fields -->
+                            <div class="paciente-actions paciente-actions-sticky">
+                                <button type="button" class="paciente-btn cancel modal-close">
+                                    <i class="fas fa-times"></i>
+                                    <!-- <span>Cancelar</span> -->
+                                </button>
+
+                                <button type="submit" class="paciente-btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    <span>Salvar</span>
+                                </button>
+                            </div>
                         </div> <!-- .paciente-card-section -->
 
                         <div class="paciente-card-section" data-step-content="2" style="display:none;">
@@ -496,6 +508,17 @@
                                     <input type="email" id="email" name="email" value="{{ request.form.email if 'email' in request.form else paciente.contato_email if paciente else '' }}" placeholder="seu.email@example.com">
                                 </div>
                             </div> <!-- .paciente-card-fields -->
+                            <div class="paciente-actions paciente-actions-sticky">
+                                <button type="button" class="paciente-btn cancel modal-close">
+                                    <i class="fas fa-times"></i>
+                                    <!-- <span>Cancelar</span> -->
+                                </button>
+
+                                <button type="submit" class="paciente-btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    <span>Salvar</span>
+                                </button>
+                            </div>
                         </div> <!-- .paciente-card-section -->
 
                         <div class="paciente-card-section" data-step-content="3" style="display:none;">
@@ -533,6 +556,17 @@
                                     <input type="text" id="complemento" name="complemento" value="{{ request.form.complemento if 'complemento' in request.form else (paciente.endereco.complemento if paciente and paciente.endereco else '') }}" placeholder="Apto 401">
                                 </div>
                             </div> <!-- .paciente-card-fields -->
+                            <div class="paciente-actions paciente-actions-sticky">
+                                <button type="button" class="paciente-btn cancel modal-close">
+                                    <i class="fas fa-times"></i>
+                                    <!-- <span>Cancelar</span> -->
+                                </button>
+
+                                <button type="submit" class="paciente-btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    <span>Salvar</span>
+                                </button>
+                            </div>
                         </div> <!-- .paciente-card-section -->
 
                         <div class="paciente-card-section" data-step-content="4" style="display:none;">
@@ -732,5 +766,99 @@
             setupPatientForm();
         });
     </script>
+
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Inicializa a lógica dos steps do formulário
+    const steps = document.querySelectorAll(".form-step");
+    const prevBtns = document.querySelectorAll(".btn-prev");
+    const nextBtns = document.querySelectorAll(".btn-next");
+    const formSteps = document.querySelectorAll(".form-steps li");
+
+    let currentStep = 0;
+
+    const updateSteps = () => {
+        steps.forEach((step, index) => {
+            step.classList.toggle("active", index === currentStep);
+        });
+        formSteps.forEach((step, index) => {
+            if (index < currentStep) {
+                step.classList.add("completed");
+                step.classList.remove("active");
+            } else if (index === currentStep) {
+                step.classList.add("active");
+                step.classList.remove("completed");
+            } else {
+                step.classList.remove("active", "completed");
+            }
+        });
+    };
+
+    const goToStep = (stepIndex) => {
+        if (stepIndex >= 0 && stepIndex < steps.length) {
+            currentStep = stepIndex;
+            updateSteps();
+        }
+    };
+
+    nextBtns.forEach(button => {
+        button.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateSteps();
+            }
+        });
+    });
+
+    prevBtns.forEach(button => {
+        button.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (currentStep > 0) {
+                currentStep--;
+                updateSteps();
+            }
+        });
+    });
+
+    formSteps.forEach((step, index) => {
+        step.addEventListener('click', () => goToStep(index));
+    });
+
+    updateSteps(); // Initialize the view
+
+    // Lógica para submissão do formulário via AJAX
+    const form = document.getElementById('patient-form');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const url = form.action;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Dispara um evento customizado para notificar a página principal
+                const event = new CustomEvent('patientSaved', { detail: { message: result.message, category: 'success' } });
+                window.parent.document.dispatchEvent(event);
+            } else {
+                 // Dispara um evento para notificar sobre o erro
+                const event = new CustomEvent('patientSaveFailed', { detail: { message: result.message || 'Ocorreu um erro.', category: 'danger' } });
+                window.parent.document.dispatchEvent(event);
+            }
+        } catch (error) {
+            console.error('Erro ao submeter o formulário:', error);
+            const event = new CustomEvent('patientSaveFailed', { detail: { message: 'Erro de conexão. Tente novamente.', category: 'danger' } });
+            window.parent.document.dispatchEvent(event);
+        }
+    });
+});
+</script>
 </body>
 </html>

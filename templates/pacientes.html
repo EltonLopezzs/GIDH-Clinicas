@@ -121,7 +121,7 @@
         }
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar.collapsed .sidebar-footer span { display: none; }
-        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center, padding: 0.75rem; }
 
         /* --- Main Content & Topbar --- */
         .main-content {
@@ -456,6 +456,407 @@
                 font-size: 0.8rem; /* Reduz o tamanho da fonte */
             }
         }
+
+        /* --- Modal de Steps para Adicionar/Editar Paciente (visual igual ao paciente_form) --- */
+        /* --- Steps no Modal Centralizado --- */
+        #patient-steps-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15,23,42,0.25);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3500;
+            transition: opacity 0.3s;
+        }
+        #patient-steps-modal-overlay.visible { opacity: 1; }
+        #patient-steps-modal {
+            background: var(--card);
+            border-radius: 18px;
+            box-shadow: 0 10px 32px rgba(0,0,0,0.18);
+            /* max-width: 700px;
+            width: 95vw;
+            max-height: 95vh; */
+            overflow: auto;
+            position: relative;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-card {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            align-items: stretch;
+        }
+        .paciente-steps {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            background: none;
+            border-radius: 18px 18px 0 0;
+            overflow: hidden;
+        }
+        .paciente-step {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px 0 14px 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--muted);
+            opacity: 0.7;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            background: none;
+            transition: color 0.2s, opacity 0.2s, border-color 0.2s, background 0.2s;
+        }
+        .paciente-step.active {
+            color: var(--primary);
+            opacity: 1;
+            border-bottom: 3px solid var(--primary);
+            background: var(--primary-light);
+        }
+        .paciente-step i {
+            font-size: 1.2rem;
+            margin-right: 0.5rem;
+        }
+        @media (max-width: 600px) {
+            #patient-steps-modal { max-width: 100vw; border-radius: 0; }
+            .paciente-steps { flex-direction: column; border-radius: 0; }
+            .paciente-step { border-bottom: none; border-left: 4px solid transparent; justify-content: flex-start; padding: 14px 0 14px 18px; }
+            .paciente-step.active { border-left: 4px solid var(--primary); background: var(--primary-light); }
+        }
+
+        .paciente-card-section {
+            background: var(--card);
+            border-radius: 0px 0px 18px 18px;
+            box-shadow: 0 4px 24px 0 rgb(0 0 0 / 0.07);
+            padding: 2.5rem 2rem 2rem 2rem;
+            /* min-height: 100%; */
+            border: 1.5px solid var(--border-color);
+            position: relative;
+        }
+
+        .paciente-card-header-modal {
+            display: flex;
+            flex-direction: column;
+            /* align-items: center;
+            justify-content: center; */
+            /* text-align: center; */
+            margin-bottom: 1.5rem;
+        }
+
+        .paciente-card-container-modal {
+            min-height: 80vh;
+            min-width: 80vw;            
+
+            display: flex;
+            flex-direction: column;
+            /* align-items: center; */
+            justify-content: space-between;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        .section-title i {
+            font-size: 1.2rem;
+        }
+        .paciente-card-fields {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.2rem 2rem;
+        }
+        .paciente-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .paciente-field label {
+            font-size: 1.05rem;
+            color: var(--muted);
+            font-weight: 600;
+            margin-bottom: 0.1rem;
+        }
+        .paciente-field input,
+        .paciente-field select,
+        .paciente-field textarea {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 1.1rem;
+            padding: 0.5rem 0.2rem 0.3rem 0.2rem;
+            color: var(--text);
+            transition: border-color 0.2s;
+            border-radius: 0;
+            outline: none;
+        }
+        .paciente-field input:focus,
+        .paciente-field select:focus,
+        .paciente-field textarea:focus {
+            border-color: var(--primary);
+            background: #f7fafc;
+        }
+        .paciente-field textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .paciente-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+            /* position: absolute;
+            bottom: 2rem; */
+        }
+        .paciente-btn {
+            padding: 8px 16px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 12px 0 rgb(13 148 136 / 0.10);
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .paciente-btn.cancel {
+            background: transparent;
+            color: var(--muted);
+            box-shadow: none;
+        }
+        .paciente-btn:not(.cancel):hover {
+            background: var(--primary-dark);
+        }
+        @media (max-width: 600px) {
+            #patient-drawer { width: 100vw; min-width: 0; }
+            .form-card { flex-direction: column; }
+            .paciente-steps { flex-direction: row; width: 100%; min-width: 0; height: auto; }
+            .paciente-step { flex-direction: row; align-items: center; justify-content: center; width: 100%; border-left: none; border-top: 4px solid transparent; }
+            .paciente-step.active { border-top: 4px solid var(--primary); border-left: none; }
+            .paciente-card-section { border-radius: 0 0 18px 18px; }
+        }
+
+        /* --- Estilos para o input de data customizado --- */
+        .date-input-display {
+            position: relative;
+            background: var(--card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text);
+            transition: all 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .date-input-display:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+        }
+
+        .date-input-display::placeholder {
+            color: var(--muted);
+            font-weight: 400;
+        }
+
+        .date-input-display.error {
+            border-color: var(--danger);
+            background-color: rgba(220, 38, 38, 0.05);
+        }
+
+        .date-input-display.error:focus {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .date-input-display.valid {
+            border-color: var(--success);
+            background-color: rgba(22, 163, 74, 0.05);
+        }
+
+        /* --- Estilos para campos obrigatórios --- */
+        .paciente-field.required label::after {
+            content: ' *';
+            color: var(--danger);
+            font-weight: 700;
+            margin-left: 2px;
+        }
+
+        .paciente-field.required input,
+        .paciente-field.required select,
+        .paciente-field.required textarea {
+            border-left: 3px solid var(--danger);
+            padding-left: 8px;
+        }
+
+        .paciente-field.required input:focus,
+        .paciente-field.required select:focus,
+        .paciente-field.required textarea:focus {
+            border-left-color: var(--primary);
+            box-shadow: -3px 0 0 var(--primary);
+        }
+
+        .paciente-field.required input:valid,
+        .paciente-field.required select:valid,
+        .paciente-field.required textarea:valid {
+            border-left-color: var(--success);
+        }
+
+        .paciente-field.required input:invalid,
+        .paciente-field.required select:invalid,
+        .paciente-field.required textarea:invalid {
+            border-left-color: var(--danger);
+        }
+
+        /* Estilo específico para o campo de data obrigatório */
+        .paciente-field.required .date-input-display {
+            border-left: 3px solid var(--danger);
+            padding-left: 13px;
+        }
+
+        .paciente-field.required .date-input-display:focus {
+            border-left-color: var(--primary);
+            box-shadow: -3px 0 0 var(--primary), 0 0 0 3px rgba(13, 148, 136, 0.1);
+        }
+
+        .paciente-field.required .date-input-display.valid {
+            border-left-color: var(--success);
+        }
+
+        .paciente-field.required .date-input-display.error {
+            border-left-color: var(--danger);
+        }
+
+        /* Estados de validação para campos obrigatórios */
+        .paciente-field.required input.valid,
+        .paciente-field.required select.valid,
+        .paciente-field.required textarea.valid {
+            border-bottom-color: var(--success);
+            background-color: rgba(22, 163, 74, 0.05);
+        }
+
+        .paciente-field.required input.invalid,
+        .paciente-field.required select.invalid,
+        .paciente-field.required textarea.invalid {
+            border-bottom-color: var(--danger);
+            background-color: rgba(220, 38, 38, 0.05);
+        }
+
+        /* Animação sutil para transição de estados */
+        .paciente-field input,
+        .paciente-field select,
+        .paciente-field textarea,
+        .paciente-field .date-input-display {
+            transition: all 0.3s ease;
+        }
+
+        /* Tooltip para campos obrigatórios */
+        .paciente-field.required {
+            position: relative;
+        }
+
+        .paciente-field.required:hover::before {
+            content: 'Campo obrigatório';
+            position: absolute;
+            top: -30px;
+            left: 0;
+            background: var(--text);
+            color: var(--card);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 1000;
+            opacity: 0.9;
+        }
+
+        /* Tooltip específico para CPF */
+        .paciente-field.required input[name="cpf"]:hover::after {
+            content: 'Digite um CPF válido';
+            position: absolute;
+            top: -30px;
+            right: 0;
+            background: var(--info);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 1001;
+            opacity: 0.9;
+        }
+
+        /* Feedback visual para CPF inválido */
+        .paciente-field.required input[name="cpf"].invalid {
+            border-bottom-color: var(--danger);
+            background-color: rgba(220, 38, 38, 0.05);
+            position: relative;
+        }
+
+        .paciente-field.required input[name="cpf"].invalid::placeholder {
+            color: var(--danger);
+        }
+
+        /* Animação de shake para campos inválidos no submit */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .paciente-field.required input.invalid.shake,
+        .paciente-field.required select.invalid.shake,
+        .paciente-field.required textarea.invalid.shake,
+        .paciente-field.required .date-input-display.error.shake {
+            animation: shake 0.5s ease-in-out;
+            border-color: var(--danger) !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2) !important;
+        }
+
+        /* Destaque mais forte para campos inválidos */
+        .paciente-field.required input.invalid,
+        .paciente-field.required select.invalid,
+        .paciente-field.required textarea.invalid {
+            border-bottom-color: var(--danger) !important;
+            border-left-color: var(--danger) !important;
+            background-color: rgba(220, 38, 38, 0.1) !important;
+        }
+
+        .paciente-field.required .date-input-display.error {
+            border-color: var(--danger) !important;
+            border-left-color: var(--danger) !important;
+            background-color: rgba(220, 38, 38, 0.1) !important;
+        }
+
+        /* Indicador visual para step com erro */
+        .paciente-step.has-error {
+            color: var(--danger) !important;
+            border-bottom-color: var(--danger) !important;
+            background: rgba(220, 38, 38, 0.1) !important;
+        }
+
+        .paciente-step.has-error::after {
+            content: '⚠️';
+            margin-left: 5px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -508,9 +909,9 @@
                         <input type="text" id="searchInput" name="search" placeholder="Buscar paciente..." class="search-input" value="{{ search_query or '' }}">
                         <button type="submit" class="search-button"><i class="fas fa-search"></i></button>
                     </form>
-                    <a href="{{ url_for('adicionar_paciente') }}" class="btn btn-primary">
+                    <button id="add-patient-btn" class="btn btn-primary" type="button" onclick="openPatientStepsModal()">
                         <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Paciente</span>
-                    </a>
+                    </button>
                 </div>
             </header>
 
@@ -528,6 +929,104 @@
                     <button id="nextPageBtn" class="pagination-button">Próximo <i class="fas fa-chevron-right"></i></button>
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Modal de Steps para Adicionar/Editar Paciente (visual igual ao paciente_form) -->
+    <div id="patient-steps-modal-overlay" class="modal-overlay" style="display:none; z-index:3500; align-items:center; justify-content:center;">
+        <div id="patient-steps-modal" style="background:var(--card); border-radius:18px; box-shadow:0 10px 32px rgba(0,0,0,0.18); overflow:auto; position:relative; padding:0; display:flex; flex-direction:column;">
+            <form id="steps-patient-form" class="patient-form" action="{{ url_for('adicionar_paciente') }}" method="post" style="width:100%;">
+                <div class="form-card" style="align-items:stretch;">
+                    <div class="paciente-steps" style="min-width:120px;">
+                        <div class="paciente-step active" data-step="1"><i class="fa-solid fa-user"></i> Dados Pessoais</div>
+                        <div class="paciente-step" data-step="2"><i class="fa-solid fa-phone"></i> Contato</div>
+                        <div class="paciente-step" data-step="3"><i class="fa-solid fa-location-dot"></i> Endereço</div>
+                        <div class="paciente-step" data-step="4"><i class="fa-solid fa-circle-info"></i> Outras Informações</div>
+                    </div>
+                    <div class="paciente-step-content" style="flex:1; position:relative;">
+                        <button type="button" class="paciente-btn cancel steps-modal-close" style="position:absolute; top:12px; right:12px; z-index:10; background:transparent; color:var(--muted); font-size:1.5rem;">&times;</button>
+                        <div class="paciente-card-section" data-step-content="1" style="display:block;">
+                            <div class="paciente-card-container-modal">
+                                <div class="paciente-card-header-modal">
+                                    <!-- <div class="section-title"><i class="fa-solid fa-user"></i> Dados Pessoais</div> -->
+                                    <div class="paciente-card-fields single">
+                                        <div class="paciente-field required"><label for="steps-nome">Nome Completo</label><input type="text" id="steps-nome" name="nome" required></div>
+                                        <div class="paciente-field required">
+                                            <label for="steps-data_nascimento">Data de Nascimento</label>
+                                            <input type="text" 
+                                                   id="steps-data_nascimento_display" 
+                                                   placeholder="DD/MM/AAAA" 
+                                                   maxlength="10" 
+                                                   class="date-input-display"
+                                                   required>
+                                            <input type="hidden" id="steps-data_nascimento" name="data_nascimento" required>
+                                        </div>
+                                        <div class="paciente-field"><label for="steps-genero">Gênero</label><select id="steps-genero" name="genero"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option><option value="Outro">Outro</option></select></div>
+                                        <div class="paciente-field required"><label for="steps-cpf">CPF</label><input type="text" id="steps-cpf" name="cpf" placeholder="XXX.XXX.XXX-XX" required></div>
+                                        <div class="paciente-field"><label for="steps-rg">RG</label><input type="text" id="steps-rg" name="rg" placeholder="XX.XXX.XXX-X"></div>
+                                    </div>
+                                </div>
+    
+                                <div class="paciente-actions paciente-actions-sticky" style="justify-content:flex-end; gap:1rem; margin-top:2rem;">
+                                    <button type="button" class="paciente-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="paciente-card-section" data-step-content="2" style="display:none;">
+                            <div class="paciente-card-container-modal">
+                                <div class="paciente-card-header-modal">
+                                    <!-- <div class="section-title"><i class="fa-solid fa-phone"></i> Contato</div> -->
+                                    <div class="paciente-card-fields single">
+                                        <div class="paciente-field"><label for="steps-telefone">Telefone</label><input type="tel" id="steps-telefone" name="telefone" placeholder="(XX) XXXXX-XXXX"></div>
+                                        <div class="paciente-field"><label for="steps-email">E-mail</label><input type="email" id="steps-email" name="email" placeholder="seu.email@example.com"></div>
+                                    </div>
+                                </div>
+    
+                                <div class="paciente-actions paciente-actions-sticky" style="justify-content:space-between; gap:1rem; margin-top:2rem;">
+                                    <button type="button" class="paciente-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="paciente-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="paciente-card-section" data-step-content="3" style="display:none;">
+                            <div class="paciente-card-container-modal">
+                                <div class="paciente-card-header-modal">
+                                    <!-- <div class="section-title"><i class="fa-solid fa-location-dot"></i> Endereço</div> -->
+                                    <div class="paciente-card-fields single">
+                                        <div class="paciente-field"><label for="steps-cep">CEP</label><input type="text" id="steps-cep" name="cep" placeholder="XXXXX-XXX"></div>
+                                        <div class="paciente-field required"><label for="steps-cidade">Cidade</label><input type="text" id="steps-cidade" name="cidade" required></div>
+                                        <div class="paciente-field required"><label for="steps-estado">Estado (UF)</label><input type="text" id="steps-estado" name="estado" placeholder="SP" required></div>
+                                        <div class="paciente-field"><label for="steps-logradouro">Logradouro</label><input type="text" id="steps-logradouro" name="logradouro" placeholder="Rua Exemplo"></div>
+                                        <div class="paciente-field"><label for="steps-numero">Número</label><input type="text" id="steps-numero" name="numero" placeholder="123"></div>
+                                        <div class="paciente-field"><label for="steps-bairro">Bairro</label><input type="text" id="steps-bairro" name="bairro" placeholder="Centro"></div>
+                                        <div class="paciente-field"><label for="steps-complemento">Complemento</label><input type="text" id="steps-complemento" name="complemento" placeholder="Apto 401"></div>
+                                    </div>
+                                </div>
+    
+                                <div class="paciente-actions paciente-actions-sticky" style="justify-content:space-between; gap:1rem; margin-top:2rem;">
+                                    <button type="button" class="paciente-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="paciente-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="paciente-card-section" data-step-content="4" style="display:none;">
+                            <div class="paciente-card-container-modal">
+                                <div class="paciente-card-header-modal">
+                                    <!-- <div class="section-title"><i class="fa-solid fa-circle-info"></i> Outras Informações</div> -->
+                                    <div class="paciente-card-fields single">
+                                        <div class="paciente-field"><label for="steps-convenio_id">Convênio</label><select id="steps-convenio_id" name="convenio_id"><option value="">Nenhum / Particular</option></select></div>
+                                        <div class="paciente-field"><label for="steps-observacoes">Observações Gerais</label><textarea id="steps-observacoes" name="observacoes" rows="3" placeholder="Informações relevantes sobre o paciente, alergias, etc."></textarea></div>
+                                    </div>
+                                </div>
+                                <div class="paciente-actions paciente-actions-sticky" style="justify-content:space-between; gap:1rem; margin-top:2rem;">
+                                    <button type="button" class="paciente-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="submit" class="paciente-btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -740,9 +1239,9 @@
                                     <a href="${peiUrlTemplate.replace('__ID__', paciente.id)}" class="btn btn-sm btn-primary" title="Ver PEI">
                                         <i class="fas fa-child-reaching"></i>
                                     </a>
-                                    <a href="${editUrlTemplate.replace('__ID__', paciente.id)}" class="btn btn-sm btn-warning" title="Editar">
+                                    <button type="button" class="btn btn-sm btn-warning" title="Editar" onclick="openPatientStepsModal('${paciente.id}')">
                                         <i class="fas fa-edit"></i>
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                             <div class="paciente-card-body">
@@ -801,11 +1300,451 @@
                 }
             });
 
+            // --- Lógica da Função openPatientStepsModal ---
+            window.openPatientStepsModal = function(patientId) {
+                const overlay = document.getElementById('patient-steps-modal-overlay');
+                const modal = document.getElementById('patient-steps-modal');
+                const steps = modal.querySelectorAll('.paciente-step');
+                const sections = modal.querySelectorAll('.paciente-card-section');
+                const form = document.getElementById('steps-patient-form');
+                
+                // Carregar convênios para o select
+                loadConveniosForModal();
+                
+                form.reset();
+                // Limpar classes de validação
+                clearValidationClasses();
+                
+                // Define o action correto
+                if (patientId) {
+                    form.action = editUrlTemplate.replace('__ID__', patientId);
+                    const paciente = allPatients.find(p => String(p.id) === String(patientId));
+                    if (paciente) {
+                        form.elements['nome'].value = paciente.nome || '';
+                        // Setar data de nascimento no formato YYYY-MM-DD para o input nativo
+                        const dataNascimento = paciente.data_nascimento;
+                        if (dataNascimento) {
+                            const formattedDate = formatDateToYMD(dataNascimento);
+                            form.elements['data_nascimento'].value = formattedDate;
+                            // Atualizar o display também
+                            const displayInput = document.getElementById('steps-data_nascimento_display');
+                            if (displayInput && formattedDate) {
+                                displayInput.value = formatDateToDMY(formattedDate);
+                            }
+                        }
+                        form.elements['genero'].value = paciente.genero || '';
+                        form.elements['cpf'].value = paciente.cpf || '';
+                        form.elements['rg'].value = paciente.rg || '';
+                        form.elements['telefone'].value = paciente.contato_telefone || '';
+                        form.elements['email'].value = paciente.contato_email || '';
+                        form.elements['cep'].value = paciente.cep || '';
+                        form.elements['cidade'].value = paciente.cidade || '';
+                        form.elements['estado'].value = paciente.estado || '';
+                        form.elements['logradouro'].value = paciente.logradouro || '';
+                        form.elements['numero'].value = paciente.numero || '';
+                        form.elements['bairro'].value = paciente.bairro || '';
+                        form.elements['complemento'].value = paciente.complemento || '';
+                        form.elements['convenio_id'].value = paciente.convenio_id || '';
+                        form.elements['observacoes'].value = paciente.observacoes || '';
+                    }
+                } else {
+                    form.action = "{{ url_for('adicionar_paciente') }}";
+                }
+                overlay.style.display='flex';
+                setTimeout(()=>overlay.classList.add('visible'),10);
+                steps.forEach((s,i)=>s.classList.toggle('active',i===0));
+                sections.forEach((sec,i)=>sec.style.display=i===0?'block':'none');
+            };
+
+            // Função para carregar convênios no modal
+            function loadConveniosForModal() {
+                fetch("{{ url_for('listar_convenios') }}")
+                    .then(response => response.text())
+                    .then(html => {
+                        // Extrair convênios do HTML retornado (simplificado)
+                        const convenioSelect = document.getElementById('steps-convenio_id');
+                        // Manter apenas a opção padrão por enquanto
+                        // Em uma implementação real, você faria uma requisição AJAX para obter os convênios
+                    })
+                    .catch(error => console.error('Erro ao carregar convênios:', error));
+            }
+
+            // Função para limpar classes de validação
+            function clearValidationClasses() {
+                const requiredFields = document.querySelectorAll('.paciente-field.required input, .paciente-field.required select, .paciente-field.required textarea');
+                requiredFields.forEach(field => {
+                    field.classList.remove('valid', 'invalid');
+                    if (field.classList.contains('date-input-display')) {
+                        field.classList.remove('valid', 'error');
+                    }
+                });
+            }
+
+            // Adicionar validação em tempo real para campos obrigatórios
+            function setupRequiredFieldValidation() {
+                const requiredFields = document.querySelectorAll('.paciente-field.required input, .paciente-field.required select, .paciente-field.required textarea');
+                requiredFields.forEach(field => {
+                    // Pular o campo hidden da data
+                    if (field.type === 'hidden') return;
+                    
+                    // Aplicar máscara de CPF se necessário
+                    if (field.name === 'cpf') {
+                        applyCPFMask(field);
+                    }
+                    
+                    field.addEventListener('blur', function() {
+                        validateRequiredField(this);
+                    });
+                    
+                    field.addEventListener('input', function() {
+                        // Remover classe de erro ao começar a digitar
+                        if (this.classList.contains('invalid')) {
+                            this.classList.remove('invalid');
+                        }
+                        
+                        // Validação em tempo real para CPF
+                        if (this.name === 'cpf' && this.value.replace(/\D/g, '').length === 11) {
+                            validateRequiredField(this);
+                        }
+                    });
+                });
+            }
+
+            // Função para validar campo obrigatório
+            function validateRequiredField(field) {
+                let isValid = false;
+                
+                // Validação específica para CPF
+                if (field.name === 'cpf') {
+                    isValid = validateCPF(field.value);
+                } else if (field.classList.contains('date-input-display')) {
+                    // Validação para campo de data customizado
+                    const hiddenInput = document.getElementById('steps-data_nascimento');
+                    isValid = hiddenInput && hiddenInput.value.trim() !== '' && isValidDate(hiddenInput.value);
+                } else {
+                    isValid = field.value.trim() !== '';
+                }
+                
+                // Aplicar classes visuais
+                if (isValid) {
+                    field.classList.remove('invalid');
+                    field.classList.add('valid');
+                    if (field.classList.contains('date-input-display')) {
+                        field.classList.remove('error');
+                        field.classList.add('valid');
+                    }
+                } else {
+                    field.classList.remove('valid');
+                    field.classList.add('invalid');
+                    if (field.classList.contains('date-input-display')) {
+                        field.classList.remove('valid');
+                        field.classList.add('error');
+                    }
+                }
+                
+                return isValid;
+            }
+
+            // Função para validar CPF
+            function validateCPF(cpf) {
+                // Remove caracteres não numéricos
+                cpf = cpf.replace(/\D/g, '');
+                
+                // Verifica se tem 11 dígitos
+                if (cpf.length !== 11) return false;
+                
+                // Verifica se todos os dígitos são iguais
+                if (/^(\d)\1+$/.test(cpf)) return false;
+                
+                // Validação do primeiro dígito verificador
+                let sum = 0;
+                for (let i = 0; i < 9; i++) {
+                    sum += parseInt(cpf[i]) * (10 - i);
+                }
+                let remainder = sum % 11;
+                let digit1 = remainder < 2 ? 0 : 11 - remainder;
+                
+                if (parseInt(cpf[9]) !== digit1) return false;
+                
+                // Validação do segundo dígito verificador
+                sum = 0;
+                for (let i = 0; i < 10; i++) {
+                    sum += parseInt(cpf[i]) * (11 - i);
+                }
+                remainder = sum % 11;
+                let digit2 = remainder < 2 ? 0 : 11 - remainder;
+                
+                return parseInt(cpf[10]) === digit2;
+            }
+
+            // Função para aplicar máscara de CPF
+            function applyCPFMask(input) {
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    
+                    // Limita a 11 dígitos
+                    if (value.length > 11) {
+                        value = value.slice(0, 11);
+                    }
+                    
+                    // Aplica a máscara
+                    if (value.length > 9) {
+                        value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+                    } else if (value.length > 6) {
+                        value = value.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+                    } else if (value.length > 3) {
+                        value = value.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+                    }
+                    
+                    e.target.value = value;
+                });
+                
+                // Bloquear teclas que não são números
+                input.addEventListener('keypress', function(e) {
+                    if (!/[0-9]/.test(e.key) && 
+                        !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+
+            // Após window.openPatientStepsModal = openPatientStepsModal;
+            // Configura navegação dos steps do modal
+            (function(){
+                const overlay = document.getElementById('patient-steps-modal-overlay');
+                const modal = document.getElementById('patient-steps-modal');
+                const steps = modal.querySelectorAll('.paciente-step');
+                const sections = modal.querySelectorAll('.paciente-card-section');
+                const nextBtns = modal.querySelectorAll('.steps-next');
+                const prevBtns = modal.querySelectorAll('.steps-prev');
+                const form = document.getElementById('steps-patient-form');
+                let currentStep = 0;
+                
+                function showStep(idx) {
+                    steps.forEach((s,i)=>s.classList.toggle('active',i===idx));
+                    sections.forEach((sec,i)=>sec.style.display=i===idx?'block':'none');
+                    currentStep = idx;
+                }
+                
+                nextBtns.forEach(btn=>btn.onclick=()=>showStep(Math.min(currentStep+1,sections.length-1)));
+                prevBtns.forEach(btn=>btn.onclick=()=>showStep(Math.max(currentStep-1,0)));
+                steps.forEach((step,i)=>step.onclick=()=>showStep(i));
+                modal.querySelector('.steps-modal-close').onclick=()=>{
+                    overlay.classList.remove('visible');
+                    setTimeout(()=>overlay.style.display='none',300);
+                };
+                overlay.onclick=(e)=>{if(e.target===overlay){modal.querySelector('.steps-modal-close').onclick();}};
+                
+                // Validação no submit
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const invalidFields = validateAllRequiredFields();
+                    
+                    if (invalidFields.length > 0) {
+                        // Encontrar a primeira aba com campo inválido
+                        const firstInvalidStep = findStepWithInvalidField(invalidFields[0]);
+                        if (firstInvalidStep !== -1) {
+                            showStep(firstInvalidStep);
+                        }
+                        
+                        // Mostrar mensagem de erro
+                        showToast('Por favor, preencha todos os campos obrigatórios corretamente.', 'danger');
+                        
+                        // Focar no primeiro campo inválido
+                        invalidFields[0].focus();
+                        
+                        return false;
+                    }
+                    
+                    // Se todos os campos estão válidos, submeter o formulário
+                    this.submit();
+                });
+                
+                // Função para validar todos os campos obrigatórios
+                function validateAllRequiredFields() {
+                    const requiredFields = form.querySelectorAll('.paciente-field.required input:not([type="hidden"]), .paciente-field.required select, .paciente-field.required textarea');
+                    const invalidFields = [];
+                    
+                    // Limpar indicadores de erro dos steps
+                    steps.forEach(step => step.classList.remove('has-error'));
+                    
+                    requiredFields.forEach(field => {
+                        if (!validateRequiredField(field)) {
+                            invalidFields.push(field);
+                            
+                            // Adicionar animação de shake
+                            field.classList.add('shake');
+                            setTimeout(() => field.classList.remove('shake'), 500);
+                            
+                            // Marcar o step como tendo erro
+                            const stepIndex = findStepWithInvalidField(field);
+                            if (stepIndex !== -1) {
+                                steps[stepIndex].classList.add('has-error');
+                            }
+                        }
+                    });
+                    
+                    return invalidFields;
+                }
+                
+                // Função para encontrar em qual step está o campo inválido
+                function findStepWithInvalidField(field) {
+                    const fieldContainer = field.closest('.paciente-card-section');
+                    if (!fieldContainer) return -1;
+                    
+                    const stepContent = fieldContainer.getAttribute('data-step-content');
+                    if (!stepContent) return -1;
+                    
+                    return parseInt(stepContent) - 1; // Converter para índice base 0
+                }
+                
+                // Função para limpar erros quando o usuário navega entre steps
+                function clearStepErrors() {
+                    steps.forEach(step => step.classList.remove('has-error'));
+                }
+                
+                // Adicionar limpeza de erros aos botões de navegação
+                nextBtns.forEach(btn => {
+                    btn.addEventListener('click', clearStepErrors);
+                });
+                prevBtns.forEach(btn => {
+                    btn.addEventListener('click', clearStepErrors);
+                });
+                steps.forEach(step => {
+                    step.addEventListener('click', clearStepErrors);
+                });
+                
+                // Expor funções globalmente para uso em outras partes do código
+                window.showStepModal = showStep;
+                window.validateAllRequiredFieldsModal = validateAllRequiredFields;
+            })();
+
             // --- Inicialização ---
             setupSidebar();
             setupTheme();
             setupLogout();
+            setupRequiredFieldValidation();
             renderPatientCards(); // Renderiza os cartões e controles de paginação inicialmente
+        });
+
+        function formatDateToYMD(dateStr) {
+            if (!dateStr) return '';
+            // Se já está no formato YYYY-MM-DD
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+            // Tenta converter de outros formatos
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
+            // Se não conseguir converter, retorna vazio
+            return '';
+        }
+
+        function formatDateToDMY(dateStr) {
+            if (!dateStr) return '';
+            // Se está no formato YYYY-MM-DD
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                const [year, month, day] = dateStr.split('-');
+                return `${day}/${month}/${year}`;
+            }
+            return '';
+        }
+
+        function parseDateFromDMY(dateStr) {
+            if (!dateStr) return '';
+            // Remove caracteres que não são dígitos ou barras
+            const cleanStr = dateStr.replace(/[^\d\/]/g, '');
+            // Verifica se está no formato DD/MM/YYYY
+            const match = cleanStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (match) {
+                const [, day, month, year] = match;
+                return `${year}-${month}-${day}`;
+            }
+            return '';
+        }
+
+        function isValidDate(dateStr) {
+            if (!dateStr) return false;
+            const d = new Date(dateStr);
+            return !isNaN(d.getTime()) && d.getFullYear() > 1900 && d.getTime() <= Date.now();
+        }
+
+        // Inicializar máscara de data
+        document.addEventListener('DOMContentLoaded', function() {
+            const displayInput = document.getElementById('steps-data_nascimento_display');
+            const hiddenInput = document.getElementById('steps-data_nascimento');
+            
+            if (displayInput && hiddenInput) {
+                // Aplicar máscara ao digitar
+                displayInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+                    
+                    // Limita a 8 dígitos
+                    if (value.length > 8) {
+                        value = value.slice(0, 8);
+                    }
+                    
+                    // Aplica a máscara
+                    if (value.length >= 5) {
+                        value = value.replace(/(\d{2})(\d{2})(\d{0,4})/, '$1/$2/$3');
+                    } else if (value.length >= 3) {
+                        value = value.replace(/(\d{2})(\d{0,2})/, '$1/$2');
+                    }
+                    
+                    e.target.value = value;
+                    
+                    // Atualiza o campo hidden
+                    const parsedDate = parseDateFromDMY(value);
+                    hiddenInput.value = parsedDate;
+                    
+                    // Validação visual
+                    if (value.length === 10) {
+                        if (isValidDate(parsedDate)) {
+                            e.target.classList.remove('error');
+                            e.target.classList.add('valid');
+                        } else {
+                            e.target.classList.remove('valid');
+                            e.target.classList.add('error');
+                        }
+                    } else {
+                        e.target.classList.remove('valid', 'error');
+                    }
+                });
+                
+                // Bloquear teclas que não são números
+                displayInput.addEventListener('keypress', function(e) {
+                    if (!/[0-9]/.test(e.key) && 
+                        !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+                
+                // Impedir colar conteúdo inválido
+                displayInput.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    const digitsOnly = pastedText.replace(/\D/g, '').slice(0, 8);
+                    
+                    if (digitsOnly.length >= 6) {
+                        let formatted = digitsOnly;
+                        if (formatted.length >= 5) {
+                            formatted = formatted.replace(/(\d{2})(\d{2})(\d{0,4})/, '$1/$2/$3');
+                        } else if (formatted.length >= 3) {
+                            formatted = formatted.replace(/(\d{2})(\d{0,2})/, '$1/$2');
+                        }
+                        
+                        displayInput.value = formatted;
+                        hiddenInput.value = parseDateFromDMY(formatted);
+                        
+                        // Trigger input event para validação
+                        displayInput.dispatchEvent(new Event('input'));
+                    }
+                });
+            }
         });
     </script>
 </body>
