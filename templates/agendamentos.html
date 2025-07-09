@@ -9,6 +9,7 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
     <style>
         :root {
@@ -71,8 +72,8 @@
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
         /* ============================================
-           --- SIDEBAR ---
-           ============================================
+            --- SIDEBAR ---
+            ============================================
         */
         .sidebar {
             width: 260px;
@@ -133,8 +134,8 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         
         /* ============================================
-           --- CONTEÚDO PRINCIPAL & TOPBAR ---
-           ============================================
+            --- CONTEÚDO PRINCIPAL & TOPBAR ---
+            ============================================
         */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
@@ -256,8 +257,8 @@
         }
 
         /* ============================================
-           --- CALENDÁRIO SEMANAL (NOVO) ---
-           ============================================
+            --- CALENDÁRIO SEMANAL (NOVO) ---
+            ============================================
         */
         .weekly-calendar-container {
             background-color: var(--card);
@@ -452,8 +453,8 @@
         }
 
         /* ============================================
-           --- LISTA DE CARDS (NOVO) ---
-           ============================================
+            --- LISTA DE CARDS (NOVO) ---
+            ============================================
         */
         .card-list-container {
             background-color: var(--card);
@@ -548,8 +549,8 @@
 
 
         /* ============================================
-           --- MODAIS (REUTILIZADOS) ---
-           ============================================
+            --- MODAIS (REUTILIZADOS) ---
+            ============================================
         */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.25s ease; }
         .modal-overlay.active { opacity: 1; display: flex; }
@@ -639,8 +640,8 @@
             outline: none;
         }
         /* ============================================
-           --- BOTÕES ---
-           ============================================
+            --- BOTÕES ---
+            ============================================
         */
         .btn { padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out; }
         .btn-primary { background-color: var(--primary); color: white; }
@@ -652,8 +653,8 @@
         [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
         
         /* ============================================
-           --- RESPONSIVIDADE ---
-           ============================================
+            --- RESPONSIVIDADE ---
+            ============================================
         */
         @media (max-width: 992px) { /* Ajuste para telas menores que 992px */
             main { flex-direction: column; overflow: auto; }
@@ -710,8 +711,8 @@
         }
 
         /* ============================================
-           --- MINI CALENDÁRIO LATERAL (NOVO) ---
-           ============================================
+            --- MINI CALENDÁRIO LATERAL (NOVO) ---
+            ============================================
         */
         .mini-calendar-wrapper {
             /* Removido: width: 350px; - agora controlado por .left-panel */
@@ -1324,7 +1325,7 @@
                         <select id="servico_id_manual" name="servico_id_manual" required class="form-input">
                             <option value="">Selecione o serviço/procedimento</option>
                             {% for servico_proc in servicos_ativos %} 
-                            <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }} (R$ {{ "%.2f"|format(servico_proc.preco|float) }})</option>
+                            <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }}</option> {# REMOVED PRICE FROM DISPLAY #}
                             {% endfor %}
                         </select>
                     </div>
@@ -1338,9 +1339,9 @@
                             <input type="time" id="hora_agendamento_manual" name="hora_agendamento_manual" required class="form-input">
                         </div>
                     </div>
-                    <div class="form-row">
+                    <div class="form-row" style="display: none;"> {# HIDDEN PRICE FIELD #}
                         <div class="form-group">
-                            <label for="preco_manual"  >Preço (R$)</label>
+                            <label for="preco_manual">Preço (R$)</label>
                             <input type="number" id="preco_manual" name="preco_manual" step="0.01" min="0" required readonly class="form-input">
                         </div>
                         <div class="form-group">
@@ -1443,6 +1444,8 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
     <script type="module">
         // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
         const FAKE_FIREBASE = {
@@ -1697,6 +1700,7 @@
             const calendarViewBtn = document.getElementById('calendarViewBtn');
             const listViewBtn = document.getElementById('listViewBtn');
             const calendarViewContainer = document.getElementById('calendarViewContainer');
+            const listViewContainer = document.getElementById('listViewContainer'); // Get the list view container
             listViewContainer.style.display = 'none'; // Esconde a lista por padrão
             const listViewContainerInitialDisplay = listViewContainer.style.display;
 
@@ -1944,11 +1948,7 @@
                                 <span class="label">Serviço:</span>
                                 <span class="value">${app.servico_procedimento_nome}</span>
                             </div>
-                            <div class="appointment-card-item">
-                                <i class="fas fa-hand-holding-dollar"></i>
-                                <span class="label">Preço:</span>
-                                <span class="value">R$ ${parseFloat(app.servico_procedimento_preco).toFixed(2).replace('.', ',')}</span>
-                            </div>
+                            {# REMOVED PRICE DISPLAY FROM CARD VIEW #}
                         </div>
                     `;
                     listViewContainer.appendChild(card);
@@ -2208,13 +2208,7 @@
                             <span class="value">${agendamento.servico_procedimento_nome}</span>
                         </div>
                     </div>
-                        <div class="info-item">
-                        <i class="fa-solid fa-hand-holding-dollar"></i>
-                        <div class="info-item-content">
-                            <span class="label">Preço</span>
-                            <span class="value">R$ ${parseFloat(agendamento.servico_procedimento_preco).toFixed(2).replace('.', ',')}</span>
-                        </div>
-                    </div>
+                    {# REMOVED PRICE DISPLAY FROM DETAILS MODAL #}
                     <div class="info-item">
                         <i class="fa-solid fa-toggle-on"></i>
                         <div class="info-item-content">
@@ -2238,9 +2232,9 @@
                         try {
                             // Em uma aplicação real, isso seria uma chamada fetch para o seu backend Flask:
                             // const response = await fetch(`/api/appointments/${appointmentId}/status`, {
-                            //      method: 'POST', // ou PUT, dependendo da sua API
-                            //      headers: { 'Content-Type': 'application/json' },
-                            //      body: JSON.stringify({ status: newStatus })
+                            //     method: 'POST', // ou PUT, dependendo da sua API
+                            //     headers: { 'Content-Type': 'application/json' },
+                            //     body: JSON.stringify({ status: newStatus })
                             // });
                             // if (!response.ok) throw new Error('Falha ao atualizar o status');
                             // const result = await response.json(); // Se o seu backend retornar dados atualizados
@@ -2548,11 +2542,7 @@
                                 <span class="label">Serviço:</span>
                                 <span class="value">${app.servico_procedimento_nome}</span>
                             </div>
-                            <div class="appointment-card-item">
-                                <i class="fas fa-hand-holding-dollar"></i>
-                                <span class="label">Preço:</span>
-                                <span class="value">R$ ${parseFloat(app.servico_procedimento_preco).toFixed(2).replace('.', ',')}</span>
-                            </div>
+                            {# REMOVED PRICE DISPLAY FROM MULTIPLE APPOINTMENTS MODAL #}
                         </div>
                     `;
                     multiAppointmentsList.appendChild(card);
