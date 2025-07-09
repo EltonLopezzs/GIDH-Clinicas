@@ -1357,10 +1357,10 @@
 
                     <!-- NEW: Recurring Appointment Section -->
                     <div class="form-section-container"> <!-- New container for visual grouping -->
-                        <div class="form-group flex items-center gap-2 mb-4">
-                            <input type="checkbox" id="recorrente_checkbox" name="recorrente_checkbox" value="true" class="w-auto h-auto transform scale-125 accent-primary">
+                        <div >
+                           
                             <label for="recorrente_checkbox" class="font-semibold text-gray-800 dark:text-gray-200 cursor-pointer">
-                                Agendamento Recorrente
+                               <input type="checkbox" id="recorrente_checkbox" name="recorrente_checkbox" value="true" class="w-auto h-auto transform scale-125 accent-primary">  Agendamento Recorrente
                             </label>
                         </div>
 
@@ -1391,13 +1391,10 @@
                             <div class="form-group">
                                 <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">Termina em:</label>
                                 <div class="flex items-center space-x-4">
-                                    <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200" for="ends-never">
-                                        <input type="radio" id="ends-never" name="termina_em" value="nunca" checked class="w-auto h-auto accent-primary"> Nunca
-                                    </label>
                                     <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200" for="ends-on-date">
-                                        <input type="radio" id="ends-on-date" name="termina_em" value="data" class="w-auto h-auto accent-primary"> Em
+                                        <input type="radio" id="ends-on-date" name="termina_em" value="data" checked class="w-auto h-auto accent-primary"> Em
                                     </label>
-                                    <input type="date" id="data_fim_recorrencia" name="data_fim_recorrencia" class="form-input flex-grow" disabled>
+                                    <input type="date" id="data_fim_recorrencia" name="data_fim_recorrencia" class="form-input flex-grow">
                                 </div>
                             </div>
                         </div>
@@ -2057,7 +2054,7 @@
                     // Calcula a nova data de início da semana
                     const newWeekStart = new Date(currentWeekStart);
                     newWeekStart.setDate(newWeekStart.getDate() + 7);
-
+                    
                     // Atualiza a data do mini-calendário para refletir o mês da nova semana de início
                     currentMiniCalendarDate = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth(), 1);
 
@@ -2067,12 +2064,12 @@
                     // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
                     const endDateForBackend = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
                     const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
-                    
+
                     const baseUrl = window.location.origin + window.location.pathname;
                     const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                     window.location.href = newUrl; 
                 });
-
+ 
                 addManualAppointmentBtn.addEventListener('click', () => {
                     openBookingModal(new Date(), '08:00'); // Abre o modal para a data atual e 8:00
                 });
@@ -2110,11 +2107,12 @@
                         recurringOptionsDiv.style.display = 'none';
                         dataFimRecorrenciaInput.removeAttribute('required');
                         dataFimRecorrenciaInput.setAttribute('disabled', 'true'); // Disable date input
+                        dataFimRecorrenciaInput.value = ''; // Clear the date when recurring is off
                         diasSemanaCheckboxes.forEach(checkbox => {
                             checkbox.checked = false; // Uncheck days when recurring is off
                         });
-                        // Reset "Termina em" radio to "Nunca"
-                        document.getElementById('ends-never').checked = true; // Assuming 'ends-never' is the ID for "Nunca" radio
+                        // Reset "Termina em" radio to "Em data"
+                        document.getElementById('ends-on-date').checked = true; 
                     }
                 });
             }
@@ -2126,7 +2124,7 @@
                         if (radio.value === 'data') {
                             dataFimRecorrenciaInput.setAttribute('required', 'true');
                             dataFimRecorrenciaInput.removeAttribute('disabled');
-                        } else {
+                        } else { // This else block will effectively be for "nunca" if it were present
                             dataFimRecorrenciaInput.removeAttribute('required');
                             dataFimRecorrenciaInput.setAttribute('disabled', 'true');
                             dataFimRecorrenciaInput.value = ''; // Clear the date when "Nunca" is selected
@@ -2155,7 +2153,7 @@
                     checkbox.checked = false;
                 });
                 if (terminaEmRadios) {
-                    document.querySelector('input[name="termina_em"][value="nunca"]').checked = true; // Set "Nunca" as default
+                    document.querySelector('input[name="termina_em"][value="data"]').checked = true; // Set "Em data" as default
                 }
 
 
@@ -2230,29 +2228,35 @@
                         const newStatus = e.target.value;
 
                         try {
-                            // Em uma aplicação real, isso seria uma chamada fetch para o seu backend Flask:
-                            // const response = await fetch(`/api/appointments/${appointmentId}/status`, {
-                            //     method: 'POST', // ou PUT, dependendo da sua API
-                            //     headers: { 'Content-Type': 'application/json' },
-                            //     body: JSON.stringify({ status: newStatus })
-                            // });
-                            // if (!response.ok) throw new Error('Falha ao atualizar o status');
-                            // const result = await response.json(); // Se o seu backend retornar dados atualizados
-
-                            // Atualiza o array de dados local (simulação do backend)
-                            const appIndex = allAppointments.findIndex(app => app.id === appointmentId);
-                            if (appIndex !== -1) {
-                                allAppointments[appIndex].status = newStatus;
-                            }
-
-                            showToast(`Status do agendamento atualizado para "${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}".`, 'success');
+                            // Backend call to update status
+                            const response = await fetch(`/agendamentos/update_status/${appointmentId}`, {
+                                method: 'POST', 
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: newStatus })
+                            });
                             
-                            // Re-renderiza a visualização atual para refletir a mudança de status
-                            switchView(currentView);
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || 'Falha ao atualizar o status');
+                            }
+                            
+                            const result = await response.json(); 
+                            if (result.success) {
+                                // Update local data only after successful backend response
+                                const appIndex = allAppointments.findIndex(app => app.id === appointmentId);
+                                if (appIndex !== -1) {
+                                    allAppointments[appIndex].status = newStatus;
+                                }
+                                showToast(`Status do agendamento atualizado para "${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}".`, 'success');
+                                // Re-render the current view to reflect the status change
+                                switchView(currentView);
+                            } else {
+                                showToast(result.error || 'Erro desconhecido ao atualizar o status.', 'danger');
+                            }
 
                         } catch (error) {
                             console.error('Erro ao atualizar status:', error);
-                            showToast('Erro ao atualizar o status do agendamento.', 'danger');
+                            showToast(`Erro ao atualizar o status do agendamento: ${error.message}`, 'danger');
                         }
                     });
                 }
@@ -2318,7 +2322,7 @@
                     checkbox.checked = false;
                 });
                 if (terminaEmRadios) {
-                    document.querySelector('input[name="termina_em"][value="nunca"]').checked = true;
+                    document.querySelector('input[name="termina_em"][value="data"]').checked = true; // Set "Em data" as default
                 }
 
 
