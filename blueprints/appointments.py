@@ -87,7 +87,8 @@ def register_appointments_routes(app):
                 flash('Data de término inválida. Use o formato AAAA-MM-DD.', 'warning')
 
         try:
-            docs_stream = query.order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING).stream()
+            # Ordena por data_agendamento_ts e depois por hora_agendamento para garantir a ordem correta
+            docs_stream = query.order_by('data_agendamento_ts', direction=firestore.Query.DESCENDING).order_by('hora_agendamento').stream()
 
             for doc in docs_stream:
                 ag = doc.to_dict()
@@ -155,6 +156,8 @@ def register_appointments_routes(app):
                 flash('Todos os campos obrigatórios devem ser preenchidos.', 'danger')
                 return redirect(url_for('listar_agendamentos'))
 
+            # A validação para agendamentos recorrentes agora espera data_fim_recorrencia_str
+            # já que a opção "nunca" foi removida do frontend.
             if recorrente and (not dias_semana or not data_fim_recorrencia_str):
                 flash('Para agendamentos recorrentes, selecione os dias da semana e a data de fim da recorrência.', 'danger')
                 return redirect(url_for('listar_agendamentos'))
@@ -287,22 +290,25 @@ def register_appointments_routes(app):
         return redirect(url_for('listar_agendamentos'))
 
 
-    @app.route('/agendamentos/alterar_status/<string:agendamento_doc_id>', methods=['POST'], endpoint='alterar_status_agendamento')
+    @app.route('/agendamentos/update_status/<string:agendamento_doc_id>', methods=['POST'], endpoint='update_status')
     @login_required
-    def alterar_status_agendamento(agendamento_doc_id):
+    def update_status(agendamento_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
-        novo_status = request.form.get('status')
-        if not novo_status:
-            flash('Nenhum status foi fornecido.', 'warning')
-            return redirect(url_for('listar_agendamentos'))
+        
+        # O frontend agora envia JSON, então use request.json
+        data = request.get_json()
+        if not data or 'status' not in data:
+            return jsonify({'success': False, 'error': 'Nenhum status foi fornecido.'}), 400
+        
+        novo_status = data['status']
+
         try:
             agendamento_doc_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_doc_id)
             original_agendamento_data = agendamento_doc_ref.get().to_dict()
 
             if not original_agendamento_data:
-                flash('Agendamento não encontrado.', 'danger')
-                return redirect(url_for('listar_agendamentos'))
+                return jsonify({'success': False, 'error': 'Agendamento não encontrado.'}), 404
 
             old_status = original_agendamento_data.get('status', 'N/A')
             
@@ -316,10 +322,10 @@ def register_appointments_routes(app):
                 'tipo_alteracao': 'status_alterado', # NOVO: Tipo de alteração
                 'detalhes_alteracao': detalhes_alteracao # NOVO: Detalhes
             })
-            flash(f'Status atualizado para "{novo_status}" com sucesso!', 'success')
+            return jsonify({'success': True, 'message': f'Status atualizado para "{novo_status}" com sucesso!'}), 200
         except Exception as e:
-            flash(f'Erro ao alterar o status do agendamento: {e}', 'danger')
-        return redirect(url_for('listar_agendamentos'))
+            print(f'Erro ao alterar o status do agendamento: {e}')
+            return jsonify({'success': False, 'error': f'Erro interno ao alterar o status do agendamento: {e}'}), 500
 
     @app.route('/agendamentos/editar', methods=['POST'], endpoint='editar_agendamento')
     @login_required
@@ -443,4 +449,3 @@ def register_appointments_routes(app):
             flash(f'Erro ao apagar agendamento: {e}', 'danger')
             print(f"Erro delete_appointment: {e}")
         return redirect(url_for('listar_agendamentos'))
-
