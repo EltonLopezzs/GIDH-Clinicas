@@ -1324,7 +1324,7 @@
                         <select id="servico_id_manual" name="servico_id_manual" required class="form-input">
                             <option value="">Selecione o serviço/procedimento</option>
                             {% for servico_proc in servicos_ativos %} 
-                            <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }}</option>
+                            <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }} (R$ {{ "%.2f"|format(servico_proc.preco|float) }})</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -1338,14 +1338,20 @@
                             <input type="time" id="hora_agendamento_manual" name="hora_agendamento_manual" required class="form-input">
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="status_manual">Status</label>
-                        <select id="status_manual" name="status_manual" required class="form-input">
-                            <option value="confirmado" selected>Confirmado</option>
-                            <option value="concluido">Concluido</option>
-                            <option value="pendente">Pendente</option>
-                            <option value="cancelado">Cancelado</option>
-                        </select>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="preco_manual"  style="display: none;>Preço (R$)</label>
+                            <input type="number" id="preco_manual" name="preco_manual" step="0.01" min="0" required readonly class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="status_manual">Status</label>
+                            <select id="status_manual" name="status_manual" required class="form-input">
+                                <option value="confirmado" selected>Confirmado</option>
+                                <option value="concluido">Concluido</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- NEW: Recurring Appointment Section -->
@@ -1360,43 +1366,37 @@
                         <div id="recurringOptions" class="recurring-options">
                             <h4 class="form-section-title">Opções de Recorrência</h4>
                             <div class="form-group">
-                                <label for="tipo_recorrencia" class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">Repetir:</label>
-                                <select id="tipo_recorrencia" name="tipo_recorrencia" class="form-input">
-                                    <option value="nao_se_repete">Não se repete</option>
-                                    <option value="diariamente">Todos os dias</option>
-                                    <option value="semanalmente">Semanalmente: cada [Dia da Semana]</option>
-                                    <option value="mensalmente">Mensalmente: no(a) [X] [Dia da Semana]</option>
-                                    <option value="anualmente">Anualmente: em [Mês] [Dia]</option>
-                                    <option value="dias_uteis">Todos os dias da semana (segunda a sexta-feira)</option>
-                                    <option value="personalizar">Personalizar...</option>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Repetir em:</label>
+                                <div class="day-checkbox-grid"> <!-- Changed to grid for better control -->
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="1" > Segunda</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="2" > Terça</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="3" > Quarta</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="4" > Quinta</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="5" > Sexta</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="6" > Sábado</label>
+                                    <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="0" > Domingo</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="frequencia_recorrencia" class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">Frequência:</label>
+                                <select id="frequencia_recorrencia" name="frequencia_recorrencia" class="form-input">
+                                    <option value="semanal">Semanalmente</option>
+                                    <option value="quinzenal">Quinzenalmente</option>
+                                    <option value="mensal">Mensalmente</option>
                                 </select>
                             </div>
 
-                            <div id="customRecurringOptions" style="display: none;">
-                                <div class="form-group">
-                                    <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Repetir em:</label>
-                                    <div class="day-checkbox-grid">
-                                        <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="1" > Segunda</label>
-                                        <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="2" > Terça</label>
-                                        <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="3" > Quarta</label>
-                                        <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="4" > Quinta</label>
-                                        <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="5" > Sexta</label>
-                                        <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="6" > Sábado</label>
-                                        <label class="day-checkbox-item"><input type="checkbox" name="dias_semana" value="0" > Domingo</label>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">Termina em:</label>
-                                    <div class="flex items-center space-x-4">
-                                        <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200" for="ends-never">
-                                            <input type="radio" id="ends-never" name="termina_em" value="nunca" checked class="w-auto h-auto accent-primary"> Nunca
-                                        </label>
-                                        <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200" for="ends-on-date">
-                                            <input type="radio" id="ends-on-date" name="termina_em" value="data" class="w-auto h-auto accent-primary"> Em
-                                        </label>
-                                        <input type="date" id="data_fim_recorrencia" name="data_fim_recorrencia" class="form-input flex-grow" disabled>
-                                    </div>
+                            <div class="form-group">
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 font-medium mb-1">Termina em:</label>
+                                <div class="flex items-center space-x-4">
+                                    <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200" for="ends-never">
+                                        <input type="radio" id="ends-never" name="termina_em" value="nunca" checked class="w-auto h-auto accent-primary"> Nunca
+                                    </label>
+                                    <label class="flex items-center gap-1 cursor-pointer text-gray-800 dark:text-gray-200" for="ends-on-date">
+                                        <input type="radio" id="ends-on-date" name="termina_em" value="data" class="w-auto h-auto accent-primary"> Em
+                                    </label>
+                                    <input type="date" id="data_fim_recorrencia" name="data_fim_recorrencia" class="form-input flex-grow" disabled>
                                 </div>
                             </div>
                         </div>
@@ -1444,7 +1444,7 @@
     </div>
 
     <script type="module">
-        // Placeholder for Firebase, in case it's not configured in the Canvas environment
+        // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
         const FAKE_FIREBASE = {
             initializeApp: () => ({}),
             getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
@@ -1464,7 +1464,7 @@
             const themeToggle = document.getElementById('theme-toggle');
             const logoutButton = document.getElementById('logoutButton');
 
-            // --- Logic for Toast Notifications (kept, but not used for flash messages) ---
+            // --- Lógica para Notificações Toast (mantida, mas não usada para flash messages) ---
             const toastContainer = document.getElementById('toast-container');
             function showToast(message, category = 'info') {
                 if (!toastContainer) return;
@@ -1510,10 +1510,10 @@
                 setTimeout(() => {
                     toast.classList.add('fade-out');
                     toast.addEventListener('animationend', () => toast.remove());
-                }, 5000); // The notification disappears after 5 seconds
+                }, 5000); // A notificação desaparece após 5 segundos
             }
 
-            // --- Logic for the New Notification Modal ---
+            // --- Lógica para a Nova Modal de Notificações ---
             const notificationModal = document.getElementById("notificationModal");
             const notificationModalTitle = document.getElementById("notificationModalTitle");
             const notificationModalMessage = document.getElementById("notificationModalMessage");
@@ -1559,10 +1559,10 @@
                 });
             }
 
-            // --- Process flash messages from the backend and display them in the MODAL ---
+            // --- Processa mensagens flash do backend e as exibe na MODAL ---
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% for category, message in messages %}
-                    // Use the new openNotificationModal function for flash messages
+                    // Use a nova função openNotificationModal para as mensagens flash
                     openNotificationModal(
                         "{{ 'Sucesso!' if category == 'success' else ('Erro!' if category == 'error' else ('Atenção!' if category == 'warning' else 'Informação')) }}",
                         {{ message|tojson|safe }},
@@ -1577,7 +1577,7 @@
                 if (!sidebar || !mainContent) return;
                 const updateDesktopToggleIcon = () => {
                     if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i'); /* Corrected: toggleBtnBtnDesktop to toggleBtnDesktop */
+                    const icon = toggleBtnDesktop.querySelector('i'); /* Corrigido: toggleBtnBtnDesktop para toggleBtnDesktop */
                     icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
                 };
                 const applyInitialState = () => {
@@ -1601,7 +1601,7 @@
                     });
                 }
                 if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => { /* Corrected: from menu_btn_mobile to menuBtnMobile */
+                    menuBtnMobile.addEventListener('click', (e) => { /* Corrigido: de menu_btn_mobile para menuBtnMobile */
                         e.stopPropagation();
                         sidebar.classList.toggle('open');
                     });
@@ -1663,48 +1663,48 @@
                 initialDate = new Date(); // Default to current date if no parameter
             }
 
-            // Global variables for calendar and appointments
-            let currentWeekStart = getMonday(initialDate); // Starts on the week of the initial date
-            let currentMiniCalendarDate = new Date(initialDate.getFullYear(), initialDate.getMonth(), 1); // First day of the month of the initial date
+            // Variáveis globais para o calendário e agendamentos
+            let currentWeekStart = getMonday(initialDate); // Começa na semana da data inicial
+            let currentMiniCalendarDate = new Date(initialDate.getFullYear(), initialDate.getMonth(), 1); // Primeiro dia do mês da data inicial
             // currentFilterMonth will now always be the month of currentWeekStart to ensure consistency
             let currentFilterMonth = new Date(currentWeekStart.getFullYear(), currentWeekStart.getMonth(), 1); 
 
 
-            // CORRECTION: Function to get the Monday of the week of a date, correctly handling the timezone.
+            // CORREÇÃO: Função para obter a segunda-feira da semana de uma data, tratando corretamente o fuso horário.
             function getMonday(d) {
                 d = new Date(d);
-                d.setHours(12, 0, 0, 0); // Set time to noon to avoid timezone issues near midnight.
+                d.setHours(12, 0, 0, 0); // Define a hora para o meio-dia para evitar problemas de fuso horário perto da meia-noite.
                 const day = d.getDay();
-                const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday to be the last day of the week.
+                const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajusta para o domingo ser o último dia da semana.
                 const monday = new Date(d.setDate(diff));
-                monday.setHours(0, 0, 0, 0); // Reset time to the beginning of the day.
+                monday.setHours(0, 0, 0, 0); // Reseta a hora para o início do dia.
                 return monday;
             }
-            // currentWeekStart is initialized above based on initialDate
+            // currentWeekStart é inicializado acima com base em initialDate
 
-            // Appointment and professional data passed by Jinja2
+            // Dados de agendamentos e profissionais passados pelo Jinja2
             const allAppointments = {{ agendamentos | tojson | safe }};
             const allProfessionalsForFilter = {{ profissionais_para_filtro | tojson | safe }};
-            const allPatientsForFilter = {{ pacientes_para_filtro | tojson | safe }}; // Added for the modal
+            const allPatientsForFilter = {{ pacientes_para_filtro | tojson | safe }}; // Adicionado para o modal
 
-            let professionalFilterId = "{{ filtros_atuais.profissional_id or '' }}"; // Initial filter from backend
+            let professionalFilterId = "{{ filtros_atuais.profissional_id or '' }}"; // Filtro inicial do backend
 
-            // Map weekday number to name
+            // Mapeia o dia da semana de número para nome
             const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
             const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-            // View elements
+            // Elementos de visualização
             const calendarViewBtn = document.getElementById('calendarViewBtn');
             const listViewBtn = document.getElementById('listViewBtn');
             const calendarViewContainer = document.getElementById('calendarViewContainer');
-            listViewContainer.style.display = 'none'; // Hide list by default
+            listViewContainer.style.display = 'none'; // Esconde a lista por padrão
             const listViewContainerInitialDisplay = listViewContainer.style.display;
 
 
-            // Current view state
-            let currentView = localStorage.getItem('appointmentView') || 'calendar'; // Default is 'calendar'
+            // Estado da visualização atual
+            let currentView = localStorage.getItem('appointmentView') || 'calendar'; // Padrão é 'calendar'
 
-            // Function to switch view
+            // Função para alternar a visualização
             function switchView(view) {
                 currentView = view;
                 localStorage.setItem('appointmentView', view);
@@ -1714,17 +1714,17 @@
                     listViewContainer.style.display = 'none';
                     calendarViewBtn.classList.add('active');
                     listViewBtn.classList.remove('active');
-                    renderWeeklyGrid(currentWeekStart); // Re-render calendar to ensure it's updated
+                    renderWeeklyGrid(currentWeekStart); // Re-renderiza o calendário para garantir que esteja atualizado
                 } else {
                     calendarViewContainer.style.display = 'none';
                     listViewContainer.style.display = 'flex';
                     calendarViewBtn.classList.remove('active');
                     listViewBtn.classList.add('active');
-                    renderCardView(); // Re-render card list
+                    renderCardView(); // Re-renderiza a lista de cards
                 }
             }
 
-            // Function to format the week date range
+            // Função para formatar o intervalo de datas da semana
             function formatDateRange(start, end) {
                 const formatOptions = { month: 'short', day: 'numeric' };
                 const startStr = start.toLocaleDateString('pt-BR', formatOptions);
@@ -1733,22 +1733,22 @@
                 return `${startStr} - ${endStr} ${year}`;
             }
 
-            // Main function to render the weekly grid
+            // Função principal para renderizar a grade semanal
             function renderWeeklyGrid(weekStartDate) {
                 const calendarGridWeek = document.getElementById('calendar-grid-week');
                 const currentWeekDisplay = document.getElementById('current-week-display');
                 
-                calendarGridWeek.innerHTML = ''; // Clear existing grid
+                calendarGridWeek.innerHTML = ''; // Limpa a grade existente
 
                 console.log('renderWeeklyGrid called for week starting:', weekStartDate.toISOString().split('T')[0]);
                 console.log('Current filter month for weekly grid (from mini-calendar):', currentFilterMonth.toISOString().split('T')[0]);
 
-                // Define grid columns: 90px for the time column, and 7 flexible columns for the days
-                calendarGridWeek.style.gridTemplateColumns = '90px repeat(7, minmax(120px, 1fr))'; // Increased min-width to 120px
-                // The height of the first row (headers) is 70px, and the other time rows have a min of 40px
+                // Define as colunas do grid: 90px para a coluna de tempo, e 7 colunas flexíveis para os dias
+                calendarGridWeek.style.gridTemplateColumns = '90px repeat(7, minmax(120px, 1fr))'; // Aumentado min-width para 120px
+                // A altura da primeira linha (cabeçalhos) é 70px, e as demais linhas de horários têm min de 40px
                 calendarGridWeek.style.gridTemplateRows = '70px repeat(auto-fill, minmax(40px, auto));'; 
 
-                // Create grid header (weekdays)
+                // Cria o cabeçalho da grade (dias da semana)
                 const cornerHeader = document.createElement('div');
                 cornerHeader.className = 'time-column-header border-none';
                 calendarGridWeek.appendChild(cornerHeader);
@@ -1763,32 +1763,32 @@
                     dayHeader.className = 'day-header-week';
                     dayHeader.innerHTML = `${dayNames[currentDay.getDay()]}. <span class="day-number">${currentDay.getDate()}</span>`;
                     if (currentDay.toDateString() === new Date().toDateString()) {
-                        dayHeader.classList.add('today'); // Add class to highlight current day
+                        dayHeader.classList.add('today'); // Adiciona classe para destacar o dia atual
                     }
-                    calendarGridWeek.appendChild(dayHeader); // Add header row to the grid
+                    calendarGridWeek.appendChild(dayHeader); // Adiciona a linha de cabeçalho ao grid
                 }
 
-                // Times (from 00:00 to 23:30, in 30-minute intervals)
-                for (let hour = 0; hour < 24; hour++) { // Loop for all 24 hours
+                // Horários (das 00:00 às 23:30, em intervalos de 30 minutos)
+                for (let hour = 0; hour < 24; hour++) { // Loop para todas as 24 horas
                     for (let minute = 0; minute < 60; minute += 30) {
                         const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                         
-                        // Time column cell
+                        // Célula da coluna de tempo
                         const timeCell = document.createElement('div');
                         timeCell.className = 'time-cell';
                         timeCell.innerHTML = `<span>${timeStr}</span>`;
                         calendarGridWeek.appendChild(timeCell);
 
-                        // Event cells for each day of the week
+                        // Células de eventos para cada dia da semana
                         days.forEach(day => {
                             const eventCell = document.createElement('div');
                             eventCell.className = 'event-cell';
-                            const dateString = day.toISOString().split('T')[0]; // Format-MM-dd
+                            const dateString = day.toISOString().split('T')[0]; // Formato-MM-dd
                             eventCell.dataset.date = dateString;
                             eventCell.dataset.time = timeStr;
 
-                            // Filter appointments for this specific slot and for the selected professional.
-                            // The month restriction was removed to display appointments from adjacent months in the week.
+                            // Filtra agendamentos para este slot específico e para o profissional selecionado.
+                            // A restrição de mês foi removida para exibir agendamentos de meses adjacentes na semana.
                             const appointmentsInSlot = allAppointments.filter(app => {
                                 const matchesDate = app.data_agendamento === dateString;
                                 const matchesTime = app.hora_agendamento === timeStr;
@@ -1857,7 +1857,7 @@
                                 eventCell.appendChild(moreIndicator);
                             }
 
-                            // Add event listener to open the booking modal when clicking a slot
+                            // Adiciona o ouvinte de evento para abrir o modal de agendamento ao clicar em um slot
                             eventCell.addEventListener('click', () => openBookingModal(day, timeStr));
                             
                             calendarGridWeek.appendChild(eventCell);
@@ -1865,29 +1865,29 @@
                     }
                 }
 
-                // Update current week display
+                // Atualiza o display da semana atual
                 const weekEnd = new Date(weekStartDate);
                 weekEnd.setDate(weekStartDate.getDate() + 6);
                 currentWeekDisplay.textContent = formatDateRange(weekStartDate, weekEnd);
             }
 
-            // Function to render the card list
+            // Função para renderizar a lista de cards
             function renderCardView() {
-                listViewContainer.innerHTML = ''; // Clear existing list
+                listViewContainer.innerHTML = ''; // Limpa a lista existente
 
-                // Calculate the end date of the current week
+                // Calcula a data de fim da semana atual
                 const currentWeekEnd = new Date(currentWeekStart);
                 currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
-                currentWeekEnd.setHours(23, 59, 59, 999); // Ensure it includes the end of the last day
+                currentWeekEnd.setHours(23, 59, 59, 999); // Garante que inclui o final do último dia
 
                 console.log('renderCardView called. Filtering from:', currentWeekStart.toISOString().split('T')[0], 'to', currentWeekEnd.toISOString().split('T')[0]);
 
-                // Filter appointments based on the current week and selected professional
+                // Filtra os agendamentos com base na semana atual e no profissional selecionado
                 const filteredAppointments = allAppointments.filter(app => {
                     const appDateTime = new Date(`${app.data_agendamento}T${app.hora_agendamento}`);
                     const matchesProfessional = !professionalFilterId || app.profissional_id === professionalFilterId;
                     
-                    // Check if the appointment is within the current week range
+                    // Verifica se o agendamento está dentro do intervalo da semana atual
                     const isWithinCurrentWeek = appDateTime >= currentWeekStart && appDateTime <= currentWeekEnd;
 
                     return matchesProfessional && isWithinCurrentWeek;
@@ -1895,7 +1895,7 @@
 
                 console.log('Number of filtered appointments in card view:', filteredAppointments.length);
 
-                // Sort appointments by date and time
+                // Ordena os agendamentos por data e hora
                 filteredAppointments.sort((a, b) => {
                     const dateTimeA = new Date(`${a.data_agendamento}T${a.hora_agendamento}`);
                     const dateTimeB = new Date(`${b.data_agendamento}T${b.hora_agendamento}`);
@@ -1944,6 +1944,11 @@
                                 <span class="label">Serviço:</span>
                                 <span class="value">${app.servico_procedimento_nome}</span>
                             </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-hand-holding-dollar"></i>
+                                <span class="label">Preço:</span>
+                                <span class="value">R$ ${parseFloat(app.servico_procedimento_preco).toFixed(2).replace('.', ',')}</span>
+                            </div>
                         </div>
                     `;
                     listViewContainer.appendChild(card);
@@ -1951,30 +1956,30 @@
             }
 
 
-            // Function to render the professional list
+            // Função para renderizar a lista de profissionais
             function renderProfessionalFilterList() {
                 const professionalFilterListContainer = document.getElementById('professional-filter-list');
                 if (!professionalFilterListContainer) return;
 
-                professionalFilterListContainer.innerHTML = ''; // Clear existing list
+                professionalFilterListContainer.innerHTML = ''; // Limpa a lista existente
 
-                // Add "All Professionals" option
+                // Adiciona a opção "Todos os Profissionais"
                 const allProfessionalsItem = document.createElement('div');
                 allProfessionalsItem.className = `professional-list-item ${!professionalFilterId ? 'selected' : ''}`;
                 allProfessionalsItem.textContent = 'Todos os Profissionais';
-                allProfessionalsItem.dataset.professionalId = ''; // Empty ID for "all"
+                allProfessionalsItem.dataset.professionalId = ''; // ID vazio para "todos"
                 allProfessionalsItem.addEventListener('click', () => {
                     professionalFilterId = '';
-                    // When changing the professional filter, also reload the page for the backend to filter
+                    // Ao mudar o filtro de profissional, também recarrega a página para que o backend filtre
                     const baseUrl = window.location.origin + window.location.pathname;
-                    // When clicking 'All Professionals', we want to reset the professional filter
-                    // and keep the current mini-calendar month as a reference for the 3-month search.
+                    // Ao clicar em 'Todos os Profissionais', queremos resetar o filtro de profissional
+                    // e manter o mês atual do mini-calendário como referência para a busca de 3 meses.
                     const year = currentMiniCalendarDate.getFullYear();
                     const month = currentMiniCalendarDate.getMonth();
                     const startDate = new Date(year, month, 1);
                     const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
                     
-                    // Calculate the end date as 3 months from the first day of the current mini-calendar month
+                    // Calcula a data de fim como 3 meses a partir do primeiro dia do mês atual do mini-calendário
                     const endDate = new Date(year, month + 3, 0); 
                     const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
                     
@@ -1983,7 +1988,7 @@
                 });
                 professionalFilterListContainer.appendChild(allProfessionalsItem);
 
-                // Add individual professionals
+                // Adiciona os profissionais individuais
                 allProfessionalsForFilter.forEach(professional => {
                     const professionalItem = document.createElement('div');
                     professionalItem.className = `professional-list-item ${professionalFilterId === professional.id ? 'selected' : ''}`;
@@ -1991,15 +1996,15 @@
                     professionalItem.dataset.professionalId = professional.id;
                     professionalItem.addEventListener('click', () => {
                         professionalFilterId = professional.id;
-                        // When changing the professional filter, also reload the page for the backend to filter
+                        // Ao mudar o filtro de profissional, também recarrega a página para que o backend filtre
                         const baseUrl = window.location.origin + window.location.pathname;
-                        // When clicking a professional, we want to keep the current mini-calendar month as a reference for the 3-month search.
+                        // Ao clicar em um profissional, queremos manter o mês atual do mini-calendário como referência para a busca de 3 meses.
                         const year = currentMiniCalendarDate.getFullYear();
                         const month = currentMiniCalendarDate.getMonth();
                         const startDate = new Date(year, month, 1);
                         const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
                         
-                        // Calculate the end date as 3 months from the month of the new start week
+                        // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
                         const endDate = new Date(year, month + 3, 0); 
                         const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
                         
@@ -2010,7 +2015,7 @@
                 });
             }
 
-            // Function to update the selection in the professional list
+            // Função para atualizar a seleção na lista de profissionais
             function updateProfessionalListSelection() {
                 document.querySelectorAll('.professional-list-item').forEach(item => {
                     if (item.dataset.professionalId === professionalFilterId) {
@@ -2022,25 +2027,25 @@
             }
 
 
-            // --- Calendar Interaction Functions ---
+            // --- Funções de interação do Calendário ---
             function setupCalendarInteractions() {
                 const prevWeekBtn = document.getElementById('prev-week-btn');
                 const nextWeekBtn = document.getElementById('next-week-btn');
                 const addManualAppointmentBtn = document.getElementById('addManualAppointmentBtn');
 
                 prevWeekBtn.addEventListener('click', () => {
-                    // Calculate the new week start date
+                    // Calcula a nova data de início da semana
                     const newWeekStart = new Date(currentWeekStart);
                     newWeekStart.setDate(newWeekStart.getDate() - 7);
                     
-                    // Update the mini-calendar date to reflect the month of the new start week
+                    // Atualiza a data do mini-calendário para refletir o mês da nova semana de início
                     currentMiniCalendarDate = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth(), 1);
 
-                    // Format the date for the URL
+                    // Formata a data para a URL
                     const formattedNewWeekStart = `${newWeekStart.getFullYear()}-${String(newWeekStart.getMonth() + 1).padStart(2, '0')}-${String(newWeekStart.getDate()).padStart(2, '0')}`;
                     
-                    // Calculate the end date as 3 months from the month of the new start week
-                    const endDateForBackend = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth() + 3, 0); // Last day of the month, 3 months ahead
+                    // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
+                    const endDateForBackend = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
                     const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
 
                     const baseUrl = window.location.origin + window.location.pathname;
@@ -2049,18 +2054,18 @@
                 });
 
                 nextWeekBtn.addEventListener('click', () => {
-                    // Calculate the new week start date
+                    // Calcula a nova data de início da semana
                     const newWeekStart = new Date(currentWeekStart);
                     newWeekStart.setDate(newWeekStart.getDate() + 7);
 
-                    // Update the mini-calendar date to reflect the month of the new start week
+                    // Atualiza a data do mini-calendário para refletir o mês da nova semana de início
                     currentMiniCalendarDate = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth(), 1);
 
-                    // Format the date for the URL
+                    // Formata a data para a URL
                     const formattedNewWeekStart = `${newWeekStart.getFullYear()}-${String(newWeekStart.getMonth() + 1).padStart(2, '0')}-${String(newWeekStart.getDate()).padStart(2, '0')}`;
                     
-                    // Calculate the end date as 3 months from the month of the new start week
-                    const endDateForBackend = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth() + 3, 0); // Last day of the month, 3 months ahead
+                    // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
+                    const endDateForBackend = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
                     const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
                     
                     const baseUrl = window.location.origin + window.location.pathname;
@@ -2069,11 +2074,11 @@
                 });
 
                 addManualAppointmentBtn.addEventListener('click', () => {
-                    openBookingModal(new Date(), '08:00'); // Open modal for current date and 8:00
+                    openBookingModal(new Date(), '08:00'); // Abre o modal para a data atual e 8:00
                 });
             }
 
-            // --- Modal Functions (Register/Edit and Details) ---
+            // --- Funções para Modais (Registro/Edição e Detalhes) ---
             const modalRegistro = document.getElementById('modalRegistroManual');
             const modalFormRegistro = document.getElementById('formRegistroManual');
             const modalTitleRegistro = document.getElementById('modalRegistroManualTitle');
@@ -2087,60 +2092,29 @@
             // Recurring appointment elements
             const recorrenteCheckbox = document.getElementById('recorrente_checkbox');
             const recurringOptionsDiv = document.getElementById('recurringOptions');
-            const tipoRecorrenciaSelect = document.getElementById('tipo_recorrencia'); // New: Select for recurrence type
-            const customRecurringOptionsDiv = document.getElementById('customRecurringOptions'); // New: Div for custom options
             const dataFimRecorrenciaInput = document.getElementById('data_fim_recorrencia');
             const diasSemanaCheckboxes = document.querySelectorAll('input[name="dias_semana"]');
             const terminaEmRadios = document.querySelectorAll('input[name="termina_em"]'); // New: radio buttons for "Termina em"
 
             // Toggle recurring options visibility and manage required attribute for data_fim_recorrencia
-            if (recorrenteCheckbox && recurringOptionsDiv && dataFimRecorrenciaInput && tipoRecorrenciaSelect && customRecurringOptionsDiv) {
+            if (recorrenteCheckbox && recurringOptionsDiv && dataFimRecorrenciaInput) {
                 recorrenteCheckbox.addEventListener('change', () => {
                     if (recorrenteCheckbox.checked) {
                         recurringOptionsDiv.style.display = 'block';
-                        // If "Personalizar" is selected, show custom options
-                        if (tipoRecorrenciaSelect.value === 'personalizar') {
-                            customRecurringOptionsDiv.style.display = 'block';
-                            if (document.querySelector('input[name="termina_em"]:checked').value === 'data') {
-                                dataFimRecorrenciaInput.setAttribute('required', 'true');
-                                dataFimRecorrenciaInput.removeAttribute('disabled');
-                            }
-                        } else {
-                            customRecurringOptionsDiv.style.display = 'none';
-                            dataFimRecorrenciaInput.removeAttribute('required');
-                            dataFimRecorrenciaInput.setAttribute('disabled', 'true');
-                        }
-                    } else {
-                        recurringOptionsDiv.style.display = 'none';
-                        customRecurringOptionsDiv.style.display = 'none';
-                        dataFimRecorrenciaInput.removeAttribute('required');
-                        dataFimRecorrenciaInput.setAttribute('disabled', 'true'); // Disable date input
-                        dataFimRecorrenciaInput.value = ''; // Clear date
-                        diasSemanaCheckboxes.forEach(checkbox => {
-                            checkbox.checked = false; // Uncheck days when recurring is off
-                        });
-                        tipoRecorrenciaSelect.value = 'nao_se_repete'; // Reset recurrence type
-                        document.getElementById('ends-never').checked = true; // Reset "Termina em" radio to "Nunca"
-                    }
-                });
-
-                tipoRecorrenciaSelect.addEventListener('change', () => {
-                    if (tipoRecorrenciaSelect.value === 'personalizar') {
-                        customRecurringOptionsDiv.style.display = 'block';
                         // Only set required if "Em data" is selected
                         if (document.querySelector('input[name="termina_em"]:checked').value === 'data') {
                             dataFimRecorrenciaInput.setAttribute('required', 'true');
-                            dataFimRecorrenciaInput.removeAttribute('disabled');
+                            dataFimRecorrenciaInput.removeAttribute('disabled'); // Enable date input
                         }
                     } else {
-                        customRecurringOptionsDiv.style.display = 'none';
+                        recurringOptionsDiv.style.display = 'none';
                         dataFimRecorrenciaInput.removeAttribute('required');
-                        dataFimRecorrenciaInput.setAttribute('disabled', 'true');
-                        dataFimRecorrenciaInput.value = ''; // Clear date
+                        dataFimRecorrenciaInput.setAttribute('disabled', 'true'); // Disable date input
                         diasSemanaCheckboxes.forEach(checkbox => {
-                            checkbox.checked = false; // Uncheck days when not in custom mode
+                            checkbox.checked = false; // Uncheck days when recurring is off
                         });
-                        document.getElementById('ends-never').checked = true; // Reset "Termina em" radio to "Nunca"
+                        // Reset "Termina em" radio to "Nunca"
+                        document.getElementById('ends-never').checked = true; // Assuming 'ends-never' is the ID for "Nunca" radio
                     }
                 });
             }
@@ -2162,7 +2136,7 @@
             }
 
 
-            // Open register/edit modal
+            // Abre o modal de registro/edição
             function openBookingModal(date, time) {
                 modalFormRegistro.reset();
                 modalFormRegistro.action = "{{ url_for('registrar_atendimento_manual') }}";
@@ -2172,7 +2146,6 @@
                 // Reset recurring fields and hide options
                 if (recorrenteCheckbox) recorrenteCheckbox.checked = false;
                 if (recurringOptionsDiv) recurringOptionsDiv.style.display = 'none';
-                if (customRecurringOptionsDiv) customRecurringOptionsDiv.style.display = 'none'; // Hide custom options
                 if (dataFimRecorrenciaInput) {
                     dataFimRecorrenciaInput.removeAttribute('required');
                     dataFimRecorrenciaInput.setAttribute('disabled', 'true'); // Ensure it's disabled on reset
@@ -2181,15 +2154,14 @@
                 if (diasSemanaCheckboxes) diasSemanaCheckboxes.forEach(checkbox => {
                     checkbox.checked = false;
                 });
-                if (tipoRecorrenciaSelect) tipoRecorrenciaSelect.value = 'nao_se_repete'; // Reset recurrence type
                 if (terminaEmRadios) {
                     document.querySelector('input[name="termina_em"][value="nunca"]').checked = true; // Set "Nunca" as default
                 }
 
 
-                // CORRECTION: Manually format the date to avoid timezone issues with toISOString().
+                // CORREÇÃO: Formata a data manualmente para evitar problemas de fuso horário com toISOString().
                 const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // Os meses são 0-indexados
                 const dayOfMonth = String(date.getDate()).padStart(2, '0');
                 const formattedDate = `${year}-${month}-${dayOfMonth}`;
                 
@@ -2198,7 +2170,7 @@
                 document.getElementById('cliente_nome_manual').readOnly = false;
                 document.getElementById('cliente_telefone_manual').readOnly = false;
                 
-                // Clear and populate existing patient select
+                // Limpa e preenche o select de pacientes existentes
                 const pacienteSelectManual = document.getElementById('paciente_id_manual');
                 pacienteSelectManual.innerHTML = '<option value="">-- Selecione ou cadastre um novo abaixo --</option>';
                 allPatientsForFilter.forEach(paciente => {
@@ -2212,7 +2184,7 @@
                 modalRegistro.classList.add('active');
             }
 
-            // Open appointment details modal
+            // Abre o modal de detalhes do agendamento
             function openDetailsModal(agendamento) {
                 infoCardDetalhes.innerHTML = `
                     <div class="info-item">
@@ -2236,6 +2208,13 @@
                             <span class="value">${agendamento.servico_procedimento_nome}</span>
                         </div>
                     </div>
+                        <div class="info-item">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                        <div class="info-item-content">
+                            <span class="label">Preço</span>
+                            <span class="value">R$ ${parseFloat(agendamento.servico_procedimento_preco).toFixed(2).replace('.', ',')}</span>
+                        </div>
+                    </div>
                     <div class="info-item">
                         <i class="fa-solid fa-toggle-on"></i>
                         <div class="info-item-content">
@@ -2257,16 +2236,16 @@
                         const newStatus = e.target.value;
 
                         try {
-                            // In a real application, this would be a fetch call to your Flask backend:
+                            // Em uma aplicação real, isso seria uma chamada fetch para o seu backend Flask:
                             // const response = await fetch(`/api/appointments/${appointmentId}/status`, {
-                            //      method: 'POST', // or PUT, depending on your API
+                            //      method: 'POST', // ou PUT, dependendo da sua API
                             //      headers: { 'Content-Type': 'application/json' },
                             //      body: JSON.stringify({ status: newStatus })
                             // });
-                            // if (!response.ok) throw new Error('Failed to update status');
-                            // const result = await response.json(); // If your backend returns updated data
+                            // if (!response.ok) throw new Error('Falha ao atualizar o status');
+                            // const result = await response.json(); // Se o seu backend retornar dados atualizados
 
-                            // Update local data array (backend simulation)
+                            // Atualiza o array de dados local (simulação do backend)
                             const appIndex = allAppointments.findIndex(app => app.id === appointmentId);
                             if (appIndex !== -1) {
                                 allAppointments[appIndex].status = newStatus;
@@ -2274,12 +2253,12 @@
 
                             showToast(`Status do agendamento atualizado para "${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}".`, 'success');
                             
-                            // Re-render the current view to reflect the status change
+                            // Re-renderiza a visualização atual para refletir a mudança de status
                             switchView(currentView);
 
                         } catch (error) {
-                            console.error('Error updating status:', error);
-                            showToast('Error updating appointment status.', 'danger');
+                            console.error('Erro ao atualizar status:', error);
+                            showToast('Erro ao atualizar o status do agendamento.', 'danger');
                         }
                     });
                 }
@@ -2290,24 +2269,24 @@
                 };
 
                 btnApagar.onclick = () => {
-                    // Replaced native confirm with the new notification modal for confirmation
+                    // Substituído o confirm nativo pela nova modal de notificação para confirmação
                     openNotificationModal(
                         "Confirmação de Exclusão",
                         "Tem certeza que deseja apagar este agendamento? Esta ação não pode ser desfeita.",
                         "warning"
                     );
-                    // Add a temporary listener to the notification modal's close button for the delete action
+                    // Adiciona um listener temporário ao botão de fechar da modal de notificação para a ação de exclusão
                     const confirmDeleteButton = document.querySelector(".notification-modal-button");
                     confirmDeleteButton.onclick = () => {
-                        closeNotificationModal(); // Close the notification modal
+                        closeNotificationModal(); // Fecha a modal de notificação
                         formApagar.action = "{{ url_for('apagar_agendamento') }}";
                         document.getElementById('agendamento_id_apagar').value = agendamento.id;
                         formApagar.submit();
                     };
-                    // If the user clicks 'x' or outside the modal, it just closes without action
+                    // Se o usuário clicar no 'x' ou fora da modal, ela apenas fecha sem ação
                     notificationModalCloseButton.onclick = () => {
                         closeNotificationModal();
-                        // Restore the original onclick of the notification modal's close button
+                        // Restaura o onclick original do botão de fechar da modal de notificação
                         notificationModalCloseButton.onclick = function() {
                             closeNotificationModal();
                         };
@@ -2317,7 +2296,7 @@
                 modalDetalhes.classList.add('active');
             }
 
-            // Open edit modal
+            // Abre o modal de edição
             function openEditModal(agendamento) {
                 modalFormRegistro.reset();
                 modalFormRegistro.action = `{{ url_for('editar_agendamento') }}`;
@@ -2329,14 +2308,13 @@
                 document.getElementById('servico_id_manual').value = agendamento.servico_procedimento_id;
                 document.getElementById('data_agendamento_manual').value = agendamento.data_agendamento;
                 document.getElementById('hora_agendamento_manual').value = agendamento.hora_agendamento;
-                // Removed price field from edit modal
+                document.getElementById('preco_manual').value = parseFloat(agendamento.servico_procedimento_preco).toFixed(2);
                 document.getElementById('status_manual').value = agendamento.status;
                 
                 // Recurring fields should not be editable for existing appointments
                 // Hide and disable them
                 if (recorrenteCheckbox) recorrenteCheckbox.checked = false;
                 if (recurringOptionsDiv) recurringOptionsDiv.style.display = 'none';
-                if (customRecurringOptionsDiv) customRecurringOptionsDiv.style.display = 'none';
                 if (dataFimRecorrenciaInput) {
                     dataFimRecorrenciaInput.removeAttribute('required');
                     dataFimRecorrenciaInput.setAttribute('disabled', 'true');
@@ -2345,13 +2323,12 @@
                 if (diasSemanaCheckboxes) diasSemanaCheckboxes.forEach(checkbox => {
                     checkbox.checked = false;
                 });
-                if (tipoRecorrenciaSelect) tipoRecorrenciaSelect.value = 'nao_se_repete';
                 if (terminaEmRadios) {
                     document.querySelector('input[name="termina_em"][value="nunca"]').checked = true;
                 }
 
 
-                // Populate existing patient select and select the correct patient
+                // Preenche o select de pacientes existentes e seleciona o paciente correto
                 const pacienteSelectManual = document.getElementById('paciente_id_manual');
                 pacienteSelectManual.innerHTML = '<option value="">-- Selecione um paciente existente --</option>';
                 allPatientsForFilter.forEach(paciente => {
@@ -2365,32 +2342,41 @@
                     pacienteSelectManual.appendChild(option);
                 });
 
-                // Populate patient phone field from selected patient
+                // Preenche o campo de telefone do paciente a partir do paciente selecionado
                 const selectedPatientOption = pacienteSelectManual.options[pacienteSelectManual.selectedIndex];
                 document.getElementById('cliente_telefone_manual').value = selectedPatientOption.dataset.telefone || agendamento.paciente_numero || '';
 
-                // Set readOnly for patient name if an existing patient is selected
+                // Define readOnly para o nome do paciente se um paciente existente for selecionado
                 document.getElementById('cliente_nome_manual').readOnly = !!agendamento.paciente_id;
                 
                 modalRegistro.classList.add('active');
             }
 
-            // Logic to close modals (generic for all modals with data-close)
+            // Lógica para fechar modais (genérica para todos os modais com data-close)
             document.querySelectorAll('.modal-overlay').forEach(modalEl => {
                 modalEl.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => modalEl.classList.remove('active')));
                 modalEl.addEventListener('click', (e) => { if (e.target === modalEl) modalEl.classList.remove('active'); });
             });
 
-            // Logic to close the new multiple appointments modal
+            // Lógica para fechar a nova modal de múltiplos agendamentos
             const modalMultiAgendamentos = document.getElementById('modalMultiAgendamentos');
             if (modalMultiAgendamentos) {
                 modalMultiAgendamentos.querySelectorAll('[data-close-multi]').forEach(btn => btn.addEventListener('click', () => modalMultiAgendamentos.classList.remove('active')));
                 modalMultiAgendamentos.addEventListener('click', (e) => { if (e.target === modalMultiAgendamentos) modalMultiAgendamentos.classList.remove('active'); });
             }
             
-            // Removed logic to auto-populate service price
+            // Lógica para preencher preço do serviço automaticamente
+            const servicoSelect = document.getElementById('servico_id_manual');
+            const precoInput = document.getElementById('preco_manual');
+            if (servicoSelect && precoInput) {
+                servicoSelect.addEventListener('change', (e) => {
+                    const selectedOption = e.target.options[e.target.selectedIndex];
+                    const price = selectedOption.dataset.preco || '';
+                    precoInput.value = price ? parseFloat(price).toFixed(2) : '';
+                });
+            }
             
-            // Logic to populate patient name and phone from select
+            // Lógica para preencher nome e telefone do paciente a partir do select
             const pacienteSelectManual = document.getElementById('paciente_id_manual');
             const nomeInputManual = document.getElementById('cliente_nome_manual');
             const telefoneInputManual = document.getElementById('cliente_telefone_manual');
@@ -2401,9 +2387,9 @@
                         nomeInputManual.value = selectedOption.text;
                         telefoneInputManual.value = selectedOption.dataset.telefone || '';
                         nomeInputManual.readOnly = true;
-                        telefoneInputManual.readOnly = false; // Allow editing phone even for existing patient
+                        telefoneInputManual.readOnly = false; // Permite editar o telefone mesmo para paciente existente
                     } else {
-                        // If "None" is selected, clear and allow editing
+                        // Se "Nenhum" for selecionado, limpa e permite edição
                         nomeInputManual.value = '';
                         telefoneInputManual.value = '';
                         nomeInputManual.readOnly = false;
@@ -2412,23 +2398,23 @@
                 });
             }
 
-            // --- Mini Calendar Sidebar ---
-            // The currentMiniCalendarDate variable is already defined globally
-            // The currentFilterMonth variable is already defined globally
+            // --- Mini Calendário Lateral ---
+            // A variável currentMiniCalendarDate já está definida globalmente
+            // A variável currentFilterMonth já está definida globalmente
 
             function renderMiniCalendar(date) {
                 const miniCalendarGrid = document.getElementById('mini-calendar-grid');
                 const miniCurrentMonthYear = document.getElementById('mini-current-month-year');
-                const today = new Date(); // Today's date
+                const today = new Date(); // Data de hoje
 
-                miniCalendarGrid.innerHTML = ''; // Clear existing calendar
+                miniCalendarGrid.innerHTML = ''; // Limpa o calendário existente
 
                 const year = date.getFullYear();
                 const month = date.getMonth();
 
                 miniCurrentMonthYear.textContent = `${monthNames[month]} ${year}`;
 
-                // Add weekday headers (Sun to Sat)
+                // Adiciona os cabeçalhos dos dias da semana (Dom a Sáb)
                 const miniDayNames = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
                 miniDayNames.forEach(dayName => {
                     const header = document.createElement('div');
@@ -2440,21 +2426,21 @@
                 const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 for Sunday, 1 for Monday...
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-                // Fill empty days before the first day of the month
+                // Preenche os dias vazios antes do primeiro dia do mês
                 for (let i = 0; i < firstDayOfMonth; i++) {
                     const emptyDay = document.createElement('div');
                     emptyDay.className = 'mini-calendar-day other-month';
                     miniCalendarGrid.appendChild(emptyDay);
                 }
 
-                // Fill days of the month
+                // Preenche os dias do mês
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dayElement = document.createElement('div');
                     dayElement.className = 'mini-calendar-day';
                     dayElement.textContent = day;
                     dayElement.dataset.date = new Date(year, month, day).toISOString().split('T')[0];
 
-                    // Highlight current day
+                    // Destaca o dia atual
                     if (new Date(year, month, day).toDateString() === today.toDateString()) {
                         dayElement.classList.add('current-day');
                     }
@@ -2462,21 +2448,21 @@
                     dayElement.addEventListener('click', () => {
                         const clickedDate = new Date(`${dayElement.dataset.date}T00:00:00`);
                         
-                        // Calculate the start of the week for the clicked day
+                        // Calcula o início da semana do dia clicado
                         const startOfWeek = getMonday(clickedDate);
 
                         const formattedStartDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
                         
-                        // Calculate the end date as 3 months from the month of the start week
-                        const endDateForBackend = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth() + 3, 0); // Last day of the month, 3 months ahead
+                        // Calcula a data de fim como 3 meses a partir do mês da semana de início
+                        const endDateForBackend = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
                         const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
 
-                        // Redirect the page with week parameters
+                        // Redireciona a página com os parâmetros da semana
                         const baseUrl = window.location.origin + window.location.pathname;
                         const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                         
                         console.log('Mini-calendar day clicked. Redirecting to:', newUrl);
-                        window.location.href = newUrl; // Redirect to reload backend data
+                        window.location.href = newUrl; // Redireciona para recarregar os dados do backend
                     });
                     miniCalendarGrid.appendChild(dayElement);
                 }
@@ -2487,49 +2473,49 @@
                 const miniNextMonthBtn = document.getElementById('mini-next-month-btn');
 
                 miniPrevMonthBtn.addEventListener('click', () => {
-                    // Update mini-calendar date to previous month
+                    // Atualiza a data do mini-calendário para o mês anterior
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() - 1);
                     
-                    // Calculate the new start date for the URL (first day of the updated mini-calendar month)
+                    // Calcula a nova data de início para a URL (primeiro dia do mês atualizado do mini-calendário)
                     const newStartDate = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
                     const formattedStartDate = `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`;
                     
-                    // Calculate the end date as 3 months from the newStartDate
-                    const endDateForBackend = new Date(newStartDate.getFullYear(), newStartDate.getMonth() + 3, 0); // Last day of the month, 3 months ahead
+                    // Calcula a data de fim como 3 meses a partir da newStartDate
+                    const endDateForBackend = new Date(newStartDate.getFullYear(), newStartDate.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
                     const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
 
                     const baseUrl = window.location.origin + window.location.pathname;
                     const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                     
                     console.log('Mini-calendar previous month clicked. Redirecting to:', newUrl);
-                    window.location.href = newUrl; // Redirect to reload backend data
+                    window.location.href = newUrl; // Redireciona para recarregar os dados do backend
                 });
 
                 miniNextMonthBtn.addEventListener('click', () => {
-                    // Update mini-calendar date to next month
+                    // Atualiza a data do mini-calendário para o próximo mês
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() + 1);
                     
-                    // Calculate the new start date for the URL (first day of the updated mini-calendar month)
+                    // Calcula a nova data de início para a URL (primeiro dia do mês atualizado do mini-calendário)
                     const newStartDate = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
                     const formattedStartDate = `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`;
                     
-                    // Calculate the end date as 3 months from the newStartDate
-                    const endDateForBackend = new Date(newStartDate.getFullYear(), newStartDate.getMonth() + 3, 0); // Last day of the month, 3 months ahead
+                    // Calcula a data de fim como 3 meses a partir da newStartDate
+                    const endDateForBackend = new Date(newStartDate.getFullYear(), newStartDate.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
                     const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
 
                     const baseUrl = window.location.origin + window.location.pathname;
                     const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
 
                     console.log('Mini-calendar next month clicked. Redirecting to:', newUrl);
-                    window.location.href = newUrl; // Redirect to reload backend data
+                    window.location.href = newUrl; // Redireciona para recarregar os dados do backend
                 });
             }
 
-            // Function to open the multiple appointments modal
+            // Função para abrir a modal de múltiplos agendamentos
             function openMultipleAppointmentsModal(appointments, date, time) {
                 const modalMulti = document.getElementById('modalMultiAgendamentos');
                 const multiAppointmentsList = document.getElementById('multiAppointmentsList');
-                multiAppointmentsList.innerHTML = ''; // Clear previous content
+                multiAppointmentsList.innerHTML = ''; // Limpa o conteúdo anterior
 
                 const header = document.createElement('h4');
                 header.className = 'form-section-title';
@@ -2538,12 +2524,12 @@
 
                 appointments.forEach(app => {
                     const card = document.createElement('div');
-                    card.className = 'appointment-card'; // Reuse existing card style
+                    card.className = 'appointment-card'; // Reutiliza o estilo de card existente
                     card.style.marginBottom = '10px';
                     card.dataset.appointmentId = app.id;
                     card.addEventListener('click', () => {
-                        modalMulti.classList.remove('active'); // Close multiple modal
-                        openDetailsModal(app); // Open individual appointment details
+                        modalMulti.classList.remove('active'); // Fecha a modal de múltiplos
+                        openDetailsModal(app); // Abre os detalhes do agendamento individual
                     });
 
                     card.innerHTML = `
@@ -2562,6 +2548,11 @@
                                 <span class="label">Serviço:</span>
                                 <span class="value">${app.servico_procedimento_nome}</span>
                             </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-hand-holding-dollar"></i>
+                                <span class="label">Preço:</span>
+                                <span class="value">R$ ${parseFloat(app.servico_procedimento_preco).toFixed(2).replace('.', ',')}</span>
+                            </div>
                         </div>
                     `;
                     multiAppointmentsList.appendChild(card);
@@ -2571,60 +2562,52 @@
             }
 
 
-            // --- Initialization ---
+            // --- Inicialização ---
             setupSidebar();
             setupTheme();
             setupLogout();
-            setupCalendarInteractions(); // Configure main calendar interactions
-            setupMiniCalendarInteractions(); // Configure mini-calendar interactions
-            renderProfessionalFilterList(); // Render new professional list
+            setupCalendarInteractions(); // Configura as interações do calendário principal
+            setupMiniCalendarInteractions(); // Configura as interações do mini-calendário
+            renderProfessionalFilterList(); // Renderiza a nova lista de profissionais
 
-            // Configure view button listeners
+            // Configura os listeners dos botões de visualização
             calendarViewBtn.addEventListener('click', () => switchView('calendar'));
             listViewBtn.addEventListener('click', () => switchView('list'));
 
-            // Render initial view based on localStorage
+            // Renderiza a visualização inicial com base no localStorage
             switchView(currentView);
-            renderMiniCalendar(currentMiniCalendarDate); // Ensure mini-calendar reflects initial week
+            renderMiniCalendar(currentMiniCalendarDate); // Garante que o mini-calendário reflita a semana inicial
 
 
-            // --- NEW APPOINTMENT VALIDATION ---
+            // --- NOVA VALIDAÇÃO DE AGENDAMENTO ---
             modalFormRegistro.addEventListener('submit', function(event) {
                 const profissionalId = document.getElementById('profissional_id_manual').value;
                 const dataAgendamento = document.getElementById('data_agendamento_manual').value;
                 const horaAgendamento = document.getElementById('hora_agendamento_manual').value;
-                const agendamentoIdSendoEditado = document.getElementById('agendamento_id_manual').value; // Appointment ID if editing
+                const agendamentoIdSendoEditado = document.getElementById('agendamento_id_manual').value; // ID do agendamento se estiver editando
 
                 const isRecorrente = document.getElementById('recorrente_checkbox').checked;
-                const tipoRecorrencia = document.getElementById('tipo_recorrencia').value;
                 const selectedDays = Array.from(diasSemanaCheckboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
                 const terminaEmValue = document.querySelector('input[name="termina_em"]:checked').value;
-                const dataFimRecorrencia = document.getElementById('data_fim_recorrencia').value;
 
                 if (isRecorrente) {
-                    if (tipoRecorrencia === 'personalizar') {
-                        if (selectedDays.length === 0) {
-                            openNotificationModal("Erro de Agendamento", "Para recorrência personalizada, selecione pelo menos um dia da semana.", "danger");
-                            event.preventDefault();
-                            return;
-                        }
-                        if (terminaEmValue === 'data' && !dataFimRecorrencia) {
-                            openNotificationModal("Erro de Agendamento", "Para recorrência personalizada com data de término, a data de fim da recorrência é obrigatória.", "danger");
-                            event.preventDefault();
-                            return;
-                        }
-                    } else if (tipoRecorrencia === 'nao_se_repete') {
-                        openNotificationModal("Erro de Agendamento", "Se 'Agendamento Recorrente' está marcado, selecione um tipo de recorrência válido.", "danger");
-                        event.preventDefault();
+                    if (selectedDays.length === 0) {
+                        openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes, selecione pelo menos um dia da semana.", "danger");
+                        event.preventDefault(); // Impede o envio do formulário
+                        return;
+                    }
+                    if (terminaEmValue === 'data' && !dataFimRecorrenciaInput.value) {
+                        openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes com data de término, a data de fim da recorrência é obrigatória.", "danger");
+                        event.preventDefault(); // Impede o envio do formulário
                         return;
                     }
                 }
 
-                // Conflict validation only for non-recurring appointments or for the first instance of a recurring one
-                // (Conflict validation for future instances of recurring appointments should be done in the backend)
-                if (!isRecorrente || tipoRecorrencia === 'nao_se_repete') { // Only check for conflicts if it's a single appointment or 'Não se repete'
+                // Validação de conflito apenas para agendamentos não recorrentes ou para a primeira instância de um recorrente
+                // (A validação de conflito para instâncias futuras de agendamentos recorrentes deve ser feita no backend)
+                if (!isRecorrente) { // Only check for conflicts if it's a single appointment
                     const conflito = allAppointments.some(app => {
-                        // Ignore the appointment itself if in edit mode
+                        // Ignora o próprio agendamento se estiver em modo de edição
                         if (agendamentoIdSendoEditado && app.id === agendamentoIdSendoEditado) {
                             return false;
                         }
@@ -2635,7 +2618,7 @@
 
                     if (conflito) {
                         openNotificationModal("Erro de Agendamento", "Este profissional já possui um agendamento para o mesmo dia e horário.", "danger");
-                        event.preventDefault(); // Prevent form submission
+                        event.preventDefault(); // Impede o envio do formulário
                         return;
                     }
                 }
