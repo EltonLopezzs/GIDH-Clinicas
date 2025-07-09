@@ -1593,7 +1593,9 @@
             // Variáveis globais para o calendário e agendamentos
             let currentWeekStart = getMonday(initialDate); // Começa na semana da data inicial
             let currentMiniCalendarDate = new Date(initialDate.getFullYear(), initialDate.getMonth(), 1); // Primeiro dia do mês da data inicial
-            let currentFilterMonth = new Date(initialDate.getFullYear(), initialDate.getMonth(), 1); // Primeiro dia do mês da data inicial
+            // currentFilterMonth will now always be the month of currentWeekStart to ensure consistency
+            let currentFilterMonth = new Date(currentWeekStart.getFullYear(), currentWeekStart.getMonth(), 1); 
+
 
             // CORREÇÃO: Função para obter a segunda-feira da semana de uma data, tratando corretamente o fuso horário.
             function getMonday(d) {
@@ -1800,19 +1802,22 @@
             function renderCardView() {
                 listViewContainer.innerHTML = ''; // Limpa a lista existente
 
-                console.log('renderCardView called. Current filter month:', currentFilterMonth.toISOString().split('T')[0]);
+                // Calcula a data de fim da semana atual
+                const currentWeekEnd = new Date(currentWeekStart);
+                currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+                currentWeekEnd.setHours(23, 59, 59, 999); // Garante que inclui o final do último dia
 
-                // Filtra os agendamentos com base no profissional selecionado E no mês selecionado
-                // A restrição de mês permanece para a visualização em lista
+                console.log('renderCardView called. Filtering from:', currentWeekStart.toISOString().split('T')[0], 'to', currentWeekEnd.toISOString().split('T')[0]);
+
+                // Filtra os agendamentos com base na semana atual e no profissional selecionado
                 const filteredAppointments = allAppointments.filter(app => {
-                    const appDate = new Date(app.data_agendamento + 'T00:00:00'); // Garante fuso horário local
+                    const appDateTime = new Date(`${app.data_agendamento}T${app.hora_agendamento}`);
                     const matchesProfessional = !professionalFilterId || app.profissional_id === professionalFilterId;
                     
-                    // Verifica se o agendamento está dentro do mês selecionado no mini-calendário
-                    const isSameMonth = appDate.getMonth() === currentFilterMonth.getMonth() &&
-                                         appDate.getFullYear() === currentFilterMonth.getFullYear();
+                    // Verifica se o agendamento está dentro do intervalo da semana atual
+                    const isWithinCurrentWeek = appDateTime >= currentWeekStart && appDateTime <= currentWeekEnd;
 
-                    return matchesProfessional && isSameMonth;
+                    return matchesProfessional && isWithinCurrentWeek;
                 });
 
                 console.log('Number of filtered appointments in card view:', filteredAppointments.length);
@@ -1826,7 +1831,7 @@
 
                 if (filteredAppointments.length === 0) {
                     const noAppointmentsMessage = document.createElement('p');
-                    noAppointmentsMessage.textContent = 'Nenhum agendamento encontrado para o mês e filtro selecionados.';
+                    noAppointmentsMessage.textContent = 'Nenhum agendamento encontrado para a semana e filtro selecionados.';
                     noAppointmentsMessage.style.textAlign = 'center';
                     noAppointmentsMessage.style.color = 'var(--muted)';
                     noAppointmentsMessage.style.marginTop = '2rem';
