@@ -423,6 +423,12 @@
             text-align: center;
         }
 
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 0.5rem 0;
+        }
+
         /* Detalhes do paciente */
         .patient-details {
             padding: 1.5rem;
@@ -506,7 +512,6 @@
         .patient-footer {
             display: flex;
             align-items: center;
-            justify-content: space-between;
             padding: 1rem 1.5rem;
             background: var(--bg);
             border-top: 1px solid var(--border-color);
@@ -819,11 +824,6 @@
                 flex-direction: column;
                 gap: 1rem;
                 align-items: flex-start;
-            }
-            
-            .quick-actions {
-                align-self: stretch;
-                justify-content: center;
             }
             
             .patient-card-modern {
@@ -1719,6 +1719,56 @@
         </div>
     </div>
 
+    <script>
+        // Funções globais para interações dos cards
+        function togglePatientActions(patientId) {
+            const dropdown = document.getElementById(`actions-${patientId}`);
+            const allDropdowns = document.querySelectorAll('.dropdown-menu');
+            
+            // Fechar outros dropdowns
+            allDropdowns.forEach(menu => {
+                if (menu !== dropdown) {
+                    menu.classList.remove('show');
+                }
+            });
+            
+            dropdown.classList.toggle('show');
+        }
+
+        function callPatient(phone) {
+            if (phone) {
+                // Remove todos os caracteres não numéricos
+                const cleanPhone = phone.replace(/\D/g, '');
+                // Mensagem personalizada para WhatsApp
+                const message = "Olá! Entrando em contato da clínica. Como posso ajudá-lo?";
+                const encodedMessage = encodeURIComponent(message);
+                // Abre o WhatsApp Web com o número e mensagem
+                window.open(`https://wa.me/55${cleanPhone}?text=${encodedMessage}`, '_blank');
+            }
+        }
+
+        function makePhoneCall(phone) {
+            if (phone) {
+                window.open(`tel:${phone.replace(/\D/g, '')}`);
+            }
+        }
+
+        function emailPatient(email) {
+            if (email) {
+                window.open(`mailto:${email}`);
+            }
+        }
+
+        // Fechar dropdowns ao clicar fora
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.patient-actions-dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+        });
+    </script>
+
     <script type="module">
         // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
         const FAKE_FIREBASE = {
@@ -2002,6 +2052,11 @@
                                     <i class="fas fa-ellipsis-v"></i>
                                 </button>
                                 <div class="dropdown-menu" id="actions-${paciente.id}">
+                                    <button type="button" class="dropdown-item" onclick="openPatientStepsModal('${paciente.id}')">
+                                        <i class="fas fa-edit"></i>
+                                        Editar Dados
+                                    </button>
+                                    <div class="dropdown-divider"></div>
                                     <a href="${prontuarioUrlTemplate.replace('__ID__', paciente.id)}" class="dropdown-item">
                                         <i class="fas fa-notes-medical"></i>
                                         Ver Prontuário
@@ -2010,10 +2065,23 @@
                                         <i class="fas fa-child-reaching"></i>
                                         Ver PEI
                                     </a>
-                                    <button type="button" class="dropdown-item" onclick="openPatientStepsModal('${paciente.id}')">
-                                        <i class="fas fa-edit"></i>
-                                        Editar Dados
-                                    </button>
+                                    ${paciente.contato_telefone ? `
+                                        <div class="dropdown-divider"></div>
+                                        <button type="button" class="dropdown-item" onclick="callPatient('${paciente.contato_telefone}')">
+                                            <i class="fab fa-whatsapp"></i>
+                                            ${formatPhone(paciente.contato_telefone)}
+                                        </button>
+                                        <button type="button" class="dropdown-item" onclick="makePhoneCall('${paciente.contato_telefone}')">
+                                            <i class="fas fa-phone"></i>
+                                            ${formatPhone(paciente.contato_telefone)}
+                                        </button>
+                                    ` : ''}
+                                    ${paciente.contato_email ? `
+                                        <button type="button" class="dropdown-item" onclick="emailPatient('${paciente.contato_email}')">
+                                            <i class="fas fa-envelope"></i>
+                                            ${paciente.contato_email}
+                                        </button>
+                                    ` : ''}
                                 </div>
                             </div>
                         </div>
@@ -2096,17 +2164,6 @@
                                         <span>${paciente.genero}</span>
                                     </div>
                                 ` : ''}
-                            </div>
-                            <div class="quick-actions">
-                                <button class="quick-action-btn primary" onclick="openPatientStepsModal('${paciente.id}')" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="quick-action-btn info" onclick="window.open('${prontuarioUrlTemplate.replace('__ID__', paciente.id)}', '_blank')" title="Prontuário">
-                                    <i class="fas fa-notes-medical"></i>
-                                </button>
-                                <button class="quick-action-btn success" onclick="window.open('${peiUrlTemplate.replace('__ID__', paciente.id)}', '_blank')" title="PEI">
-                                    <i class="fas fa-child-reaching"></i>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -2216,29 +2273,8 @@
 
             // Gerar gradiente dinâmico baseado no nome do paciente
             function getPatientGradient(nome) {
-                if (!nome) return 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)';
-                
-                const gradients = [
-                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                    'linear-gradient(135deg, #ff8a80 0%, #ea4c89 100%)',
-                    'linear-gradient(135deg, #8fd3f4 0%, #84fab0 100%)',
-                    'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
-                    'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)',
-                    'linear-gradient(135deg, #fdbb2d 0%, #22c1c3 100%)',
-                ];
-                
-                const hash = nome.split('').reduce((a, b) => {
-                    a = ((a << 5) - a) + b.charCodeAt(0);
-                    return a & a;
-                }, 0);
-                
-                return gradients[Math.abs(hash) % gradients.length];
+                // Cor sólida única para todos os cards
+                return 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)';
             }
 
             function formatCPF(cpf) {
@@ -2300,42 +2336,6 @@
                     observer.observe(card);
                 });
             }
-
-            // Interações dos cards
-            function togglePatientActions(patientId) {
-                const dropdown = document.getElementById(`actions-${patientId}`);
-                const allDropdowns = document.querySelectorAll('.dropdown-menu');
-                
-                // Fechar outros dropdowns
-                allDropdowns.forEach(menu => {
-                    if (menu !== dropdown) {
-                        menu.classList.remove('show');
-                    }
-                });
-                
-                dropdown.classList.toggle('show');
-            }
-
-            function callPatient(phone) {
-                if (phone) {
-                    window.open(`tel:${phone.replace(/\D/g, '')}`);
-                }
-            }
-
-            function emailPatient(email) {
-                if (email) {
-                    window.open(`mailto:${email}`);
-                }
-            }
-
-            // Fechar dropdowns ao clicar fora
-            document.addEventListener('click', function(event) {
-                if (!event.target.closest('.patient-actions-dropdown')) {
-                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                        menu.classList.remove('show');
-                    });
-                }
-            });
 
             // --- Lógica dos Controles de Paginação ---
             function renderPaginationControls() {
