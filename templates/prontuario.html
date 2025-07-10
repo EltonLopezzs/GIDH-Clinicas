@@ -13,26 +13,25 @@
     <style>
         /* Define as variáveis de cores para os temas claro e escuro */
         :root {
-            --bg: #f1f5f9; /* Tailwind Slate-50 ajustado para ser mais claro */
+            --bg: #f8fafc; /* Tailwind Slate-50 */
             --card: #ffffff;
             --text: #0f172a; /* Tailwind Slate-900 */
             --muted: #64748b; /* Tailwind Slate-500 */
             --accent: #0f172a;
-            --primary: #39214a; /* Teal-600 */
-            --primary-light: #ccfbf1; /* Teal-100 */
+            --primary: #0d9488; /* Teal-600 */
             --primary-dark: #115e59; /* Teal-700 */
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
             --success: #16a34a; /* Green-600 */
             --warning: #f59e0b; /* Tailwind Amber-500 */
             --info: #0ea5e9; /* Tailwind Sky-500 */
-            --border-color: #e2e8f0; /* Tailwind Slate-200 */
+            --border-color: #e2e8f0;
 
-            --dark-bg: #0f172a; /* Tailwind Slate-900 */
-            --dark-card: #1e293b; /* Tailwind Slate-800 */
+            --dark-bg: #1e293b; /* Tailwind Slate-800 */
+            --dark-card: #334155; /* Tailwind Slate-700 */
             --dark-text: #f1f5f9; /* Tailwind Slate-100 */
             --dark-muted: #94a3b8; /* Tailwind Slate-400 */
-            --dark-border-color: #334155; /* Tailwind Slate-700 */
+            --dark-border-color: #475569; /* Tailwind Slate-600 */
 
             color-scheme: light;
         }
@@ -49,7 +48,7 @@
 
         /* Estilos globais reset e fonte */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; }
+        html, body { height: 100%; overflow-x: hidden; }
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
@@ -57,7 +56,6 @@
             min-height: 100vh;
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
-            overflow-x: hidden; /* Garante que não haja rolagem horizontal */
             overflow-y: auto; /* Garante rolagem vertical */
             scroll-behavior: smooth; /* Rolagem suave */
         }
@@ -323,192 +321,39 @@
             box-shadow: 0 6px 20px -5px rgba(0,0,0,0.3), 0 2px 8px -2px rgba(0,0,0,0.2);
         }
 
-        /* Flash Messages (Toast-like) */
-        .toast-container {
-            position: fixed;
-            top: 85px; /* Abaixo do topbar */
-            right: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 360px;
+        /* Flash Messages */
+        .flash-messages {
+            margin-bottom: 1.5rem;
         }
-
-        .toast {
-            background-color: var(--card);
-            color: var(--text);
-            padding: 1rem;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1), 0 5px 5px rgba(0,0,0,0.05);
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            border: 1px solid var(--border-color);
-            animation: toast-slide-in 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .toast.success { border-left: 5px solid var(--success); }
-        .toast.danger { border-left: 5px solid var(--danger); }
-        .toast.warning { border-left: 5px solid var(--warning); }
-        .toast.info { border-left: 5px solid var(--info); }
-
-        .toast-icon {
-            font-size: 1.5rem;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-        .toast.success .toast-icon { color: var(--success); }
-        .toast.danger .toast-icon { color: var(--danger); }
-        .toast.warning .toast-icon { color: var(--warning); }
-        .toast.info .toast-icon { color: var(--info); }
-
-        .toast-content {
-            flex-grow: 1;
-        }
-        .toast-title {
-            font-weight: 700;
-            font-size: 1rem;
-            color: var(--text);
-            display: block;
-            margin-bottom: 0.25rem;
-        }
-        .toast-message {
-            font-size: 0.9rem;
-            color: var(--muted);
-            line-height: 1.4;
-        }
-
-        .toast-close {
-            background: none;
-            border: none;
-            color: var(--muted);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0;
-            line-height: 1;
-            opacity: 0.7;
-            transition: opacity 0.2s ease, color 0.2s ease;
-            flex-shrink: 0;
-        }
-        .toast-close:hover {
-            opacity: 1;
-            color: var(--text);
-        }
-
-        .toast-progress {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 4px;
-            width: 100%;
-            animation: toast-progress-bar 5s linear forwards;
-        }
-        .toast.success .toast-progress { background-color: var(--success); }
-        .toast.danger .toast-progress { background-color: var(--danger); }
-        .toast.warning .toast-progress { background-color: var(--warning); }
-        .toast.info .toast-progress { background-color: var(--info); }
-
-        @keyframes toast-slide-in {
-            from {
-                opacity: 0;
-                transform: translateX(110%);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes toast-fade-out {
-            from {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-        }
-        .toast.fade-out {
-            animation: toast-fade-out 0.4s ease-in forwards;
-        }
-
-        @keyframes toast-progress-bar {
-            from { width: 100%; }
-            to { width: 0%; }
-        }
-
-        /* Nova modal para alertas gerais */
-        .alert-modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15,23,42,0.7);
+        .flash-message {
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+            border: 1px solid transparent;
             display: flex;
             align-items: center;
-            justify-content: center;
-            z-index: 4500; /* Maior que outras modals */
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
+            gap: 0.75rem;
         }
-        .alert-modal-overlay.show {
-            opacity: 1;
-            pointer-events: auto;
+        .flash-message.success {
+            background-color: color-mix(in srgb, var(--success) 15%, transparent);
+            color: var(--success);
+            border-color: color-mix(in srgb, var(--success) 30%, transparent);
         }
-        .alert-modal {
-            background: var(--card);
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            max-width: 400px; /* Tamanho consistente */
-            width: 90vw;
-            transform: scale(0.95);
-            transition: transform 0.3s ease;
-            padding: 2rem;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
+        .flash-message.danger {
+            background-color: color-mix(in srgb, var(--danger) 15%, transparent);
+            color: var(--danger);
+            border-color: color-mix(in srgb, var(--danger) 30%, transparent);
         }
-        .alert-modal-overlay.show .alert-modal {
-            transform: scale(1);
+        .flash-message.warning {
+            background-color: color-mix(in srgb, var(--warning) 15%, transparent);
+            color: var(--warning);
+            border-color: color-mix(in srgb, var(--warning) 30%, transparent);
         }
-        .alert-modal-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: white;
-        }
-        .alert-modal-icon.info { background: var(--info); }
-        .alert-modal-icon.success { background: var(--success); }
-        .alert-modal-icon.warning { background: var(--warning); }
-        .alert-modal-icon.danger { background: var(--danger); }
-
-        .alert-modal-title {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: var(--text);
-            margin: 0;
-        }
-        .alert-modal-message {
-            font-size: 1rem;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-        .alert-modal-actions {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }
-        .alert-modal-actions .btn {
-            min-width: 100px;
+        .flash-message.info {
+            background-color: color-mix(in srgb, var(--info) 15%, transparent);
+            color: var(--info);
+            border-color: color-mix(in srgb, var(--info) 30%, transparent);
         }
 
         /* --- Prontuário Section (Seção do Prontuário) --- */
@@ -626,7 +471,7 @@
             border: none;
             border-bottom: 3px solid transparent;
             transform: translateY(2px);
-            transition: color 0.2s ease, border-color 0.2s ease, transform 0.1s ease, background-color 0.2s ease; /* Adicionado background-color */
+            transition: color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
             font-size: 0.95rem;
             border-radius: 6px 6px 0 0; /* Rounded top corners */
         }
@@ -641,10 +486,6 @@
             box-shadow: 0 -2px 5px rgba(0,0,0,0.05); /* Subtle shadow for active tab */
             transform: translateY(0); /* Resets transform for active tab */
         }
-        [data-theme="dark"] .tab-nav-item.active {
-            background-color: var(--dark-card);
-        }
-
         .tab-panel {
             display: none;
             transition: opacity 0.3s ease-in-out;
@@ -682,13 +523,6 @@
             flex-direction: column;
             overflow: hidden; /* Ensures content doesn't spill out rounded corners */
         }
-        /* Aumentando o tamanho das modais de visualização e edição */
-        #registro-completo-modal .modal-content,
-        #modalRegistroGenerico .modal-content {
-            max-width: 95%; /* Quase toda a largura da tela */
-            max-height: 95vh; /* Quase toda a altura da tela */
-        }
-
         [data-theme="dark"] .modal-content {
             box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.15);
         }
@@ -873,30 +707,11 @@
             /* Reverte para grid em desktop */
             .records-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Ajustado para 4 colunas */
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
                 gap: 1.5rem;
                 overflow-x: visible;
                 flex-wrap: wrap;
             }
-            /* Força 4 colunas em telas muito grandes */
-            @media (min-width: 1600px) {
-                .records-grid {
-                    grid-template-columns: repeat(4, 1fr);
-                }
-            }
-            /* 3 colunas para telas grandes */
-            @media (min-width: 1200px) and (max-width: 1599px) {
-                .records-grid {
-                    grid-template-columns: repeat(3, 1fr);
-                }
-            }
-            /* 2 colunas para telas médias */
-            @media (min-width: 769px) and (max-width: 1199px) {
-                .records-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-            }
-
             .records-grid > .registro-card {
                 flex-shrink: 1;
                 width: auto;
@@ -988,19 +803,6 @@
     </style>
 </head>
 <body>
-    <div id="toast-container"></div>
-    <!-- Nova Modal para Alertas Gerais (similar a pacientes.html) -->
-    <div id="general-alert-modal-overlay" class="alert-modal-overlay">
-        <div class="alert-modal">
-            <div id="alert-modal-icon" class="alert-modal-icon"></div>
-            <h3 id="alert-modal-title" class="alert-modal-title"></h3>
-            <p id="alert-modal-message" class="alert-modal-message"></p>
-            <div class="alert-modal-actions">
-                <button id="alert-modal-close-btn" class="btn btn-primary">OK</button>
-            </div>
-        </div>
-    </div>
-
     <div class="layout">
         <aside class="sidebar">
             <div class="sidebar-inner-content">
@@ -1070,7 +872,15 @@
             </header>
 
             <main>
-                <div id="toast-container"></div> {# Container para toasts #}
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="flash-message {{ category }}"><i class="{% if category == 'success' %}fas fa-check-circle{% elif category == 'danger' %}fas fa-times-circle{% elif category == 'warning' %}fas fa-exclamation-triangle{% else %}fas fa-info-circle{% endif %}"></i> {{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
 
                 {% if paciente %}
                 <div class="paciente-info-card">
@@ -1315,105 +1125,39 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module">
-        // Função para exibir mensagens flash personalizadas (movida para o escopo global)
-        function showToast(message, category = 'info') {
-            let toastContainer = document.getElementById('toast-container');
-            if (!toastContainer) {
-                // Cria o container se não existir
-                toastContainer = document.createElement('div');
-                toastContainer.id = 'toast-container';
-                document.body.appendChild(toastContainer);
+        // Function to display custom flash messages (moved to global scope)
+        function displayFlashMessage(type, message) {
+            let flashMessagesContainer = document.querySelector('.flash-messages');
+            if (!flashMessagesContainer) {
+                const mainElement = document.querySelector('main');
+                if (mainElement) {
+                    const newContainer = document.createElement('div');
+                    newContainer.classList.add('flash-messages');
+                    mainElement.prepend(newContainer);
+                    flashMessagesContainer = newContainer;
+                } else {
+                    console.error('Não foi possível encontrar ou criar o container de flash messages.');
+                    return;
+                }
             }
 
-            const toast = document.createElement('div');
-            toast.className = `toast ${category}`;
-            
-            let iconClass = 'fa-solid fa-circle-info';
-            let title = 'Informação';
-            if (category === 'success') {
-                iconClass = 'fa-solid fa-check-circle';
-                title = 'Sucesso';
-            }
-            if (category === 'danger') {
-                iconClass = 'fa-solid fa-times-circle';
-                title = 'Erro';
-            }
-            if (category === 'warning') {
-                iconClass = 'fa-solid fa-exclamation-triangle';
-                title = 'Atenção';
-            }
-
-            toast.innerHTML = `
-                <div class="toast-icon">
-                    <i class="${iconClass}"></i>
-                </div>
-                <div class="toast-content">
-                    <strong class="toast-title">${title}</strong>
-                    <span class="toast-message">${message}</span>
-                </div>
-                <button class="toast-close">&times;</button>
-                <div class="toast-progress"></div>
-            `;
-            
-            toastContainer.appendChild(toast);
-
-            const closeButton = toast.querySelector('.toast-close');
-            closeButton.addEventListener('click', () => {
-                toast.classList.add('fade-out');
-                toast.addEventListener('animationend', () => toast.remove());
-            });
-
-            setTimeout(() => {
-                toast.classList.add('fade-out');
-                toast.addEventListener('animationend', () => toast.remove());
-            }, 5000); // A notificação desaparece após 5 segundos
-        }
-
-        // Lógica para Modal de Alerta Geral (similar a pacientes.html)
-        const generalAlertOverlay = document.getElementById('general-alert-modal-overlay');
-        const alertModalIcon = document.getElementById('alert-modal-icon');
-        const alertModalTitle = document.getElementById('alert-modal-title');
-        const alertModalMessage = document.getElementById('alert-modal-message');
-        const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
-
-        function showGeneralAlertModal(title, message, category = 'info') {
-            alertModalTitle.textContent = title;
-            alertModalMessage.textContent = message;
-            
-            alertModalIcon.className = 'alert-modal-icon'; // Reset class
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('flash-message', type);
             let iconClass = '';
-            switch (category) {
-                case 'info': iconClass = 'fas fa-info-circle'; break;
-                case 'success': iconClass = 'fas fa-check-circle'; break;
-                case 'warning': iconClass = 'fas fa-exclamation-triangle'; break;
-                case 'danger': iconClass = 'fas fa-times-circle'; break;
-            }
-            alertModalIcon.classList.add(category);
-            alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
+            if (type === 'success') iconClass = 'fas fa-check-circle';
+            else if (type === 'danger') iconClass = 'fas fa-times-circle';
+            else if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
+            else iconClass = 'fas fa-info-circle';
 
-            generalAlertOverlay.classList.add('show');
-            document.body.style.overflow = 'hidden'; // Bloquear scroll do body
+            messageDiv.innerHTML = `<i class="${iconClass}"></i> ${message}`;
+
+            flashMessagesContainer.appendChild(messageDiv);
+
+            // Remove the message after a few seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
         }
-
-        function closeGeneralAlertModal() {
-            generalAlertOverlay.classList.remove('show');
-            document.body.style.overflow = 'auto'; // Restaurar scroll do body
-        }
-
-        // Adiciona event listeners para a nova modal de alerta
-        document.addEventListener('DOMContentLoaded', () => {
-            if (alertModalCloseBtn) {
-                alertModalCloseBtn.addEventListener('click', closeGeneralAlertModal);
-            }
-            if (generalAlertOverlay) {
-                generalAlertOverlay.addEventListener('click', (e) => {
-                    if (e.target === generalAlertOverlay) {
-                        closeGeneralAlertModal();
-                    }
-                });
-            }
-        });
-
 
         // Importa funções do Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
@@ -1437,7 +1181,7 @@
             console.log('Firebase app initialized successfully.');
         } catch (error) {
             console.error('Error initializing Firebase app:', error);
-            showToast('Erro ao inicializar o Firebase. Verifique sua configuração no código e se a chave de API é válida.', 'danger');
+            displayFlashMessage('danger', 'Erro ao inicializar o Firebase. Verifique sua configuração no código e se a chave de API é válida.');
         }
 
 
@@ -1734,7 +1478,7 @@
                         const userPrompt = genericPromptInput.value.trim();
                         const tipoRegistro = tipoRegistroGenericoInput.value;
                         if (!userPrompt) {
-                            showGeneralAlertModal('Entrada Necessária', `Por favor, descreva o tipo de ${tipoRegistro} que você deseja gerar.`, 'warning');
+                            displayFlashMessage('warning', `Por favor, descreva o tipo de ${tipoRegistro} que você deseja gerar.`);
                             return;
                         }
 
@@ -1751,7 +1495,7 @@
                             fullPrompt = `Você é um profissional de saúde. Crie a descrição detalhada de um procedimento médico/clínico em HTML para ${patientName}, sem placeholders como "[...]", para: "${userPrompt}". O documento deve abranger indicação, descrição do procedimento passo a passo, cuidados pré-procedimento, cuidados pós-procedimento, riscos e benefícios. Assine como ${professionalName}. Use tags HTML apropriadas (<h3>, <strong>, <ul>, <p>, <li>).`;
                         } else {
                             console.error("Tipo de registro desconhecido para geração com IA.");
-                            showGeneralAlertModal('Erro de Geração', "Tipo de registro desconhecido para geração com IA.", 'danger');
+                            displayFlashMessage('danger', "Tipo de registro desconhecido para geração com IA.");
                             return;
                         }
 
@@ -1761,10 +1505,10 @@
 
                         try {
                             // Utiliza a API Gemini para gerar conteúdo
-                            const apiKey = "SUA_API_KEY"; // A chave API será fornecida pelo ambiente Canvas
+                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // A chave API será fornecida pelo ambiente Canvas
 
                             // Check if apiKey is valid (simple check, not exhaustive)
-                            if (!apiKey || apiKey === "SUA_API_KEY") {
+                            if (!apiKey || apiKey === "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ") {
                                 throw new Error("API Key not configured. Please replace 'SUA_API_KEY' with a valid key.");
                             }
 
@@ -1792,7 +1536,7 @@
 
                         } catch (error) {
                             console.error('Erro na API Gemini:', error);
-                            showGeneralAlertModal('Erro na Geração de IA', 'Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.', 'danger');
+                            displayFlashMessage('danger', 'Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.');
                         } finally {
                             hideLoading(); // Oculta o indicador de carregamento
                             // Restaura o estado do botão com base no consentimento LGPD
@@ -1883,10 +1627,10 @@
                         if(modalId) closeModalById(modalId);
                         return;
                     }
-                    // if(target.matches('.modal-overlay')) { // Removido para evitar fechar a modal de alerta geral ao clicar no overlay
-                    //      closeModalById(target.id);
-                    //      return;
-                    // }
+                    if(target.matches('.modal-overlay')) {
+                         closeModalById(target.id);
+                         return;
+                    }
                     if(target.closest('[data-close-modal]')) {
                         closeModalById(target.closest('[data-close-modal]').dataset.closeModal);
                         return;
@@ -1952,7 +1696,7 @@
                             }
                         } catch (error) {
                             console.error('Erro durante a ação de confirmação:', error);
-                            showToast(`Ocorreu um erro ao processar a solicitação: ${error.message}`, 'danger'); // Feedback ao usuário
+                            displayFlashMessage('danger', `Ocorreu um erro ao processar a solicitação: ${error.message}`); // Feedback ao usuário
                         } finally {
                             hideLoading(); // Oculta o indicador de carregamento
                             currentDeleteAction = null; // Reseta a ação
@@ -2061,6 +1805,44 @@
                      doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
 
+                // Function to display custom flash messages
+                function displayFlashMessage(type, message) {
+                    let flashMessagesContainer = document.querySelector('.flash-messages');
+                    if (!flashMessagesContainer) {
+                        const mainElement = document.querySelector('main');
+                        if (mainElement) {
+                            const newContainer = document.createElement('div');
+                            newContainer.classList.add('flash-messages');
+                            mainElement.prepend(newContainer);
+                            flashMessagesContainer = newContainer;
+                        } else {
+                            console.error('Não foi possível encontrar ou criar o container de flash messages.');
+                            return;
+                        }
+                    }
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('flash-message', type);
+                    let iconClass = '';
+                    if (type === 'success') iconClass = 'fas fa-check-circle';
+                    else if (type === 'danger') iconClass = 'fas fa-times-circle';
+                    else if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
+                    else iconClass = 'fas fa-info-circle';
+
+                    messageDiv.innerHTML = `<i class="${iconClass}"></i> ${message}`;
+
+                    flashMessagesContainer.appendChild(messageDiv);
+
+                    // Remove the message after a few seconds
+                    setTimeout(() => {
+                        messageDiv.remove();
+                    }, 5000);
+                }
+
+
+                // --- Initial Renderings --- (PEI rendering removed)
+
+                // Event listeners for Add Target and Add Activity removed
 
                 // --- Initialization ---
                 setupTabs();
