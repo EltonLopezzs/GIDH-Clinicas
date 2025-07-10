@@ -344,7 +344,7 @@ def register_medical_records_routes(app):
             except Exception as e:
                 print(f"Erro ao buscar ID do profissional para o usuário {user_uid}: {e}")
                 flash("Ocorreu um erro ao verificar as suas permissões de profissional.", "danger")
-        
+            
         # DEBUG: Logar informações da sessão
         print(f"\n--- DEBUG: ver_prontuario (CORRIGIDO) ---")
         print(f"User Role: {user_role}")
@@ -360,11 +360,19 @@ def register_medical_records_routes(app):
             profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').order_by('nome').stream()
             for doc in profissionais_docs:
                 prof_data = doc.to_dict()
-                if prof_data:
-                    profissionais_lista.append({'id': doc.id, 'nome': prof_data.get('nome', 'N/A')})
+                if prof_data is not None: # Garante que prof_data não seja None
+                    profissionais_lista.append({
+                        'id': str(doc.id), # Converte explicitamente para string
+                        'nome': str(prof_data.get('nome', 'N/A')) # Converte explicitamente para string
+                    })
+                else:
+                    print(f"DEBUG: Documento de profissional vazio encontrado ao carregar lista: {doc.id}")
         except Exception as e:
             flash(f'Erro ao carregar lista de profissionais: {e}', 'warning')
             print(f"Erro ao carregar profissionais para PEI: {e}")
+
+        # DEBUG: Imprime a lista de profissionais antes de passar para o template
+        print(f"DEBUG: profissionais_lista antes de render_template: {profissionais_lista}")
 
 
         try:
@@ -446,7 +454,7 @@ def register_medical_records_routes(app):
         except Exception as e:
             flash(f'Erro ao carregar prontuário do paciente: {e}.', 'danger')
             print(f"Erro ao carregar prontuário: {e}")
-        
+            
         all_peis = peis_ativos + peis_finalizados
         print(f"DEBUG: Total de PEIs encontrados no backend (antes de enviar ao frontend): {len(all_peis)}")
 
@@ -461,7 +469,7 @@ def register_medical_records_routes(app):
                                is_admin=is_admin, # Passa a flag de admin para o template
                                is_professional=is_professional, # Passa a flag de profissional para o template
                                logged_in_professional_id=logged_in_professional_id, # Passa o ID do profissional logado
-                               all_professionals=profissionais_lista # Passa a lista de profissionais
+                               all_profissionais=profissionais_lista # Passa a lista de profissionais
                                )
 
     # =================================================================
@@ -564,7 +572,7 @@ def register_medical_records_routes(app):
             except Exception as e:
                 flash(f'Erro ao adicionar anamnese: {e}', 'danger')
                 print(f"Erro ao adicionar anamnese: {e}")
-        
+            
         return render_template('anamnese_form.html', paciente_id=paciente_doc_id, paciente_nome=paciente_nome, modelos_anamnese=modelos_anamnese, action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id), page_title=f"Registar Anamnese para {paciente_nome}")
 
     # ROTA RESTAURADA
@@ -1201,10 +1209,8 @@ def register_medical_records_routes(app):
 
         try:
             data = request.get_json()
-            pei_id = data.get('pei_id')
-            goal_id = data.get('goal_id')
-            target_id = data.get('target_id')
-            aid_id = data.get('aid_id') # Novo: ID da ajuda específica
+            pei_id = data.get('pei_id'); goal_id = data.get('goal_id')
+            target_id = data.get('target_id'); aid_id = data.get('aid_id') # Novo: ID da ajuda específica
             new_attempts_count = data.get('new_attempts_count')
             new_help_content = data.get('new_help_content') # Conteúdo de ajuda (se for para uma ajuda específica)
             new_target_status = data.get('new_target_status') # Novo: Status geral do alvo
@@ -1260,4 +1266,3 @@ def register_medical_records_routes(app):
         except Exception as e:
             print(f"Erro ao atualizar tentativas/ajuda/status do alvo: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
-
