@@ -517,24 +517,28 @@
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.6);
-            display: none;
+            display: flex; /* Always flex to center content */
             align-items: center; /* Center vertically */
             justify-content: center;
             padding: 1rem;
             z-index: 2000; opacity: 0; transition: opacity 0.25s ease;
-            overflow-y: auto;
+            overflow-y: auto; /* Allow scrolling for modal content */
+            pointer-events: none; /* Initially non-interactive */
         }
-        .modal-overlay.active { opacity: 1; display: flex; }
+        .modal-overlay.active { 
+            opacity: 1; 
+            pointer-events: auto; /* Make interactive when active */
+        }
         .modal-content {
             background-color: var(--card); /* Usar variável para o background */
             color: var(--text);
             border-radius: 12px;
-            /* Sombra atualizada para ser mais neutra e adaptável */
             box-shadow: 0 15px 30px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05);
-            width: 100%;
-            max-width: 90vw; /* Aumentado para ser 90% da largura da viewport */
-            max-height: 98vh; /* Aumentado para ser 98% da altura da viewport */
-            transform: translateY(-20px); transition: transform 0.3s ease, opacity 0.3s ease;
+            width: 90vw; /* Use vw for fluid width */
+            max-width: 1200px; /* Fixed max-width for large screens */
+            max-height: 98vh; /* Keeps modal within viewport */
+            transform: translateY(-20px); 
+            transition: transform 0.3s ease, opacity 0.3s ease;
             display: flex;
             flex-direction: column;
             overflow: hidden; /* Ensures content doesn't spill out rounded corners */
@@ -723,7 +727,7 @@
             /* Reverte para grid em desktop */
             .records-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Default for flexibility */
                 gap: 1.5rem;
                 overflow-x: visible;
                 flex-wrap: wrap;
@@ -733,6 +737,19 @@
                 width: auto;
             }
         }
+        /* Adicionado: 3 cards por linha para telas maiores que 1000px */
+        @media (min-width: 1000px) {
+            .records-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        /* Adicionado: 4 cards por linha para telas maiores que 1400px (opcional, para telas muito grandes) */
+        @media (min-width: 1400px) {
+            .records-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
@@ -1580,7 +1597,7 @@
                     confirmModalTitle.textContent = title;
                     confirmDeleteMessage.textContent = message;
                     confirmDeleteBtn.textContent = (action.includes('delete') ? 'Apagar' : 'Finalizar'); // Altera dinamicamente o texto do botão
-                    // Adiciona/remove classes para estilizar o botão de acordo com a ação
+                    // Adiciona/remove classes para estilizar o botão de acordo com o ação
                     confirmDeleteBtn.classList.toggle('btn-danger-outline', action.includes('delete'));
                     confirmDeleteBtn.classList.toggle('btn-success', !action.includes('delete'));
 
