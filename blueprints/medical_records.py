@@ -23,8 +23,8 @@ from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_
 # NUNCA deve ser hardcoded no código fonte. Use variáveis de ambiente
 # ou um sistema de gerenciamento de segredos.
 # Substitua 'path/to/your/service-account-key.json' pelo caminho real do seu arquivo.
-SERVICE_ACCOUNT_FILE = 'path/to/your/service-account-key.json' # <<<< ATUALIZE ESTE CAMINHO
-SCOPES = ['https://www.googleapis.com/auth/drive.file'] # Permissão para criar e gerenciar arquivos criados pela app
+SERVICE_ACCOUNT_FILE = 'serviceAccountKey.json' # <<<< ATUALIZE ESTE CAMINHO
+SCOPES = ['https://www.googleapis.com/auth/drive.file']  
 
 def get_drive_service():
     """
