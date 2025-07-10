@@ -7,11 +7,42 @@ import base64
 from io import BytesIO
 from PyPDF2 import PdfReader, PdfWriter # Para manipulação e compressão de PDF
 
+# --- NOVOS IMPORTS PARA GOOGLE DRIVE ---
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
+# --- FIM DOS NOVOS IMPORTS ---
+
 # Importe as suas funções utilitárias.
 from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_doc_to_dict
 
 # =================================================================
-# FUNÇÕES DE TRANSAÇÃO (Helpers) - MANTENHA AS SUAS FUNÇÕES EXISTENTES AQUI
+# CONFIGURAÇÃO DO GOOGLE DRIVE (PARA SEU AMBIENTE REAL)
+# =================================================================
+# ATENÇÃO: Em um ambiente de produção, o caminho para o arquivo de credenciais
+# NUNCA deve ser hardcoded no código fonte. Use variáveis de ambiente
+# ou um sistema de gerenciamento de segredos.
+# Substitua 'path/to/your/service-account-key.json' pelo caminho real do seu arquivo.
+SERVICE_ACCOUNT_FILE = 'path/to/your/service-account-key.json' # <<<< ATUALIZE ESTE CAMINHO
+SCOPES = ['https://www.googleapis.com/auth/drive.file'] # Permissão para criar e gerenciar arquivos criados pela app
+
+def get_drive_service():
+    """
+    Autentica e retorna um objeto de serviço da Google Drive API.
+    Este método usa uma conta de serviço.
+    """
+    try:
+        credentials = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+        service = build('drive', 'v3', credentials=credentials)
+        return service
+    except Exception as e:
+        print(f"ERRO: Falha ao inicializar o serviço do Google Drive. Verifique as credenciais e o caminho do arquivo. Erro: {e}")
+        raise Exception("Falha na integração com o Google Drive.")
+
+
+# =================================================================
+# FUNÇÕES DE TRANSAÇÃO (Helpers)
 # =================================================================
 
 @firestore.transactional
@@ -455,34 +486,39 @@ def register_medical_records_routes(app):
                 else:
                     peis_ativos.append(pei)
 
-            # --- NOVO: Carregar outros documentos ---
+            # --- NOVO: Carregar outros documentos (agora com drive_file_id) ---
             outros_documentos_ref = paciente_ref.collection('outros_documentos')
             docs_outros_documentos = outros_documentos_ref.order_by('data_upload', direction=firestore.Query.DESCENDING).stream()
             for doc in docs_outros_documentos:
-                doc_data = convert_doc_to_dict(doc) # Isso já deve converter Timestamps e referências
+                doc_data = convert_doc_to_dict(doc) 
 
-                # Garante que todos os campos sejam serializáveis.
-                # convert_doc_to_dict já tenta converter datetimes, mas vamos ser explícitos para outros tipos.
+                # Sanitiza todos os campos para garantir serialização JSON
                 processed_doc_data = {
-                    'id': str(doc_data.get('id', doc.id)),
-                    'descricao': str(doc_data.get('descricao', 'Sem descrição')),
-                    'nome_arquivo': str(doc_data.get('nome_arquivo', 'arquivo_desconhecido')),
-                    'mime_type': str(doc_data.get('mime_type', 'application/octet-stream')),
-                    'tamanho_original': int(doc_data.get('tamanho_original', 0)),
-                    'tamanho_comprimido': int(doc_data.get('tamanho_comprimido', 0)),
-                    'uploaded_by': str(doc_data.get('uploaded_by', 'Desconhecido')),
-                    'conteudo_base64': str(doc_data.get('conteudo_base64', '')) # Conteúdo base64 como string
+                    'id': str(doc_data.get('id', doc.id) or ''),
+                    'descricao': str(doc_data.get('descricao', 'Sem descrição') or ''),
+                    'nome_arquivo': str(doc_data.get('nome_arquivo', 'arquivo_desconhecido') or ''),
+                    'mime_type': str(doc_data.get('mime_type', 'application/octet-stream') or ''),
+                    'uploaded_by': str(doc_data.get('uploaded_by', 'Desconhecido') or ''),
+                    'drive_file_id': str(doc_data.get('drive_file_id', '') or ''), # O ID do arquivo no Google Drive
+                    'drive_web_content_link': str(doc_data.get('drive_web_content_link', '') or '') # Opcional: link direto
                 }
-                
-                # Formata a data de upload
+
+                # Garante que os campos numéricos sejam int, com fallback para 0
+                for key in ['tamanho_original', 'tamanho_comprimido']:
+                    value = doc_data.get(key)
+                    try:
+                        processed_doc_data[key] = int(value) if value is not None else 0
+                    except (ValueError, TypeError):
+                        processed_doc_data[key] = 0 # Fallback seguro
+
+                # Garante que a data formatada seja uma string
                 if 'data_upload' in doc_data and isinstance(doc_data['data_upload'], datetime.datetime):
                     processed_doc_data['data_upload_fmt'] = doc_data['data_upload'].strftime('%d/%m/%Y %H:%M')
                 elif isinstance(doc_data.get('data_upload'), str):
-                    processed_doc_data['data_upload_fmt'] = doc_data['data_upload'] # Já foi formatado por convert_doc_to_dict
+                    processed_doc_data['data_upload_fmt'] = doc_data['data_upload']
                 else:
                     processed_doc_data['data_upload_fmt'] = 'N/A'
 
-                # DEBUG: Adiciona um print para inspecionar o documento antes de adicionar à lista
                 print(f"DEBUG: Documento processado para frontend: {processed_doc_data}")
 
                 outros_documentos.append(processed_doc_data)
@@ -527,7 +563,7 @@ def register_medical_records_routes(app):
             else:
                 db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
                     'data_registro': datetime.datetime.now(SAO_PAULO_TZ), 'tipo_registro': tipo_registro,
-                    'titulo': titulo, 'conteudo': conteudo,
+                    'titulo': 'Anamnese', 'conteudo': conteudo,
                     'profissional_nome': session.get('user_name', 'N/A') # Adiciona o profissional
                 })
                 flash(f'Registo de {tipo_registro} adicionado com sucesso!', 'success')
@@ -852,7 +888,6 @@ def register_medical_records_routes(app):
 
             if not is_admin:
                 associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
-                # Verifica se o profissional logado está na lista de profissionais associados ao PEI
                 if logged_in_professional_id not in associated_professionals_ids:
                     return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar este PEI.'}), 403
             
@@ -1047,9 +1082,8 @@ def register_medical_records_routes(app):
                 associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
                 if logged_in_professional_id not in associated_professionals_ids:
                     return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar esta meta.'}), 403
-
-            transaction = db_instance.transaction()
-            _finalize_goal_transaction(transaction, pei_ref, goal_id)
+            
+            _finalize_goal_transaction(db_instance.transaction(), pei_ref, goal_id)
             transaction.commit()
 
             all_peis = []
@@ -1305,7 +1339,7 @@ def register_medical_records_routes(app):
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
     # =================================================================
-    # NOVAS ROTAS PARA OUTROS DOCUMENTOS (PDF)
+    # NOVAS ROTAS PARA OUTROS DOCUMENTOS (PDF) - AGORA COM GOOGLE DRIVE
     # =================================================================
 
     @app.route('/prontuarios/<string:paciente_doc_id>/upload_documento_pdf', methods=['POST'], endpoint='upload_documento_pdf')
@@ -1338,12 +1372,6 @@ def register_medical_records_routes(app):
             original_size = len(original_pdf_bytes)
 
             # --- Lógica de Compressão/Otimização de PDF com PyPDF2 ---
-            # Nota: PyPDF2 faz uma otimização básica. Para compressão mais agressiva
-            # (e.g., recompressão de imagens dentro do PDF), seriam necessárias
-            # bibliotecas mais avançadas como PyMuPDF (fitz) ou ferramentas externas
-            # como Ghostscript, que são mais complexas de integrar ou podem não estar
-            # disponíveis em todos os ambientes.
-            
             compressed_pdf_bytes = original_pdf_bytes # Inicia com o original
             try:
                 reader = PdfReader(BytesIO(original_pdf_bytes))
@@ -1352,10 +1380,7 @@ def register_medical_records_routes(app):
                 for page in reader.pages:
                     writer.add_page(page)
                 
-                # Tenta comprimir o conteúdo dos streams (texto, linhas, etc.)
-                # Isso não afeta imagens, mas pode ajudar em PDFs gerados de texto.
-                writer.compress_content_streams()
-
+                writer.compress_content_streams() # Tenta comprimir o conteúdo
                 output_stream = BytesIO()
                 writer.write(output_stream)
                 compressed_pdf_bytes = output_stream.getvalue()
@@ -1364,24 +1389,36 @@ def register_medical_records_routes(app):
                 print(f"DEBUG: PDF Compressed Size (PyPDF2): {len(compressed_pdf_bytes)} bytes")
 
             except Exception as e:
-                print(f"WARNING: Erro durante a compressão do PDF com PyPDF2: {e}. Armazenando o PDF original.")
-                # Em caso de erro na compressão, usamos o arquivo original.
+                print(f"WARNING: Erro durante a compressão do PDF com PyPDF2: {e}. Prosseguindo com o PDF original.")
                 compressed_pdf_bytes = original_pdf_bytes
 
             compressed_size = len(compressed_pdf_bytes)
 
-            # Converte o PDF (comprimido ou original) para Base64
-            pdf_base64 = base64.b64encode(compressed_pdf_bytes).decode('utf-8')
+            # --- NOVO: UPLOAD PARA O GOOGLE DRIVE ---
+            drive_service = get_drive_service() # Obtém o serviço autenticado do Google Drive
 
-            # Verifica o tamanho final do Base64 para garantir que não exceda o limite do Firestore (1MB)
-            # 1MB = 1024 * 1024 bytes. Base64 aumenta o tamanho em ~33%.
-            # Então, 1MB de dados brutos vira ~1.33MB em Base64.
-            # Se o PDF original for grande, mesmo comprimido, pode exceder 1MB no Firestore.
-            if len(pdf_base64) > (1024 * 1024): # Verifica se o Base64 é maior que 1MB
-                 flash('O arquivo PDF, mesmo após otimização, é muito grande para ser armazenado. Por favor, use um arquivo menor ou otimize-o externamente.', 'danger')
-                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            file_metadata = {
+                'name': pdf_file.filename,
+                'mimeType': 'application/pdf',
+                # Opcional: Para organizar em uma pasta específica no Google Drive,
+                # adicione 'parents': ['ID_DA_SUA_PASTA_NO_GOOGLE_DRIVE']
+                # Certifique-se de que a conta de serviço tenha permissão para essa pasta.
+            }
+            media = MediaIoBaseUpload(BytesIO(compressed_pdf_bytes),
+                                      mimetype='application/pdf',
+                                      resumable=True)
+            
+            uploaded_file = drive_service.files().create(body=file_metadata,
+                                                   media_body=media,
+                                                   fields='id, webContentLink').execute() # webContentLink para download direto
+            
+            drive_file_id = uploaded_file.get('id')
+            drive_web_content_link = uploaded_file.get('webContentLink') # Link para download direto, se disponível
 
+            if not drive_file_id:
+                raise Exception("Não foi possível obter o ID do arquivo do Google Drive após o upload.")
 
+            # Salvar metadados no Firestore, incluindo o ID do arquivo no Google Drive
             paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
             documentos_ref = paciente_ref.collection('outros_documentos')
 
@@ -1393,13 +1430,14 @@ def register_medical_records_routes(app):
                 'tamanho_comprimido': compressed_size,
                 'data_upload': datetime.datetime.now(SAO_PAULO_TZ),
                 'uploaded_by': session.get('user_name', 'N/A'),
-                'conteudo_base64': pdf_base64
+                'drive_file_id': drive_file_id, # Armazena o ID do arquivo no Google Drive
+                'drive_web_content_link': drive_web_content_link # Opcional: Armazena o link direto
             })
 
-            flash('Documento PDF enviado e otimizado com sucesso!', 'success')
+            flash('Documento PDF enviado e otimizado para o Google Drive com sucesso!', 'success')
 
         except Exception as e:
-            flash(f'Erro ao fazer upload do documento: {e}', 'danger')
+            flash(f'Erro ao fazer upload do documento para o Google Drive: {e}', 'danger')
             print(f"Erro upload_documento_pdf: {e}")
 
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
@@ -1419,15 +1457,27 @@ def register_medical_records_routes(app):
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
             doc_data = documento_doc.to_dict()
-            pdf_base64 = doc_data.get('conteudo_base64')
+            drive_file_id = doc_data.get('drive_file_id') # Obtém o ID do arquivo do Google Drive
             nome_arquivo = doc_data.get('nome_arquivo', 'documento.pdf')
             mime_type = doc_data.get('mime_type', 'application/pdf')
 
-            if not pdf_base64:
-                flash('Conteúdo do documento PDF ausente.', 'danger')
+            if not drive_file_id:
+                flash('ID do arquivo do Google Drive ausente no registro.', 'danger')
                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
-            pdf_bytes = base64.b64decode(pdf_base64)
+            # --- NOVO: DOWNLOAD DO GOOGLE DRIVE ---
+            drive_service = get_drive_service() # Obtém o serviço autenticado do Google Drive
+            
+            request_drive = drive_service.files().get_media(fileId=drive_file_id)
+            fh = BytesIO()
+            downloader = MediaIoBaseDownload(fh, request_drive)
+            done = False
+            while done is False:
+                status, done = downloader.next_chunk()
+                # print(f"Download {int(status.progress() * 100)}%.") # Opcional: mostrar progresso
+
+            fh.seek(0) # Volta para o início do stream de bytes
+            pdf_bytes = fh.read()
 
             response = app.make_response(pdf_bytes)
             response.headers['Content-Type'] = mime_type
@@ -1435,7 +1485,7 @@ def register_medical_records_routes(app):
             return response
 
         except Exception as e:
-            flash(f'Erro ao baixar o documento: {e}', 'danger')
+            flash(f'Erro ao baixar o documento do Google Drive: {e}', 'danger')
             print(f"Erro download_documento_pdf: {e}")
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
@@ -1449,7 +1499,21 @@ def register_medical_records_routes(app):
             if not documento_id:
                 flash('ID do documento não fornecido.', 'danger')
             else:
-                db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('outros_documentos').document(documento_id).delete()
+                # Primeiro, obtenha o drive_file_id para deletar do Google Drive
+                documento_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('outros_documentos').document(documento_id)
+                documento_doc = documento_ref.get()
+                if documento_doc.exists:
+                    drive_file_id = documento_doc.to_dict().get('drive_file_id')
+                    if drive_file_id:
+                        try:
+                            drive_service = get_drive_service()
+                            drive_service.files().delete(fileId=drive_file_id).execute()
+                            print(f"DEBUG: Arquivo {drive_file_id} deletado do Google Drive.")
+                        except Exception as drive_e:
+                            print(f"WARNING: Erro ao deletar arquivo do Google Drive ({drive_file_id}): {drive_e}. Prosseguindo com a exclusão do registro no Firestore.")
+                
+                # Depois, delete o registro do Firestore
+                documento_ref.delete()
                 flash('Documento PDF excluído com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao excluir documento PDF: {e}', 'danger')
