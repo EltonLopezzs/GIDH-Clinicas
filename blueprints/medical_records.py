@@ -3,12 +3,15 @@ import datetime
 import uuid
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud import firestore
+import base64
+from io import BytesIO
+from PyPDF2 import PdfReader, PdfWriter # Para manipulação e compressão de PDF
 
 # Importe as suas funções utilitárias.
 from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_doc_to_dict
 
 # =================================================================
-# FUNÇÕES DE TRANSAÇÃO (Helpers)
+# FUNÇÕES DE TRANSAÇÃO (Helpers) - MANTENHA AS SUAS FUNÇÕES EXISTENTES AQUI
 # =================================================================
 
 @firestore.transactional
@@ -325,7 +328,7 @@ def register_medical_records_routes(app):
     def ver_prontuario(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
-        paciente_data, registros_prontuario, peis_ativos, peis_finalizados = None, [], [], []
+        paciente_data, registros_prontuario, peis_ativos, peis_finalizados, outros_documentos = None, [], [], [], []
         current_date_iso = datetime.date.today().isoformat()
         
         # Obter informações do usuário logado
@@ -451,6 +454,39 @@ def register_medical_records_routes(app):
                     peis_finalizados.append(pei)
                 else:
                     peis_ativos.append(pei)
+
+            # --- NOVO: Carregar outros documentos ---
+            outros_documentos_ref = paciente_ref.collection('outros_documentos')
+            docs_outros_documentos = outros_documentos_ref.order_by('data_upload', direction=firestore.Query.DESCENDING).stream()
+            for doc in docs_outros_documentos:
+                doc_data = convert_doc_to_dict(doc) # Isso já deve converter Timestamps e referências
+
+                # Garante que todos os campos sejam serializáveis.
+                # convert_doc_to_dict já tenta converter datetimes, mas vamos ser explícitos para outros tipos.
+                processed_doc_data = {
+                    'id': str(doc_data.get('id', doc.id)),
+                    'descricao': str(doc_data.get('descricao', 'Sem descrição')),
+                    'nome_arquivo': str(doc_data.get('nome_arquivo', 'arquivo_desconhecido')),
+                    'mime_type': str(doc_data.get('mime_type', 'application/octet-stream')),
+                    'tamanho_original': int(doc_data.get('tamanho_original', 0)),
+                    'tamanho_comprimido': int(doc_data.get('tamanho_comprimido', 0)),
+                    'uploaded_by': str(doc_data.get('uploaded_by', 'Desconhecido')),
+                    'conteudo_base64': str(doc_data.get('conteudo_base64', '')) # Conteúdo base64 como string
+                }
+                
+                # Formata a data de upload
+                if 'data_upload' in doc_data and isinstance(doc_data['data_upload'], datetime.datetime):
+                    processed_doc_data['data_upload_fmt'] = doc_data['data_upload'].strftime('%d/%m/%Y %H:%M')
+                elif isinstance(doc_data.get('data_upload'), str):
+                    processed_doc_data['data_upload_fmt'] = doc_data['data_upload'] # Já foi formatado por convert_doc_to_dict
+                else:
+                    processed_doc_data['data_upload_fmt'] = 'N/A'
+
+                # DEBUG: Adiciona um print para inspecionar o documento antes de adicionar à lista
+                print(f"DEBUG: Documento processado para frontend: {processed_doc_data}")
+
+                outros_documentos.append(processed_doc_data)
+
         except Exception as e:
             flash(f'Erro ao carregar prontuário do paciente: {e}.', 'danger')
             print(f"Erro ao carregar prontuário: {e}")
@@ -469,7 +505,8 @@ def register_medical_records_routes(app):
                                is_admin=is_admin, # Passa a flag de admin para o template
                                is_professional=is_professional, # Passa a flag de profissional para o template
                                logged_in_professional_id=logged_in_professional_id, # Passa o ID do profissional logado
-                               all_profissionais=profissionais_lista # Passa a lista de profissionais
+                               all_profissionais=profissionais_lista, # Passa a lista de profissionais
+                               outros_documentos=outros_documentos # NOVO: Passa os outros documentos
                                )
 
     # =================================================================
@@ -1266,3 +1303,156 @@ def register_medical_records_routes(app):
         except Exception as e:
             print(f"Erro ao atualizar tentativas/ajuda/status do alvo: {e}")
             return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
+
+    # =================================================================
+    # NOVAS ROTAS PARA OUTROS DOCUMENTOS (PDF)
+    # =================================================================
+
+    @app.route('/prontuarios/<string:paciente_doc_id>/upload_documento_pdf', methods=['POST'], endpoint='upload_documento_pdf')
+    @login_required
+    def upload_documento_pdf(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        
+        if 'pdf_file' not in request.files:
+            flash('Nenhum arquivo PDF enviado.', 'danger')
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+        pdf_file = request.files['pdf_file']
+        descricao = request.form.get('descricao', '').strip()
+
+        if pdf_file.filename == '':
+            flash('Nenhum arquivo PDF selecionado.', 'danger')
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+        if not pdf_file.filename.lower().endswith('.pdf'):
+            flash('Apenas arquivos PDF são permitidos.', 'danger')
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+        if not descricao:
+            flash('A descrição do documento é obrigatória.', 'danger')
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+        try:
+            original_pdf_bytes = pdf_file.read()
+            original_size = len(original_pdf_bytes)
+
+            # --- Lógica de Compressão/Otimização de PDF com PyPDF2 ---
+            # Nota: PyPDF2 faz uma otimização básica. Para compressão mais agressiva
+            # (e.g., recompressão de imagens dentro do PDF), seriam necessárias
+            # bibliotecas mais avançadas como PyMuPDF (fitz) ou ferramentas externas
+            # como Ghostscript, que são mais complexas de integrar ou podem não estar
+            # disponíveis em todos os ambientes.
+            
+            compressed_pdf_bytes = original_pdf_bytes # Inicia com o original
+            try:
+                reader = PdfReader(BytesIO(original_pdf_bytes))
+                writer = PdfWriter()
+
+                for page in reader.pages:
+                    writer.add_page(page)
+                
+                # Tenta comprimir o conteúdo dos streams (texto, linhas, etc.)
+                # Isso não afeta imagens, mas pode ajudar em PDFs gerados de texto.
+                writer.compress_content_streams()
+
+                output_stream = BytesIO()
+                writer.write(output_stream)
+                compressed_pdf_bytes = output_stream.getvalue()
+                
+                print(f"DEBUG: PDF Original Size: {original_size} bytes")
+                print(f"DEBUG: PDF Compressed Size (PyPDF2): {len(compressed_pdf_bytes)} bytes")
+
+            except Exception as e:
+                print(f"WARNING: Erro durante a compressão do PDF com PyPDF2: {e}. Armazenando o PDF original.")
+                # Em caso de erro na compressão, usamos o arquivo original.
+                compressed_pdf_bytes = original_pdf_bytes
+
+            compressed_size = len(compressed_pdf_bytes)
+
+            # Converte o PDF (comprimido ou original) para Base64
+            pdf_base64 = base64.b64encode(compressed_pdf_bytes).decode('utf-8')
+
+            # Verifica o tamanho final do Base64 para garantir que não exceda o limite do Firestore (1MB)
+            # 1MB = 1024 * 1024 bytes. Base64 aumenta o tamanho em ~33%.
+            # Então, 1MB de dados brutos vira ~1.33MB em Base64.
+            # Se o PDF original for grande, mesmo comprimido, pode exceder 1MB no Firestore.
+            if len(pdf_base64) > (1024 * 1024): # Verifica se o Base64 é maior que 1MB
+                 flash('O arquivo PDF, mesmo após otimização, é muito grande para ser armazenado. Por favor, use um arquivo menor ou otimize-o externamente.', 'danger')
+                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+
+            paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
+            documentos_ref = paciente_ref.collection('outros_documentos')
+
+            documentos_ref.add({
+                'descricao': descricao,
+                'nome_arquivo': pdf_file.filename,
+                'mime_type': 'application/pdf',
+                'tamanho_original': original_size,
+                'tamanho_comprimido': compressed_size,
+                'data_upload': datetime.datetime.now(SAO_PAULO_TZ),
+                'uploaded_by': session.get('user_name', 'N/A'),
+                'conteudo_base64': pdf_base64
+            })
+
+            flash('Documento PDF enviado e otimizado com sucesso!', 'success')
+
+        except Exception as e:
+            flash(f'Erro ao fazer upload do documento: {e}', 'danger')
+            print(f"Erro upload_documento_pdf: {e}")
+
+        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    @app.route('/prontuarios/<string:paciente_doc_id>/download_documento_pdf/<string:documento_id>', methods=['GET'], endpoint='download_documento_pdf')
+    @login_required
+    def download_documento_pdf(paciente_doc_id, documento_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+
+        try:
+            documento_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('outros_documentos').document(documento_id)
+            documento_doc = documento_ref.get()
+
+            if not documento_doc.exists:
+                flash('Documento não encontrado.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+            doc_data = documento_doc.to_dict()
+            pdf_base64 = doc_data.get('conteudo_base64')
+            nome_arquivo = doc_data.get('nome_arquivo', 'documento.pdf')
+            mime_type = doc_data.get('mime_type', 'application/pdf')
+
+            if not pdf_base64:
+                flash('Conteúdo do documento PDF ausente.', 'danger')
+                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+            pdf_bytes = base64.b64decode(pdf_base64)
+
+            response = app.make_response(pdf_bytes)
+            response.headers['Content-Type'] = mime_type
+            response.headers['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+            return response
+
+        except Exception as e:
+            flash(f'Erro ao baixar o documento: {e}', 'danger')
+            print(f"Erro download_documento_pdf: {e}")
+            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+
+    @app.route('/prontuarios/<string:paciente_doc_id>/delete_documento_pdf', methods=['POST'], endpoint='delete_documento_pdf')
+    @login_required
+    def delete_documento_pdf(paciente_doc_id):
+        db_instance = get_db()
+        clinica_id = session['clinica_id']
+        try:
+            documento_id = request.form.get('documento_id')
+            if not documento_id:
+                flash('ID do documento não fornecido.', 'danger')
+            else:
+                db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('outros_documentos').document(documento_id).delete()
+                flash('Documento PDF excluído com sucesso!', 'success')
+        except Exception as e:
+            flash(f'Erro ao excluir documento PDF: {e}', 'danger')
+            print(f"Erro delete_documento_pdf: {e}")
+        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+

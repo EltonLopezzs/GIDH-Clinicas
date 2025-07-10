@@ -465,6 +465,9 @@
         .registro-card--laudo { border-left-color: var(--info); } /* Sky-500 (info) */
         .registro-card--orientacao { border-left-color: var(--warning); } /* Amber-500 (secondary) */
         .registro-card--procedimento { border-left-color: var(--success); } /* Green-600 (success) */
+        /* NOVO: Estilo para Outros Documentos */
+        .registro-card--documento { border-left-color: #6366f1; } /* Indigo-500 */
+
 
         /* --- Tabs (Abas) --- */
         .tabs-container {
@@ -535,13 +538,18 @@
             border-radius: 12px;
             box-shadow: 0 15px 30px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05);
             width: 90vw; /* Use vw for fluid width */
-            max-width: 1200px; /* Fixed max-width for large screens */
-            max-height: 98vh; /* Keeps modal within viewport */
+            max-width: 900px; /* Reduzido para caber melhor em telas menores */
+            max-height: 95vh; /* Keeps modal within viewport */
             transform: translateY(-20px); 
             transition: transform 0.3s ease, opacity 0.3s ease;
             display: flex;
             flex-direction: column;
             overflow: hidden; /* Ensures content doesn't spill out rounded corners */
+        }
+        @media (min-width: 1024px) { /* Para telas maiores, aumente um pouco */
+            .modal-content {
+                max-width: 1000px;
+            }
         }
         [data-theme="dark"] .modal-content {
             box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.15);
@@ -567,13 +575,14 @@
         .form-group input[type="text"],
         .form-group input[type="date"],
         .form-group select,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group input[type="file"] { /* Adicionado input[type="file"] */
             font-size: 0.95rem; padding: 0.8rem 1rem; width: 100%; border: 1px solid var(--border-color);
             border-radius: 8px; background-color: var(--bg); color: var(--text);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             box-shadow: inset 0 1px 2px rgba(0,0,0,0.03); /* Inner shadow for inputs */
         }
-        [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select, [data-theme="dark"] .form-group textarea {
+        [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select, [data-theme="dark"] .form-group textarea, [data-theme="dark"] .form-group input[type="file"] {
              background-color: var(--dark-bg);
              border-color: var(--dark-border-color);
              color: var(--dark-text);
@@ -581,7 +590,8 @@
         .form-group input[type="text"]:focus,
         .form-group input[type="date"]:focus,
         .form-group select:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group input[type="file"]:focus { /* Adicionado input[type="file"] */
             border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
         }
         .modal-footer {
@@ -615,8 +625,8 @@
         .editor-container .editor-toolbar button.is-active { background-color: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--primary-dark); }
 
         .editor-content-generic {
-            min-height: 450px; /* Increased height */
-            max-height: 700px; /* Increased max-height */
+            min-height: 300px; /* Ajustado para telas menores */
+            max-height: 500px; /* Ajustado para telas menores */
             overflow-y: auto;
             padding: 1rem;
             background-color: var(--card);
@@ -625,6 +635,12 @@
             line-height: 1.6;
             resize: vertical;
             flex-grow: 1;
+        }
+        @media (min-width: 768px) { /* Aumenta a altura em telas maiores */
+            .editor-content-generic {
+                min-height: 450px;
+                max-height: 700px;
+            }
         }
         .editor-content-generic[data-placeholder]:empty:before {
             content: attr(data-placeholder); color: var(--muted);
@@ -726,8 +742,9 @@
 
             /* Reverte para grid em desktop */
             .records-grid {
+                /* Removido `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4` do HTML */
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Default for flexibility */
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Default flexível */
                 gap: 1.5rem;
                 overflow-x: visible;
                 flex-wrap: wrap;
@@ -737,13 +754,13 @@
                 width: auto;
             }
         }
-        /* Adicionado: 3 cards por linha para telas maiores que 1000px */
-        @media (min-width: 1000px) {
+        /* Ajuste para 3 cards por linha em telas maiores (a partir de 1024px) */
+        @media (min-width: 1024px) { /* Tailwind's 'lg' breakpoint */
             .records-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
         }
-        /* Adicionado: 4 cards por linha para telas maiores que 1400px (opcional, para telas muito grandes) */
+        /* Ajuste para 4 cards por linha em telas muito grandes (opcional) */
         @media (min-width: 1400px) {
             .records-grid {
                 grid-template-columns: repeat(4, 1fr);
@@ -798,8 +815,8 @@
 
             .records-grid > .registro-card {
                 flex-shrink: 0;
-                width: 85%;
-                max-width: 350px;
+                width: 85%; /* Adjusted for better fit on mobile */
+                max-width: 350px; /* Keep a max-width for very small screens */
                 margin-right: 1.5rem;
                 scroll-snap-align: start;
             }
@@ -898,6 +915,10 @@
                                 <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addProcedimentoBtn" data-record-type="procedimento" data-record-title="Adicionar Procedimento">
                                     <i class="fas fa-syringe"></i> Adicionar Procedimento
                                 </button>
+                                {# NOVO: Botão para adicionar Outro Documento #}
+                                <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addOutroDocumentoBtn" data-record-type="documento" data-record-title="Adicionar Outro Documento (PDF)">
+                                    <i class="fas fa-file-pdf"></i> Adicionar PDF
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -955,6 +976,33 @@
                 </div>
                 {% endmacro %}
 
+                {# NOVO: Macro para renderizar cards de documentos #}
+                {% macro render_documento_card(documento) %}
+                <div class="registro-card registro-card--documento" id="documento-{{ documento.id }}">
+                    <div class="registro-header">
+                        <h4>Documento - {{ documento.descricao }}</h4>
+                        <div class="registro-meta">
+                            <span><i class="fas fa-calendar-alt"></i> {{ documento.data_upload_fmt }}</span>
+                            <span><i class="fas fa-user"></i> {{ documento.uploaded_by }}</span>
+                        </div>
+                    </div>
+                    <div class="registro-content">
+                        <p><strong>Arquivo:</strong> {{ documento.nome_arquivo }}</p>
+                        <p><strong>Tamanho Original:</strong> {{ "%.2f" | format(documento.tamanho_original / 1024) }} KB</p>
+                        <p><strong>Tamanho Otimizado:</strong> {{ "%.2f" | format(documento.tamanho_comprimido / 1024) }} KB</p>
+                        {% if documento.tamanho_original > 0 %}
+                            <p><strong>Redução:</strong> {{ "%.2f" | format((1 - (documento.tamanho_comprimido / documento.tamanho_original)) * 100) }}%</p>
+                        {% endif %}
+                    </div>
+                    <div class="registro-actions">
+                        <a href="{{ url_for('download_documento_pdf', paciente_doc_id=paciente.id, documento_id=documento.id) }}" class="btn btn-sm btn-success" download="{{ documento.nome_arquivo }}">
+                            <i class="fas fa-download"></i> Baixar
+                        </a>
+                        <button class="btn btn-sm btn-danger-outline btn-apagar-documento" data-documento-id="{{ documento.id }}"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                {% endmacro %}
+
 
                 <section class="prontuario-section">
                     <div class="tabs-container">
@@ -964,11 +1012,14 @@
                             <button class="tab-nav-item" data-tab="laudo">Laudos</button>
                             <button class="tab-nav-item" data-tab="orientacao">Orientações</button>
                             <button class="tab-nav-item" data-tab="procedimento">Procedimentos</button>
+                            {# NOVO: Aba para Outros Documentos #}
+                            <button class="tab-nav-item" data-tab="documentos">Outros Documentos</button>
                         </div>
 
                         <div class="tab-content">
                             <div id="tab-panel-todos" class="tab-panel active">
-                                <div class="records-grid">
+                                {# Ajustado para usar classes Tailwind para o grid #}
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set filtered_registros = [] %}
                                     {% for reg in registros %}
                                         {% if reg.tipo_registro != 'pei' %}
@@ -990,7 +1041,7 @@
                             </div>
 
                             <div id="tab-panel-anamnese" class="tab-panel">
-                                <div class="records-grid">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set anamneses = registros | selectattr('tipo_registro', 'equalto', 'anamnese') | list %}
                                     {% if anamneses %}
                                         {% for registro in anamneses %}
@@ -1006,7 +1057,7 @@
                             </div>
 
                             <div id="tab-panel-laudo" class="tab-panel">
-                                <div class="records-grid">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set laudos = registros | selectattr('tipo_registro', 'equalto', 'laudo') | list %}
                                     {% if laudos %}
                                         {% for registro in laudos %}
@@ -1022,7 +1073,7 @@
                             </div>
 
                             <div id="tab-panel-orientacao" class="tab-panel">
-                                <div class="records-grid">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set orientacoes = registros | selectattr('tipo_registro', 'equalto', 'orientacao') | list %}
                                     {% if orientacoes %}
                                         {% for registro in orientacoes %}
@@ -1038,7 +1089,7 @@
                             </div>
 
                             <div id="tab-panel-procedimento" class="tab-panel">
-                                <div class="records-grid">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set procedimentos = registros | selectattr('tipo_registro', 'equalto', 'procedimento') | list %}
                                     {% if procedimentos %}
                                         {% for registro in procedimentos %}
@@ -1048,6 +1099,22 @@
                                         <div class="empty-state">
                                             <i class="fas fa-syringe"></i>
                                             <p>Nenhum procedimento encontrado.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {# NOVO: Painel para Outros Documentos #}
+                            <div id="tab-panel-documentos" class="tab-panel">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                                    {% if outros_documentos %}
+                                        {% for documento in outros_documentos %}
+                                            {{ render_documento_card(documento) }}
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state">
+                                            <i class="fas fa-file-pdf"></i>
+                                            <p>Nenhum documento PDF encontrado. Adicione um novo documento.</p>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -1073,6 +1140,35 @@
                 </div>
         </div>
     </div>
+
+    {# NOVO: Modal para Upload de Outros Documentos (PDF) #}
+    <div id="modalUploadDocumento" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalUploadDocumentoTitle">Adicionar Documento PDF</h3>
+                <button type="button" class="modal-close-btn" data-close-modal="modalUploadDocumento">&times;</button>
+            </div>
+            <form method="POST" action="{{ url_for('upload_documento_pdf', paciente_doc_id=paciente.id) }}" id="formUploadDocumento" enctype="multipart/form-data">
+                <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="pdf_file">Arquivo PDF</label>
+                        <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required>
+                        <p class="text-sm text-gray-500 mt-1">Apenas arquivos PDF são permitidos. O arquivo será otimizado para reduzir o tamanho.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="descricao_documento">Descrição do Documento</label>
+                        <textarea id="descricao_documento" name="descricao" rows="3" placeholder="Ex: Laudo de exames de sangue, Receita médica, etc." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close-modal="modalUploadDocumento">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="submitUploadDocumentoBtn"><i class="fas fa-upload"></i> Upload Documento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <div id="modalRegistroGenerico" class="modal-overlay">
         <div class="modal-content">
@@ -1156,6 +1252,12 @@
         <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
     </form>
 
+    {# NOVO: Formulário oculto para apagar documentos PDF #}
+    <form id="formApagarDocumento" method="POST" action="" style="display: none;">
+        <input type="hidden" name="documento_id" id="documento_id_apagar">
+        <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+    </form>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module">
         // Função para exibir mensagens flash personalizadas (movida para o escopo global)
@@ -1222,6 +1324,9 @@
         // `allRecordsData` contém todos os registros do paciente (anamnese, laudo, etc.)
         const allRecordsData = {{ registros | tojson | safe }};
 
+        // NOVO: Dados de outros documentos
+        const allOtherDocuments = {{ outros_documentos | tojson | safe }};
+
         // Passa as variáveis de role do Python para o JavaScript
         const IS_ADMIN = {{ is_admin | tojson }};
         const IS_PROFESSIONAL = {{ is_professional | tojson }};
@@ -1241,6 +1346,7 @@
             // Adicione este log para ver o PACIENTE_DOC_ID
             console.log('PACIENTE_DOC_ID:', PACIENTE_DOC_ID);
             console.log('-------------------------------------------');
+            console.log('Outros Documentos Carregados:', allOtherDocuments); // DEBUG para novos documentos
 
 
             // Função para mostrar o overlay de carregamento
@@ -1469,6 +1575,10 @@
                         }
                     }
 
+                    // Esconde a modal de upload de documentos se estiver visível
+                    const modalUploadDoc = document.getElementById('modalUploadDocumento');
+                    if (modalUploadDoc) modalUploadDoc.classList.remove('active');
+
                     modalRegistroGenerico.classList.add('active'); // Abre o modal
                 }
 
@@ -1485,6 +1595,84 @@
                 document.getElementById('addProcedimentoBtn')?.addEventListener('click', () => {
                     closeAddRecordDropdown(); // Fecha o dropdown
                     openRegistroGenericoModal('procedimento', 'Adicionar Procedimento');
+                });
+
+                // NOVO: Listener para o botão "Adicionar Outro Documento (PDF)"
+                const modalUploadDocumento = document.getElementById('modalUploadDocumento');
+                const formUploadDocumento = document.getElementById('formUploadDocumento');
+                const fileInput = document.getElementById('pdf_file');
+                const descricaoDocumentoInput = document.getElementById('descricao_documento');
+                const submitUploadDocumentoBtn = document.getElementById('submitUploadDocumentoBtn');
+
+                document.getElementById('addOutroDocumentoBtn')?.addEventListener('click', () => {
+                    closeAddRecordDropdown(); // Fecha o dropdown
+                    // Limpa o formulário de upload
+                    formUploadDocumento.reset();
+                    fileInput.value = ''; // Limpa o input de arquivo
+                    descricaoDocumentoInput.value = '';
+                    submitUploadDocumentoBtn.disabled = false; // Garante que o botão não esteja desabilitado
+                    submitUploadDocumentoBtn.classList.remove('loading'); // Remove o estado de loading
+
+                    // Esconde a modal de registro genérico se estiver visível
+                    const modalRegGenerico = document.getElementById('modalRegistroGenerico');
+                    if (modalRegGenerico) modalRegGenerico.classList.remove('active');
+
+                    modalUploadDocumento.classList.add('active');
+                });
+
+                // NOVO: Lógica para o formulário de upload de documentos
+                formUploadDocumento?.addEventListener('submit', (event) => {
+                    event.preventDefault(); // Impede o envio padrão
+
+                    const file = fileInput.files[0];
+                    const description = descricaoDocumentoInput.value.trim();
+
+                    if (!file) {
+                        displayFlashMessage('danger', 'Por favor, selecione um arquivo PDF.');
+                        return;
+                    }
+                    if (file.type !== 'application/pdf') {
+                        displayFlashMessage('danger', 'Apenas arquivos PDF são permitidos.');
+                        return;
+                    }
+                    if (!description) {
+                        displayFlashMessage('danger', 'Por favor, insira uma descrição para o documento.');
+                        return;
+                    }
+
+                    showLoading();
+                    submitUploadDocumentoBtn.disabled = true;
+                    submitUploadDocumentoBtn.classList.add('loading');
+
+                    const formData = new FormData();
+                    formData.append('pdf_file', file);
+                    formData.append('descricao', description);
+                    formData.append('paciente_id', PACIENTE_DOC_ID); // Garante que o paciente_id seja enviado
+
+                    fetch(formUploadDocumento.action, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json()) // Assumindo que o backend sempre retorna JSON
+                    .then(data => {
+                        if (data.success) {
+                            displayFlashMessage('success', data.message);
+                            // Redirecionar para recarregar a página e mostrar o novo documento
+                            window.location.reload(); 
+                        } else {
+                            displayFlashMessage('danger', data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro no upload:', error);
+                        displayFlashMessage('danger', 'Erro ao fazer upload do documento. Tente novamente.');
+                    })
+                    .finally(() => {
+                        hideLoading();
+                        submitUploadDocumentoBtn.disabled = false;
+                        submitUploadDocumentoBtn.classList.remove('loading');
+                        modalUploadDocumento.classList.remove('active'); // Fecha a modal após a tentativa
+                    });
                 });
 
 
@@ -1582,6 +1770,7 @@
                 const confirmDeleteMessage = document.getElementById('confirm-delete-message');
 
                 const formApagarRegistro = document.getElementById('formApagarRegistro');
+                const formApagarDocumento = document.getElementById('formApagarDocumento'); // NOVO: Formulário para apagar documentos
 
                 let currentDeleteAction = null; // Para armazenar qual ação de exclusão/finalização executar
                 let currentDeleteData = {}; // Para armazenar IDs para a ação
@@ -1710,6 +1899,14 @@
                         return;
                     }
 
+                    // NOVO: Botão APAGAR documento PDF
+                    const deleteDocumentoButton = target.closest('.btn-apagar-documento');
+                    if (deleteDocumentoButton) {
+                        const documentoId = deleteDocumentoButton.dataset.documentoId;
+                        openConfirmDeleteModal('Confirmar Exclusão de Documento', 'Tem certeza que deseja apagar este documento PDF? Esta ação não pode ser desfeita.', 'delete_documento', { id: documentoId });
+                        return;
+                    }
+
                     // Botão de CONFIRMAR exclusão/finalização (lida com base em currentDeleteAction)
                     if (target.id === 'confirmDeleteBtn') {
                         closeModalById('confirm-delete-modal'); // Fecha o modal de confirmação primeiro
@@ -1728,6 +1925,17 @@
                                     formApagarRegistro.submit(); // Isso causará um recarregamento completo da página
                                 } else {
                                     displayFlashMessage('danger', 'Erro: ID do paciente não encontrado para exclusão.');
+                                    hideLoading();
+                                }
+                            } else if (currentDeleteAction === 'delete_documento') { // NOVO: Lógica para apagar documento
+                                formApagarDocumento.querySelector('#documento_id_apagar').value = currentDeleteData.id;
+                                const currentPacienteId = formApagarDocumento.querySelector('input[name="paciente_id"]').value;
+
+                                if (currentPacienteId) {
+                                    formApagarDocumento.action = `/prontuarios/${currentPacienteId}/delete_documento_pdf`;
+                                    formApagarDocumento.submit();
+                                } else {
+                                    displayFlashMessage('danger', 'Erro: ID do paciente não encontrado para exclusão do documento.');
                                     hideLoading();
                                 }
                             }
