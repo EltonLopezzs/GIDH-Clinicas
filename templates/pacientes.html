@@ -123,7 +123,7 @@
             display: flex; flex-direction: column; width: calc(100% - 260px);
             max-width: calc(100% - 260px);
             box-sizing: border-box;
-            /* Removido overflow: hidden; para permitir que os toasts apareçam */
+            /* Removido overflow-x: hidden; para permitir que os toasts apareçam */
         }
         .main-content.collapsed { 
             margin-left: 78px; 
@@ -190,7 +190,8 @@
         /* --- Card Layout for Patients --- */
         .card-list-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            /* Ajustado para 3 cards em telas maiores, 2 em médias, 1 em pequenas */
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
             gap: 1.5rem;
             width: 100%;
             animation: fadeIn 0.5s ease-in-out;
@@ -210,7 +211,7 @@
         }
 
         /* Melhorias para desktop médio - 2 cards por linha */
-        @media (min-width: 1000px) and (max-width: 1550px) {
+        @media (min-width: 1000px) and (max-width: 1399px) { /* Ajustado o max-width */
             .card-list-container {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 1.5rem;
@@ -242,7 +243,7 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             width: 100%;
-            min-height: 280px;
+            min-height: 280px; /* Pode ser ajustado para ser mais flexível */
             display: flex;
             flex-direction: column;
             height: 100%;
@@ -537,6 +538,13 @@
             overflow: hidden;
             white-space: nowrap;
         }
+        /* Para o campo de endereço, permitir quebra de linha */
+        .detail-value.address-value {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+        }
+
 
         .detail-empty {
             color: var(--muted);
@@ -1427,15 +1435,6 @@
             position: relative;
         }
 
-        .paciente-card-header-modal {
-            display: flex;
-            flex-direction: column;
-            /* align-items: center;
-            justify-content: center; */
-            /* text-align: center; */
-            margin-bottom: 1.5rem;
-        }
-
         .paciente-card-container-modal {
             min-height: 80vh;
             min-width: 80vw;            
@@ -1744,10 +1743,92 @@
             margin-left: 5px;
             font-size: 0.9rem;
         }
+
+        /* Nova modal para alertas gerais */
+        .alert-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15,23,42,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 4500; /* Maior que outras modals */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .alert-modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .alert-modal {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 400px; /* Tamanho consistente */
+            width: 90vw;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            padding: 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .alert-modal-overlay.show .alert-modal {
+            transform: scale(1);
+        }
+        .alert-modal-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+        .alert-modal-icon.info { background: var(--info); }
+        .alert-modal-icon.success { background: var(--success); }
+        .alert-modal-icon.warning { background: var(--warning); }
+        .alert-modal-icon.danger { background: var(--danger); }
+
+        .alert-modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+        .alert-modal-message {
+            font-size: 1rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .alert-modal-actions {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .alert-modal-actions .btn {
+            min-width: 100px;
+        }
     </style>
 </head>
 <body>
     <div id="toast-container"></div>
+    <!-- Nova Modal para Alertas Gerais -->
+    <div id="general-alert-modal-overlay" class="alert-modal-overlay">
+        <div class="alert-modal">
+            <div id="alert-modal-icon" class="alert-modal-icon"></div>
+            <h3 id="alert-modal-title" class="alert-modal-title"></h3>
+            <p id="alert-modal-message" class="alert-modal-message"></p>
+            <div class="alert-modal-actions">
+                <button id="alert-modal-close-btn" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
     <div class="layout">
         <aside class="sidebar">
             <div class="sidebar-inner-content">
@@ -1962,6 +2043,7 @@
         let showToastGlobal = null;
         let currentPageGlobal = 1;
         let renderPatientCardsGlobal = null;
+        let showGeneralAlertModalGlobal = null; // Nova variável global para a modal de alerta
 
         function deletePatient(patientId, patientName) {
             // Fechar o dropdown
@@ -2192,6 +2274,47 @@
             // Conectar a função showToast com a global
             showToastGlobal = showToast;
 
+            // --- Lógica para Modal de Alerta Geral ---
+            const generalAlertOverlay = document.getElementById('general-alert-modal-overlay');
+            const alertModalIcon = document.getElementById('alert-modal-icon');
+            const alertModalTitle = document.getElementById('alert-modal-title');
+            const alertModalMessage = document.getElementById('alert-modal-message');
+            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+
+            function showGeneralAlertModal(title, message, category = 'info') {
+                alertModalTitle.textContent = title;
+                alertModalMessage.textContent = message;
+                
+                alertModalIcon.className = 'alert-modal-icon'; // Reset class
+                let iconClass = '';
+                switch (category) {
+                    case 'info': iconClass = 'fas fa-info-circle'; break;
+                    case 'success': iconClass = 'fas fa-check-circle'; break;
+                    case 'warning': iconClass = 'fas fa-exclamation-triangle'; break;
+                    case 'danger': iconClass = 'fas fa-times-circle'; break;
+                }
+                alertModalIcon.classList.add(category);
+                alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
+
+                generalAlertOverlay.classList.add('show');
+                document.body.style.overflow = 'hidden'; // Bloquear scroll do body
+            }
+
+            function closeGeneralAlertModal() {
+                generalAlertOverlay.classList.remove('show');
+                document.body.style.overflow = 'auto'; // Restaurar scroll do body
+            }
+            // Conectar a função showGeneralAlertModal com a global
+            showGeneralAlertModalGlobal = showGeneralAlertModal;
+
+            alertModalCloseBtn.addEventListener('click', closeGeneralAlertModal);
+            generalAlertOverlay.addEventListener('click', (e) => {
+                if (e.target === generalAlertOverlay) {
+                    closeGeneralAlertModal();
+                }
+            });
+
+
             // --- Processa mensagens flash do backend e as exibe como toasts ---
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% for category, message in messages %}
@@ -2360,6 +2483,9 @@
                 
                 // Adicionar gradiente dinâmico baseado no nome
                 const gradientColor = getPatientGradient(paciente.nome);
+
+                // Formatar endereço completo
+                const fullAddress = formatAddress(paciente);
                 
                 card.innerHTML = `
                     <div class="patient-card-modern">
@@ -2471,6 +2597,17 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Endereço Completo -->
+                                <div class="detail-item">
+                                    <div class="detail-icon">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </div>
+                                    <div class="detail-content">
+                                        <span class="detail-label">Endereço</span>
+                                        <span class="detail-value address-value ${!fullAddress ? 'detail-empty' : ''}">${fullAddress || 'Não informado'}</span>
+                                    </div>
+                                </div>
+
                                 <!-- Convênio - sempre exibido -->
                                 <div class="detail-item">
                                     <div class="detail-icon">
@@ -2498,7 +2635,7 @@
                                 <!-- Gênero - sempre exibido -->
                                 <div class="detail-item">
                                     <div class="detail-icon">
-                                        <i class="fas fa-${paciente.genero === 'masculino' ? 'mars' : paciente.genero === 'feminino' ? 'venus' : 'genderless'}"></i>
+                                        <i class="fas fa-${paciente.genero === 'Masculino' ? 'mars' : paciente.genero === 'Feminino' ? 'venus' : 'genderless'}"></i>
                                     </div>
                                     <div class="detail-content">
                                         <span class="detail-label">Gênero</span>
@@ -2702,6 +2839,27 @@
                 } catch {
                     return 'N/A';
                 }
+            }
+
+            function formatAddress(paciente) {
+                // Access the nested 'endereco' object
+                const endereco = paciente.endereco || {}; 
+
+                const parts = [];
+                if (endereco.logradouro) parts.push(endereco.logradouro);
+                if (endereco.numero) parts.push(`, ${endereco.numero}`);
+                if (endereco.complemento) parts.push(` (${endereco.complemento})`);
+                if (endereco.bairro) parts.push(` - ${endereco.bairro}`);
+                if (endereco.cidade) parts.push(`, ${endereco.cidade}`);
+                if (endereco.estado) parts.push(`/${endereco.estado}`);
+                if (endereco.cep) parts.push(` - ${formatCEP(endereco.cep)}`);
+                
+                return parts.join('');
+            }
+
+            function formatCEP(cep) {
+                if (!cep) return '';
+                return cep.replace(/(\d{5})(\d{3})/, '$1-$2');
             }
 
             function animateCardsEntrance() {
@@ -2930,13 +3088,14 @@
                         form.elements['rg'].value = paciente.rg || '';
                         form.elements['telefone'].value = paciente.contato_telefone || '';
                         form.elements['email'].value = paciente.contato_email || '';
-                        form.elements['cep'].value = paciente.cep || '';
-                        form.elements['cidade'].value = paciente.cidade || '';
-                        form.elements['estado'].value = paciente.estado || '';
-                        form.elements['logradouro'].value = paciente.logradouro || '';
-                        form.elements['numero'].value = paciente.numero || '';
-                        form.elements['bairro'].value = paciente.bairro || '';
-                        form.elements['complemento'].value = paciente.complemento || '';
+                        // Acessar os campos de endereço aninhados
+                        form.elements['cep'].value = paciente.endereco?.cep || '';
+                        form.elements['cidade'].value = paciente.endereco?.cidade || '';
+                        form.elements['estado'].value = paciente.endereco?.estado || '';
+                        form.elements['logradouro'].value = paciente.endereco?.logradouro || '';
+                        form.elements['numero'].value = paciente.endereco?.numero || '';
+                        form.elements['bairro'].value = paciente.endereco?.bairro || '';
+                        form.elements['complemento'].value = paciente.endereco?.complemento || '';
                         form.elements['convenio_id'].value = paciente.convenio_id || '';
                         form.elements['observacoes'].value = paciente.observacoes || '';
                     }
@@ -3009,6 +3168,17 @@
                     field.classList.remove('valid', 'invalid');
                     if (field.classList.contains('date-input-display')) {
                         field.classList.remove('valid', 'error');
+                    }
+                    // Remover animação de shake
+                    field.classList.remove('shake');
+                    // Remover has-error dos steps
+                    const stepParent = field.closest('[data-step-content]');
+                    if (stepParent) {
+                        const stepIndex = Array.from(stepParent.parentNode.children).indexOf(stepParent);
+                        const stepElement = document.querySelector(`.paciente-step[data-step="${stepIndex + 1}"]`);
+                        if (stepElement) {
+                            stepElement.classList.remove('has-error');
+                        }
                     }
                 });
             }
@@ -3122,6 +3292,70 @@
                 });
             }
 
+            // --- Validação de formulário antes do submit ---
+            const patientForm = document.getElementById('steps-patient-form');
+            patientForm.addEventListener('submit', function(event) {
+                let allFieldsValid = true;
+                const requiredFields = patientForm.querySelectorAll('.paciente-field.required input:not([type="hidden"]), .paciente-field.required select, .paciente-field.required textarea');
+                
+                // Limpar classes de erro e shake de todos os campos e steps
+                requiredFields.forEach(field => {
+                    field.classList.remove('invalid', 'shake');
+                });
+                document.querySelectorAll('.paciente-step').forEach(step => step.classList.remove('has-error'));
+
+                const invalidFieldsPerStep = new Map();
+
+                requiredFields.forEach(field => {
+                    const isValid = validateRequiredField(field);
+                    if (!isValid) {
+                        allFieldsValid = false;
+                        field.classList.add('invalid');
+                        field.classList.add('shake'); // Adiciona animação de shake
+                        
+                        // Marca o step como tendo erro
+                        const stepContent = field.closest('[data-step-content]');
+                        if (stepContent) {
+                            const stepIndex = Array.from(stepContent.parentNode.children).indexOf(stepContent);
+                            const stepElement = document.querySelector(`.paciente-step[data-step="${stepIndex + 1}"]`);
+                            if (stepElement) {
+                                stepElement.classList.add('has-error');
+                            }
+                            // Armazena o primeiro campo inválido por step
+                            if (!invalidFieldsPerStep.has(stepIndex)) {
+                                invalidFieldsPerStep.set(stepIndex, field);
+                            }
+                        }
+                    }
+                });
+
+                if (!allFieldsValid) {
+                    event.preventDefault(); // Impede o envio do formulário
+                    
+                    // Encontra o primeiro step com erro e o exibe
+                    const firstInvalidStepIndex = Array.from(invalidFieldsPerStep.keys()).sort((a,b) => a - b)[0];
+                    if (firstInvalidStepIndex !== undefined) {
+                        const steps = patientForm.querySelectorAll('.paciente-step');
+                        const sections = patientForm.querySelectorAll('.paciente-card-section');
+                        
+                        steps.forEach((s,i) => {
+                            s.classList.toggle('active', i === firstInvalidStepIndex);
+                        });
+                        sections.forEach((sec,i) => {
+                            sec.style.display = i === firstInvalidStepIndex ? 'block' : 'none';
+                        });
+                        
+                        // Foca no primeiro campo inválido do primeiro step com erro
+                        const firstInvalidField = invalidFieldsPerStep.get(firstInvalidStepIndex);
+                        if (firstInvalidField) {
+                            firstInvalidField.focus();
+                        }
+                    }
+
+                    showGeneralAlertModal('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios e corrija os erros indicados.', 'danger');
+                }
+            });
+
             setupSidebar();
             setupTheme();
             setupLogout();
@@ -3173,7 +3407,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             const displayInput = document.getElementById('steps-data_nascimento_display');
             const hiddenInput = document.getElementById('steps-data_nascimento');
-            
+            const cepInput = document.getElementById('steps-cep');
+            const logradouroInput = document.getElementById('steps-logradouro');
+            const bairroInput = document.getElementById('steps-bairro');
+            const cidadeInput = document.getElementById('steps-cidade');
+            const estadoInput = document.getElementById('steps-estado');
+
+            // Máscara e validação para Data de Nascimento
             if (displayInput && hiddenInput) {
                 displayInput.addEventListener('input', function(e) {
                     let value = e.target.value.replace(/\D/g, '');
@@ -3230,6 +3470,61 @@
                         hiddenInput.value = parseDateFromDMY(formatted);
                         
                         displayInput.dispatchEvent(new Event('input'));
+                    }
+                });
+            }
+
+            // Busca CEP
+            if (cepInput) {
+                cepInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 8) {
+                        value = value.slice(0, 8);
+                    }
+                    if (value.length > 5) {
+                        value = value.replace(/(\d{5})(\d{0,3})/, '$1-$2');
+                    }
+                    e.target.value = value;
+                });
+
+                cepInput.addEventListener('blur', async function() {
+                    const cep = this.value.replace(/\D/g, '');
+                    if (cep.length === 8) {
+                        try {
+                            // Adicionar um indicador de carregamento
+                            this.style.background = `url('https://cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif') no-repeat right 10px center / 20px 20px`;
+                            this.style.backgroundSize = '20px 20px'; // Ajustar o tamanho da imagem
+                            this.style.paddingRight = '40px'; // Adicionar padding para o ícone
+
+                            const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                            const data = await response.json();
+
+                            if (data.erro) {
+                                showGeneralAlertModal('CEP Inválido', 'O CEP informado não foi encontrado.', 'warning');
+                                // Limpar campos de endereço se o CEP for inválido
+                                logradouroInput.value = '';
+                                bairroInput.value = '';
+                                cidadeInput.value = '';
+                                estadoInput.value = '';
+                            } else {
+                                logradouroInput.value = data.logradouro || '';
+                                bairroInput.value = data.bairro || '';
+                                cidadeInput.value = data.localidade || '';
+                                estadoInput.value = data.uf || '';
+                            }
+                        } catch (error) {
+                            console.error('Erro ao buscar CEP:', error);
+                            showGeneralAlertModal('Erro na Busca de CEP', 'Não foi possível buscar o CEP. Verifique sua conexão ou tente novamente.', 'danger');
+                            // Limpar campos de endereço em caso de erro
+                            logradouroInput.value = '';
+                            bairroInput.value = '';
+                            cidadeInput.value = '';
+                            estadoInput.value = '';
+                        } finally {
+                            // Remover indicador de carregamento
+                            this.style.background = '';
+                            this.style.paddingRight = '';
+                        }
                     }
                 });
             }
