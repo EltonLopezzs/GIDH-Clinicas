@@ -44,7 +44,27 @@
             --border-color: var(--dark-border-color);
             color-scheme: dark;
         }
+        
+        ::-webkit-scrollbar {
+            background-color: var(--bg);
+            width: 0.5625rem;
+            height: 0.5625rem;
+            border-top-right-radius: 0.3125rem;
+            border-bottom-right-radius: 0.3125rem;
+            transition: background-color 0.8s ease;
+        }
 
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--muted);
+            border-radius: .3125rem;
+            transition: background-color 0.8s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            transition: background-color 0.8s ease;
+            background-color: var(--primary);
+        }
+        
         /* Reset básico e box-sizing */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
@@ -189,8 +209,7 @@
         /* --- Card Layout for Patients --- */
         .card-list-container {
             display: grid;
-            /* Ajustado para 3 cards em telas maiores, 2 em médias, 1 em pequenas */
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Ajustado minmax para 4 cards */
+            grid-template-columns: repeat(3, 1fr);
             gap: 1.5rem;
             width: 100%;
             animation: fadeIn 0.5s ease-in-out;
@@ -201,31 +220,27 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Melhorias para desktop - 4 cards por linha */
-        @media (min-width: 1400px) { /* Mantém 1400px como ponto de quebra para 4 colunas */
-            .card-list-container {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 1.5rem; /* Ajustado para um gap menor para 4 colunas */
-            }
-        }
-
-        /* Melhorias para desktop médio - 3 cards por linha */
-        @media (min-width: 1000px) and (max-width: 1399px) { 
+        @media (min-width: 1845px) {
             .card-list-container {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 1.5rem;
             }
         }
 
-        /* Melhorias para tablet - 2 cards por linha */
-        @media (min-width: 768px) and (max-width: 999px) {
+        @media (min-width: 1315px) and (max-width: 1844px) { 
             .card-list-container {
-                grid-template-columns: repeat(2, 1fr); /* Alterado para 2 colunas em tablet */
+                grid-template-columns: repeat(2, 1fr);
                 gap: 1.5rem;
             }
         }
 
-        /* Melhorias para mobile - 1 card por linha */
+        @media (min-width: 768px) and (max-width: 1314px) {
+            .card-list-container {
+                grid-template-columns: repeat(1, 1fr);
+                gap: 1.5rem;
+            }
+        }
+
         @media (max-width: 767px) {
             .card-list-container {
                 grid-template-columns: 1fr;
@@ -242,7 +257,7 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             width: 100%;
-            min-height: 280px; /* Pode ser ajustado para ser mais flexível */
+            min-height: 280px;
             display: flex;
             flex-direction: column;
             height: 100%;
@@ -377,8 +392,8 @@
 
         .dropdown-menu {
             position: absolute;
-            top: 100%;
-            right: 0;
+            top: -32px;
+            right: 58px;
             background: var(--card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -388,8 +403,25 @@
             visibility: hidden;
             transform: translateY(-10px);
             transition: all 0.2s ease;
-            z-index: 1000;
+            z-index: 999;
             margin-top: 0.5rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 350px; /* Limita a altura do dropdown */
+        }
+
+        .dropdown-menu::after {
+            content: '';
+            position: absolute;
+            top: 36px;
+            right: -22px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid var(--card);
+            transform: rotate(270deg);
+            z-index: 99999;
         }
 
         .dropdown-menu.show {
@@ -479,7 +511,7 @@
         .detail-grid {
             display: grid;
             gap: 1rem;
-            grid-template-columns: 1fr;
+            grid-template-columns: 2fr 1fr;
         }
 
         .detail-item {
@@ -903,7 +935,7 @@
             }
             
             .detail-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
                 gap: 0.75rem;
             }
             
@@ -924,7 +956,7 @@
             }
             
             .detail-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
                 gap: 1rem;
             }
         }
@@ -942,7 +974,7 @@
             }
             
             .detail-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
                 gap: 1rem;
             }
         }
@@ -2586,7 +2618,7 @@
                                 </div>
                                 
                                 <!-- Email - sempre exibido -->
-                                <div class="detail-item ${paciente.contato_email ? 'clickable' : ''}" ${paciente.contato_email ? `onclick="emailPatient('${paciente.contato_email}')"` : ''}>
+                                <!--<div class="detail-item ${paciente.contato_email ? 'clickable' : ''}" ${paciente.contato_email ? `onclick="emailPatient('${paciente.contato_email}')"` : ''}>
                                     <div class="detail-icon">
                                         <i class="fas fa-envelope"></i>
                                     </div>
@@ -2594,10 +2626,10 @@
                                         <span class="detail-label">E-mail</span>
                                         <span class="detail-value ${!paciente.contato_email ? 'detail-empty' : ''}">${paciente.contato_email || 'Não informado'}</span>
                                     </div>
-                                </div>
+                                </div>-->
                                 
                                 <!-- Endereço Completo -->
-                                <div class="detail-item">
+                                <!--<div class="detail-item">
                                     <div class="detail-icon">
                                         <i class="fas fa-map-marker-alt"></i>
                                     </div>
@@ -2605,7 +2637,7 @@
                                         <span class="detail-label">Endereço</span>
                                         <span class="detail-value address-value ${!fullAddress ? 'detail-empty' : ''}">${fullAddress || 'Não informado'}</span>
                                     </div>
-                                </div>
+                                </div>-->
 
                                 <!-- Convênio - sempre exibido -->
                                 <div class="detail-item">
@@ -2632,7 +2664,7 @@
                                 </div>
                                 
                                 <!-- Gênero - sempre exibido -->
-                                <div class="detail-item">
+                                <!--<div class="detail-item">
                                     <div class="detail-icon">
                                         <i class="fas fa-${paciente.genero === 'Masculino' ? 'mars' : paciente.genero === 'Feminino' ? 'venus' : 'genderless'}"></i>
                                     </div>
@@ -2640,7 +2672,7 @@
                                         <span class="detail-label">Gênero</span>
                                         <span class="detail-value ${!paciente.genero ? 'detail-empty' : ''}">${paciente.genero || 'Não informado'}</span>
                                     </div>
-                                </div>
+                                </div>-->
                             </div>
                         </div>
                         
@@ -2794,9 +2826,12 @@
 
             function getAvatarIcon(genero) {
                 switch(genero?.toLowerCase()) {
-                    case 'masculino': return 'fas fa-user-tie';
-                    case 'feminino': return 'fas fa-user-crown';
-                    default: return 'fas fa-user';
+                    case 'masculino': return 'fa-solid fa-mars';
+                    case 'feminino': return 'fa-solid fa-venus';
+                    case 'masculino': return 'fa-solid fa-user-tie';
+                    // case 'feminino': return 'fa-solid fa-person-dress';
+                    // case 'feminino': return 'fas fa-user-female';
+                    default: return 'fa-solid fa-child-reaching';
                 }
             }
 
