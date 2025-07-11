@@ -1,11 +1,12 @@
-from flask import render_template, session, flash, redirect, url_for, request, jsonify
 import datetime
 import uuid
+from flask import render_template, session, flash, redirect, url_for, request, jsonify
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud import firestore
 import base64
 from io import BytesIO
-from PyPDF2 import PdfReader, PdfWriter # Para manipulação e compressão de PDF
+# Importe pypdf em vez de PyPDF2 para as funcionalidades mais recentes e manutenção ativa
+from pypdf import PdfReader, PdfWriter 
 
 # --- NOVOS IMPORTS PARA GOOGLE DRIVE ---
 from google.oauth2 import service_account
@@ -23,8 +24,19 @@ from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_
 # NUNCA deve ser hardcoded no código fonte. Use variáveis de ambiente
 # ou um sistema de gerenciamento de segredos.
 # Substitua 'path/to/your/service-account-key.json' pelo caminho real do seu arquivo.
-SERVICE_ACCOUNT_FILE = 'serviceAccountKey.json' # <<<< ATUALIZE ESTE CAMINHO
-SCOPES = ['https://www.googleapis.com/auth/drive.file']  
+SERVICE_ACCOUNT_FILE = 'serviceAccountKey.json' # <<<< ATUALIZE ESTE CAMINHO PARA O SEU ARQUIVO DE CHAVES DA CONTA DE SERVIÇO
+
+# ID DA PASTA OU SHARED DRIVE NO GOOGLE DRIVE ONDE OS DOCUMENTOS SERÃO SALVOS.
+# ESTE É O PONTO CRÍTICO PARA RESOLVER O ERRO DE QUOTA DA CONTA DE SERVIÇO.
+# 1. Crie um Google Shared Drive (ou uma pasta regular na sua conta Google principal).
+# 2. Obtenha o ID da pasta/Shared Drive (está na URL quando você a abre no navegador).
+# 3. Adicione o e-mail da sua Conta de Serviço (do arquivo JSON de credenciais) como membro
+#    do Shared Drive (ou com permissão de edição na pasta regular).
+#    Ex: 'seumail-service-account@projeto-gcp.iam.gserviceaccount.com'
+# Substitua 'SEU_SHARED_DRIVE_ID_AQUI' pelo ID real.
+GOOGLE_DRIVE_PARENT_FOLDER_ID = '156ND9saccKERNwh60MfKkeQ8fQ8hIkhO' 
+
+SCOPES = ['https://www.googleapis.com/auth/drive'] # Use 'drive' para acesso total à pasta/shared drive
 
 def get_drive_service():
     """
@@ -34,6 +46,7 @@ def get_drive_service():
     try:
         credentials = service_account.Credentials.from_service_account_file(
             SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+        # Removido 'timeout' e outros argumentos que podem não ser suportados por todas as versões
         service = build('drive', 'v3', credentials=credentials)
         return service
     except Exception as e:
@@ -88,7 +101,7 @@ def _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, 
             for target in goal.get('targets', []):
                 if target.get('id') == target_id:
                     target['concluido'] = concluido
-                    # Se o alvo for marcado como concluído, todas as ajudas também devem ser.
+                    # Se o alvo for marcado como concluído, todas as ajudas associadas também são finalizadas.
                     if concluido and 'aids' in target:
                         for aid in target['aids']:
                             aid['status'] = 'finalizada'
@@ -134,7 +147,7 @@ def _finalize_goal_transaction(transaction, pei_ref, goal_id_to_finalize):
 @firestore.transactional
 def _finalize_pei_transaction(transaction, pei_ref):
     """
-    Finaliza um PEI, marcando-o como 'finalizado' e todas as suas metas ativas
+    Finaliza um PEI, marcando-lo como 'finalizado' e todas as suas metas ativas
     e respectivos alvos como 'finalizado'/'concluido'.
     Args:
         transaction: Objeto de transação do Firestore.
@@ -965,7 +978,7 @@ def register_medical_records_routes(app):
                     'targets': new_targets
                 }
                 pei_ref.update({'goals': firestore.ArrayUnion([new_goal])})
-                flash('Meta adicionada com sucesso ao PEI!', 'success')
+                flash('Meta adicionada com sucesso!', 'success')
         except Exception as e:
             flash(f'Erro ao adicionar meta: {e}', 'danger')
             print(f"Erro add_goal: {e}")
@@ -1084,7 +1097,8 @@ def register_medical_records_routes(app):
                     return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar esta meta.'}), 403
             
             _finalize_goal_transaction(db_instance.transaction(), pei_ref, goal_id)
-            transaction.commit()
+            # A transação precisa ser commitada após a chamada da função transacional
+            db_instance.transaction().commit() # Adicionado commit da transação aqui
 
             all_peis = []
             peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
@@ -1348,6 +1362,9 @@ def register_medical_records_routes(app):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         
+        # DEBUG: Imprime o GOOGLE_DRIVE_PARENT_FOLDER_ID
+        print(f"DEBUG: GOOGLE_DRIVE_PARENT_FOLDER_ID: {GOOGLE_DRIVE_PARENT_FOLDER_ID}")
+
         if 'pdf_file' not in request.files:
             flash('Nenhum arquivo PDF enviado.', 'danger')
             return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
@@ -1371,7 +1388,7 @@ def register_medical_records_routes(app):
             original_pdf_bytes = pdf_file.read()
             original_size = len(original_pdf_bytes)
 
-            # --- Lógica de Compressão/Otimização de PDF com PyPDF2 ---
+            # --- Lógica de Compressão/Otimização de PDF com pypdf (substituindo PyPDF2) ---
             compressed_pdf_bytes = original_pdf_bytes # Inicia com o original
             try:
                 reader = PdfReader(BytesIO(original_pdf_bytes))
@@ -1380,16 +1397,20 @@ def register_medical_records_routes(app):
                 for page in reader.pages:
                     writer.add_page(page)
                 
-                writer.compress_content_streams() # Tenta comprimir o conteúdo
+                # A função compress_content_streams() foi removida ou alterada em versões mais recentes do pypdf.
+                # Se a compressão é desejada, você pode tentar outras abordagens ou remover esta linha
+                # se não for essencial e estiver causando o erro.
+                # writer.compress_content_streams() # Comentado para evitar erro se a função não existir
+                
                 output_stream = BytesIO()
                 writer.write(output_stream)
                 compressed_pdf_bytes = output_stream.getvalue()
                 
                 print(f"DEBUG: PDF Original Size: {original_size} bytes")
-                print(f"DEBUG: PDF Compressed Size (PyPDF2): {len(compressed_pdf_bytes)} bytes")
+                print(f"DEBUG: PDF Compressed Size (pypdf): {len(compressed_pdf_bytes)} bytes")
 
             except Exception as e:
-                print(f"WARNING: Erro durante a compressão do PDF com PyPDF2: {e}. Prosseguindo com o PDF original.")
+                print(f"WARNING: Erro durante a compressão do PDF com pypdf: {e}. Prosseguindo com o PDF original.")
                 compressed_pdf_bytes = original_pdf_bytes
 
             compressed_size = len(compressed_pdf_bytes)
@@ -1400,9 +1421,8 @@ def register_medical_records_routes(app):
             file_metadata = {
                 'name': pdf_file.filename,
                 'mimeType': 'application/pdf',
-                # Opcional: Para organizar em uma pasta específica no Google Drive,
-                # adicione 'parents': ['ID_DA_SUA_PASTA_NO_GOOGLE_DRIVE']
-                # Certifique-se de que a conta de serviço tenha permissão para essa pasta.
+                # Adicione o ID da pasta/Shared Drive aqui
+                'parents': [GOOGLE_DRIVE_PARENT_FOLDER_ID] 
             }
             media = MediaIoBaseUpload(BytesIO(compressed_pdf_bytes),
                                       mimetype='application/pdf',
@@ -1413,7 +1433,7 @@ def register_medical_records_routes(app):
                                                    fields='id, webContentLink').execute() # webContentLink para download direto
             
             drive_file_id = uploaded_file.get('id')
-            drive_web_content_link = uploaded_file.get('webContentLink') # Link para download direto, se disponível
+            drive_web_content_link = uploaded_file.get('webContentLink') # Opcional: Link para download direto, se disponível
 
             if not drive_file_id:
                 raise Exception("Não foi possível obter o ID do arquivo do Google Drive após o upload.")
