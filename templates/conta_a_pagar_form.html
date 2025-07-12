@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ 'Adicionar' if not conta else 'Editar' }} Conta a Pagar - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+    <title>{{ 'Adicionar' if not anamnese else 'Editar' }} Anamnese - {{ session.clinica_nome_display or 'Clínica On' }}</title>
     
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     
@@ -21,7 +21,7 @@
             --secondary: #f59e0b;
             --danger: #dc2626;
             --success: #16a34a;
-            --warning: #f59e0b;
+            --primary-dark: #115e59;  
             --warning: #f59e0b;
             --info: #0ea5e9;
             --border-color: #e2e8f0;
@@ -258,46 +258,15 @@
 </head>
 <body>
     <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                         <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
-                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-                    </button>
-                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
-                </div>
-            </div>
-        </aside>
+        {# Inclui a barra de navegação completa de Nav.html #}
+        {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
                 <div class="topbar-left">                   
+                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button> {# Adicionado botão mobile #}
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">{{ 'Adicionar' if not conta else 'Editar' }} Conta a Pagar</h1>
+                    <h1 class="page-title">{{ 'Adicionar' if not anamnese else 'Editar' }} Anamnese</h1>
                 </div>
             </header>
 
@@ -314,49 +283,69 @@
 
                 <div class="form-card">
                     <div class="form-card-header">
-                        <h2>{{ 'Nova' if not conta else 'Editar' }} Conta a Pagar</h2>
-                        <a href="{{ url_for('listar_contas_a_pagar') }}" class="btn btn-secondary btn-sm">
+                        <h2>{{ 'Nova' if not anamnese else 'Editar' }} Anamnese</h2>
+                        <a href="{{ url_for('buscar_prontuario') }}" class="btn btn-secondary btn-sm">
                             <i class="fas fa-arrow-left"></i> Voltar
                         </a>
                     </div>
                     <form action="{{ action_url }}" method="POST">
                         <div class="form-group">
-                            <label for="descricao">Descrição</label>
-                            <textarea id="descricao" name="descricao" rows="3" required>{{ conta.descricao or request.form.get('descricao', '') }}</textarea>
+                            <label for="paciente_id">Paciente</label>
+                            <select id="paciente_id" name="paciente_id" required>
+                                <option value="">Selecione um paciente</option>
+                                {% for paciente in pacientes %}
+                                    <option value="{{ paciente.id }}" 
+                                            {% if anamnese and anamnese.paciente_id == paciente.id %}selected
+                                            {% elif request.form.get('paciente_id') == paciente.id %}selected
+                                            {% endif %}>
+                                        {{ paciente.nome }} ({{ paciente.cpf }})
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="valor">Valor (R$)</label>
-                                <input type="text" id="valor" name="valor" placeholder="Ex: 150,00" pattern="^\d+([,.]\d{1,2})?$" title="Use vírgula ou ponto para centavos (ex: 150,00 ou 150.00)" value="{{ '%.2f'|format(conta.valor) if conta and conta.valor is not none else request.form.get('valor', '') }}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="data_vencimento">Data de Vencimento</label>
-                                <input type="date" id="data_vencimento" name="data_vencimento" value="{{ conta.data_vencimento_input or request.form.get('data_vencimento', '') }}">
-                            </div>
+                        <div class="form-group">
+                            <label for="profissional_id">Profissional</label>
+                            <select id="profissional_id" name="profissional_id" required>
+                                <option value="">Selecione um profissional</option>
+                                {% for profissional in profissionais %}
+                                    <option value="{{ profissional.id }}" 
+                                            {% if anamnese and anamnese.profissional_id == profissional.id %}selected
+                                            {% elif request.form.get('profissional_id') == profissional.id %}selected
+                                            {% endif %}>
+                                        {{ profissional.nome }} ({{ profissional.especialidade }})
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="status">Status</label>
-                                <select id="status" name="status" required>
-                                    <option value="pendente" {% if (conta and conta.status == 'pendente') or (not conta and request.form.get('status', 'pendente') == 'pendente') %}selected{% endif %}>Pendente</option>
-                                    <option value="paga" {% if (conta and conta.status == 'paga') or (request.form.get('status') == 'paga') %}selected{% endif %}>Paga</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="produto_id">Vincular a Produto (Opcional)</label>
-                                <select id="produto_id" name="produto_id">
-                                    <option value="">Nenhum produto</option>
-                                    {% for produto in produtos_ativos %}
-                                        <option value="{{ produto.id }}" {% if conta and conta.produto_id == produto.id %}selected{% endif %}>{{ produto.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label for="modelo_anamnese_id">Modelo de Anamnese</label>
+                            <select id="modelo_anamnese_id" name="modelo_anamnese_id" required>
+                                <option value="">Selecione um modelo</option>
+                                {% for modelo in modelos_anamnese %}
+                                    <option value="{{ modelo.id }}" 
+                                            {% if anamnese and anamnese.modelo_anamnese_id == modelo.id %}selected
+                                            {% elif request.form.get('modelo_anamnese_id') == modelo.id %}selected
+                                            {% endif %}>
+                                        {{ modelo.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="data_anamnese">Data da Anamnese</label>
+                            <input type="date" id="data_anamnese" name="data_anamnese" 
+                                   value="{{ (anamnese.data_anamnese.strftime('%Y-%m-%d') if anamnese and anamnese.data_anamnese else request.form.get('data_anamnese', '')) }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="respostas_json">Respostas da Anamnese (JSON)</label>
+                            <textarea id="respostas_json" name="respostas_json" rows="10" 
+                                      placeholder="Insira as respostas no formato JSON, conforme o modelo selecionado.">{{ anamnese.respostas_json if anamnese else request.form.get('respostas_json', '') }}</textarea>
                         </div>
                         
                         <div class="form-actions">
-                            <a href="{{ url_for('listar_contas_a_pagar') }}" class="btn btn-secondary">Cancelar</a>
+                            <a href="{{ url_for('buscar_prontuario') }}" class="btn btn-secondary">Cancelar</a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> {{ 'Salvar' if conta else 'Adicionar' }}
+                                <i class="fas fa-save"></i> {{ 'Salvar' if anamnese else 'Adicionar' }}
                             </button>
                         </div>
                     </form>
@@ -377,18 +366,19 @@
         let auth = getAuth(initializeApp(firebaseConfig));
 
         document.addEventListener('DOMContentLoaded', () => {
-            const htmlEl = document.documentElement;
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
-            const logoutButton = document.getElementById('logoutButton');
-            const dataVencimentoInput = document.getElementById('data_vencimento');
+            // A sidebar, theme toggle e logout agora são gerenciados pelo script incluído de Nav.html
+            // const htmlEl = document.documentElement;
+            // const sidebar = document.querySelector('.sidebar');
+            // const mainContent = document.querySelector('.main-content');
+            // const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            // const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+            // const themeToggle = document.querySelector('#theme-toggle');
+            // const logoutButton = document.getElementById('logoutButton');
+            const dataAnamneseInput = document.getElementById('data_anamnese');
 
-            // Initialize Flatpickr for data_vencimento
-            if (dataVencimentoInput) {
-                flatpickr(dataVencimentoInput, {
+            // Initialize Flatpickr for data_anamnese
+            if (dataAnamneseInput) {
+                flatpickr(dataAnamneseInput, {
                     dateFormat: "Y-m-d",
                     altInput: true,
                     altFormat: "d/m/Y",
@@ -397,81 +387,19 @@
                 });
             }
 
-            // --- Sidebar Logic ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
-                }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
-                });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
-            }
+            // --- Sidebar Logic (removida daqui, agora em Nav.html) ---
+            // function setupSidebar() { ... }
 
-            // --- Theme Logic ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
+            // --- Theme Logic (removida daqui, agora em Nav.html) ---
+            // function setupTheme() { ... }
 
-            // --- Logout Logic ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
+            // --- Logout Logic (removida daqui, agora em Nav.html) ---
+            // function setupLogout() { ... }
 
             // --- Initialization ---
-            setupSidebar();
-            setupTheme();
-            setupLogout();
+            // setupSidebar(); // Removido
+            // setupTheme(); // Removido
+            // setupLogout(); // Removido
         });
     </script>
 </body>

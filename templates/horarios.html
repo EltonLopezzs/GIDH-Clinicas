@@ -467,40 +467,8 @@
 <body>
     <div id="toast-container"></div>
     <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
-                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-                    </button>
-                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
-                </div>
-            </div>
-        </aside>
+        {# Inclui a barra de navegação completa de Nav.html #}
+        {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
@@ -600,12 +568,13 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
-            const logoutButton = document.getElementById('logoutButton');
+            // A sidebar, theme toggle e logout agora são gerenciados pelo script incluído de Nav.html
+            // const sidebar = document.querySelector('.sidebar');
+            // const mainContent = document.querySelector('.main-content');
+            // const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            // const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+            // const themeToggle = document.querySelector('#theme-toggle');
+            // const logoutButton = document.getElementById('logoutButton');
 
             // --- Lógica para Notificações Toast ---
             const toastContainer = document.getElementById('toast-container');
@@ -663,76 +632,14 @@
                 {% endfor %}
             {% endwith %}
 
-            // --- Lógica da Sidebar ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
-                }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
-                });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
-            }
+            // --- Lógica da Sidebar (removida daqui, agora em Nav.html) ---
+            // function setupSidebar() { ... }
 
-            // --- Lógica do Tema ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
+            // --- Lógica do Tema (removida daqui, agora em Nav.html) ---
+            // function setupTheme() { ... }
 
-            // --- Lógica de Logout ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
+            // --- Lógica de Logout (removida daqui, agora em Nav.html) ---
+            // function setupLogout() { ... }
 
             // --- Lógica do Modal de Confirmação Personalizada ---
             function setupConfirmationModal() {
@@ -814,9 +721,9 @@
             }
 
             // --- Inicialização ---
-            setupSidebar();
-            setupTheme();
-            setupLogout();
+            // setupSidebar(); // Removido
+            // setupTheme(); // Removido
+            // setupLogout(); // Removido
             setupConfirmationModal();
             setupDropdowns(); // Adiciona a inicialização dos dropdowns
         });

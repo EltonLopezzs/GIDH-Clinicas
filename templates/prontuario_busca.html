@@ -15,10 +15,9 @@
             --primary: #5587c2;
             --primary-dark: #406a96; /* Definido para o tema claro */
             --accent: #9b53b8;
-            --primary-light: #000101;
+            --primary-light: #c8dcf3; /* Cor clara da paleta principal */
             --secondary: #f59e0b;
             --danger: #dc2626;
-            --primary-dark: #115e59;  
             --success: #16a34a;
             --warning: #f59e0b;
             --info: #0ea5e9;
@@ -44,7 +43,7 @@
             --border-color: #374151;
             --bg: #0f172a;
             --card: #1e293b;
-            --text: #0f172a;
+            --text: #f1f5f9; /* Ajustado para ser visível no tema escuro */
             --muted: #94a3b8;
             
             color-scheme: dark;
@@ -63,8 +62,9 @@
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
         /* --- Sidebar --- */
+        /* Removido do prontuario_busca.html, agora vem do Nav.html */
         .sidebar {
-            width: 260px;
+            width: 280px; /* Ajustado para 280px para consistência com Nav.html */
             background: linear-gradient(180deg, var(--primary), var(--accent));
             color: white;
             position: fixed;
@@ -82,7 +82,7 @@
             display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
         }
         .sidebar-header .logo i { font-size: 1.8rem; }
-        .sidebar.collapsed { width: 78px; }
+        .sidebar.collapsed { width: 88px; } /* Ajustado para 88px */
         .sidebar.collapsed .sidebar-header .logo span { display: none; }
         .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
         .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
@@ -112,10 +112,11 @@
         
         /* --- Main Content & Topbar --- */
         .main-content {
-            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 260px);
+            flex: 1; margin-left: 280px; /* Ajustado para 280px para consistência com Nav.html */
+            transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado para 280px */
         }
-        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
+        .main-content.collapsed { margin-left: 88px; width: calc(100% - 88px); } /* Ajustado para 88px */
         .topbar {
             background-color: var(--card); color: var(--text); padding: 0 1.5rem;
             display: flex; align-items: center; justify-content: space-between;
@@ -193,7 +194,7 @@
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
+            .sidebar.collapsed { transform: translateX(-100%); width: 280px; } /* Ajustado para 280px */
             .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
             .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
@@ -208,40 +209,7 @@
 </head>
 <body>
     <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li class="active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
-                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-                    </button>
-                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
-                </div>
-            </div>
-        </aside>
+        {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
@@ -254,13 +222,13 @@
 
             <main>
                 {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
-                    <div class="flash-messages">
-                      {% for category, message in messages %}
-                        <div class="flash-message {{ category }}">{{ message }}</div>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="flash-message {{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 {% endwith %}
 
                 <div class="form-card">
@@ -297,83 +265,21 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
+            // const sidebar = document.querySelector('.sidebar'); // Removido
+            // const mainContent = document.querySelector('.main-content'); // Removido
+            // const menuBtnMobile = document.querySelector('.menu-btn-mobile'); // Removido
+            // const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop'); // Removido
+            // const themeToggle = document.querySelector('#theme-toggle'); // Removido
             const logoutButton = document.getElementById('logoutButton');
 
             // --- Sidebar Logic ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
-                }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
-                });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
-            }
+            // Removido, agora gerenciado por Nav.html
 
             // --- Theme Logic ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
+            // Removido, agora gerenciado por Nav.html
 
             // --- Logout Logic ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
+            // Removido, agora gerenciado por Nav.html
 
             // --- Page-specific Logic ---
             function setupProntuarioSearch() {
@@ -396,9 +302,9 @@
             }
 
             // --- Initialization ---
-            setupSidebar();
-            setupTheme();
-            setupLogout();
+            // setupSidebar(); // Removido
+            // setupTheme(); // Removido
+            // setupLogout(); // Removido
             setupProntuarioSearch();
         });
     </script>

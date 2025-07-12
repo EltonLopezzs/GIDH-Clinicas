@@ -18,7 +18,7 @@
             --text: #0f172a;                /* Gray-900 */
             --muted: #64748b;               /* Gray-500 */
             --accent: #9b53b8;              /* Purple-500 */
-            --primary-dark: #115e59;  
+            --primary-dark: #115e59;        
             --primary: #5587c2;             /* Blue-500 */
             --primary-light: #c8dcf3;       /* Blue-100 */
             --secondary: #f59e0b;           /* Yellow-500 */
@@ -82,7 +82,7 @@
 
         /* Sidebar */
         .sidebar {
-            width: 260px;
+            width: 280px; /* Ajustado para 280px para consistência com Nav.html */
             background: linear-gradient(180deg, var(--primary), var(--accent));
             color: white;
             position: fixed;
@@ -109,7 +109,7 @@
             white-space: nowrap; overflow: hidden;
         }
         .sidebar-header .logo i { font-size: 1.8rem; }
-        .sidebar.collapsed { width: 78px; }
+        .sidebar.collapsed { width: 88px; } /* Ajustado para 88px */
         .sidebar.collapsed .sidebar-header .logo span { display: none; }
         .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
         .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
@@ -139,16 +139,17 @@
 
         /* --- Main Content & Topbar --- */
         .main-content {
-            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 260px);
-            max-width: calc(100% - 260px);
+            flex: 1; margin-left: 280px; /* Ajustado para 280px */
+            transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado para 280px */
+            max-width: calc(100% - 280px); /* Ajustado para 280px */
             box-sizing: border-box;
             /* Removido overflow-x: hidden; para permitir que os toasts apareçam */
         }
         .main-content.collapsed { 
-            margin-left: 78px; 
-            width: calc(100% - 78px); 
-            max-width: calc(100% - 78px);
+            margin-left: 88px; /* Ajustado para 88px */
+            width: calc(100% - 88px); /* Ajustado para 88px */
+            max-width: calc(100% - 88px); /* Ajustado para 88px */
         }
         .topbar {
             background-color: var(--card); color: var(--text); padding: 0 1.5rem;
@@ -246,6 +247,7 @@
             .card-list-container {
                 grid-template-columns: 1fr;
                 gap: 1rem;
+                padding: 0 0.5rem;
             }
         }
 
@@ -1227,7 +1229,7 @@
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
+            .sidebar.collapsed { transform: translateX(-100%); width: 280px; } /* Ajustado para 280px */
             .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
             .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
@@ -1563,7 +1565,7 @@
             #patient-drawer { width: 100vw; min-width: 0; }
             .form-card { flex-direction: column; }
             .paciente-steps { flex-direction: row; width: 100%; min-width: 0; height: auto; }
-            .paciente-step { flex-direction: row; align-items: center; justify-content: center; width: 100%; border-left: none; border-top: 4px solid transparent; }
+            .paciente-step { border-bottom: none; border-left: 4px solid transparent; justify-content: flex-start; padding: 14px 0 14px 18px; }
             .paciente-step.active { border-top: 4px solid var(--primary); border-left: none; }
             .paciente-card-section { border-radius: 0 0 18px 18px; }
         }
@@ -1862,40 +1864,7 @@
     </div>
 
     <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
-                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-                    </button>
-                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
-                </div>
-            </div>
-        </aside>
+        {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
@@ -1954,11 +1923,11 @@
                                         <div class="paciente-field required">
                                             <label for="steps-data_nascimento">Data de Nascimento</label>
                                             <input type="text" 
-                                                   id="steps-data_nascimento_display" 
-                                                   placeholder="DD/MM/AAAA" 
-                                                   maxlength="10" 
-                                                   class="date-input-display"
-                                                   required>
+                                                    id="steps-data_nascimento_display" 
+                                                    placeholder="DD/MM/AAAA" 
+                                                    maxlength="10" 
+                                                    class="date-input-display"
+                                                    required>
                                             <input type="hidden" id="steps-data_nascimento" name="data_nascimento" required>
                                         </div>
                                         <div class="paciente-field"><label for="steps-genero">Gênero</label><select id="steps-genero" name="genero"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option><option value="Outro">Outro</option></select></div>
@@ -1966,7 +1935,7 @@
                                         <div class="paciente-field"><label for="steps-rg">RG</label><input type="text" id="steps-rg" name="rg" placeholder="XX.XXX.XXX-X"></div>
                                     </div>
                                 </div>
-    
+                
                                 <div class="paciente-actions paciente-actions-sticky" style="justify-content:flex-end; gap:1rem; margin-top:2rem;">
                                     <button type="button" class="paciente-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
                                 </div>
@@ -1981,7 +1950,7 @@
                                         <div class="paciente-field"><label for="steps-email">E-mail</label><input type="email" id="steps-email" name="email" placeholder="seu.email@example.com"></div>
                                     </div>
                                 </div>
-    
+                
                                 <div class="paciente-actions paciente-actions-sticky" style="justify-content:space-between; gap:1rem; margin-top:2rem;">
                                     <button type="button" class="paciente-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
                                     <button type="button" class="paciente-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
@@ -2002,7 +1971,7 @@
                                         <div class="paciente-field"><label for="steps-complemento">Complemento</label><input type="text" id="steps-complemento" name="complemento" placeholder="Apto 401"></div>
                                     </div>
                                 </div>
-    
+                
                                 <div class="paciente-actions paciente-actions-sticky" style="justify-content:space-between; gap:1rem; margin-top:2rem;">
                                     <button type="button" class="paciente-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
                                     <button type="button" class="paciente-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
@@ -2354,76 +2323,9 @@
                 {% endfor %}
             {% endwith %}
 
-            // --- Lógica da Sidebar ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
-                }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
-                });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
-            }
-
-            // --- Lógica do Tema ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
-
-            // --- Lógica de Logout ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
+            // --- Lógica da Sidebar (removida daqui para ser gerenciada por Nav.html) ---
+            // A lógica da sidebar, tema e logout foi movida para Nav.html
+            // e será incluída automaticamente.
 
             // --- Função para filtrar pacientes ---
             function filterPatients(query) {
@@ -2618,28 +2520,6 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Email - sempre exibido -->
-                                <!--<div class="detail-item ${paciente.contato_email ? 'clickable' : ''}" ${paciente.contato_email ? `onclick="emailPatient('${paciente.contato_email}')"` : ''}>
-                                    <div class="detail-icon">
-                                        <i class="fas fa-envelope"></i>
-                                    </div>
-                                    <div class="detail-content">
-                                        <span class="detail-label">E-mail</span>
-                                        <span class="detail-value ${!paciente.contato_email ? 'detail-empty' : ''}">${paciente.contato_email || 'Não informado'}</span>
-                                    </div>
-                                </div>-->
-                                
-                                <!-- Endereço Completo -->
-                                <!--<div class="detail-item">
-                                    <div class="detail-icon">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                    </div>
-                                    <div class="detail-content">
-                                        <span class="detail-label">Endereço</span>
-                                        <span class="detail-value address-value ${!fullAddress ? 'detail-empty' : ''}">${fullAddress || 'Não informado'}</span>
-                                    </div>
-                                </div>-->
-
                                 <!-- Convênio - sempre exibido -->
                                 <div class="detail-item">
                                     <div class="detail-icon">
@@ -2663,17 +2543,6 @@
                                         <span class="detail-value ${!paciente.data_nascimento ? 'detail-empty' : ''}">${paciente.data_nascimento ? formatDate(paciente.data_nascimento) : 'Não informado'}</span>
                                     </div>
                                 </div>
-                                
-                                <!-- Gênero - sempre exibido -->
-                                <!--<div class="detail-item">
-                                    <div class="detail-icon">
-                                        <i class="fas fa-${paciente.genero === 'Masculino' ? 'mars' : paciente.genero === 'Feminino' ? 'venus' : 'genderless'}"></i>
-                                    </div>
-                                    <div class="detail-content">
-                                        <span class="detail-label">Gênero</span>
-                                        <span class="detail-value ${!paciente.genero ? 'detail-empty' : ''}">${paciente.genero || 'Não informado'}</span>
-                                    </div>
-                                </div>-->
                             </div>
                         </div>
                         
@@ -2709,7 +2578,10 @@
                             </div>
                         </div>
                         <h3 class="empty-state-title">
-                            ${isSearching ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
+                            ${isSearching ? 
+                                'Nenhum paciente encontrado' : 
+                                'Nenhum paciente cadastrado'
+                            }
                         </h3>
                         <p class="empty-state-description">
                             ${isSearching ? 
@@ -3391,9 +3263,9 @@
                 }
             });
 
-            setupSidebar();
-            setupTheme();
-            setupLogout();
+            // setupSidebar(); // Removido para evitar duplicação
+            // setupTheme(); // Removido para evitar duplicação
+            // setupLogout(); // Removido para evitar duplicação
             setupRequiredFieldValidation();
             renderPatientCards();
             

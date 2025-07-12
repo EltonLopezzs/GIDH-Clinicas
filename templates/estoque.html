@@ -9,20 +9,18 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.tailwindcss.com"></script> {# Adicionado Tailwind CSS #}
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         :root {
             --primary: #5587c2;
             --accent: #9b53b8;
             --primary-light: #c8dcf3;
-            --primary-dark: #115e59;  
             --secondary: #f59e0b;
             --danger: #dc2626;
             --success: #16a34a;
             --warning: #f59e0b;
+            --primary-dark: #115e59;  
             --info: #0ea5e9;
             --border-color: #e2e8f0;
             --bg: #f1f5f9;
@@ -131,7 +129,7 @@
             transition: background 0.2s ease, color 0.2s ease;
         }
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
-        /* main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; } */
+        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
         
         /* --- Buttons --- */
         .btn {
@@ -162,7 +160,7 @@
             border-radius: 12px; padding: 1rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 800px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); min-width: 600px; }
         th, td {
             padding: 0.9rem 1rem; font-size: 0.9rem; text-align: left; vertical-align: middle;
             border-bottom: 1px solid var(--border-color);
@@ -179,16 +177,51 @@
         tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
         .table-actions { display: flex; gap: 0.5rem; }
         .no-results td { text-align: center; padding: 2rem; color: var(--muted); }
+
+        /* --- Status Badge --- */
         .status-badge {
             padding: 0.4em 0.8em; border-radius: 20px; font-size: 0.75em;
             font-weight: 600; text-transform: uppercase; color: white;
         }
-        .status-badge.active { background-color: var(--success); }
-        .status-badge.inactive { background-color: var(--danger); }
-        .status-badge.low-stock { background-color: var(--warning); color: #854d0e; }
-        [data-theme="dark"] .status-badge.low-stock { color: var(--dark-bg); }
-        .status-badge.expired { background-color: var(--danger); }
+        .status-badge.ativo { background-color: var(--success); }
+        .status-badge.inativo { background-color: var(--danger); }
+        .status-badge.baixo-estoque { background-color: var(--warning); color: #854d0e; }
+        [data-theme="dark"] .status-badge.baixo-estoque { color: #fde047; }
 
+        /* --- Mobile Cards --- */
+        .mobile-cards-wrapper { display: none; }
+        @media (max-width: 768px) {
+            .table-container { display: none; }
+            .mobile-cards-wrapper { display: block; }
+        }
+
+        .produto-card-mobile {
+            background-color: var(--card); border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 1rem; overflow: hidden;
+        }
+        .card-header-produto {
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between;
+            background-color: var(--bg);
+        }
+        .card-header-produto h4 { font-weight: 600; font-size: 1.1rem; margin: 0; }
+        .card-details-body { padding: 0.5rem 0; }
+        .card-detail-item {
+            display: flex; justify-content: space-between; padding: 0.7rem 1.5rem; font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .card-detail-item:last-child { border-bottom: none; }
+        .card-detail-item-label { color: var(--muted); font-weight: 500; }
+        .card-detail-item-value { font-weight: 600; }
+        .card-actions-footer {
+            padding: 1rem 1.5rem; background-color: var(--bg); display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Ajustado para 3 colunas */
+            gap: 0.75rem;
+        }
+        .card-actions-footer .btn, .card-actions-footer form { width: 100%; }
+        .card-actions-footer .btn { justify-content: center; }
+        .card-actions-footer .btn i { margin-right: 0.5rem; }
 
         /* --- Modal --- */
         .modal-overlay {
@@ -204,299 +237,10 @@
             text-align: center; padding: 2rem;
         }
         .modal-overlay.active .modal-content { transform: translateY(0); }
-        .modal-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .modal-icon { font-size: 3rem; color: var(--danger); margin-bottom: 1rem; }
         .modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
-        .modal-text { font-size: 1rem; color: var(--muted); margin-bottom: 1.5rem; }
+        .modal-text { font-size: 1.0rem; color: var(--muted); margin-bottom: 1.5rem; }
         .modal-actions { display: flex; justify-content: center; gap: 0.75rem; }
-
-        /* --- Tabs --- */
-        .tabs-container {
-            margin-bottom: 1.5rem;
-            background-color: var(--card);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            padding: 1rem;
-        }
-        .tab-nav {
-            display: flex;
-            gap: 8px;
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            padding-bottom: 4px;
-        }
-        .tab-nav-item {
-            padding: 0.75rem 1.25rem;
-            cursor: pointer;
-            font-weight: 600;
-            color: var(--muted);
-            background: none;
-            border: none;
-            border-bottom: 3px solid transparent;
-            transform: translateY(2px);
-            transition: color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
-            font-size: 0.95rem;
-            border-radius: 6px 6px 0 0;
-        }
-        .tab-nav-item:hover {
-            color: var(--text);
-            background-color: var(--bg);
-        }
-        .tab-nav-item.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-            background-color: var(--card);
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
-            transform: translateY(0);
-        }
-        .tab-panel {
-            display: none;
-            transition: opacity 0.3s ease-in-out;
-            opacity: 0;
-            padding-top: 0.5rem;
-        }
-        .tab-panel.active {
-            display: block;
-            opacity: 1;
-        }
-
-        /* --- Responsive --- */
-        .toggle-btn-desktop { display: none; }
-        .menu-btn-mobile { display: block; }
-        span.btn-text-desktop { display: none; }
-
-        @media(min-width: 769px) {
-            .toggle-btn-desktop { display: grid; }
-            .menu-btn-mobile { display: none; }
-            span.btn-text-desktop { display: inline; }
-        }
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
-            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
-            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
-            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
-            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
-            main { padding: 1rem; }
-            .topbar { padding: 0 1rem; flex-wrap: wrap; height: auto; row-gap: 1rem; padding-top: 1rem; padding-bottom: 1rem;}
-            .topbar-left { width: 100%; justify-content: space-between; }
-            .topbar-actions { width: 100%; justify-content: flex-end; }
-            .topbar-actions .search-form { flex-grow: 1; }
-            .table-container { display: none; }
-            .mobile-cards-wrapper { display: block; }
-            .tabs-container { padding: 0.5rem; }
-            .tab-nav-item { padding: 0.6rem 0.8rem; font-size: 0.85rem; }
-        }
-
-        /* --- Mobile Cards --- */
-        .mobile-cards-wrapper { display: none; }
-        .produto-card-mobile {
-            background-color: var(--card); border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            margin-bottom: 1rem; overflow: hidden;
-        }
-        .card-header-produto {
-            padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .card-header-produto h4 { font-weight: 600; font-size: 1.1rem; margin: 0; }
-        .card-details-body { padding: 0.5rem 0; }
-        .card-detail-item {
-            display: flex; justify-content: space-between; padding: 0.7rem 1.5rem; font-size: 0.9rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .card-detail-item:last-child { border-bottom: none; }
-        .card-detail-item-label { color: var(--muted); font-weight: 500; }
-        .card-detail-item-value { font-weight: 600; }
-        .card-actions-footer {
-            padding: 1rem 1.5rem; background-color: var(--bg); display: grid;
-            grid-template-columns: 1fr 1fr; gap: 0.75rem;
-        }
-        .card-actions-footer .btn, .card-actions-footer form { width: 100%; }
-        .card-actions-footer .btn { justify-content: center; }
-        .card-actions-footer .btn i { margin-right: 0.5rem; }
-
-        /* Movimentação Modal Specific Styles */
-        .movimentacao-modal-content {
-            max-width: 600px; /* Adjust max-width for this specific modal */
-            padding: 0; /* Remove padding from here, add to body/footer */
-            text-align: left; /* Align text left */
-        }
-        .movimentacao-modal-content .modal-header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            background-color: var(--bg);
-            border-radius: 12px 12px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .movimentacao-modal-content .modal-header h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text);
-            margin: 0;
-        }
-        .movimentacao-modal-content .modal-header h3 i {
-            margin-right: 0.75rem;
-            color: var(--primary);
-        }
-        .movimentacao-modal-content .modal-close-btn {
-            background: none;
-            border: none;
-            font-size: 1.8rem;
-            color: var(--muted);
-            cursor: pointer;
-            line-height: 1;
-            transition: color 0.2s ease;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-        }
-        .movimentacao-modal-content .modal-close-btn:hover {
-            color: var(--danger);
-            background-color: rgba(var(--danger-rgb), 0.1); /* Assuming danger-rgb is defined or use a direct rgba */
-        }
-
-        .movimentacao-modal-content .modal-body {
-            padding: 1.5rem;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-        .movimentacao-modal-content .form-group {
-            margin-bottom: 1rem;
-        }
-        .movimentacao-modal-content .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-        }
-        .movimentacao-modal-content .form-group label {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--muted);
-            font-weight: 500;
-            margin-bottom: 0.3rem;
-        }
-        .movimentacao-modal-content .form-group input,
-        .movimentacao-modal-content .form-group select {
-            width: 100%;
-            padding: 0.6rem 0.8rem;
-            font-size: 0.9rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--bg);
-            color: var(--text);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .movimentacao-modal-content .form-group input:focus,
-        .movimentacao-modal-content .form-group select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none;
-        }
-
-        .movimentacao-modal-content .modal-footer {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-            flex-shrink: 0;
-            background-color: var(--bg);
-            border-radius: 0 0 12px 12px;
-        }
-        .movimentacao-modal-content .modal-footer .btn-secondary {
-            margin-right: auto; /* Push Cancel to the left */
-        }
-        
-        /* Style for the toggle switch */
-        .toggle-switch-label {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.9rem;
-            color: var(--muted);
-            font-weight: 500;
-            cursor: pointer; /* Make the whole label clickable */
-        }
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 24px;
-            background-color: var(--muted);
-            border-radius: 12px;
-            transition: background-color 0.3s;
-            flex-shrink: 0; /* Prevent it from shrinking */
-        }
-        .toggle-switch.active {
-            background-color: var(--primary);
-        }
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .toggle-switch .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: transparent;
-            -webkit-transition: .3s;
-            transition: .3s;
-            border-radius: 12px;
-        }
-        .toggle-switch .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            -webkit-transition: .3s;
-            transition: .3s;
-            border-radius: 50%;
-        }
-        .toggle-switch.active .slider:before {
-            -webkit-transform: translateX(16px);
-            -ms-transform: translateX(16px);
-            transform: translateX(16px);
-        }
-
-        /* Loading indicator for product select */
-        .product-select-loading {
-            position: relative;
-        }
-        .product-select-loading:after {
-            content: "\f110"; /* Font Awesome spinner icon */
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary);
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: translateY(-50%) rotate(0deg); }
-            100% { transform: translateY(-50%) rotate(360deg); }
-        }
-        .product-select-error {
-            border-color: var(--danger) !important;
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 20%, transparent);
-        }
-        .product-select-error + .error-message {
-            color: var(--danger);
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-            display: block;
-        }
 
         /* Custom styles for the topbar actions */
         .topbar-actions {
@@ -558,51 +302,23 @@
             .topbar-actions .btn {
                 flex-grow: 1; /* Faz os botões ocuparem a largura total */
             }
+            .topbar-actions select { /* Estilo para o select de filtro */
+                flex-grow: 1;
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
         }
         @media (min-width: 769px) {
             .topbar-actions {
                 flex-wrap: nowrap; /* Impede que os itens quebrem a linha */
             }
         }
-
     </style>
 </head>
 <body>
     <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                         <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
-                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-                    </button>
-                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
-                </div>
-            </div>
-        </aside>
+        {# Inclui a barra de navegação completa de Nav.html #}
+        {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
@@ -616,11 +332,11 @@
                         <input type="text" name="search" placeholder="Buscar produto..." class="search-input" value="{{ search_query or '' }}">
                         <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
                     </form>
-                    <button type="button" class="btn btn-secondary" id="movimentarEstoqueBtn">
-                        <i class="fas fa-right-left"></i> <span class="btn-text-desktop">Movimentar</span>
-                    </button>
                     <a href="{{ url_for('adicionar_produto_estoque') }}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Produto</span>
+                    </a>
+                    <a href="{{ url_for('movimentar_estoque') }}" class="btn btn-info"> {# CORRIGIDO: Endpoint 'listar_movimentacoes_estoque' para 'movimentar_estoque' #}
+                        <i class="fas fa-history"></i> <span class="btn-text-desktop">Movimentações</span>
                     </a>
                 </div>
             </header>
@@ -636,227 +352,118 @@
                   {% endif %}
                 {% endwith %}
 
-                <div class="tabs-container">
-                    <div class="tab-nav">
-                        <button class="tab-nav-item {% if filter_type == 'todos' %}active{% endif %}" data-filter="todos">Todos</button>
-                        <button class="tab-nav-item {% if filter_type == 'movimento' %}active{% endif %}" data-filter="movimento">Movimento</button>
-                        <button class="tab-nav-item {% if filter_type == 'estoque_baixo' %}active{% endif %}" data-filter="estoque_baixo">Estoque Baixo</button>
-                        <button class="tab-nav-item {% if filter_type == 'vencidos' %}active{% endif %}" data-filter="vencidos">Vencidos</button>
-                    </div>
-
-                    <div class="tab-content">
-                        <!-- Painel "Todos", "Estoque Baixo" e "Vencidos" (renderizados pela mesma tabela, filtrados no backend) -->
-                        <div id="tab-panel-produtos" class="tab-panel {% if filter_type == 'todos' or filter_type == 'estoque_baixo' or filter_type == 'vencidos' %}active{% endif %}">
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Número</th>
-                                            <th>Produto</th>
-                                            <th>Quantidade Mínima</th>
-                                            <th>Quantidade Atual</th>
-                                            <th>Unidade Medida</th>
-                                            <th>Data Validade</th> {# NEW COLUMN #}
-                                            <th>Status</th>
-                                            <th style="width: 150px;">Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for produto in produtos %}
-                                        <tr>
-                                            <td>{{ loop.index }}</td>
-                                            <td>{{ produto.nome }}</td>
-                                            <td>{{ produto.estoque_minimo }}</td>
-                                            <td>{{ produto.quantidade_atual }}</td>
-                                            <td>{{ produto.unidade_medida or 'N/A' }}</td>
-                                            <td>{{ produto.data_validade_fmt or 'N/A' }}</td> {# DISPLAY NEW COLUMN #}
-                                            <td>
-                                                {% if not produto.ativo %}
-                                                    <span class="status-badge inactive">Inativo</span>
-                                                {% elif produto.data_validade_obj and produto.data_validade_obj < now %} {# Check for expired #}
-                                                    <span class="status-badge expired">Vencido</span>
-                                                {% elif produto.quantidade_atual <= produto.estoque_minimo %}
-                                                    <span class="status-badge low-stock">Estoque Baixo</span>
-                                                {% else %}
-                                                    <span class="status-badge active">Ativo</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="table-actions">
-                                                <form action="{{ url_for('ativar_desativar_produto_estoque', produto_doc_id=produto.id) }}" method="post" class="form-confirm-action">
-                                                    {% if produto.ativo %}
-                                                        <button type="button" class="btn btn-sm btn-toggle-inactive btn-confirm-trigger" title="Desativar">
-                                                            <i class="fas fa-toggle-off"></i>
-                                                        </button>
-                                                    {% else %}
-                                                        <button type="button" class="btn btn-sm btn-info btn-confirm-trigger" title="Ativar">
-                                                            <i class="fas fa-toggle-on"></i>
-                                                        </button>
-                                                    {% endif %}
-                                                </form>
-                                                <a href="{{ url_for('editar_produto_estoque', produto_doc_id=produto.id) }}" class="btn btn-sm btn-warning" title="Editar">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <form action="{{ url_for('excluir_produto_estoque', produto_doc_id=produto.id) }}" method="post" class="form-confirm-action">
-                                                    <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger" title="Excluir">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Quantidade</th>
+                                <th>Unidade</th>
+                                <th>Preço Custo</th>
+                                <th>Preço Venda</th>
+                                <th>Estoque Mínimo</th>
+                                <th>Status</th>
+                                <th style="width: 150px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for produto in produtos %}
+                            <tr>
+                                <td>{{ produto['nome'] }}</td>
+                                <td>{{ produto['quantidade'] }}</td>
+                                <td>{{ produto['unidade_medida'] }}</td>
+                                <td>R$ {{ "%.2f"|format(produto['preco_custo']) }}</td>
+                                <td>R$ {{ "%.2f"|format(produto['preco_venda']) }}</td>
+                                <td>{{ produto['estoque_minimo'] }}</td>
+                                <td>
+                                    {% if produto['ativo'] %}
+                                        {% if produto['quantidade'] <= produto['estoque_minimo'] %}
+                                            <span class="status-badge baixo-estoque">Baixo Estoque</span>
                                         {% else %}
-                                        <tr class="no-results">
-                                            <td colspan="8">Nenhum produto encontrado.</td> {# Updated colspan #}
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            <div class="mobile-cards-wrapper">
-                                {% for produto in produtos %}
-                                <div class="produto-card-mobile">
-                                    <div class="card-header-produto">
-                                        <h4>{{ produto.nome }}</h4>
-                                        {% if not produto.ativo %}
-                                            <span class="status-badge inactive">Inativo</span>
-                                        {% elif produto.data_validade_obj and produto.data_validade_obj < now %}
-                                            <span class="status-badge expired">Vencido</span>
-                                        {% elif produto.quantidade_atual <= produto.estoque_minimo %}
-                                            <span class="status-badge low-stock">Estoque Baixo</span>
-                                        {% else %}
-                                            <span class="status-badge active">Ativo</span>
+                                            <span class="status-badge ativo">Ativo</span>
                                         {% endif %}
-                                    </div>
-                                    <div class="card-details-body">
-                                        <div class="card-detail-item">
-                                            <span class="card-detail-item-label">Qtd. Mínima</span>
-                                            <span class="card-detail-item-value">{{ produto.estoque_minimo }}</span>
-                                        </div>
-                                        <div class="card-detail-item">
-                                            <span class="card-detail-item-label">Qtd. Atual</span>
-                                            <span class="card-detail-item-value">{{ produto.quantidade_atual }}</span>
-                                        </div>
-                                        <div class="card-detail-item">
-                                            <span class="card-detail-item-label">Unidade</span>
-                                            <span class="card-detail-item-value">{{ produto.unidade_medida or 'N/A' }}</span>
-                                        </div>
-                                        <div class="card-detail-item">
-                                            <span class="card-detail-item-label">Data Validade</span>
-                                            <span class="card-detail-item-value">{{ produto.data_validade_fmt or 'N/A' }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="card-actions-footer">
-                                        <form action="{{ url_for('ativar_desativar_produto_estoque', produto_doc_id=produto.id) }}" method="post" class="form-confirm-action">
-                                            {% if produto.ativo %}
-                                                <button type="button" class="btn btn-sm btn-toggle-inactive btn-confirm-trigger"><i class="fas fa-toggle-off"></i> Desativar</button>
-                                            {% else %}
-                                                <button type="button" class="btn btn-sm btn-info btn-confirm-trigger"><i class="fas fa-toggle-on"></i> Ativar</button>
-                                            {% endif %}
-                                        </form>
-                                        <a href="{{ url_for('editar_produto_estoque', produto_doc_id=produto.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Editar</a>
-                                        <form action="{{ url_for('excluir_produto_estoque', produto_doc_id=produto.id) }}" method="post" class="form-confirm-action">
-                                            <button type="button" class="btn btn-sm btn-danger btn-confirm-trigger"><i class="fas fa-trash"></i> Excluir</button>
-                                        </form>
-                                    </div>
-                                </div>
+                                    {% else %}
+                                        <span class="status-badge inativo">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="table-actions">
+                                    <a href="{{ url_for('editar_produto', produto_doc_id=produto['id']) }}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="{{ url_for('excluir_produto', produto_doc_id=produto['id']) }}" method="post" class="form-delete-produto">
+                                        <button type="button" class="btn btn-sm btn-danger btn-delete-produto-trigger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr class="no-results">
+                                <td colspan="8">Nenhum produto cadastrado no estoque.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mobile-cards-wrapper">
+                    {% for produto in produtos %}
+                    <div class="produto-card-mobile">
+                        <div class="card-header-produto">
+                            <h4>{{ produto['nome'] }}</h4>
+                            {% if produto['ativo'] %}
+                                {% if produto['quantidade'] <= produto['estoque_minimo'] %}
+                                    <span class="status-badge baixo-estoque">Baixo Estoque</span>
                                 {% else %}
-                                    <div class="table-container" style="text-align: center; padding: 2rem;">
-                                        Nenhum produto encontrado.
-                                        {% if produtos is not none %}
-                                            <p style="font-size: 0.8em; color: #aaa;">(DEBUG: Variável 'produtos' não está vazia: {{ produtos }})</p>
-                                        {% else %}
-                                            <p style="font-size: 0.8em; color: #aaa;">(DEBUG: Variável 'produtos' é nula ou indefinida)</p>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
+                                    <span class="status-badge ativo">Ativo</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="status-badge inativo">Inativo</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-details-body">
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Quantidade</span>
+                                <span class="card-detail-item-value">{{ produto['quantidade'] }} {{ produto['unidade_medida'] }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Preço Custo</span>
+                                <span class="card-detail-item-value">R$ {{ "%.2f"|format(produto['preco_custo']) }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Preço Venda</span>
+                                <span class="card-detail-item-value">R$ {{ "%.2f"|format(produto['preco_venda']) }}</span>
+                            </div>
+                            <div class="card-detail-item">
+                                <span class="card-detail-item-label">Estoque Mínimo</span>
+                                <span class="card-detail-item-value">{{ produto['estoque_minimo'] }}</span>
                             </div>
                         </div>
-
-                        <!-- Painel "Movimento" -->
-                        <div id="tab-panel-movimento" class="tab-panel {% if filter_type == 'movimento' %}active{% endif %}">
-                            <p style="text-align: center; padding: 2rem; color: var(--muted);">
-                                <i class="fas fa-spinner fa-spin"></i> Redirecionando para o histórico de movimentações...
-                            </p>
+                        <div class="card-actions-footer">
+                            <a href="{{ url_for('editar_produto', produto_doc_id=produto['id']) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Editar</a>
+                            <form action="{{ url_for('excluir_produto', produto_doc_id=produto['id']) }}" method="post" class="form-delete-produto">
+                                <button type="button" class="btn btn-sm btn-danger btn-delete-produto-trigger"><i class="fas fa-trash"></i> Excluir</button>
+                            </form>
                         </div>
                     </div>
+                    {% else %}
+                        <p style="text-align: center; color: var(--muted); padding: 2rem; width: 100%;">Nenhum produto cadastrado no estoque.</p>
+                    {% endfor %}
                 </div>
             </main>
         </div>
     </div>
-    
-    <!-- Modal de Confirmação (Reutilizado) -->
+
+    {# Modal de Confirmação para Exclusão #}
     <div class="modal-overlay" id="customConfirmModal">
         <div class="modal-content">
             <div class="modal-icon"><i class="fas fa-exclamation-triangle"></i></div>
-            <h3 class="modal-title" id="customConfirmTitle">Confirmar Ação</h3>
-            <p class="modal-text" id="customConfirmMessage"></p>
+            <h3 class="modal-title">Confirmar Exclusão</h3>
+            <p class="modal-text">Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.</p>
             <div class="modal-actions">
                 <button id="customConfirmCancel" class="btn btn-secondary">Cancelar</button>
                 <button id="customConfirmOk" class="btn btn-danger">Confirmar</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Modal de Movimentação de Estoque -->
-    <div class="modal-overlay" id="movimentacaoEstoqueModal">
-        <div class="modal-content movimentacao-modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-right-left"></i> Adicionar Movimentação</h3>
-                <button type="button" class="modal-close-btn" data-close>&times;</button>
-            </div>
-            <form id="formMovimentacaoEstoque" method="POST" action="{{ url_for('movimentar_estoque') }}">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="produto_id">Produto</label>
-                        <div class="product-select-loading"> {# Added loading class here #}
-                            <select id="produto_id" name="produto_id" required>
-                                <option value="">Carregando produtos...</option>
-                            </select>
-                        </div>
-                        <span id="product-select-error-message" class="error-message" style="display:none;"></span>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="tipo_movimentacao">Tipo</label>
-                            <select id="tipo_movimentacao" name="tipo_movimentacao" required>
-                                <option value="entrada">Entrada</option>
-                                <option value="saida">Saída</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="quantidade">Quantidade</label>
-                            <input type="number" id="quantidade" name="quantidade" min="1" step="1" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="marca">Marca (Opcional)</label>
-                        <input type="text" id="marca" name="marca">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="preco_total">Total R$ (Opcional)</label>
-                            <input type="text" id="preco_total" name="preco_total" placeholder="Ex: 150,00" pattern="^\d+([,.]\d{1,2})?$" title="Use vírgula ou ponto para centavos (ex: 150,00 ou 150.00)">
-                        </div>
-                        <div class="form-group">
-                            <label for="data_vencimento">Data de Vencimento (Opcional)</label>
-                            <input type="date" id="data_vencimento" name="data_vencimento">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="toggle-switch-label">
-                            <span style="margin-right: 0.5rem;">Criar Conta a Pagar</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="criar_conta_pagar" name="criar_conta_pagar">
-                                <span class="slider"></span>
-                            </label>
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close>&nbsp;Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i>&nbsp;Movimentar</button>
-                </div>
-            </form>
         </div>
     </div>
 
@@ -872,265 +479,61 @@
         let auth = getAuth(initializeApp(firebaseConfig));
 
         document.addEventListener('DOMContentLoaded', () => {
-            const htmlEl = document.documentElement;
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
-            const logoutButton = document.getElementById('logoutButton');
-
-            // --- Sidebar Logic ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
-                }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
-                });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
-            }
-
-            // --- Theme Logic ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
-
-            // --- Logout Logic ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
+            // A sidebar, theme toggle e logout agora são gerenciados pelo script incluído de Nav.html
+            // const htmlEl = document.documentElement;
+            // const sidebar = document.querySelector('.sidebar');
+            // const mainContent = document.querySelector('.main-content');
+            // const menuBtnMobile = document.querySelector('.menu-btn-mobile');
+            // const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
+            // const themeToggle = document.querySelector('#theme-toggle');
+            // const logoutButton = document.getElementById('logoutButton');
+            const customConfirmModal = document.getElementById('customConfirmModal');
+            const customConfirmOk = document.getElementById('customConfirmOk');
+            const customConfirmCancel = document.getElementById('customConfirmCancel');
+            let formToSubmit = null;
 
             // --- Confirmation Modal Logic ---
             function setupConfirmationModal() {
-                const modal = document.getElementById('customConfirmModal');
-                if (!modal) return;
-                
-                const titleEl = document.getElementById('customConfirmTitle');
-                const messageEl = document.getElementById('customConfirmMessage');
-                const okBtn = document.getElementById('customConfirmOk');
-                const cancelBtn = document.getElementById('customConfirmCancel');
-                let formToSubmit = null;
+                if (!customConfirmModal) return;
 
-                document.querySelectorAll('.btn-confirm-trigger').forEach(button => {
+                document.querySelectorAll('.btn-delete-produto-trigger').forEach(button => {
                     button.addEventListener('click', function(event) {
                         event.preventDefault();
-                        formToSubmit = this.closest('form.form-confirm-action');
-                        
-                        let action = 'confirmar';
-                        let message = 'Tem certeza que deseja continuar?';
-
-                        if(this.textContent.toLowerCase().includes('desativar')){
-                            action = 'Desativar';
-                            message = 'Tem certeza que deseja desativar este produto?';
-                        } else if(this.textContent.toLowerCase().includes('ativar')){
-                            action = 'Ativar';
-                             message = 'Tem certeza que deseja ativar este produto?';
-                        } else if(this.textContent.toLowerCase().includes('excluir')){
-                             action = 'Excluir';
-                             message = 'Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.';
+                        formToSubmit = this.closest('form.form-delete-produto');
+                        if (customConfirmModal && formToSubmit) {
+                            customConfirmModal.classList.add('active');
                         }
-
-                        titleEl.textContent = `Confirmar ${action}`;
-                        messageEl.textContent = message;
-
-                        modal.classList.add('active');
                     });
                 });
 
-                okBtn.addEventListener('click', () => {
-                    if (formToSubmit) {
-                        formToSubmit.submit();
+                if (customConfirmOk) {
+                    customConfirmOk.addEventListener('click', () => {
+                        if (formToSubmit) {
+                            formToSubmit.submit();
+                        }
+                        customConfirmModal.classList.remove('active');
+                    });
+                }
+
+                if (customConfirmCancel) {
+                    customConfirmCancel.addEventListener('click', () => {
+                        customConfirmModal.classList.remove('active');
+                        formToSubmit = null;
+                    });
+                }
+                
+                customConfirmModal.addEventListener('click', (e) => {
+                    if(e.target === customConfirmModal) {
+                        customConfirmModal.classList.remove('active');
                     }
-                });
-
-                cancelBtn.addEventListener('click', () => modal.classList.remove('active'));
-                modal.addEventListener('click', (e) => {
-                    if(e.target === modal) modal.classList.remove('active');
-                });
-            }
-
-            // --- Estoque Page Specific Logic ---
-            function setupEstoquePage() {
-                const movimentarEstoqueBtn = document.getElementById('movimentarEstoqueBtn');
-                const movimentacaoEstoqueModal = document.getElementById('movimentacaoEstoqueModal');
-                const formMovimentacaoEstoque = document.getElementById('formMovimentacaoEstoque');
-                const produtoSelect = document.getElementById('produto_id');
-                const toggleSwitch = document.querySelector('.toggle-switch');
-                const toggleCheckbox = document.getElementById('criar_conta_pagar');
-                const tabNavItems = document.querySelectorAll('.tab-nav-item');
-                const searchForm = document.getElementById('searchForm');
-                const dataVencimentoInput = document.getElementById('data_vencimento');
-                const productSelectLoadingDiv = document.querySelector('.product-select-loading');
-                const productSelectErrorMessageSpan = document.getElementById('product-select-error-message');
-
-
-                // Initialize Flatpickr for data_vencimento
-                if (dataVencimentoInput) {
-                    flatpickr(dataVencimentoInput, {
-                        dateFormat: "Y-m-d",
-                        altInput: true,
-                        altFormat: "d/m/Y",
-                        locale: "pt",
-                        disableMobile: true
-                    });
-                }
-
-                // Populate product select for movimentation modal
-                async function populateProductSelect() {
-                    produtoSelect.innerHTML = '<option value="">Carregando produtos...</option>';
-                    produtoSelect.classList.remove('product-select-error');
-                    productSelectErrorMessageSpan.style.display = 'none';
-                    if (productSelectLoadingDiv) productSelectLoadingDiv.classList.add('product-select-loading');
-
-                    try {
-                        const response = await fetch('{{ url_for("api_produtos_ativos") }}'); 
-                        if (!response.ok) {
-                            const errorText = await response.text(); // Get raw error text
-                            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-                        }
-                        const products = await response.json(); 
-                        console.log("Produtos ativos para modal:", products); // Debugging
-
-                        produtoSelect.innerHTML = '<option value="">Selecione um produto</option>';
-                        if (products.length === 0) {
-                            produtoSelect.innerHTML += '<option value="">Nenhum produto ativo encontrado</option>';
-                            produtoSelect.disabled = true; // Disable if no products
-                        } else {
-                            products.forEach(product => {
-                                const option = document.createElement('option');
-                                option.value = product.id;
-                                option.textContent = `${product.nome} (Atual: ${product.quantidade_atual} ${product.unidade_medida || ''})`;
-                                produtoSelect.appendChild(option);
-                            });
-                            produtoSelect.disabled = false;
-                        }
-                    } catch (error) {
-                        console.error('Erro ao carregar produtos para o modal de movimentação:', error);
-                        produtoSelect.innerHTML = '<option value="">Erro ao carregar produtos</option>';
-                        produtoSelect.disabled = true;
-                        produtoSelect.classList.add('product-select-error');
-                        productSelectErrorMessageSpan.textContent = `Erro: ${error.message}. Tente recarregar a página.`;
-                        productSelectErrorMessageSpan.style.display = 'block';
-                    } finally {
-                        if (productSelectLoadingDiv) productSelectLoadingDiv.classList.remove('product-select-loading');
-                    }
-                }
-
-                // Open Movimentação Modal
-                if (movimentarEstoqueBtn && movimentacaoEstoqueModal) {
-                    movimentarEstoqueBtn.addEventListener('click', () => {
-                        formMovimentacaoEstoque.reset();
-                        toggleCheckbox.checked = false; // Reset toggle
-                        toggleSwitch.classList.remove('active'); // Reset toggle visual
-                        populateProductSelect(); // Populate products when modal opens
-                        movimentacaoEstoqueModal.classList.add('active');
-                    });
-                }
-
-                // Close Modals (generic for all modals with data-close button)
-                document.querySelectorAll('.modal-overlay').forEach(modalEl => {
-                    modalEl.querySelectorAll('[data-close]').forEach(btn => {
-                        btn.addEventListener('click', () => modalEl.classList.remove('active'));
-                    });
-                    modalEl.addEventListener('click', (e) => {
-                        if (e.target === modalEl) modalEl.classList.remove('active');
-                    });
-                });
-
-                // Toggle Switch Logic (Criar Conta a Pagar)
-                if (toggleSwitch && toggleCheckbox) {
-                    toggleSwitch.addEventListener('click', () => {
-                        toggleCheckbox.checked = !toggleCheckbox.checked;
-                        toggleSwitch.classList.toggle('active', toggleCheckbox.checked);
-                    });
-                    // Initial state based on checkbox
-                    toggleSwitch.classList.toggle('active', toggleCheckbox.checked);
-                }
-
-                // Tabs Logic
-                tabNavItems.forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        const filter = tab.dataset.filter;
-                        const currentUrl = new URL(window.location.href);
-                        
-                        // Preserve search query if it exists
-                        const currentSearchInput = searchForm.querySelector('input[name="search"]');
-                        const currentSearch = currentSearchInput ? currentSearchInput.value : '';
-
-                        if (currentSearch) {
-                            currentUrl.searchParams.set('search', currentSearch);
-                        } else {
-                            currentUrl.searchParams.delete('search');
-                        }
-
-                        // Special handling for 'movimento' tab
-                        if (filter === 'movimento') {
-                            window.location.href = "{{ url_for('historico_movimentacoes') }}";
-                        } else {
-                            currentUrl.searchParams.set('filter', filter);
-                            window.location.href = currentUrl.toString();
-                        }
-                    });
-                });
+                })
             }
 
             // --- Initialization ---
-            setupSidebar();
-            setupTheme();
-            setupLogout();
+            // setupSidebar(); // Removido
+            // setupTheme(); // Removido
+            // setupLogout(); // Removido
             setupConfirmationModal();
-            setupEstoquePage();
         });
     </script>
 </body>
