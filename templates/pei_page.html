@@ -263,8 +263,16 @@
         }
         /* Increased max-width for pei-details-modal */
         #pei-details-modal .modal-content {
-            max-width: 900px; /* Increased max-width for pei-details-modal, as requested (from 700px to 900px) */
+            max-width: 95vw; /* Aumenta para 95% da largura da viewport */
+            max-height: 95vh; /* Aumenta a altura máxima também */
+            width: 100%; /* Garante que ocupe a largura total disponível */
         }
+        @media (min-width: 1200px) { /* Define um max-width para telas muito grandes */
+            #pei-details-modal .modal-content {
+                max-width: 1200px;
+            }
+        }
+
         .modal-header {
             padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border-color);
@@ -1507,7 +1515,7 @@
                     const finalizeGoalButton = target.closest('.btn-finalize-goal');
                     if (finalizeGoalButton) {
                         const peiId = finalizeGoalButton.dataset.peiId;
-                        const goalId = finalizeGoal.dataset.goalId;
+                        const goalId = finalizeGoalButton.dataset.goalId;
                         // Abre o modal de confirmação para finalizar a meta
                         openConfirmDeleteModal('Confirmar Finalização da Meta', 'Tem certeza que deseja finalizar esta meta? Uma vez finalizada, não poderá ser editada.', 'finalize_goal', { peiId: peiId, goalId: goalId });
                         return;
@@ -1756,7 +1764,7 @@
                         return true;
                     });
 
-                    const sortedPeis = [...filteredPeis].sort((a, b) => new Date(b.data_criacao_iso) - new Date(a.data_criacao_iso));
+                    const sortedPeis = [...filteredPeis].sort((a, b) => new Date(b.data_criacao) - new Date(a.data_criacao)); // Use data_criacao directly
 
                     let hasActivePeis = false;
                     let hasFinalizedPeis = false;
@@ -1782,6 +1790,12 @@
                 
                 // NOVO: Função para renderizar o HTML de um PEI como um card
                 function renderPeiCardHtml(pei) {
+                    // Formata a data de criação para o card de resumo (DD/MM/YYYY)
+                    const dataCriacao = pei.data_criacao ? new Date(pei.data_criacao) : null; // Use directly
+                    const formattedDateCard = dataCriacao && !isNaN(dataCriacao) ? dataCriacao.toLocaleDateString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric'
+                    }) : 'Data Inválida';
+
                     const activeGoals = pei.goals ? pei.goals.filter(goal => goal.status === 'ativo') : [];
                     const activeGoalsCount = activeGoals.length;
                     let activeGoalsHtml = '<ul>';
@@ -1810,7 +1824,7 @@
                             <div class="pei-card-item">
                                 <i class="fas fa-calendar-alt"></i>
                                 <span class="label">Criado em:</span>
-                                <span class="value">${pei.data_criacao}</span>
+                                <span class="value">${formattedDateCard}</span>
                             </div>
                             <div class="pei-card-item full-width">
                                 <i class="fas fa-user-tie"></i>
@@ -1851,7 +1865,15 @@
 
                     // Preenche o cabeçalho do modal
                     peiModalTitle.textContent = `PEI: ${pei.titulo}`;
-                    peiModalCreatedDate.innerHTML = `<i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}`;
+                    
+                    // Formatação da data para DD/MM/YYYY HH:MM:SS
+                    const dataCriacao = pei.data_criacao ? new Date(pei.data_criacao) : null; // Use directly
+                    const formattedDateModal = dataCriacao && !isNaN(dataCriacao) ? dataCriacao.toLocaleString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    }) : 'Data Inválida';
+                    peiModalCreatedDate.innerHTML = `<i class="fas fa-calendar-alt"></i> Criado em: ${formattedDateModal}`;
+
                     peiModalProfessionals.innerHTML = `<i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`;
                     peiModalStatus.innerHTML = `Status: <span class="goal-status ${pei.status === 'ativo' ? 'active-status' : 'finalizado-status'}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span>`;
 
@@ -1859,10 +1881,11 @@
                     const isPeiFinalized = pei.status === 'finalizado';
 
                     // Renderiza Metas Ativas
-                    const activeGoals = pei.goals.filter(goal => goal.status === 'ativo');
+                    const goals = pei.goals || []; // Ensure goals is an array
+                    const activeGoals = goals.filter(goal => goal.status === 'ativo');
                     if (activeGoals.length > 0) {
                         activeGoals.forEach(goal => {
-                            const goalHtml = createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized);
+                            const goalHtml = createGoalCard(pei, goal, canModifyPeiContent, isPeiFinalized); // Pass pei object
                             peiModalActiveGoals.insertAdjacentHTML('beforeend', goalHtml);
                         });
                     } else {
@@ -1870,10 +1893,10 @@
                     }
 
                     // Renderiza Metas Finalizadas
-                    const finalizedGoals = pei.goals.filter(goal => goal.status === 'finalizado');
+                    const finalizedGoals = goals.filter(goal => goal.status === 'finalizado');
                     if (finalizedGoals.length > 0) {
                         finalizedGoals.forEach(goal => {
-                            const goalHtml = createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized); // Reutiliza a função, mas desabilita ações
+                            const goalHtml = createGoalCard(pei, goal, canModifyPeiContent, isPeiFinalized); // Pass pei object
                             peiModalFinalizedGoals.insertAdjacentHTML('beforeend', goalHtml);
                         });
                     } else {
@@ -1902,17 +1925,30 @@
                 }
 
                 // Helper para criar o HTML de um Goal Card para o modal de detalhes do PEI (Simplificado)
-                function createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized) {
+                function createGoalCard(pei, goal, canModifyPeiContent, isPeiFinalized) { // Renamed from createGoalCardHtml
                     const isGoalFinalized = goal.status === 'finalizado';
                     const goalActionsDisabled = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
 
                     let targetsHtml = '';
                     if (goal.targets && goal.targets.length > 0) {
-                        goal.targets.forEach(target => {
+                        goal.targets.forEach((target, index) => { // Added index for toggle/delete target buttons
+                            const targetStatusIcon = target.concluido ? 'fa-check-square' : 'fa-square';
+                            const toggleButtonIcon = target.concluido ? 'fa-undo' : 'fa-check';
+                            const toggleButtonTitle = target.concluido ? 'Marcar como Não Concluído' : 'Marcar como Concluído';
                             targetsHtml += `
                                 <li class="target-item ${target.concluido ? 'concluido' : ''}">
-                                    <i class="fas fa-bullseye"></i>
+                                    <i class="fas ${targetStatusIcon}"></i>
                                     <span class="target-text-content">${target.descricao}</span>
+                                    ${IS_ADMIN && !isPeiFinalized && !isGoalFinalized ? `
+                                        <button type="button" class="btn-toggle-target-status text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 ml-auto"
+                                                data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-index="${index}" title="${toggleButtonTitle}">
+                                            <i class="fas ${toggleButtonIcon}"></i>
+                                        </button>
+                                        <button type="button" class="btn-delete-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 ml-2"
+                                                data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-index="${index}" title="Apagar Alvo">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    ` : ''}
                                 </li>
                             `;
                         });
@@ -1924,27 +1960,33 @@
                         <div class="goal-card ${isGoalFinalized ? 'finalizado' : ''}" id="goal-${pei.id}-${goal.id}">
                             <div class="goal-card-header">
                                 <strong>Meta: ${goal.descricao}</strong>
-                                <span class="goal-status ${isGoalFinalized ? 'finalizado-status' : 'active-status'}">${isGoalFinalized ? 'Finalizada' : 'Ativa'}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="goal-status ${isGoalFinalized ? 'finalizado-status' : 'active-status'}">${isGoalFinalized ? 'Finalizada' : 'Ativa'}</span>
+                                    <div class="goal-actions">
+                                        ${IS_ADMIN && !isPeiFinalized && !isGoalFinalized ? `
+                                            <button type="button" class="btn btn-success btn-sm btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" title="Finalizar Meta">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger-outline btn-sm btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" title="Apagar Meta">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        ` : IS_ADMIN && isGoalFinalized ? `
+                                            <button type="button" class="btn btn-danger-outline btn-sm btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" title="Apagar Meta">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
                             </div>
                             <ul class="targets-list">
                                 ${targetsHtml}
                             </ul>
-                            ${IS_ADMIN ? `
+                            ${IS_ADMIN && !isPeiFinalized && !isGoalFinalized ? `
                                 <div class="add-target-group mt-3">
-                                    <input type="text" class="new-target-input form-input" placeholder="Novo alvo para esta meta" ${goalActionsDisabled}>
-                                    <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>Adicionar</button>
+                                    <input type="text" class="new-target-input form-input w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out" placeholder="Novo alvo para esta meta">
+                                    <button type="button" class="btn btn-sm btn-primary btn-add-target" data-pei-id="${pei.id}" data-goal-id="${goal.id}">Adicionar</button>
                                 </div>
                             ` : ''}
-                            <div class="pei-card-actions mt-3 border-t pt-3 flex justify-start gap-2 ${goalActionsDisabled ? 'disabled-actions' : ''}">
-                                <button type="button" class="btn btn-sm btn-success btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>
-                                    <i class="fas fa-check-circle"></i> Finalizar Meta
-                                </button>
-                                ${IS_ADMIN ? `
-                                    <button type="button" class="btn btn-sm btn-danger-outline btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}" ${goalActionsDisabled}>
-                                        <i class="fas fa-trash"></i> Excluir
-                                    </button>
-                                ` : ''}
-                            </div>
                         </div>
                     `;
                 }
@@ -2016,7 +2058,11 @@
 
                     // Metadados do PEI
                     checkPageBreak(10);
-                    doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`, margin, yPos);
+                    const formattedDatePdf = pei.data_criacao ? new Date(pei.data_criacao).toLocaleDateString('pt-BR', {
+                        day: '2-digit', month: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    }) : 'N/A';
+                    doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${formattedDatePdf} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`, margin, yPos);
                     yPos += 6;
                     doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
                     yPos += 8;
@@ -2036,8 +2082,8 @@
                                 doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
                                 goal.targets.forEach((target) => {
                                     checkPageBreak(contentLineHeight);
-                                    const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
-                                    doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
+                                    const targetStatus = target.concluido ? 'Concluído' : 'Pendente'; // Use 'concluido' property
+                                    doc.text(`  - Alvo: ${target.descricao} (Status: ${targetStatus})`, margin + 10, yPos);
                                     yPos += contentLineHeight;
                                 });
                             } else {
@@ -2055,6 +2101,7 @@
 
                     // Salva o PDF com um nome descritivo
                     doc.save(`pei-${pei.titulo.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                    displayFlashMessage('success', 'PDF do PEI gerado com sucesso!');
                 }
 
                 // Função para imprimir todos os PEIs em um único documento PDF
@@ -2117,7 +2164,11 @@
 
                         // Metadados do PEI
                         checkPageBreak(10);
-                        doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${pei.data_criacao} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`, margin, yPos);
+                        const formattedDatePdf = pei.data_criacao ? new Date(pei.data_criacao).toLocaleString('pt-BR', {
+                            day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit', second: '2-digit'
+                        }) : 'N/A';
+                        doc.setFontSize(9).setFont("helvetica", "italic").text(`Criado em: ${formattedDatePdf} | Status: ${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)} | Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}`, margin, yPos);
                         yPos += 6;
                         doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
                         yPos += 8;
@@ -2137,8 +2188,8 @@
                                     doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
                                     goal.targets.forEach((target) => {
                                         checkPageBreak(contentLineHeight);
-                                        const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
-                                        doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
+                                        const targetStatus = target.concluido ? 'Concluído' : 'Pendente'; // Use 'concluido' property
+                                        doc.text(`  - Alvo: ${target.descricao} (Status: ${targetStatus})`, margin + 10, yPos);
                                         yPos += contentLineHeight;
                                     });
                                 } else {
@@ -2205,3 +2256,4 @@
     </script>
 </body>
 </html>
+v12
