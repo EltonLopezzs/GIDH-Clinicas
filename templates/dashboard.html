@@ -65,7 +65,7 @@
      ============================================
     */
    .sidebar {
-     width: 260px;
+     width: 280px; /* Aumentado de 260px para 280px */
      background: linear-gradient(180deg, var(--primary), var(--accent));
      color: white;
      position: fixed;
@@ -93,7 +93,7 @@
    }
    .sidebar-header .logo i { font-size: 1.8rem; }
    
-   .sidebar.collapsed { width: 78px; }
+   .sidebar.collapsed { width: 88px; } /* Ajustado de 78px para 88px */
    .sidebar.collapsed .sidebar-header .logo span { display: none; }
    .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
 
@@ -113,6 +113,58 @@
    .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
    .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
 
+    /* Estilos para Submenu Financeiro */
+    .sidebar nav ul li.has-submenu {
+        position: relative;
+    }
+
+    .sidebar nav ul li.has-submenu .submenu-toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .sidebar nav ul li.has-submenu .submenu-arrow {
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar nav ul li.has-submenu.open .submenu-arrow {
+        transform: rotate(180deg);
+    }
+
+    .sidebar nav ul li.has-submenu .submenu {
+        list-style: none;
+        padding: 0;
+        margin-left: 1.5rem; /* Indent sub-menu items */
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+        background: rgba(255, 255, 255, 0.05); /* Slightly different background for sub-menu */
+        border-radius: 8px;
+    }
+
+    .sidebar nav ul li.has-submenu.open .submenu {
+        max-height: 500px; /* Adjust as needed to fit all sub-items */
+        transition: max-height 0.5s ease-in;
+    }
+
+    .sidebar nav ul li.has-submenu .submenu li a {
+        padding: 0.75rem 1rem 0.75rem 2.5rem; /* Adjust padding for sub-items */
+        font-size: 0.9rem;
+        border-radius: 0; /* No rounded corners for individual sub-items */
+    }
+
+    .sidebar nav ul li.has-submenu .submenu li:last-child a {
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    /* Ajustar estado colapsado para o submenu */
+    .sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
+    .sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
+    .sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
+
+
    .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
    .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
    .sidebar-footer button, .sidebar-footer a {
@@ -131,10 +183,11 @@
      ============================================
     */
    .main-content {
-     flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-     display: flex; flex-direction: column; width: calc(100% - 260px);
+     flex: 1; margin-left: 280px; /* Ajustado de 260px para 280px */
+     transition: margin-left 0.3s ease;
+     display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado de 260px para 280px */
    }
-   .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
+   .main-content.collapsed { margin-left: 88px; width: calc(100% - 88px); } /* Ajustado de 78px para 88px */
 
    .topbar {
      background-color: var(--card); color: var(--text); padding: 0 1.5rem;
@@ -249,7 +302,7 @@
    @media (max-width: 768px) {
      .sidebar { transform: translateX(-100%); }
      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-     .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
+     .sidebar.collapsed { transform: translateX(-100%); width: 280px; } /* Ajustado de 260px para 280px */
      .sidebar.collapsed nav ul li a,
      .sidebar.collapsed .sidebar-footer button,
      .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
@@ -313,40 +366,8 @@
 </head>
 <body>
   <div class="layout">
-    <aside class="sidebar">
-      <div class="sidebar-inner-content">
-        <div class="sidebar-header">
-          <a href="{{ url_for('index') }}" class="logo">
-            <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-          </a>
-        </div>
-                <nav>
-                    <ul>
-                        <li class="active"><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li> 
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                         <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-        <div class="sidebar-footer">
-          <button id="theme-toggle" aria-label="Alternar tema">
-            <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-          </button>
-          <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
-        </div>
-      </div>
-    </aside>
+    <!-- Inclui a barra de navegação lateral a partir do arquivo Nav.html -->
+    {% include 'Nav.html' %}
 
     <div class="main-content">
       <header class="topbar">
@@ -520,90 +541,10 @@
     data-desempenho-profissional='{{ dados_desempenho_profissional | safe }}'>
 
   document.addEventListener('DOMContentLoaded', () => {
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
-    const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-    const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-    const themeToggle = document.querySelector('#theme-toggle');
-    const htmlEl = document.documentElement;
-
     let charts = {};
 
-    const getCssVar = (varName) => getComputedStyle(htmlEl).getPropertyValue(varName).trim();
+    const getCssVar = (varName) => getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
     
-    function setupSidebar() {
-      if (!sidebar || !mainContent) return;
-      const updateDesktopToggleIcon = () => {
-        if (!toggleBtnDesktop) return;
-        const icon = toggleBtnDesktop.querySelector('i');
-        if (sidebar.classList.contains('collapsed')) {
-          icon.classList.replace('fa-bars-staggered', 'fa-bars');
-        } else {
-          icon.classList.replace('fa-bars', 'fa-bars-staggered');
-        }
-      };
-      const applyInitialState = () => {
-        if (window.innerWidth > 768) {
-          if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebar.classList.add('collapsed');
-            mainContent.classList.add('collapsed');
-          }
-        } else {
-            sidebar.classList.remove('open', 'collapsed');
-            mainContent.classList.remove('collapsed');
-        }
-        updateDesktopToggleIcon();
-      };
-      toggleBtnDesktop?.addEventListener('click', () => {
-        sidebar.classList.toggle('collapsed');
-        mainContent.classList.toggle('collapsed');
-        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-        updateDesktopToggleIcon();
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
-      });
-      menuBtnMobile?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sidebar.classList.toggle('open');
-        const icon = menuBtnMobile.querySelector('i');
-        icon.classList.toggle('fa-times', sidebar.classList.contains('open'));
-        icon.classList.toggle('fa-bars', !sidebar.classList.contains('open'));
-      });
-      document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-          sidebar.classList.remove('open');
-          const icon = menuBtnMobile.querySelector('i');
-          icon.classList.remove('fa-times');
-          icon.classList.add('fa-bars');
-        }
-      });
-      applyInitialState();
-      window.addEventListener('resize', applyInitialState);
-    }
-    
-    function setupTheme() {
-        if (!themeToggle) return;
-        const updateThemeIcon = (theme) => {
-            const icon = themeToggle.querySelector('i');
-            if (theme === 'dark') {
-                icon.classList.replace('fa-sun', 'fa-moon');
-            } else {
-                icon.classList.replace('fa-moon', 'fa-sun');
-            }
-        };
-        const applyInitialTheme = () => {
-            const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            htmlEl.setAttribute('data-theme', storedTheme);
-            updateThemeIcon(storedTheme);
-        };
-        themeToggle.addEventListener('click', () => {
-            const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            htmlEl.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
-        });
-        applyInitialTheme();
-    }
-
     function renderCharts() {
         Object.values(charts).forEach(chart => chart?.destroy());
 
@@ -734,7 +675,6 @@
     function setupMobileSlider() {
       const container = document.querySelector('.appointments-container-mobile');
       if (!container) return;
-      // Seleciona apenas os cards que foram renderizados (não estão escondidos pelo Jinja)
       const cards = container.querySelectorAll('.agendamento-card-mobile');
       const prevBtn = document.getElementById('prev-card-btn');
       const nextBtn = document.getElementById('next-card-btn');
@@ -750,7 +690,7 @@
           if (isExpanded) {
               container.classList.add('expanded-view');
               cards.forEach(card => card.style.display = 'block');
-              if(toggleBtn) toggleBtn.textContent = 'Ver Todos';
+              if(toggleBtn) toggleBtn.textContent = 'Ver um por um';
           } else {
               container.classList.remove('expanded-view');
               cards.forEach((card, index) => {
@@ -759,7 +699,7 @@
               if(counter) counter.textContent = `${currentIndex + 1} de ${cards.length}`;
               if(prevBtn) prevBtn.disabled = currentIndex === 0;
               if(nextBtn) nextBtn.disabled = currentIndex >= cards.length - 1;
-              if(toggleBtn) toggleBtn.textContent = 'Ver um por um';
+              if(toggleBtn) toggleBtn.textContent = 'Ver Todos';
           }
       };
 
@@ -770,45 +710,6 @@
       updateView();
     }
 
-    // --- CORREÇÃO DO LOGOUT ---
-    // A lógica foi movida para aqui, unificada e corrigida.
-    function setupLogout() {
-        const logoutButton = document.getElementById('logoutButton');
-        if (!logoutButton) return;
-
-        logoutButton.addEventListener('click', (event) => {
-            // Previne o comportamento padrão do link (que é navegar para '#')
-            event.preventDefault(); 
-            
-            console.log("Tentando fazer logout...");
-
-            // Faz a requisição POST para a sua rota de logout no Flask
-            fetch("{{ url_for('logout') }}", { 
-                method: 'POST',
-                // Adicionar headers se necessário (ex: CSRF token)
-            })
-            .then(response => {
-                // Após a tentativa de logout ser bem-sucedida ou não, 
-                // redireciona o usuário para a página de login.
-                // O backend deve ter limpado a sessão.
-                window.location.href = "{{ url_for('login_page') }}";
-            })
-            .catch(error => {
-                console.error('Erro ao tentar fazer logout:', error);
-                // Mesmo se a requisição fetch falhar (ex: problema de rede),
-                // ainda tenta redirecionar para a página de login.
-                window.location.href = "{{ url_for('login_page') }}";
-            });
-        });
-    }
-
-    // --- INICIALIZAÇÃO DAS FUNÇÕES ---
-    setupSidebar();
-    setupTheme();
-    setupLogout(); // Chamada da função de logout corrigida
-    renderCharts();
-    setupMobileSlider();
-
     // Observador para redesenhar gráficos ao mudar o tema
     const themeObserver = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -817,8 +718,10 @@
             }
         });
     });
-    themeObserver.observe(htmlEl, { attributes: true });
+    themeObserver.observe(document.documentElement, { attributes: true });
 
+    renderCharts();
+    setupMobileSlider();
   });
 </script>
 </body>

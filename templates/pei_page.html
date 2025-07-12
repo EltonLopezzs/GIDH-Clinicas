@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,53 +14,53 @@
     <!-- Tailwind CSS CDN para facilitar o estilo -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Define as variáveis de cores para os temas claro e escuro */
+        /* ============================================
+         --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
+         ============================================
+        */
         :root {
-            --primary: #5587c2;
-            --accent: #9b53b8;
-            --primary-light: #c8dcf3;
-            --secondary: #f59e0b;
-            --danger: #dc2626;
-            --success: #16a34a;
-            --warning: #f59e0b;
-            --info: #0ea5e9;
-            --border-color: #e2e8f0;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #0f172a;
-            --muted: #64748b;
+            --bg: #f1f5f9;              /* Gray-100 */
+            --card: #ffffff;            /* White */
+            --text: #0f172a;            /* Gray-900 */
+            --muted: #64748b;           /* Gray-500 */
+            --accent: #9b53b8;          /* Purple-500 */
+            --primary: #5587c2;         /* Blue-500 */
+            
+            --primary-light: #c8dcf3;   /* Blue-100 */
+            --primary-dark: #115e59;    /* Teal-800 */
+            --secondary: #f59e0b;       /* Yellow-500 */
+            --danger: #dc2626;          /* Red-600 */
+            --success: #16a34a;         /* Green-600 */
+            --warning: #f59e0b;         /* Yellow-500 */
+            --info: #0ea5e9;            /* Sky-500 */
+            --border-color: #e2e8f0;    /* Gray-200 */
+
+            --dark-bg: #0f172a;         /* Gray-900 */
+            --dark-card: #1e293b;       /* Gray-800 */
+            --dark-text: #f1f5f9;       /* Gray-100 */
+            --dark-muted: #94a3b8;      /* Gray-400 */
+            --dark-border-color: #334155; /* Gray-600 */
+            
+            color-scheme: light;
 
             /* Cores para os status dos PEIs/Metas */
             --status-ativo: #0ea5e9; /* Azul */
             --status-finalizado: #16a34a; /* Verde */
-            
-            color-scheme: light;
         }
 
-        /* Aplica as variáveis para o tema escuro quando o atributo data-theme="dark" está presente */
         [data-theme="dark"] {
-            --primary: #7ba5d6;
-            --accent: #b974c7;
-            --primary-light: #4f7db8;
-            --secondary: #fbbf24;
-            --danger: #f87171;
-            --success: #34d399;
-            --warning: #fbbf24;
-            --info: #38bdf8;
-            --border-color: #475569;
-            --bg: #1e293b;
-            --card: #334155;
-            --text: #f1f5f9;
-            --muted: #94a3b8;
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
+            color-scheme: dark;
 
             /* Cores para os status em tema escuro (opcionalmente ajustadas) */
             --status-ativo: #38bdf8;
             --status-finalizado: #22c55e;
-            
-            color-scheme: dark;
         }
 
-        /* Estilos globais reset e fonte */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; overflow-x: hidden; }
         body {
@@ -75,78 +75,135 @@
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* --- Sidebar (Barra de Navegação Lateral) --- */
+        /* ============================================
+          --- SIDEBAR ---
+          ============================================
+        */
         .sidebar {
-            width: 260px;
+            width: 280px; /* Aumentado de 260px para 280px */
             background: linear-gradient(180deg, var(--primary), var(--accent));
             color: white;
             position: fixed;
-            top: 0; left: 0; height: 100vh;
+            top: 0; left: 0;
+            height: 100vh;
             transition: width 0.3s ease, transform 0.3s ease;
-            z-index: 1000; display: flex; flex-direction: column;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
         }
         .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
         .sidebar-header {
-            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
+            padding: 0 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .sidebar-header .logo {
             font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
-            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
+            display: flex; align-items: center; gap: 0.75rem;
+            white-space: nowrap; overflow: hidden;
         }
         .sidebar-header .logo i { font-size: 1.8rem; }
-        .sidebar.collapsed { width: 78px; }
+        
+        .sidebar.collapsed { width: 88px; } /* Ajustado de 78px para 88px */
         .sidebar.collapsed .sidebar-header .logo span { display: none; }
         .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+
         .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
+        .sidebar.collapsed nav { padding: 0 0.5rem; }
         .sidebar nav ul { list-style: none; padding: 0; }
         .sidebar nav ul li { margin-bottom: 0.5rem; }
         .sidebar nav ul li a {
             color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
-            padding: 0.75rem 1rem;
-            gap: 1rem; border-radius: 8px; font-size: 0.95rem;
-            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
+            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
+            font-weight: 500; white-space: nowrap; overflow: hidden;
+            transition: background 0.2s ease, color 0.2s ease;
         }
-        .sidebar nav ul li a i {
-            width: 24px;
-            height: 24px;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
         .sidebar.collapsed nav ul li a span { display: none; }
-        .sidebar.collapsed nav ul li a {
-            justify-content: center;
-            padding: 0.75rem;
-            gap: 0;
-            align-items: center;
-        }
-        /* Garante que o ícone se centralize perfeitamente quando recolhido */
-        .sidebar.collapsed nav ul li a i {
-            margin: 0 auto;
-        }
+        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
         .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
+
+        /* Estilos para Submenu Financeiro */
+        .sidebar nav ul li.has-submenu {
+            position: relative;
+        }
+
+        .sidebar nav ul li.has-submenu .submenu-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar nav ul li.has-submenu .submenu-arrow {
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar nav ul li.has-submenu.open .submenu-arrow {
+            transform: rotate(180deg);
+        }
+
+        .sidebar nav ul li.has-submenu .submenu {
+            list-style: none;
+            padding: 0;
+            margin-left: 1.5rem; /* Indent sub-menu items */
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: rgba(255, 255, 255, 0.05); /* Slightly different background for sub-menu */
+            border-radius: 8px;
+        }
+
+        .sidebar nav ul li.has-submenu.open .submenu {
+            max-height: 500px; /* Adjust as needed to fit all sub-items */
+            transition: max-height 0.5s ease-in;
+        }
+
+        .sidebar nav ul li.has-submenu .submenu li a {
+            padding: 0.75rem 1rem 0.75rem 2.5rem; /* Adjust padding for sub-items */
+            font-size: 0.9rem;
+            border-radius: 0; /* No rounded corners for individual sub-items */
+        }
+
+        .sidebar nav ul li.has-submenu .submenu li:last-child a {
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        /* Ajustar estado colapsado para o submenu */
+        .sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
+        .sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
+        .sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
+
+
         .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
         .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
         .sidebar-footer button, .sidebar-footer a {
-            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
-            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
-            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
-            font-size: 0.95rem; text-decoration: none;
+            background: none; border: none; cursor: pointer; color: #e2e8f0;
+            padding: 0.75rem 1rem; border-radius: 8px; width: 100%;
+            display: flex; align-items: center; gap: 1rem;
+            transition: background 0.2s ease, color 0.2s ease;
+            font-family: 'Inter', sans-serif; font-size: 0.95rem; text-decoration: none;
         }
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar.collapsed .sidebar-footer span { display: none; }
         .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
 
-        /* --- Main Content & Topbar (Conteúdo Principal e Barra Superior) --- */
+        /* ============================================
+          --- CONTEÚDO PRINCIPAL & TOPBAR ---
+          ============================================
+        */
         .main-content {
-            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 260px);
+            flex: 1; margin-left: 280px; /* Ajustado de 260px para 280px */
+            transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado de 260px para 280px */
         }
-        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
+        .main-content.collapsed { margin-left: 88px; width: calc(100% - 88px); } /* Ajustado de 78px para 88px */
+
         .topbar {
             background-color: var(--card); color: var(--text); padding: 0 1.5rem;
             display: flex; align-items: center; justify-content: space-between;
@@ -161,8 +218,15 @@
             transition: background 0.2s ease, color 0.2s ease;
         }
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
-        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+        .toggle-btn-desktop { display: none; }
+        .menu-btn-mobile { display: block; }
+        @media(min-width: 769px) {
+            .toggle-btn-desktop { display: grid; }
+            .menu-btn-mobile { display: none; }
+        }
 
+        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+        
         /* --- Buttons (Botões) --- */
         .btn {
             padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
@@ -713,7 +777,7 @@
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
+            .sidebar.collapsed { transform: translateX(-100%); width: 280px; } /* Ajustado de 260px para 280px */
             .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
             .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
@@ -866,40 +930,8 @@
 </head>
 <body>
     <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
-                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-                    </button>
-                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
-                </div>
-            </div>
-        </aside>
+        <!-- Inclui a barra de navegação lateral a partir do arquivo Nav.html -->
+        {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
@@ -989,17 +1021,17 @@
                             <div class="form-group">
                                 <label for="pei_titulo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título do PEI</label>
                                 <input type="text" id="pei_titulo" name="titulo" required placeholder="Ex: Plano para Desenvolvimento Motor"
-                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                             </div>
                             <div class="form-group">
                                 <label for="pei_data_criacao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Criação</label>
                                 <input type="date" id="pei_data_criacao" name="data_criacao" value="{{ current_date_iso }}" required
-                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                             </div>
                             <div class="form-group">
                                 <label for="profissionais_ids" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profissionais Associados (Múltiplos)</label>
                                 <select id="profissionais_ids" name="profissionais_ids[]" multiple required
-                                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                                     {% for professional in all_professionals %}
                                         <option value="{{ professional.id }}">{{ professional.nome }}</option>
                                     {% endfor %}
@@ -1222,116 +1254,8 @@
             }
 
             // --- Lógica de UI Geral (Sidebar, Tema, Logout) ---
-            function setupCommonUI() {
-                const sidebar = document.querySelector('.sidebar');
-                const mainContent = document.querySelector('.main-content');
-                const menuBtnMobile = document.querySelector('.menu-btn-mobile'); // Botão de menu para mobile
-                const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop'); // Botão de alternar para desktop
-                const themeToggle = document.getElementById('theme-toggle'); // Botão de alternar tema
-                const logoutButton = document.getElementById('logoutButton'); // Botão de logout
-
-                // 1. Lógica do Tema (Modo Escuro/Claro)
-                if (themeToggle) {
-                    const themeIcon = themeToggle.querySelector('i');
-                    // Tenta obter o tema salvo no localStorage, ou usa 'light' como padrão
-                    const currentTheme = localStorage.getItem('theme') || 'light';
-
-                    htmlEl.dataset.theme = currentTheme; // Define o atributo data-theme no elemento <html>
-                    themeIcon.className = currentTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun'; // Altera o ícone
-
-                    themeToggle.addEventListener('click', () => {
-                        const newTheme = htmlEl.dataset.theme === 'dark' ? 'light' : 'dark'; // Alterna o tema
-                        htmlEl.dataset.theme = newTheme;
-                        localStorage.setItem('theme', newTheme); // Salva a preferência no localStorage
-                        themeIcon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                    });
-                }
-
-                // 2. Lógica da Sidebar (Expandir/Recolher)
-                if (sidebar && mainContent) {
-                    // Atualiza o ícone do botão de alternar para desktop
-                    const updateDesktopToggleIcon = () => {
-                        if (!toggleBtnDesktop) return; // Garante que o botão exista
-                        const icon = toggleBtnDesktop.querySelector('i');
-                        icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                    };
-
-                    // Aplica o estado inicial da sidebar com base na largura da janela e localStorage
-                    const applyInitialState = () => {
-                        if (window.innerWidth > 768) { // Visualização desktop
-                            if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                                sidebar.classList.add('collapsed');
-                                mainContent.classList.add('collapsed');
-                            } else {
-                                sidebar.classList.remove('collapsed');
-                                mainContent.classList.remove('collapsed');
-                            }
-                            sidebar.classList.remove('open'); // Garante que a classe 'open' do mobile seja removida
-                            updateDesktopToggleIcon(); // Atualiza o ícone do botão desktop
-                        } else { // Visualização mobile
-                            sidebar.classList.remove('open', 'collapsed'); // Inicia limpo, nem aberto nem recolhido
-                            mainContent.classList.remove('collapsed');
-                        }
-                    };
-
-                    // Lógica para o botão de alternar em desktop
-                    if (toggleBtnDesktop) {
-                        toggleBtnDesktop.addEventListener('click', () => {
-                            sidebar.classList.toggle('collapsed');
-                            mainContent.classList.toggle('collapsed');
-                            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                            updateDesktopToggleIcon(); // Atualiza o ícone ao clicar
-                        });
-                    }
-
-                    // Lógica para o botão de menu em mobile
-                    if (menuBtnMobile) {
-                        menuBtnMobile.addEventListener('click', (e) => {
-                            e.stopPropagation(); // Impede que o clique se propague e feche imediatamente
-                            sidebar.classList.toggle('open');
-                            const icon = menuBtnMobile.querySelector('i');
-                            if (sidebar.classList.contains('open')) {
-                                icon.classList.replace('fa-bars', 'fa-times'); // Muda para ícone 'x'
-                            } else {
-                                icon.classList.replace('fa-times', 'fa-bars'); // Volta para ícone 'barras'
-                            }
-                        });
-                    }
-
-                    // Fecha a sidebar ao clicar fora em mobile
-                    document.addEventListener('click', (e) => {
-                        // Aplica apenas em mobile e se a sidebar estiver aberta
-                        if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
-                            // Verifica se o clique foi fora da sidebar E não no botão de menu mobile
-                            if (!sidebar.contains(e.target) && (!menuBtnMobile || !menuBtnMobile.contains(e.target))) {
-                                sidebar.classList.remove('open');
-                                if (menuBtnMobile) { // Atualiza o ícone de volta para barras
-                                    const icon = menuBtnMobile.querySelector('i');
-                                    icon.classList.replace('fa-times', 'fa-bars');
-                                }
-                            }
-                        }
-                    });
-
-                    // Aplica o estado inicial ao carregar e redimensionar a janela
-                    applyInitialState();
-                    window.addEventListener('resize', applyInitialState);
-                }
-
-                // 3. Lógica de Logout
-                if (logoutButton && auth) {
-                    logoutButton.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        firebaseSignOut(auth).then(() => {
-                            window.location.href = '/login';
-                        }).catch((error) => {
-                            console.error('Erro no logout:', error);
-                            // Caso haja um erro no Firebase logout, ainda tenta redirecionar
-                            window.location.href = '/login';
-                        });
-                    });
-                }
-            }
+            // A lógica da sidebar, tema e logout foi movida para Nav.html
+            // e será incluída automaticamente.
 
             // --- Lógica Específica da Página de PEI ---
             function setupPeiPage() {
@@ -1480,7 +1404,7 @@
                         const targetCount = container.children.length + 1; // Conta os alvos existentes para o placeholder
                         newItem.innerHTML = `
                             <input type="text" name="targets[]" placeholder="Descrição do Alvo ${targetCount}" required
-                                            class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                                    class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                             <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -1742,6 +1666,80 @@
                     } catch (error) {
                         console.error('Erro ao finalizar PEI:', error);
                         displayFlashMessage('danger', `Erro de rede ou servidor ao finalizar PEI: ${error.message}`);
+                    } finally {
+                        hideLoading();
+                    }
+                }
+
+                // Toggle target status (concluido/pendente)
+                async function toggleTargetStatus(peiId, goalId, targetIndex) {
+                    showLoading();
+                    try {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/toggle_target_status`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_index: targetIndex })
+                        });
+
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            if (response.ok && data.success) {
+                                allPeisData = data.peis;
+                                displayFlashMessage('success', data.message);
+                                renderPeis(allPeisData);
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    openPeiDetailsModal(updatedPeiData);
+                                }
+                            } else {
+                                displayFlashMessage('danger', `Erro ao alternar status do alvo: ${data.message || 'Erro desconhecido.'}`);
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao alternar status do alvo: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao alternar status do alvo. Por favor, tente novamente. Detalhes no console.');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao alternar status do alvo:', error);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao alternar status do alvo: ${error.message}`);
+                    } finally {
+                        hideLoading();
+                    }
+                }
+
+                // Delete target
+                async function deleteTarget(peiId, goalId, targetIndex) {
+                    showLoading();
+                    try {
+                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/delete_target`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_index: targetIndex })
+                        });
+
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            if (response.ok && data.success) {
+                                allPeisData = data.peis;
+                                displayFlashMessage('success', data.message);
+                                renderPeis(allPeisData);
+                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
+                                if (updatedPeiData) {
+                                    openPeiDetailsModal(updatedPeiData);
+                                }
+                            } else {
+                                displayFlashMessage('danger', `Erro ao apagar alvo: ${data.message || 'Erro desconhecido.'}`);
+                            }
+                        } else {
+                            const errorText = await response.text();
+                            console.error('Erro de rede ou servidor ao apagar alvo: Resposta não é JSON.', errorText);
+                            displayFlashMessage('danger', 'Erro de rede ou servidor ao apagar alvo. Por favor, tente novamente. Detalhes no console.');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao apagar alvo:', error);
+                        displayFlashMessage('danger', `Erro de rede ou servidor ao apagar alvo: ${error.message}`);
                     } finally {
                         hideLoading();
                     }
@@ -2058,7 +2056,7 @@
 
                     // Metadados do PEI
                     checkPageBreak(10);
-                    const formattedDatePdf = pei.data_criacao ? new Date(pei.data_criacao).toLocaleDateString('pt-BR', {
+                    const formattedDatePdf = pei.data_criacao ? new Date(pei.data_criacao).toLocaleString('pt-BR', {
                         day: '2-digit', month: '2-digit', year: 'numeric',
                         hour: '2-digit', minute: '2-digit', second: '2-digit'
                     }) : 'N/A';
@@ -2246,11 +2244,46 @@
                             newTargetInput.disabled = false;
                         }
                     }
+
+                    // Event listener for toggling target status (delegated)
+                    const toggleTargetStatusBtn = target.closest('.btn-toggle-target-status');
+                    if (toggleTargetStatusBtn) {
+                        e.preventDefault();
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para alterar o status dos alvos.');
+                            return;
+                        }
+                        const peiId = toggleTargetStatusBtn.dataset.peiId;
+                        const goalId = toggleTargetStatusBtn.dataset.goalId;
+                        const targetIndex = parseInt(toggleTargetStatusBtn.dataset.targetIndex);
+                        await toggleTargetStatus(peiId, goalId, targetIndex);
+                    }
+
+                    // Event listener for deleting target (delegated)
+                    const deleteTargetBtn = target.closest('.btn-delete-target');
+                    if (deleteTargetBtn) {
+                        e.preventDefault();
+                        if (!IS_ADMIN) {
+                            displayFlashMessage('danger', 'Você não tem permissão para apagar alvos.');
+                            return;
+                        }
+                        const peiId = deleteTargetBtn.dataset.peiId;
+                        const goalId = deleteTargetBtn.dataset.goalId;
+                        const targetIndex = parseInt(deleteTargetBtn.dataset.targetIndex);
+                        
+                        // Use the confirmation modal for target deletion
+                        openConfirmDeleteModal(
+                            'Confirmar Exclusão do Alvo',
+                            'Tem certeza que deseja apagar este alvo? Esta ação não pode ser desfeita.',
+                            'delete_target', // New action type for target deletion
+                            { peiId: peiId, goalId: goalId, targetIndex: targetIndex }
+                        );
+                    }
                 });
             }
 
             // --- General Initialization ---
-            setupCommonUI();
+            // setupCommonUI(); // Removido para evitar duplicação, pois Nav.html já o faz.
             setupPeiPage();
         });
     </script>
