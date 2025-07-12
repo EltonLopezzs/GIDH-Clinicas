@@ -30,6 +30,10 @@
             --text: #0f172a;
             --muted: #64748b;
 
+            /* Cores para os status dos PEIs/Metas */
+            --status-ativo: #0ea5e9; /* Azul */
+            --status-finalizado: #16a34a; /* Verde */
+            
             color-scheme: light;
         }
 
@@ -48,6 +52,10 @@
             --card: #334155;
             --text: #f1f5f9;
             --muted: #94a3b8;
+
+            /* Cores para os status em tema escuro (opcionalmente ajustadas) */
+            --status-ativo: #38bdf8;
+            --status-finalizado: #22c55e;
             
             color-scheme: dark;
         }
@@ -223,7 +231,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.6);
-            z-index: 2000;
+            z-index: 2000; /* Aumentado para garantir que fique acima de outros elementos */
             justify-content: center;
             align-items: center;
             padding: 1rem;
@@ -247,7 +255,15 @@
         }
         /* Increased max-width for addGoalModal */
         #addGoalModal .modal-content {
-            max-width: 1200px; /* Make it larger */
+            max-width: 700px; /* Make it larger for better input visibility, as requested */
+        }
+        /* Increased max-width for addPeiModal */
+        #addPeiModal .modal-content {
+            max-width: 700px; /* Increased max-width for addPeiModal, as requested */
+        }
+        /* Increased max-width for pei-details-modal */
+        #pei-details-modal .modal-content {
+            max-width: 900px; /* Increased max-width for pei-details-modal, as requested (from 700px to 900px) */
         }
         .modal-header {
             padding: 1rem 1.5rem;
@@ -291,18 +307,21 @@
         /* --- Paciente Info Card (Cartão de Informações do Paciente) --- */
         .paciente-info-card {
             background: var(--card);
-            padding: 1.5rem 2rem;
-            border-radius: 16px;
-            box-shadow: 0 6px 20px -5px rgba(0,0,0,0.1), 0 2px 8px -2px rgba(0,0,0,0.06); /* Enhanced shadow */
-            margin-bottom: 2rem;
+            padding: 1rem 1.5rem; /* Menor padding */
+            border-radius: 12px; /* Menor border-radius */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            margin-bottom: 1.5rem; /* Menor margem */
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
             transition: box-shadow 0.3s ease, transform 0.3s ease;
+            display: flex; /* Usar flexbox */
+            align-items: center; /* Alinhar verticalmente */
+            gap: 1rem; /* Espaçamento entre o ícone e o texto */
         }
         .paciente-info-card:hover {
-            transform: translateY(-5px); /* More pronounced elevation */
-            box-shadow: 0 12px 25px -8px rgba(0,0,0,0.2), 0 4px 10px -4px rgba(0,0,0,0.1);
+            transform: translateY(-3px); /* Menos elevação */
+            box-shadow: 0 8px 12px -4px rgba(0,0,0,0.15), 0 4px 6px -2px rgba(0,0,0,0.08);
         }
         .paciente-info-card::before {
             content: '';
@@ -310,47 +329,29 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 10px; /* Increased height */
+            height: 6px; /* Altura da barra menor */
             background: linear-gradient(to right, var(--primary), var(--primary-dark));
-            border-radius: 16px 16px 0 0;
+            border-radius: 12px 12px 0 0;
         }
         .paciente-info-card h3 {
-            font-size: 2rem; /* Larger font size */
-            color: var(--primary-dark); /* Color from primary palette */
-            margin-bottom: 1.5rem;
-            font-weight: 800; /* Extra bold */
-            padding-top: 0.5rem;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle text shadow */
+            font-size: 1.25rem; /* Tamanho da fonte menor */
+            color: var(--primary-dark);
+            margin: 0; /* Remover margem padrão */
+            font-weight: 700; /* Negrito */
+            padding-top: 0.25rem; /* Menor padding superior */
+            text-shadow: none; /* Remover sombra do texto */
+            flex-grow: 1; /* Ocupar espaço disponível */
         }
-        .paciente-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 0.25rem 0.5rem; /* Reduced gap */
-            font-size: 1rem; /* Slightly larger text */
-        }
-        .paciente-info-item {
-            /* Ensure items align properly in grid */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-        }
-        .paciente-info-item strong {
+        .paciente-info-card i.fas.fa-user-circle {
+            font-size: 2.5rem; /* Ícone maior */
             color: var(--muted);
-            display: block;
-            font-weight: 700; /* Bolder labels */
-            font-size: 0.85rem; /* Slightly larger, more distinct labels */
-            margin-bottom: 0.1rem; /* Reduced margin */
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
+            flex-shrink: 0; /* Não encolher */
         }
-        .paciente-info-item span {
-            font-weight: 600;
-            color: var(--text);
-            word-break: break-word;
-            display: block; /* Ensure span takes full line */
+        .paciente-info-grid { /* Não será mais usado para o nome do paciente, mas mantido para outros dados se necessário */
+            display: none; /* Oculta a grid de informações detalhadas do paciente */
         }
         [data-theme="dark"] .paciente-info-card {
-            box-shadow: 0 6px 20px -5px rgba(0,0,0,0.3), 0 2px 8px -2px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1);
         }
 
         /* Flash Messages */
@@ -402,89 +403,113 @@
             border-bottom: 2px solid var(--border-color);
             margin-bottom: 1rem;
         }
+        
+        /* NOVO: Estilos para o contêiner de cards de PEI (similar ao agendamentos.html) */
         .pei-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: 1fr; /* Um card por linha */
+            gap: 1rem; /* Espaçamento entre os cards */
+            padding-bottom: 1rem;
         }
 
-        /* New: PEI Summary Card */
-        .pei-summary-card {
-            cursor: pointer;
-            background: var(--card); padding: 1.5rem; border-radius: 16px;
-            box-shadow: 0 4px 10px -2px rgba(0,0,0,0.1), 0 2px 6px -2px rgba(0,0,0,0.05); /* Modern shadow */
-            margin-bottom: 0;
-            position: relative;
-            border-left: 8px solid var(--info); /* Default border color */
+        /* NOVO: Estilos para o card de PEI (similar ao appointment-card) */
+        .pei-card {
+            background-color: var(--card); /* Fundo do card mais claro */
+            border-radius: 12px;
+            padding: 1rem 1.5rem; /* Aumenta o padding para mais espaço, mais fino verticalmente */
+            border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            height: 100%; /* Ensure cards in a grid have equal height */
+            gap: 0.75rem; /* Aumenta o espaçamento interno */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            position: relative; /* Para a barra de status */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Sombra mais pronunciada */
         }
-        .pei-summary-card:hover {
+        .pei-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 16px -4px rgba(0,0,0,0.15), 0 4px 8px -4px rgba(0,0,0,0.08);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra maior no hover */
         }
-        .pei-summary-card.finalizado {
-            border-left-color: var(--success);
-            opacity: 0.9;
-            filter: grayscale(0.2);
-        }
-        .pei-summary-card-header {
+
+        .pei-card-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
+            padding-bottom: 0.5rem; /* Mais padding abaixo do cabeçalho */
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            position: relative; /* Added for status tag positioning */
         }
-        .pei-summary-card-header h4 {
-            font-size: 1.3rem;
-            color: var(--primary);
+        .pei-card-header h4 {
+            font-size: 1.2rem; /* Título menor */
+            font-weight: 700; /* Negrito */
+            color: var(--text); /* Cor do texto principal */
             margin: 0;
-            font-weight: 700;
         }
-        .pei-summary-card-meta {
-            font-size: 0.85rem;
-            color: var(--muted);
-            text-align: right;
-            flex-shrink: 0;
-            line-height: 1.4;
+        [data-theme="dark"] .pei-card-header h4 {
+            color: var(--dark-text); /* Cor do texto principal no modo escuro */
         }
-        .pei-summary-card-meta span { display: block; }
-        .pei-summary-card-meta i { margin-right: 0.4rem; color: var(--primary); }
-        .pei-summary-card-content {
-            font-size: 0.95rem;
-            color: var(--text);
-            line-height: 1.7;
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-        }
-        .pei-summary-card-content strong { color: var(--primary-dark); }
-        .pei-summary-card-content ul { list-style: none; padding-left: 0; margin-top: 0.5rem; }
-        .pei-summary-card-content li { margin-bottom: 0.3rem; }
-        .pei-summary-card-content li i { margin-right: 0.5rem; color: var(--info); }
 
-        /* Status tag styling for PEI summary card */
-        .pei-summary-card .status-tag {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background-color: var(--info); /* Default for active */
+        .pei-card-header .status-badge {
+            padding: 0.3rem 0.7rem; /* Aumenta o padding do badge */
+            border-radius: 9999px; /* Totalmente arredondado */
+            font-size: 0.75rem; /* Tamanho da fonte do badge */
+            font-weight: 700; /* Negrito */
             color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 0 16px 0 8px; /* Rounded top-right and bottom-right */
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            box-shadow: -2px 2px 5px rgba(0,0,0,0.1);
-            transform: translateY(-1px); /* Slightly lift it */
+            text-transform: uppercase; /* Texto em maiúsculas */
+            letter-spacing: 0.05em; /* Espaçamento entre letras */
+        }
+        .pei-card-header .status-badge.status-ativo { background-color: var(--status-ativo); }
+        .pei-card-header .status-badge.status-finalizado { background-color: var(--status-finalizado); }
+
+        .pei-card-body {
+            display: grid;
+            /* Duas colunas para distribuir melhor o conteúdo, com a primeira mais estreita para data */
+            grid-template-columns: auto 1fr; 
+            gap: 0.5rem 1.5rem; /* Aumenta o espaçamento entre os itens do corpo */
+            font-size: 0.9rem; /* Tamanho da fonte do corpo um pouco maior */
+            line-height: 1.4; /* Melhora a legibilidade de textos longos */
+        }
+        .pei-card-item {
+            display: flex;
+            align-items: flex-start; /* Alinha ícone e texto ao topo para multi-linhas */
+            gap: 0.5rem; /* Espaçamento entre ícone e texto */
+            color: var(--text);
+            word-break: break-word; /* Permite quebras de palavra em textos longos */
+            overflow-wrap: break-word; /* Garante quebras de palavra */
+        }
+        .pei-card-item.full-width { /* Nova classe para itens que ocupam a largura total */
+            grid-column: 1 / -1; /* Ocupa todas as colunas */
+        }
+        .pei-card-item i {
+            color: var(--muted); 
+            font-size: 1rem; /* Ícones um pouco maiores */
+            width: 20px; /* Largura fixa para alinhar ícones */
+            text-align: center;
+            flex-shrink: 0; /* Não encolher */
+            margin-top: 2px; /* Pequeno ajuste para alinhamento vertical */
+        }
+        .pei-card-item .label {
+            font-weight: 600; /* Labels mais fortes */
+            color: var(--muted);
+            flex-shrink: 0; /* Impede que o label encolha */
+        }
+        .pei-card-item .value {
+            font-weight: 500; /* Valor normal */
+            color: var(--text);
+            flex-grow: 1; /* Permite que o valor ocupe o espaço restante */
+        }
+        /* Específico para a lista de profissionais e metas, para quebrar em várias linhas */
+        .pei-card-item .value ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .pei-card-item .value ul li {
+            margin-bottom: 0;
+            line-height: 1.3;
         }
 
-        .pei-summary-card.finalizado .status-tag {
-            background-color: var(--success);
+        [data-theme="dark"] .pei-card-item .value {
+            color: var(--dark-text);
         }
 
         /* PEI Details Modal Styles */
@@ -521,7 +546,7 @@
         .goal-card {
             background-color: var(--card);
             border: 1px solid var(--border-color);
-            border-left: 8px solid var(--info);
+            border-left: 8px solid var(--status-ativo); /* Default border color */
             border-radius: 12px;
             padding: 1rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -532,7 +557,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         .goal-card.finalizado {
-            border-left-color: var(--success);
+            border-left-color: var(--status-finalizado);
             opacity: 0.9;
             filter: grayscale(0.2);
         }
@@ -556,9 +581,10 @@
             font-weight: 600;
             white-space: nowrap;
         }
-        .goal-status.active-status { background-color: color-mix(in srgb, var(--info) 20%, transparent); color: var(--info); }
-        .goal-status.finalizado-status { background-color: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
+        .goal-status.active-status { background-color: color-mix(in srgb, var(--status-ativo) 20%, transparent); color: var(--status-ativo); }
+        .goal-status.finalizado-status { background-color: color-mix(in srgb, var(--status-finalizado) 20%, transparent); color: var(--status-finalizado); }
 
+        /* Simplificado: Alvos como lista simples */
         .targets-list {
             list-style: none;
             padding: 0;
@@ -566,172 +592,23 @@
         }
         .target-item {
             display: flex;
-            flex-direction: column; /* Changed to column for stacking main content and details */
-            margin-bottom: 0.7rem;
+            align-items: flex-start; /* Alinha ícone e texto ao topo */
+            margin-bottom: 0.5rem;
             font-size: 0.9rem;
             color: var(--text);
-            position: relative;
-            cursor: pointer;
-            border: 1px solid transparent;
-            border-radius: 8px;
-            padding: 0.5rem;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
-        .target-item:hover {
-            background-color: var(--bg);
-            border-color: var(--border-color);
-        }
-        .target-item.expanded {
-            background-color: var(--bg);
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
-        }
-        .target-item.concluido .target-text-content { /* Apply strikethrough only to the main text */
-            text-decoration: line-through;
-            color: var(--muted);
-        }
-        .target-item i.status-icon {
+        .target-item i {
             margin-right: 0.75rem;
             font-size: 1.1rem;
             width: 20px;
             text-align: center;
             flex-shrink: 0;
-            color: var(--muted);
-            transition: color 0.2s ease;
+            color: var(--info); /* Cor para o ícone do alvo */
+            margin-top: 2px; /* Pequeno ajuste para alinhamento vertical */
         }
-        .target-item.concluido i.status-icon.fa-check-square {
-            color: var(--success);
-        }
-        .target-item .target-main-content {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            padding-right: 10px; /* Space for the expand icon */
-            position: relative; /* For expand icon positioning */
-        }
-        .target-item .target-text-content {
-            flex-grow: 1;
-        }
-        .target-item .attempts-counter {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-left: auto;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--primary-dark);
-            background-color: var(--bg); /* Changed from primary-light */
-            padding: 0.2rem 0.6rem;
-            border-radius: 15px;
-            flex-shrink: 0;
-            border: 1px solid var(--border-color); /* Added border */
-        }
-        .target-item .attempts-counter button {
-            background: none;
-            border: none;
-            color: var(--primary-dark);
-            font-size: 1rem;
-            cursor: pointer;
-            padding: 0 4px;
-            transition: color 0.2s ease;
-        }
-        .target-item .attempts-counter button:hover {
-            color: var(--primary);
-        }
-        .target-item .expand-icon {
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1rem;
-            color: var(--muted);
-            transition: transform 0.2s ease;
-        }
-        .target-item.expanded .expand-icon {
-            transform: translateY(-50%) rotate(90deg);
-        }
-
-        .target-details-expanded {
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            width: 100%;
-            padding-top: 0.5rem;
-            border-top: 1px dashed var(--border-color);
-            margin-top: 0.5rem;
-        }
-        .target-item.expanded .target-details-expanded {
-            display: flex; /* Show when expanded */
-        }
-        .target-details-expanded .form-group {
-            margin-bottom: 0.75rem;
-        }
-        .target-details-expanded .form-group:last-child {
-            margin-bottom: 0;
-        }
-
-        /* Styles for individual aids */
-        .aids-list {
-            list-style: none;
-            padding: 0;
-            margin-top: 0.75rem;
-            background-color: var(--card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.75rem;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .aid-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px dashed var(--border-color);
-            font-size: 0.9rem;
-            color: var(--text);
-        }
-        .aid-item:last-child {
-            border-bottom: none;
-        }
-        .aid-item-left {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-grow: 1;
-        }
-        .aid-item-left .aid-status-icon {
-            font-size: 1.1rem;
-            color: var(--muted);
-        }
-        .aid-item.finalizada .aid-status-icon {
-            color: var(--success);
-        }
-        .aid-item.finalizada .aid-description {
+        .target-item.concluido .target-text-content {
             text-decoration: line-through;
             color: var(--muted);
-        }
-        .aid-item .aid-attempts-counter {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--primary-dark);
-            background-color: var(--bg);
-            padding: 0.1rem 0.5rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-        }
-        .aid-item .aid-attempts-counter button {
-            background: none;
-            border: none;
-            color: var(--primary-dark);
-            font-size: 0.9rem;
-            cursor: pointer;
-            padding: 0 2px;
-            transition: color 0.2s ease;
-        }
-        .aid-item .aid-attempts-counter button:hover {
-            color: var(--primary);
         }
 
         .add-target-group {
@@ -822,14 +699,7 @@
 
             /* Reverte para grid em desktop */
             .pei-list {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 1.5rem;
-                /* Removido overflow-x: visible; e flex-wrap: wrap; pois grid já lida com isso */
-            }
-            .pei-list > .pei-summary-card { /* Atualizado para pei-summary-card */
-                flex-shrink: 1;
-                width: auto;
+                grid-template-columns: 1fr; /* Um card por linha */
             }
         }
         @media (max-width: 768px) {
@@ -878,7 +748,7 @@
                 -webkit-overflow-scrolling: touch;
             }
 
-            .pei-list > .pei-summary-card { /* Atualizado para pei-summary-card */
+            .pei-list > .pei-card { /* Atualizado para pei-card */
                 flex-shrink: 0;
                 width: 85%;
                 max-width: 350px;
@@ -923,70 +793,6 @@
             }
         }
 
-        /* Styles for Activity Log/Chat within PEI card */
-        .pei-activities {
-            margin-top: 1.5rem;
-            border-top: 1px solid var(--border-color);
-            padding-top: 1rem;
-        }
-        .pei-activities h5 {
-            font-size: 1rem;
-            color: var(--text);
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-        }
-        .activity-log {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.75rem;
-            background-color: var(--bg);
-            margin-bottom: 1rem;
-        }
-        .activity-item {
-            padding: 0.5rem 0;
-            border-bottom: 1px dashed var(--border-color);
-            font-size: 0.9rem;
-        }
-        .activity-item:last-child {
-            border-bottom: none;
-        }
-        .activity-meta {
-            font-size: 0.75rem;
-            color: var(--muted);
-            margin-bottom: 0.2rem;
-        }
-        .activity-content {
-            color: var(--text);
-            line-height: 1.4;
-            word-break: break-word;
-        }
-        .activity-input-group {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-        .activity-input-group textarea {
-            flex-grow: 1;
-            padding: 0.6rem 0.8rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--bg);
-            color: var(--text);
-            resize: vertical;
-            min-height: 40px;
-            max-height: 100px;
-        }
-        .activity-input-group textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none;
-        }
-        .activity-input-group .btn {
-            flex-shrink: 0;
-        }
-
         /* Tab styles */
         .tabs {
             display: flex;
@@ -1004,6 +810,8 @@
             cursor: pointer;
             font-weight: 600;
             transition: all 0.2s ease;
+            flex-grow: 1; /* Permite que os botões cresçam para preencher o espaço */
+            text-align: center; /* Centraliza o texto */
         }
         .tab-button:hover {
             background-color: var(--card);
@@ -1121,51 +929,13 @@
 
                 {% if paciente %}
                 <div class="paciente-info-card">
+                    <i class="fas fa-user-circle"></i>
                     <h3>{{ paciente.nome }}</h3>
                     <div class="paciente-info-grid">
-                        <div class="paciente-info-item"><strong>DATA NASC.:</strong> <span>{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}</span></div>
-                        <div class="paciente-info-item"><strong>CPF:</strong> <span>{{ paciente.cpf or 'N/A' }}</span></div>
-                        <div class="paciente-info-item"><strong>TELEFONE:</strong> <span>{{ paciente.contato_telefone or 'N/A' }}</span></div>
-                        {# Seção de E-MAIL ocultada conforme solicitação do usuário #}
-                        <!-- <div class="paciente-info-item"><strong>E-mail:</strong> <span>{{ paciente.contato_email or 'N/A' }}</span></div> -->
-                        {# Seção de ENDEREÇO ocultada conforme solicitação do usuário #}
-                        <!-- <div class="paciente-info-item" style="grid-column: 1 / -1;"><strong>Endereço:</strong> <span>{{ paciente.endereco.logradouro or '' }}{% if paciente.endereco.logradouro and paciente.endereco.numero %}, {% endif %}{{ paciente.endereco.numero or '' }}{% if paciente.endereco.complemento %} {{ paciente.endereco.complemento }}{% endif %} - {{ paciente.endereco.bairro or '' }}, {{ paciente.endereco.cidade or '' }} - {{ paciente.endereco.estado or '' }} {{ paciente.endereco.cep or '' }}</span></div> -->
+                        {# Informações detalhadas do paciente removidas para economizar espaço #}
                     </div>
                 </div>
                 {% endif %}
-
-                <!-- MACRO for rendering a PEI summary card (MACRO para renderizar um cartão PEI resumido) -->
-                {# This macro is now primarily for reference, as JS renders the cards #}
-                {% macro render_pei_summary_card(pei) %}
-                <div class="pei-summary-card {% if pei.status == 'finalizado' %}finalizado{% endif %}" data-pei-id="{{ pei.id }}">
-                    <div class="pei-summary-card-header">
-                        <h4>PEI: {{ pei.titulo }}</h4>
-                        <div class="pei-summary-card-meta">
-                            <span><i class="fas fa-calendar-alt"></i> Criado em: {{ pei.data_criacao }}</span>
-                            <span><i class="fas fa-user-tie"></i> Profissionais: {{ pei.profissionais_nomes_associados_fmt | default('N/A') }}</span>
-                            {# Status is now a separate tag #}
-                        </div>
-                        <div class="status-tag">{{ pei.status | capitalize }}</div>
-                    </div>
-                    <div class="pei-summary-card-content">
-                        <strong>Metas Ativas:</strong>
-                        <ul>
-                            {% set active_goals_count = pei.goals | selectattr('status', 'equalto', 'ativo') | list | length %}
-                            {% if active_goals_count > 0 %}
-                                {% for goal in pei.goals | selectattr('status', 'equalto', 'ativo') | slice(3) %} {# Mostra até 3 metas ativas #}
-                                    <li><i class="fas fa-bullseye"></i> {{ goal.descricao }}</li>
-                                {% endfor %}
-                                {% if active_goals_count > 3 %}
-                                    <li>...e {{ active_goals_count - 3 }} mais.</li>
-                                {% endif %}
-                            {% else %}
-                                <li>Nenhuma meta ativa.</li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </div>
-                {% endmacro %}
-
 
                 <div class="pei-container space-y-8">
                     <!-- Tabs for PEIs -->
@@ -1284,7 +1054,7 @@
         </div>
     </div>
 
-    <!-- NOVO MODAL: Detalhes do PEI (com metas, alvos e atividades) -->
+    <!-- NOVO MODAL: Detalhes do PEI (com metas e alvos simplificados) -->
     <div id="pei-details-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -1310,18 +1080,6 @@
                     <h5>Metas Finalizadas:</h5>
                     <div id="pei-modal-finalized-goals" class="goals-list-container">
                         <!-- Metas finalizadas serão injetadas aqui -->
-                    </div>
-                </div>
-
-                <div class="pei-activities mt-4">
-                    <h5 class="flex items-center gap-2 mb-3">
-                        <i class="fas fa-comments text-gray-500"></i> Histórico de Atividades
-                    </h5>
-                    <div class="activity-log" id="pei-modal-activity-log">
-                        <!-- Atividades serão injetadas aqui -->
-                    </div>
-                    <div id="pei-modal-activity-input-container">
-                        <!-- Campo de entrada de atividade será injetado aqui -->
                     </div>
                 </div>
             </div>
@@ -1415,27 +1173,14 @@
                 console.log('Firebase app initialized successfully.');
             } catch (error) {
                 console.error('Error initializing Firebase app:', error);
-                // Removido displayFlashMessage para ocultar a mensagem
-                // displayFlashMessage('danger', 'Erro ao inicializar o Firebase. Verifique sua configuração no backend.');
             }
         } else {
             console.warn('Firebase config is missing or using placeholder values. Firebase features will be disabled.');
-            // Removido displayFlashMessage para ocultar a mensagem
-            /*
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => {
-                    displayFlashMessage('warning', 'Configuração do Firebase não encontrada. Funcionalidades de autenticação podem não funcionar.');
-                });
-            } else {
-                displayFlashMessage('warning', 'Configuração do Firebase não encontrada. Funcionalidades de autenticação podem não funcionar.');
-            }
-            */
         }
-
 
         // Variáveis globais para dados, vindos do Jinja2
         let allPeisData = {{ peis | tojson | safe }} || []; // Garante que seja um array, mesmo que vazio
-        let currentlyOpenPeiId = null; // **NOVO**: Rastreia o PEI aberto no modal
+        let currentlyOpenPeiId = null; // Rastreia o PEI aberto no modal
 
         // Passa as variáveis de role do Python para o JavaScript
         const IS_ADMIN = {{ is_admin | tojson }};
@@ -1600,8 +1345,10 @@
                     const modal = document.getElementById(modalId);
                     if (modal) {
                         modal.classList.remove('active');
+                        // Garante que o scroll do body seja restaurado
+                        document.body.style.overflow = ''; 
                         if (modalId === 'pei-details-modal') {
-                            currentlyOpenPeiId = null; // **NOVO**: Limpa o ID do PEI aberto
+                            currentlyOpenPeiId = null; // Limpa o ID do PEI aberto
                         }
                     }
                 }
@@ -1619,6 +1366,7 @@
                     currentDeleteAction = action; // Define a ação atual (e.g., 'delete_record', 'finalize_goal')
                     currentDeleteData = data; // Define os dados relevantes para a ação
                     confirmDeleteModal.classList.add('active'); // Abre o modal de confirmação
+                    document.body.style.overflow = 'hidden'; // Impede o scroll do body
                 }
 
 
@@ -1657,6 +1405,7 @@
                     // Botão Adicionar Novo PEI
                     if (target.id === 'addPeiBtn') {
                         document.getElementById('addPeiModal').classList.add('active');
+                        document.body.style.overflow = 'hidden'; // Impede o scroll do body
                         document.getElementById('formAddPei').reset(); // Limpa o formulário do modal
                         // Preenche o dropdown de profissionais
                         const professionalSelect = document.getElementById('profissionais_ids');
@@ -1672,13 +1421,14 @@
                         return;
                     }
 
-                    // NOVO: Abrir modal de detalhes do PEI ao clicar no cartão de resumo
-                    const peiSummaryCard = target.closest('.pei-summary-card');
-                    if (peiSummaryCard) {
-                        const peiId = peiSummaryCard.dataset.peiId;
+                    // Abrir modal de detalhes do PEI ao clicar no cartão de resumo
+                    const peiCard = target.closest('.pei-card');
+                    if (peiCard) {
+                        const peiId = peiCard.dataset.peiId;
                         const peiData = allPeisData.find(p => p.id === peiId);
                         if (peiData) {
                             openPeiDetailsModal(peiData);
+                            document.body.style.overflow = 'hidden'; // Impede o scroll do body
                         }
                         return;
                     }
@@ -1698,13 +1448,14 @@
                         document.getElementById('targets-input-container').innerHTML = `
                             <div class="target-input-item flex items-center space-x-2">
                                 <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                                class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
+                                                    class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
                                 <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         `;
                         document.getElementById('addGoalModal').classList.add('active'); // Abre o modal
+                        document.body.style.overflow = 'hidden'; // Impede o scroll do body
                         return;
                     }
 
@@ -1752,21 +1503,11 @@
                         return;
                     }
 
-                    // NOVO: Evento de clique no item do alvo para expandir/colapsar
-                    const clickedTargetMainContent = target.closest('.target-main-content');
-                    if (clickedTargetMainContent) {
-                        const targetItem = clickedTargetMainContent.closest('.target-item');
-                        const isExpanded = targetItem.dataset.targetExpanded === 'true';
-                        targetItem.dataset.targetExpanded = !isExpanded;
-                        targetItem.classList.toggle('expanded', !isExpanded);
-                        return;
-                    }
-
                     // Botão Finalizar Meta
                     const finalizeGoalButton = target.closest('.btn-finalize-goal');
                     if (finalizeGoalButton) {
                         const peiId = finalizeGoalButton.dataset.peiId;
-                        const goalId = finalizeGoalButton.dataset.goalId;
+                        const goalId = finalizeGoal.dataset.goalId;
                         // Abre o modal de confirmação para finalizar a meta
                         openConfirmDeleteModal('Confirmar Finalização da Meta', 'Tem certeza que deseja finalizar esta meta? Uma vez finalizada, não poderá ser editada.', 'finalize_goal', { peiId: peiId, goalId: goalId });
                         return;
@@ -1867,77 +1608,13 @@
                     }
 
                     // Botão para imprimir todos os PEIs
-                    const printAllPeisButton = target.closest('#printAllPeisBtn'); // Supondo que você adicionaria um botão com este ID
+                    const printAllPeisButton = target.closest('#printAllPeisBtn');
                     if (printAllPeisButton) {
                         generatePdfForAllPeis(allPeisData);
                         return;
                     }
-
-                    // NOVO: Botões de tentativas (incrementar/decrementar) para UMA AJUDA ESPECÍFICA
-                    const aidIncrementBtn = target.closest('.btn-increment-aid-attempts');
-                    const aidDecrementBtn = target.closest('.btn-decrement-aid-attempts');
-                    if (aidIncrementBtn || aidDecrementBtn) {
-                        const aidItem = target.closest('.aid-item');
-                        const targetItem = aidItem.closest('.target-item');
-
-                        const peiId = targetItem.dataset.peiId;
-                        const goalId = targetItem.dataset.goalId;
-                        const targetId = targetItem.dataset.targetId;
-                        const aidId = aidItem.dataset.aidId;
-
-                        const attemptsSpan = aidItem.querySelector('.aid-attempts-count');
-                        let currentAttempts = parseInt(attemptsSpan.textContent);
-
-                        const currentPei = allPeisData.find(p => p.id === peiId);
-                        const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
-
-                        if (!canModify) {
-                            displayFlashMessage('danger', 'Você não tem permissão para atualizar tentativas neste PEI.');
-                            return;
-                        }
-
-                        if (aidIncrementBtn) {
-                            currentAttempts++;
-                        } else if (aidDecrementBtn) {
-                            currentAttempts = Math.max(0, currentAttempts - 1); // Não permite tentativas negativas
-                        }
-                        
-                        // Envia a atualização para o backend, incluindo o aid_id
-                        await updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, currentAttempts, null);
-                        return;
-                    }
                 });
                 
-                // **NOVO**: Event listener separado para 'change' em vez de 'click'
-                document.body.addEventListener('change', async function(e) {
-                    const target = e.target;
-                    // Manipular mudança de status do alvo (dropdown)
-                    if (target.matches('.target-status-select')) {
-                        const targetItem = target.closest('.target-item');
-                        const peiId = targetItem.dataset.peiId;
-                        const goalId = targetItem.dataset.goalId;
-                        const targetId = targetItem.dataset.targetId;
-                        const newStatus = target.value;
-
-                        const currentPei = allPeisData.find(p => p.id === peiId);
-                        const canModify = IS_ADMIN || (IS_PROFESSIONAL && currentPei?.profissionais_ids?.includes(LOGGED_IN_PROFESSIONAL_ID));
-
-                        if (!canModify) {
-                            displayFlashMessage('danger', 'Você não tem permissão para atualizar o status deste alvo.');
-                            // Reverte a seleção visualmente
-                            const originalTarget = currentPei?.goals.find(g => g.id === goalId)?.targets.find(t => t.id === targetId);
-                            if (originalTarget) {
-                                target.value = originalTarget.status || 'pendente';
-                            }
-                            return;
-                        }
-                        
-                        // Envia apenas o novo status do alvo
-                        await updateTargetStatusAndAttempts(peiId, goalId, targetId, null, null, newStatus);
-                        return;
-                    }
-                });
-
                 // --- Funções AJAX para PEI/Metas/Alvos ---
                 // Adiciona um novo alvo a uma meta existente dentro de um PEI
                 async function addTargetToGoal(peiId, goalId, targetDescription) {
@@ -1956,7 +1633,7 @@
                                 allPeisData = data.peis; // Atualiza os dados locais com a resposta do servidor
                                 displayFlashMessage('success', data.message); // Exibe mensagem de sucesso
                                 
-                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                // Mantém o modal de detalhes aberto e atualizado
                                 renderPeis(allPeisData);
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
                                 if (updatedPeiData) {
@@ -1981,118 +1658,6 @@
                     }
                 }
 
-                // Adiciona uma nova atividade ao histórico de um PEI
-                async function addPeiActivity(peiId, activityContent) {
-                    showLoading();
-                    try {
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_activity`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId, content: activityContent })
-                        });
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const data = await response.json();
-                            if (response.ok && data.success) {
-                                allPeisData = data.peis; // Atualiza os dados locais
-                                displayFlashMessage('success', data.message);
-                                
-                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
-                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
-                                if (updatedPeiData) {
-                                    openPeiDetailsModal(updatedPeiData);
-                                }
-
-                            } else {
-                                displayFlashMessage('danger', `Erro ao adicionar atividade: ${data.message || 'Erro desconhecido.'}`);
-                            }
-                        } else {
-                            const errorText = await response.text();
-                            console.error('Erro de rede ou servidor ao adicionar atividade: Resposta não é JSON.', errorText);
-                            displayFlashMessage('danger', 'Erro de rede ou servidor ao adicionar atividade. Por favor, tente novamente. Detalhes no console.');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao adicionar atividade:', error);
-                        displayFlashMessage('danger', `Erro de rede ou servidor ao adicionar atividade: ${error.message}`);
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
-                // NOVO: Atualiza o contador de tentativas, o conteúdo de ajuda ou o status do alvo
-                async function updateTargetStatusAndAttempts(peiId, goalId, targetId, aidId, newAttemptsCount, newStatus) {
-                    showLoading();
-                    try {
-                        const payload = { pei_id: peiId, goal_id: goalId, target_id: targetId };
-                        if (aidId !== null) {
-                            payload.aid_id = aidId;
-                        }
-                        if (newAttemptsCount !== null) {
-                            payload.new_attempts_count = newAttemptsCount;
-                        }
-                        if (newStatus !== null) {
-                            payload.new_target_status = newStatus; // Envia o novo status geral do alvo
-                        }
-
-                        console.log('Sending payload to backend:', payload);
-
-                        const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/update_target_and_aid_data`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const data = await response.json();
-                            console.log('Response from backend:', data);
-
-                            if (response.ok && data.success) {
-                                displayFlashMessage('success', data.message);
-                                if (data.peis) {
-                                    allPeisData = data.peis;
-                                }
-                                
-                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
-                                renderPeis(allPeisData); // Atualiza os cards da página principal
-                                const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
-                                if (updatedPeiData) {
-                                    // Salva o estado de expansão antes de recarregar
-                                    const expandedTargetIds = new Set();
-                                    document.querySelectorAll(`#pei-details-modal .target-item.expanded`).forEach(item => {
-                                        expandedTargetIds.add(item.dataset.targetId);
-                                    });
-                                    
-                                    openPeiDetailsModal(updatedPeiData);
-
-                                    // Restaura o estado de expansão
-                                    if (expandedTargetIds.size > 0) {
-                                        expandedTargetIds.forEach(id => {
-                                            const targetItem = document.querySelector(`#pei-details-modal .target-item[data-target-id="${id}"]`);
-                                            if (targetItem) {
-                                                targetItem.classList.add('expanded');
-                                                targetItem.dataset.targetExpanded = 'true';
-                                            }
-                                        });
-                                    }
-                                }
-
-                            } else {
-                                displayFlashMessage('danger', `Erro ao atualizar alvo: ${data.message || 'Erro desconhecido.'}`);
-                            }
-                        } else {
-                            const errorText = await response.text();
-                            console.error('Erro de rede ou servidor ao atualizar tentativas/status do alvo: Resposta não é JSON.', errorText);
-                            displayFlashMessage('danger', 'Erro de rede ou servidor ao atualizar alvo. Por favor, tente novamente. Detalhes no console.');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao atualizar tentativas/status do alvo:', error);
-                        displayFlashMessage('danger', `Erro de rede ou servidor ao atualizar alvo: ${error.message}`);
-                    } finally {
-                        hideLoading();
-                    }
-                }
-
-
                 // Finaliza uma meta, marcando-a como 'finalizado'
                 async function finalizeGoal(peiId, goalId) {
                     console.log('Tentando finalizar meta:', { peiId, goalId });
@@ -2113,7 +1678,7 @@
                                     allPeisData = data.peis;
                                 }
                                 
-                                // **CORRIGIDO**: Mantém o modal de detalhes aberto e atualizado
+                                // Mantém o modal de detalhes aberto e atualizado
                                 renderPeis(allPeisData);
                                 const updatedPeiData = allPeisData.find(p => p.id === currentlyOpenPeiId);
                                 if (updatedPeiData) {
@@ -2197,7 +1762,7 @@
                     let hasFinalizedPeis = false;
 
                     sortedPeis.forEach(pei => {
-                        const peiHtml = renderPeiSummaryCardHtml(pei);
+                        const peiHtml = renderPeiCardHtml(pei); // Usando a nova função de renderização de card
                         if (pei.status === 'ativo') {
                             activePeisList.insertAdjacentHTML('beforeend', peiHtml);
                             hasActivePeis = true;
@@ -2215,7 +1780,8 @@
                     }
                 }
                 
-                function renderPeiSummaryCardHtml(pei) {
+                // NOVO: Função para renderizar o HTML de um PEI como um card
+                function renderPeiCardHtml(pei) {
                     const activeGoals = pei.goals ? pei.goals.filter(goal => goal.status === 'ativo') : [];
                     const activeGoalsCount = activeGoals.length;
                     let activeGoalsHtml = '<ul>';
@@ -2231,27 +1797,43 @@
                     }
                     activeGoalsHtml += '</ul>';
 
+                    // Formata a lista de profissionais para exibição em linha, com quebra de linha se necessário
+                    const professionalsList = pei.profissionais_nomes_associados_fmt || 'N/A';
+                    
                     return `
-                    <div class="pei-summary-card ${pei.status === 'finalizado' ? 'finalizado' : ''}" data-pei-id="${pei.id}">
-                        <div class="pei-summary-card-header">
-                            <h4>PEI: ${pei.titulo}</h4>
-                            <div class="pei-summary-card-meta">
-                                <span><i class="fas fa-calendar-alt"></i> Criado em: ${pei.data_criacao}</span>
-                                <span><i class="fas fa-user-tie"></i> Profissionais: ${pei.profissionais_nomes_associados_fmt || 'N/A'}</span>
-                            </div>
-                            <div class="status-tag">${pei.status === 'ativo' ? 'Ativo' : 'Finalizado'}</div>
+                    <div class="pei-card" data-pei-id="${pei.id}">
+                        <div class="pei-card-header">
+                            <h4>${pei.titulo}</h4>
+                            <span class="status-badge status-${pei.status}">${pei.status.charAt(0).toUpperCase() + pei.status.slice(1)}</span>
                         </div>
-                        <div class="pei-summary-card-content">
-                            <strong>Metas Ativas:</strong>
-                            ${activeGoalsHtml}
+                        <div class="pei-card-body">
+                            <div class="pei-card-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span class="label">Criado em:</span>
+                                <span class="value">${pei.data_criacao}</span>
+                            </div>
+                            <div class="pei-card-item full-width">
+                                <i class="fas fa-user-tie"></i>
+                                <div class="flex flex-col">
+                                    <span class="label">Profissionais:</span>
+                                    <span class="value">${professionalsList}</span>
+                                </div>
+                            </div>
+                            <div class="pei-card-item full-width">
+                                <i class="fas fa-bullseye"></i>
+                                <div class="flex flex-col">
+                                    <span class="label">Metas Ativas:</span>
+                                    <span class="value">${activeGoalsHtml}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>`;
                 }
 
 
-                // NOVO: Função para abrir e popular o modal de detalhes do PEI
+                // Função para abrir e popular o modal de detalhes do PEI
                 function openPeiDetailsModal(pei) {
-                    currentlyOpenPeiId = pei.id; // **NOVO**: Define o ID do PEI aberto
+                    currentlyOpenPeiId = pei.id; // Define o ID do PEI aberto
 
                     const modal = document.getElementById('pei-details-modal');
                     const peiModalTitle = document.getElementById('pei-modal-title');
@@ -2260,15 +1842,11 @@
                     const peiModalStatus = document.getElementById('pei-modal-status');
                     const peiModalActiveGoals = document.getElementById('pei-modal-active-goals');
                     const peiModalFinalizedGoals = document.getElementById('pei-modal-finalized-goals');
-                    const peiModalActivityLog = document.getElementById('pei-modal-activity-log');
-                    const peiModalActivityInputContainer = document.getElementById('pei-modal-activity-input-container');
                     const peiDetailsModalFooter = document.getElementById('pei-details-modal-footer');
 
                     // Limpa conteúdos anteriores
                     peiModalActiveGoals.innerHTML = '';
                     peiModalFinalizedGoals.innerHTML = '';
-                    peiModalActivityLog.innerHTML = '';
-                    peiModalActivityInputContainer.innerHTML = '';
                     peiDetailsModalFooter.innerHTML = '';
 
                     // Preenche o cabeçalho do modal
@@ -2302,43 +1880,6 @@
                         peiModalFinalizedGoals.innerHTML = '<div class="empty-state-small"><i class="fas fa-check-double"></i><p>Nenhuma meta finalizada para este PEI.</p></div>';
                     }
 
-                    // Renderiza Atividades
-                    if (pei.activities && pei.activities.length > 0) {
-                        pei.activities.forEach(activity => {
-                            const activityHtml = `
-                                <div class="activity-item">
-                                    <div class="activity-meta">${activity.user_name} em ${activity.timestamp_fmt}</div>
-                                    <div class="activity-content">${activity.content}</div>
-                                </div>
-                            `;
-                            peiModalActivityLog.insertAdjacentHTML('beforeend', activityHtml);
-                        });
-                    } else {
-                        peiModalActivityLog.innerHTML = `<div class="empty-state-small">
-                            <i class="fas fa-clipboard-list text-2xl mb-2"></i>
-                            <p class="text-sm">Nenhuma atividade registrada para este PEI.</p>
-                            </div>`;
-                    }
-
-                    // Add activity input field
-                    if (canModifyPeiContent) {
-                        peiModalActivityInputContainer.innerHTML = `
-                            <div class="activity-input-group mt-3">
-                                <textarea class="activity-input w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Adicionar comentário de atividade..." rows="1"></textarea>
-                                <button type="button" class="btn btn-primary btn-add-activity" data-pei-id="${pei.id}">
-                                    <i class="fas fa-paper-plane"></i> Enviar
-                                </button>
-                            </div>
-                        `;
-                    } else {
-                        peiModalActivityInputContainer.innerHTML = `
-                            <div class="mt-3 text-center text-gray-500 text-sm opacity-80">
-                                <p>Apenas os profissionais associados ou um administrador podem adicionar comentários a este PEI.</p>
-                            </div>
-                        `;
-                    }
-
-
                     // Renderiza botões do footer do modal
                     if (IS_ADMIN) {
                         peiDetailsModalFooter.insertAdjacentHTML('beforeend', `
@@ -2360,62 +1901,18 @@
                     modal.classList.add('active'); // Abre o modal
                 }
 
-                // NOVO: Helper para criar o HTML de um Goal Card para o modal de detalhes do PEI
+                // Helper para criar o HTML de um Goal Card para o modal de detalhes do PEI (Simplificado)
                 function createGoalCardHtml(pei, goal, canModifyPeiContent, isPeiFinalized) {
                     const isGoalFinalized = goal.status === 'finalizado';
                     const goalActionsDisabled = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
-                    const targetItemDisabledClass = isPeiFinalized || isGoalFinalized || !canModifyPeiContent ? 'disabled' : '';
 
                     let targetsHtml = '';
                     if (goal.targets && goal.targets.length > 0) {
                         goal.targets.forEach(target => {
-                            let aidsListHtml = '';
-                            if (target.aids && target.aids.length > 0) {
-                                aidsListHtml += '<ul class="aids-list">';
-                                target.aids.forEach(aid => {
-                                    const aidStatusClass = aid.status === 'finalizada' ? 'finalizada' : '';
-                                    aidsListHtml += `
-                                        <li class="aid-item ${aidStatusClass}" data-aid-id="${aid.id}" data-target-id="${target.id}" data-goal-id="${goal.id}" data-pei-id="${pei.id}">
-                                            <div class="aid-item-left">
-                                                <i class="aid-status-icon fas ${aid.status === 'finalizada' ? 'fa-check-circle' : 'fa-circle'}"></i>
-                                                <span class="aid-description">${aid.description}</span>
-                                            </div>
-                                            <div class="aid-attempts-counter">
-                                                <button type="button" class="btn-decrement-aid-attempts" ${goalActionsDisabled}>-</button>
-                                                Tentativas: <span class="aid-attempts-count">${aid.attempts_count || 0}</span>
-                                                <button type="button" class="btn-increment-aid-attempts" ${goalActionsDisabled}>+</button>
-                                            </div>
-                                        </li>
-                                    `;
-                                });
-                                aidsListHtml += '</ul>';
-                            } else {
-                                aidsListHtml = '<div class="empty-state-small"><i class="fas fa-question-circle"></i><p>Nenhuma ajuda definida para este alvo.</p></div>';
-                            }
-
                             targetsHtml += `
-                                <li class="target-item ${target.concluido ? 'concluido' : ''} ${targetItemDisabledClass}"
-                                    data-pei-id="${pei.id}" data-goal-id="${goal.id}" data-target-id="${target.id}"
-                                    data-target-expanded="false">
-                                    <div class="target-main-content target-expand-trigger">
-                                        <i class="status-icon fas ${target.concluido ? 'fa-check-square' : 'fa-square'}"></i>
-                                        <span class="target-text-content">${target.descricao}</span>
-                                        <i class="expand-icon fas fa-chevron-right"></i>
-                                    </div>
-                                    <div class="target-details-expanded">
-                                        <div class="form-group">
-                                            <label for="target-status-${target.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status do Alvo</label>
-                                            <select id="target-status-${target.id}" class="target-status-select w-full px-3 py-2 border rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out" ${goalActionsDisabled}>
-                                                <option value="pendente" ${target.status === 'pendente' ? 'selected' : ''}>Pendente</option>
-                                                <option value="andamento" ${target.status === 'andamento' ? 'selected' : ''}>Em Andamento</option>
-                                                <option value="finalizada" ${target.status === 'finalizada' ? 'selected' : ''}>Finalizada</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ajudas e Tentativas</label>
-                                            ${aidsListHtml}
-                                        </div>
-                                    </div>
+                                <li class="target-item ${target.concluido ? 'concluido' : ''}">
+                                    <i class="fas fa-bullseye"></i>
+                                    <span class="target-text-content">${target.descricao}</span>
                                 </li>
                             `;
                         });
@@ -2542,20 +2039,6 @@
                                     const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
                                     doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
                                     yPos += contentLineHeight;
-
-                                    if (target.aids && target.aids.length > 0) {
-                                        target.aids.forEach(aid => {
-                                            checkPageBreak(contentLineHeight);
-                                            const aidStatus = aid.status === 'finalizada' ? '[X]' : '[ ]';
-                                            doc.setFontSize(contentFontSize - 1).setFont("helvetica", "normal").text(`    ${aidStatus} ${aid.description} (Tentativas: ${aid.attempts_count || 0})`, margin + 15, yPos);
-                                            yPos += contentLineHeight - 1;
-                                        });
-                                    } else {
-                                        checkPageBreak(contentLineHeight);
-                                        doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text('    Nenhuma ajuda definida para este alvo.', margin + 15, yPos);
-                                        yPos += contentLineHeight - 1;
-                                    }
-                                    doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
                                 });
                             } else {
                                 checkPageBreak(contentLineHeight);
@@ -2568,29 +2051,6 @@
                         checkPageBreak(contentLineHeight);
                         doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta definida para este PEI.', margin, yPos);
                         yPos += contentLineHeight;
-                    }
-
-                    // Seção de Atividades para PDF
-                    if (pei.activities && pei.activities.length > 0) {
-                        checkPageBreak(15);
-                        doc.setFontSize(11).setFont("helvetica", "bold").text("Histórico de Atividades:", margin, yPos);
-                        yPos += 8;
-                        doc.setLineWidth(0.1).line(margin, yPos, maxWidth + margin, yPos);
-                        yPos += 5;
-
-                        pei.activities.forEach(activity => {
-                            checkPageBreak(20); // Estimar espaço para cada atividade
-                            doc.setFontSize(8).setFont("helvetica", "italic").text(`${activity.user_name} em ${activity.timestamp_fmt}:`, margin + 5, yPos);
-                            yPos += 4;
-                            doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                            const activityTextLines = doc.splitTextToSize(activity.content, maxWidth - 10); // Recuo para o conteúdo da atividade
-                            activityTextLines.forEach(line => {
-                                checkPageBreak(contentLineHeight);
-                                doc.text(line, margin + 10, yPos);
-                                yPos += contentLineHeight;
-                            });
-                            yPos += 3; // Espaço entre atividades
-                        });
                     }
 
                     // Salva o PDF com um nome descritivo
@@ -2680,20 +2140,6 @@
                                         const targetStatus = target.status ? `Status: ${target.status.charAt(0).toUpperCase() + target.status.slice(1)}` : 'Status: N/A';
                                         doc.text(`  - Alvo: ${target.descricao} (${targetStatus})`, margin + 10, yPos);
                                         yPos += contentLineHeight;
-
-                                        if (target.aids && target.aids.length > 0) {
-                                            target.aids.forEach(aid => {
-                                                checkPageBreak(contentLineHeight);
-                                                const aidStatus = aid.status === 'finalizada' ? '[X]' : '[ ]';
-                                                doc.setFontSize(contentFontSize - 1).setFont("helvetica", "normal").text(`    ${aidStatus} ${aid.description} (Tentativas: ${aid.attempts_count || 0})`, margin + 15, yPos);
-                                                yPos += contentLineHeight - 1;
-                                            });
-                                        } else {
-                                            checkPageBreak(contentLineHeight);
-                                            doc.setFontSize(contentFontSize - 1).setFont("helvetica", "italic").text('    Nenhuma ajuda definida para este alvo.', margin + 15, yPos);
-                                            yPos += contentLineHeight - 1;
-                                        }
-                                        doc.setFontSize(contentFontSize).setFont("helvetica", "normal"); // Reset font
                                     });
                                 } else {
                                     checkPageBreak(contentLineHeight);
@@ -2706,29 +2152,6 @@
                             checkPageBreak(contentLineHeight);
                             doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta definida para este PEI.', margin, yPos);
                             yPos += contentLineHeight;
-                        }
-
-                        // Seção de Atividades para PDF
-                        if (pei.activities && pei.activities.length > 0) {
-                            checkPageBreak(15);
-                            doc.setFontSize(11).setFont("helvetica", "bold").text("Histórico de Atividades:", margin, yPos);
-                            yPos += 8;
-                            doc.setLineWidth(0.1).line(margin, yPos, maxWidth + margin, yPos);
-                            yPos += 5;
-
-                            pei.activities.forEach(activity => {
-                                checkPageBreak(20); // Estimar espaço para cada atividade
-                                doc.setFontSize(8).setFont("helvetica", "italic").text(`${activity.user_name} em ${activity.timestamp_fmt}:`, margin + 5, yPos);
-                                yPos += 4;
-                                doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                                const activityTextLines = doc.splitTextToSize(activity.content, maxWidth - 10); // Recuo para o conteúdo da atividade
-                                activityTextLines.forEach(line => {
-                                    checkPageBreak(contentLineHeight);
-                                    doc.text(line, margin + 10, yPos);
-                                    yPos += contentLineHeight;
-                                });
-                                yPos += 3; // Espaço entre atividades
-                            });
                         }
                     });
 
@@ -2770,31 +2193,6 @@
                         } finally {
                             addTargetBtn.disabled = false;
                             newTargetInput.disabled = false;
-                        }
-                    }
-
-                    // Event listener for "Send" button of PEI activity
-                    const addActivityBtn = target.closest('.btn-add-activity');
-                    if (addActivityBtn) {
-                        e.preventDefault();
-                        const peiId = addActivityBtn.dataset.peiId;
-                        const activityInput = addActivityBtn.previousElementSibling;
-                        const activityContent = activityInput.value.trim();
-
-                        if (!activityContent) {
-                            displayFlashMessage('warning', 'Por favor, digite o conteúdo da atividade.');
-                            return;
-                        }
-
-                        addActivityBtn.disabled = true;
-                        activityInput.disabled = true;
-
-                        try {
-                            await addPeiActivity(peiId, activityContent);
-                            activityInput.value = '';
-                        } finally {
-                            addActivityBtn.disabled = false;
-                            activityInput.disabled = false;
                         }
                     }
                 });
