@@ -285,6 +285,30 @@
             }
         }
     </style>
+    <style>
+/* Estilos para Submenu Financeiro */
+.sidebar nav ul li.has-submenu .submenu {
+    list-style: none;
+    padding: 0;
+    margin-left: 1.5rem; /* Indent sub-menu items */
+    max-height: 0;
+    overflow: hidden; /* Important for the transition */
+    transition: max-height 0.3s ease-out;
+    background: rgba(255, 255, 255, 0.05); /* Slightly different background for sub-menu */
+    border-radius: 8px;
+}
+
+.sidebar nav ul li.has-submenu.open .submenu {
+    max-height: 1000px; /* Increased to a very large value to ensure content fits */
+    overflow-y: auto; /* Add scrollbar if content exceeds max-height */
+    transition: max-height 0.5s ease-in;
+}
+
+/* Ajustar estado colapsado para o submenu */
+.sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
+.sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
+.sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
+</style>
 </head>
 <body>
     <div class="layout">
@@ -297,20 +321,28 @@
                 </div>
                 <nav>
                     <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li> 
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        <li class="{% if request.endpoint == 'index' %}active{% endif %}"><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li class="{% if request.endpoint == 'listar_pacientes' or request.endpoint == 'peis.pei_page' %}active{% endif %}"><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li class="{% if request.endpoint == 'buscar_prontuario' %}active{% endif %}"><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li> 
+                        <li class="{% if request.endpoint == 'listar_agendamentos' %}active{% endif %}"><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
                         {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                         <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li class="active"><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li ><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
+                        <li class="{% if request.endpoint == 'listar_profissionais' %}active{% endif %}"><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li class="{% if request.endpoint == 'listar_servicos_procedimentos' %}active{% endif %}"><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li class="{% if request.endpoint == 'listar_convenios' %}active{% endif %}"><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li class="{% if request.endpoint == 'listar_horarios' %}active{% endif %}"><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li class="has-submenu {% if request.endpoint in ['listar_contas_a_pagar', 'listar_estoque', 'patrimonio.listar_patrimonio'] %}open{% endif %}">
+                            <a href="#" class="submenu-toggle">
+                                <i class="fa-solid fa-money-bill-wave"></i> <span>Financeiro</span>
+                                <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li class="{% if request.endpoint == 'listar_contas_a_pagar' %}active{% endif %}"><a href="{{ url_for('listar_contas_a_pagar') }}"><span>Contas a Pagar</span></a></li>
+                                <li class="{% if request.endpoint == 'listar_estoque' %}active{% endif %}"><a href="{{ url_for('listar_estoque') }}"><span>Estoque</span></a></li>
+                                <li class="{% if request.endpoint == 'patrimonio.listar_patrimonio' %}active{% endif %}"><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><span>Patrimônio</span></a></li>
+                            </ul>
+                        </li>
+                        <li class="{% if request.endpoint == 'listar_usuarios' %}active{% endif %}"><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li class="{% if request.endpoint == 'listar_modelos_anamnese' %}active{% endif %}"><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -499,17 +531,24 @@
                         mainContent.classList.toggle('collapsed');
                         localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
                         updateDesktopToggleIcon();
+                        setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
                     });
                 }
                 if (menuBtnMobile) {
                     menuBtnMobile.addEventListener('click', (e) => {
                         e.stopPropagation();
                         sidebar.classList.toggle('open');
+                        const icon = menuBtnMobile.querySelector('i');
+                        icon.classList.toggle('fa-times', sidebar.classList.contains('open'));
+                        icon.classList.toggle('fa-bars', !sidebar.classList.contains('open'));
                     });
                 }
                 document.addEventListener('click', (e) => {
                     if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
                         sidebar.classList.remove('open');
+                        const icon = menuBtnMobile.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
                     }
                 });
                 applyInitialState();
@@ -528,6 +567,7 @@
                 updateThemeUI(currentTheme);
                 themeToggle.addEventListener('click', () => {
                     const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                    htmlEl.setAttribute('data-theme', newTheme);
                     localStorage.setItem('theme', newTheme);
                     updateThemeUI(newTheme);
                 });
