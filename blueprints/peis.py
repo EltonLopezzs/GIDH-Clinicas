@@ -392,11 +392,11 @@ def _add_target_to_goal_transaction(transaction, goal_ref, new_target_descriptio
 
     # Definindo as ajudas fixas para o novo alvo e adicionando-as como subcoleção
     fixed_aids = [
-        {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFT'},
-        {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFP'},
-        {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AG'},
-        {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AE'},
-        {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'I'},
+        {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFT', 'id_ordenacao': 1},
+        {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFP', 'id_ordenacao': 2},
+        {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AG', 'id_ordenacao': 3},
+        {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AE', 'id_ordenacao': 4},
+        {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'I', 'id_ordenacao': 5},
     ]
     for aid_data in fixed_aids:
         # Adiciona cada ajuda como um documento na subcoleção 'ajudas' do alvo
@@ -410,7 +410,6 @@ def _add_target_to_goal_transaction(transaction, goal_ref, new_target_descriptio
         # Adiciona o doc_reference para a ajuda, referenciando o alvo pai
         aid_data['doc_reference'] = alvo_doc_ref # Salva a referência do documento (DocumentReference)
         transaction.set(aid_doc_ref, aid_data) # Usa transaction.set() para adicionar a ajuda
-
 
 @firestore.transactional
 def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_name):
@@ -777,11 +776,11 @@ def add_goal(paciente_doc_id):
         meta_doc_ref.set(new_goal_data)
 
         fixed_aids_template = [
-            {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFT'},
-            {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFP'},
-            {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AG'},
-            {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AE'},
-            {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'I'},
+            {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFT', 'id_ordenacao': 1},
+            {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFP', 'id_ordenacao': 2},
+            {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AG', 'id_ordenacao': 3},
+            {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AE', 'id_ordenacao': 4},
+            {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'I', 'id_ordenacao': 5},
         ]
         for desc in targets_desc:
             if desc.strip():
