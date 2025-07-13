@@ -3,25 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ 'Adicionar' if not anamnese else 'Editar' }} Anamnese - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+    <title>Adicionar/Editar Patrimônio - {{ session.clinica_nome_display or 'Clínica On' }}</title>
     
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script> {# Adicionado Tailwind CSS #}
 
     <style>
+        /* Variáveis de tema */
         :root {
             --primary: #5587c2;
             --accent: #9b53b8;
             --primary-light: #c8dcf3;
             --secondary: #f59e0b;
             --danger: #dc2626;
-            --success: #16a34a;
             --primary-dark: #115e59;  
+            --success: #16a34a;
             --warning: #f59e0b;
             --info: #0ea5e9;
             --border-color: #e2e8f0;
@@ -51,6 +50,7 @@
             color-scheme: dark;
         }
 
+        /* Estilos globais e layout */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; overflow-x: hidden; }
         body {
@@ -110,6 +110,28 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar.collapsed .sidebar-footer span { display: none; }
         .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+
+        /* Estilos para Submenu Financeiro */
+        .sidebar nav ul li.has-submenu .submenu {
+            list-style: none;
+            padding: 0;
+            margin-left: 1.5rem; /* Indent sub-menu items */
+            max-height: 0;
+            overflow: hidden; /* Important for the transition */
+            transition: max-height 0.3s ease-out;
+            background: rgba(255, 255, 255, 0.05); /* Slightly different background for sub-menu */
+            border-radius: 8px;
+        }
+
+        .sidebar nav ul li.has-submenu.open .submenu {
+            max-height: 1000px; /* Increased to a very large value to ensure content fits */
+            overflow-y: auto; /* Add scrollbar if content exceeds max-height */
+            transition: max-height 0.5s ease-in;
+        }
+        /* Ajustar estado colapsado para o submenu */
+        .sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
+        .sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
+        .sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
         
         /* --- Main Content & Topbar --- */
         .main-content {
@@ -156,206 +178,394 @@
         .btn-toggle-inactive { background-color: #4b5563; color: white; }
         .btn-toggle-inactive:hover { background-color: #374151; }
 
-        /* --- Form Card --- */
-        .form-card {
-            background-color: var(--card);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            padding: 2rem;
-            max-width: 700px; /* Limita a largura do formulário */
-            margin: 2rem auto; /* Centraliza o formulário na página */
-        }
-        .form-card-header {
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-            margin-bottom: 1.5rem;
+        /* --- Flash Messages (Toast-like) --- */
+        .toast-container {
+            position: fixed;
+            top: 85px;
+            right: 20px;
+            z-index: 9999;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .form-card-header h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text);
-            margin: 0;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .form-group label {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--muted);
-            font-weight: 500;
-            margin-bottom: 0.3rem;
-        }
-        .form-group input[type="text"],
-        .form-group input[type="number"],
-        .form-group input[type="date"],
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--bg);
-            color: var(--text);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none;
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        .form-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-        }
-        .form-actions .btn {
-            min-width: 120px;
-        }
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-            margin: 0;
-        }
-        .checkbox-group label {
-            margin: 0;
-            font-size: 0.95rem;
-            color: var(--text);
-            font-weight: 500;
+            flex-direction: column;
+            gap: 15px;
+            width: 360px;
         }
 
-        /* Responsive adjustments */
+        .toast {
+            background-color: var(--card);
+            color: var(--text);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1), 0 5px 5px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            border: 1px solid var(--border-color);
+            animation: toast-slide-in 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast.success { border-left: 5px solid var(--success); }
+        .toast.danger { border-left: 5px solid var(--danger); }
+        .toast.warning { border-left: 5px solid var(--warning); }
+        .toast.info { border-left: 5px solid var(--info); }
+
+        .toast-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.danger .toast-icon { color: var(--danger); }
+        .toast.warning .toast-icon { color: var(--warning); }
+        .toast.info .toast-icon { color: var(--info); }
+
+        .toast-content {
+            flex-grow: 1;
+        }
+        .toast-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        .toast-message {
+            font-size: 0.9rem;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            opacity: 0.7;
+            transition: opacity 0.2s ease, color 0.2s ease;
+            flex-shrink: 0;
+        }
+        .toast-close:hover {
+            opacity: 1;
+            color: var(--text);
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            width: 100%;
+            animation: toast-progress-bar 5s linear forwards;
+        }
+        .toast.success .toast-progress { background-color: var(--success); }
+        .toast.danger .toast-progress { background-color: var(--danger); }
+        .toast.warning .toast-progress { background-color: var(--warning); }
+        .toast.info .toast-progress { background-color: var(--info); }
+
+        @keyframes toast-slide-in {
+            from {
+                opacity: 0;
+                transform: translateX(110%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes toast-fade-out {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+        .toast.fade-out {
+            animation: toast-fade-out 0.4s ease-in forwards;
+        }
+
+        @keyframes toast-progress-bar {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        /* Responsive */
+        .toggle-btn-desktop { display: none; }
+        .menu-btn-mobile { display: block; }
+        span.btn-text-desktop { display: none; }
+
+        @media(min-width: 769px) {
+            .toggle-btn-desktop { display: grid; }
+            .menu-btn-mobile { display: none; }
+            span.btn-text-desktop { display: inline; }
+        }
         @media (max-width: 768px) {
-            .main-content { margin-left: 0; width: 100%; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
+            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
+            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
+            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
+            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
             main { padding: 1rem; }
             .topbar { padding: 0 1rem; flex-wrap: wrap; height: auto; row-gap: 1rem; padding-top: 1rem; padding-bottom: 1rem;}
             .topbar-left { width: 100%; justify-content: space-between; }
             .topbar-actions { width: 100%; justify-content: flex-end; }
-            .form-card { padding: 1rem; margin: 1rem auto; }
-            .form-row { grid-template-columns: 1fr; }
-            .form-actions { flex-direction: column; gap: 0.5rem; }
-            .form-actions .btn { width: 100%; }
+            .topbar-actions .search-form { flex-grow: 1; }
+        }
+
+        /* --- Form Styles --- */
+        .form-card {
+            background-color: var(--card);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            max-width: 800px; /* Limita a largura do formulário */
+            margin: 0 auto; /* Centraliza o formulário */
+        }
+
+        .form-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* Estilo para o checkbox */
+        .form-field.checkbox-field {
+            flex-direction: row; /* Alinha label e input na mesma linha */
+            align-items: center; /* Centraliza verticalmente */
+            gap: 1rem; /* Espaçamento entre o checkbox e o label */
+            margin-top: 1rem; /* Espaçamento superior */
+        }
+
+        .form-field.checkbox-field label {
+            margin-bottom: 0; /* Remove margem inferior padrão */
+            cursor: pointer; /* Indica que é clicável */
+        }
+
+        .form-field.checkbox-field input[type="checkbox"] {
+            width: 20px; /* Tamanho do checkbox */
+            height: 20px;
+            accent-color: var(--primary); /* Cor de destaque do checkbox */
+            cursor: pointer;
+            margin-top: 0; /* Alinha com o texto */
+            flex-shrink: 0; /* Evita que o checkbox encolha */
+        }
+
+
+        .form-field label {
+            font-size: 0.95rem;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .form-field input:not([type="checkbox"]),
+        .form-field select,
+        .form-field textarea {
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            color: var(--text);
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-field input:focus:not([type="checkbox"]),
+        .form-field select:focus,
+        .form-field textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(85, 135, 194, 0.2); /* Cor do primary com transparência */
+            background-color: var(--card);
+        }
+
+        .form-field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .form-actions .btn {
+            min-width: 120px;
+        }
+
+        /* Required field indicator */
+        .form-field.required label::after {
+            content: ' *';
+            color: var(--danger);
+            font-weight: 700;
+            margin-left: 2px;
+        }
+
+        /* Validation styles */
+        .form-field input.invalid:not([type="checkbox"]),
+        .form-field select.invalid,
+        .form-field textarea.invalid {
+            border-color: var(--danger);
+            background-color: rgba(220, 38, 38, 0.05); /* Leve fundo vermelho */
+        }
+
+        .form-field input.invalid:focus:not([type="checkbox"]),
+        .form-field select.invalid:focus,
+        .form-field textarea.invalid:focus {
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+        }
+
+        .form-field input.valid:not([type="checkbox"]),
+        .form-field select.valid,
+        .form-field textarea.valid {
+            border-color: var(--success);
+            background-color: rgba(22, 163, 74, 0.05); /* Leve fundo verde */
+        }
+
+        .form-field input.valid:focus:not([type="checkbox"]),
+        .form-field select.valid:focus,
+        .form-field textarea.valid:focus {
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+        }
+
+        /* Animação de shake para campos inválidos no submit */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .form-field input.invalid.shake:not([type="checkbox"]),
+        .form-field select.invalid.shake,
+        .form-field textarea.invalid.shake {
+            animation: shake 0.5s ease-in-out;
         }
     </style>
 </head>
 <body>
+    <div id="toast-container"></div> {# Container para mensagens toast #}
     <div class="layout">
-        {# Inclui a barra de navegação completa de Nav.html #}
+        {# Inclui o conteúdo da barra de navegação (sidebar) do Nav.html #}
         {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
-                <div class="topbar-left">                   
-                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button> {# Adicionado botão mobile #}
+                <div class="topbar-left">
+                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">{{ 'Adicionar' if not anamnese else 'Editar' }} Anamnese</h1>
+                    <h1 class="page-title">{% if item %}Editar Patrimônio{% else %}Adicionar Patrimônio{% endif %}</h1>
                 </div>
+                <a href="{{ url_for('patrimonio.listar_patrimonio') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> <span class="btn-text-desktop">Voltar</span>
+                </a>
             </header>
 
             <main>
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
-                    <div class="flash-messages">
-                      {% for category, message in messages %}
-                        <div class="flash-message {{ category }}">{{ message }}</div>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-                {% endwith %}
+                {# Mensagens flash serão exibidas como toasts via JS #}
 
                 <div class="form-card">
-                    <div class="form-card-header">
-                        <h2>{{ 'Nova' if not anamnese else 'Editar' }} Anamnese</h2>
-                        <a href="{{ url_for('buscar_prontuario') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Voltar
-                        </a>
-                    </div>
-                    <form action="{{ action_url }}" method="POST">
-                        <div class="form-group">
-                            <label for="paciente_id">Paciente</label>
-                            <select id="paciente_id" name="paciente_id" required>
-                                <option value="">Selecione um paciente</option>
-                                {% for paciente in pacientes %}
-                                    <option value="{{ paciente.id }}" 
-                                            {% if anamnese and anamnese.paciente_id == paciente.id %}selected
-                                            {% elif request.form.get('paciente_id') == paciente.id %}selected
-                                            {% endif %}>
-                                        {{ paciente.nome }} ({{ paciente.cpf }})
-                                    </option>
-                                {% endfor %}
-                            </select>
+                    <h2 class="form-title">{% if item %}Editar Item de Patrimônio{% else %}Novo Item de Patrimônio{% endif %}</h2>
+                    <form id="patrimonio-form" method="POST" action="{% if item %}{{ url_for('patrimonio.editar_patrimonio', item_doc_id=item.id) }}{% else %}{{ url_for('patrimonio.adicionar_patrimonio') }}{% endif %}">
+                        <div class="form-grid">
+                            <div class="form-field required">
+                                <label for="nome">Nome do Item</label>
+                                <input type="text" id="nome" name="nome" value="{{ item.nome or '' }}" placeholder="Ex: Cadeira de Rodas" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="codigo">Código/Serial</label>
+                                <input type="text" id="codigo" name="codigo" value="{{ item.codigo or '' }}" placeholder="Ex: CR-001 / SN12345">
+                            </div>
+                            <div class="form-field required">
+                                <label for="tipo">Tipo</label>
+                                <select id="tipo" name="tipo" required>
+                                    <option value="">Selecione o Tipo</option>
+                                    <option value="Móvel" {% if item.tipo == 'Móvel' %}selected{% endif %}>Móvel</option>
+                                    <option value="Equipamento" {% if item.tipo == 'Equipamento' %}selected{% endif %}>Equipamento</option>
+                                    <option value="Material de Consumo" {% if item.tipo == 'Material de Consumo' %}selected{% endif %}>Material de Consumo</option>
+                                    <option value="Veículo" {% if item.tipo == 'Veículo' %}selected{% endif %}>Veículo</option>
+                                    <option value="Imóvel" {% if item.tipo == 'Imóvel' %}selected{% endif %}>Imóvel</option>
+                                    <option value="Instrumento Médico" {% if item.tipo == 'Instrumento Médico' %}selected{% endif %}>Instrumento Médico</option>
+                                    <option value="Software" {% if item.tipo == 'Software' %}selected{% endif %}>Software</option>
+                                    <option value="Licença" {% if item.tipo == 'Licença' %}selected{% endif %}>Licença</option>
+                                    <option value="Documentação" {% if item.tipo == 'Documentação' %}selected{% endif %}>Documentação</option>
+                                    <option value="Protocolo de Avaliação" {% if item.tipo == 'Protocolo de Avaliação' %}selected{% endif %}>Protocolo de Avaliação</option>
+                                    <option value="Computador/Notebook" {% if item.tipo == 'Computador/Notebook' %}selected{% endif %}>Computador/Notebook</option>
+                                    <option value="Impressora" {% if item.tipo == 'Impressora' %}selected{% endif %}>Impressora</option>
+                                    <option value="Telefone/Celular" {% if item.tipo == 'Telefone/Celular' %}selected{% endif %}>Telefone/Celular</option>
+                                    <option value="Câmera" {% if item.tipo == 'Câmera' %}selected{% endif %}>Câmera</option>
+                                    <option value="Projetor" {% if item.tipo == 'Projetor' %}selected{% endif %}>Projetor</option>
+                                    <option value="Ar Condicionado" {% if item.tipo == 'Ar Condicionado' %}selected{% endif %}>Ar Condicionado</option>
+                                    <option value="Mesa" {% if item.tipo == 'Mesa' %}selected{% endif %}>Mesa</option>
+                                    <option value="Cadeira" {% if item.tipo == 'Cadeira' %}selected{% endif %}>Cadeira</option>
+                                    <option value="Armário" {% if item.tipo == 'Armário' %}selected{% endif %}>Armário</option>
+                                    <option value="Estante" {% if item.tipo == 'Estante' %}selected{% endif %}>Estante</option>
+                                    <option value="Arquivo" {% if item.tipo == 'Arquivo' %}selected{% endif %}>Arquivo</option>
+                                    <option value="Utensílio de Cozinha" {% if item.tipo == 'Utensílio de Cozinha' %}selected{% endif %}>Utensílio de Cozinha</option>
+                                    <option value="Eletrodoméstico" {% if item.tipo == 'Eletrodoméstico' %}selected{% endif %}>Eletrodoméstico</option>
+                                    <option value="Ferramenta" {% if item.tipo == 'Ferramenta' %}selected{% endif %}>Ferramenta</option>
+                                    <option value="Material de Limpeza" {% if item.tipo == 'Material de Limpeza' %}selected{% endif %}>Material de Limpeza</option>
+                                    <option value="Material de Escritório" {% if item.tipo == 'Material de Escritório' %}selected{% endif %}>Material de Escritório</option>
+                                    <option value="Outro" {% if item.tipo == 'Outro' %}selected{% endif %}>Outro</option>
+                                </select>
+                            </div>
+                            <div class="form-field required">
+                                <label for="data_aquisicao">Data de Aquisição</label>
+                                <input type="date" id="data_aquisicao" name="data_aquisicao" value="{{ item.data_aquisicao_input or '' }}" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="local_armazenamento">Local de Armazenamento</label>
+                                <input type="text" id="local_armazenamento" name="local_armazenamento" value="{{ item.local_armazenamento or '' }}" placeholder="Ex: Sala 3 / Almoxarifado">
+                            </div>
+                            <div class="form-field">
+                                <label for="valor">Valor (R$)</label>
+                                <input type="number" id="valor" name="valor" value="{{ item.valor or '' }}" step="0.01" min="0" placeholder="Ex: 1500.00">
+                            </div>
+                            <div class="form-field checkbox-field full-width"> {# Checkbox para Contas a Pagar #}
+                                <input type="checkbox" id="gerar_conta_pagar" name="criar_conta_pagar" {% if item.criar_conta_pagar %}checked{% endif %}>
+                                <label for="gerar_conta_pagar">Gerar Conta a Pagar?</label>
+                            </div>
+                            <div class="form-field full-width"> {# Adiciona classe para ocupar largura total em grid #}
+                                <label for="observacao">Observações</label>
+                                <textarea id="observacao" name="observacao" rows="4" placeholder="Detalhes adicionais sobre o item, estado de conservação, histórico, etc.">{{ item.observacao or '' }}</textarea>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="profissional_id">Profissional</label>
-                            <select id="profissional_id" name="profissional_id" required>
-                                <option value="">Selecione um profissional</option>
-                                {% for profissional in profissionais %}
-                                    <option value="{{ profissional.id }}" 
-                                            {% if anamnese and anamnese.profissional_id == profissional.id %}selected
-                                            {% elif request.form.get('profissional_id') == profissional.id %}selected
-                                            {% endif %}>
-                                        {{ profissional.nome }} ({{ profissional.especialidade }})
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="modelo_anamnese_id">Modelo de Anamnese</label>
-                            <select id="modelo_anamnese_id" name="modelo_anamnese_id" required>
-                                <option value="">Selecione um modelo</option>
-                                {% for modelo in modelos_anamnese %}
-                                    <option value="{{ modelo.id }}" 
-                                            {% if anamnese and anamnese.modelo_anamnese_id == modelo.id %}selected
-                                            {% elif request.form.get('modelo_anamnese_id') == modelo.id %}selected
-                                            {% endif %}>
-                                        {{ modelo.nome }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="data_anamnese">Data da Anamnese</label>
-                            <input type="date" id="data_anamnese" name="data_anamnese" 
-                                   value="{{ (anamnese.data_anamnese.strftime('%Y-%m-%d') if anamnese and anamnese.data_anamnese else request.form.get('data_anamnese', '')) }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="respostas_json">Respostas da Anamnese (JSON)</label>
-                            <textarea id="respostas_json" name="respostas_json" rows="10" 
-                                      placeholder="Insira as respostas no formato JSON, conforme o modelo selecionado.">{{ anamnese.respostas_json if anamnese else request.form.get('respostas_json', '') }}</textarea>
-                        </div>
-                        
                         <div class="form-actions">
-                            <a href="{{ url_for('buscar_prontuario') }}" class="btn btn-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> {{ 'Salvar' if anamnese else 'Adicionar' }}
-                            </button>
+                            <a href="{{ url_for('patrimonio.listar_patrimonio') }}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Salvar Patrimônio</button>
                         </div>
                     </form>
                 </div>
             </main>
         </div>
     </div>
-
+    
     <script type="module">
-        // Placeholder for Firebase - adjust with your actual config
+        // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
         const FAKE_FIREBASE = {
             initializeApp: () => ({}),
             getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
@@ -366,40 +576,140 @@
         let auth = getAuth(initializeApp(firebaseConfig));
 
         document.addEventListener('DOMContentLoaded', () => {
-            // A sidebar, theme toggle e logout agora são gerenciados pelo script incluído de Nav.html
-            // const htmlEl = document.documentElement;
-            // const sidebar = document.querySelector('.sidebar');
-            // const mainContent = document.querySelector('.main-content');
-            // const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            // const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            // const themeToggle = document.querySelector('#theme-toggle');
-            // const logoutButton = document.getElementById('logoutButton');
-            const dataAnamneseInput = document.getElementById('data_anamnese');
+            // --- Lógica para Notificações Toast ---
+            const toastContainer = document.getElementById('toast-container');
+            function showToast(message, category = 'info') {
+                if (!toastContainer) return;
 
-            // Initialize Flatpickr for data_anamnese
-            if (dataAnamneseInput) {
-                flatpickr(dataAnamneseInput, {
-                    dateFormat: "Y-m-d",
-                    altInput: true,
-                    altFormat: "d/m/Y",
-                    locale: "pt",
-                    disableMobile: true
+                const toast = document.createElement('div');
+                toast.className = `toast ${category}`;
+                
+                let iconClass = 'fa-solid fa-circle-info';
+                let title = 'Informação';
+                if (category === 'success') {
+                    iconClass = 'fa-solid fa-check-circle';
+                    title = 'Sucesso';
+                }
+                if (category === 'danger') {
+                    iconClass = 'fa-solid fa-times-circle';
+                    title = 'Erro';
+                }
+                if (category === 'warning') {
+                    iconClass = 'fa-solid fa-exclamation-triangle';
+                    title = 'Atenção';
+                }
+
+                toast.innerHTML = `
+                    <div class="toast-icon">
+                        <i class="${iconClass}"></i>
+                    </div>
+                    <div class="toast-content">
+                        <strong class="toast-title">${title}</strong>
+                        <span class="toast-message">${message}</span>
+                    </div>
+                    <button class="toast-close">&times;</button>
+                    <div class="toast-progress"></div>
+                `;
+                
+                toastContainer.appendChild(toast);
+
+                const closeButton = toast.querySelector('.toast-close');
+                closeButton.addEventListener('click', () => {
+                    toast.classList.add('fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
                 });
+
+                setTimeout(() => {
+                    toast.classList.add('fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
+                }, 5000);
             }
 
-            // --- Sidebar Logic (removida daqui, agora em Nav.html) ---
-            // function setupSidebar() { ... }
+            // --- Processa mensagens flash do backend e as exibe como toasts ---
+            {# Isso é um bloco Jinja2 que precisa ser processado pelo backend Flask #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    showToast({{ message|tojson|safe }}, "{{ category }}");
+                {% endfor %}
+            {% endwith %}
 
-            // --- Theme Logic (removida daqui, agora em Nav.html) ---
-            // function setupTheme() { ... }
+            // --- Lógica de Validação do Formulário ---
+            const patrimonioForm = document.getElementById('patrimonio-form');
+            const valorInput = document.getElementById('valor');
+            const gerarContaPagarCheckbox = document.getElementById('gerar_conta_pagar');
 
-            // --- Logout Logic (removida daqui, agora em Nav.html) ---
-            // function setupLogout() { ... }
+            // Função para atualizar o estado do checkbox "Gerar Conta a Pagar"
+            function updateGerarContaPagarCheckboxState() {
+                const valor = parseFloat(valorInput.value) || 0;
+                if (valor <= 0) {
+                    gerarContaPagarCheckbox.checked = false; // Desmarca se o valor for <= 0
+                    gerarContaPagarCheckbox.disabled = true; // Desabilita o checkbox
+                } else {
+                    gerarContaPagarCheckbox.disabled = false; // Habilita o checkbox
+                }
+            }
 
-            // --- Initialization ---
-            // setupSidebar(); // Removido
-            // setupTheme(); // Removido
-            // setupLogout(); // Removido
+            if (patrimonioForm) {
+                // Inicializa o estado do checkbox ao carregar a página
+                updateGerarContaPagarCheckboxState();
+
+                // Adiciona listener para o input de valor
+                valorInput.addEventListener('input', updateGerarContaPagarCheckboxState);
+
+                // Adiciona listener para o checkbox para dar feedback se tentar marcar com valor zero
+                gerarContaPagarCheckbox.addEventListener('change', function() {
+                    const valor = parseFloat(valorInput.value) || 0;
+                    if (this.checked && valor <= 0) {
+                        showToast('Não é possível gerar conta a pagar para valor zero ou negativo.', 'warning');
+                        this.checked = false; // Desmarca novamente
+                    }
+                });
+
+                patrimonioForm.addEventListener('submit', function(event) {
+                    let allFieldsValid = true;
+                    // Seleciona todos os campos obrigatórios, exceto checkboxes que não precisam de validação de 'vazio'
+                    const requiredFields = patrimonioForm.querySelectorAll('.form-field.required input:not([type="checkbox"]), .form-field.required select, .form-field.required textarea');
+                    
+                    // Limpar classes de erro e shake de todos os campos
+                    requiredFields.forEach(field => {
+                        field.classList.remove('invalid', 'shake');
+                    });
+
+                    requiredFields.forEach(field => {
+                        if (field.value.trim() === '') {
+                            allFieldsValid = false;
+                            field.classList.add('invalid');
+                            field.classList.add('shake'); // Adiciona animação de shake
+                        } else {
+                            field.classList.add('valid');
+                        }
+                    });
+
+                    if (!allFieldsValid) {
+                        event.preventDefault(); // Impede o envio do formulário
+                        showToast('Por favor, preencha todos os campos obrigatórios.', 'danger');
+                        
+                        // Foca no primeiro campo inválido
+                        const firstInvalidField = patrimonioForm.querySelector('.form-field.required input.invalid:not([type="checkbox"]), .form-field.required select.invalid, .form-field.required textarea.invalid');
+                        if (firstInvalidField) {
+                            firstInvalidField.focus();
+                        }
+                    }
+                });
+
+                // Adiciona validação em tempo real ao sair do campo (blur)
+                patrimonioForm.querySelectorAll('.form-field.required input:not([type="checkbox"]), .form-field.required select, .form-field.required textarea').forEach(field => {
+                    field.addEventListener('blur', function() {
+                        if (this.value.trim() === '') {
+                            this.classList.add('invalid');
+                            this.classList.remove('valid');
+                        } else {
+                            this.classList.add('valid');
+                            this.classList.remove('invalid');
+                        }
+                    });
+                });
+            }
         });
     </script>
 </body>

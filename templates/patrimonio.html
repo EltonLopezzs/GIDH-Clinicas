@@ -110,6 +110,28 @@
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar.collapsed .sidebar-footer span { display: none; }
         .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+
+        /* Estilos para Submenu Financeiro */
+        .sidebar nav ul li.has-submenu .submenu {
+            list-style: none;
+            padding: 0;
+            margin-left: 1.5rem; /* Indent sub-menu items */
+            max-height: 0;
+            overflow: hidden; /* Important for the transition */
+            transition: max-height 0.3s ease-out;
+            background: rgba(255, 255, 255, 0.05); /* Slightly different background for sub-menu */
+            border-radius: 8px;
+        }
+
+        .sidebar nav ul li.has-submenu.open .submenu {
+            max-height: 1000px; /* Increased to a very large value to ensure content fits */
+            overflow-y: auto; /* Add scrollbar if content exceeds max-height */
+            transition: max-height 0.5s ease-in;
+        }
+        /* Ajustar estado colapsado para o submenu */
+        .sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
+        .sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
+        .sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
         
         /* --- Main Content & Topbar --- */
         .main-content {
@@ -250,6 +272,124 @@
             margin: 0; /* Remove margin extra do ícone */
         }
 
+        /* --- Flash Messages (Toast-like) --- */
+        .toast-container {
+            position: fixed;
+            top: 85px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 360px;
+        }
+
+        .toast {
+            background-color: var(--card);
+            color: var(--text);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1), 0 5px 5px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            border: 1px solid var(--border-color);
+            animation: toast-slide-in 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast.success { border-left: 5px solid var(--success); }
+        .toast.danger { border-left: 5px solid var(--danger); }
+        .toast.warning { border-left: 5px solid var(--warning); }
+        .toast.info { border-left: 5px solid var(--info); }
+
+        .toast-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.danger .toast-icon { color: var(--danger); }
+        .toast.warning .toast-icon { color: var(--warning); }
+        .toast.info .toast-icon { color: var(--info); }
+
+        .toast-content {
+            flex-grow: 1;
+        }
+        .toast-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        .toast-message {
+            font-size: 0.9rem;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            opacity: 0.7;
+            transition: opacity 0.2s ease, color 0.2s ease;
+            flex-shrink: 0;
+        }
+        .toast-close:hover {
+            opacity: 1;
+            color: var(--text);
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            width: 100%;
+            animation: toast-progress-bar 5s linear forwards;
+        }
+        .toast.success .toast-progress { background-color: var(--success); }
+        .toast.danger .toast-progress { background-color: var(--danger); }
+        .toast.warning .toast-progress { background-color: var(--warning); }
+        .toast.info .toast-progress { background-color: var(--info); }
+
+        @keyframes toast-slide-in {
+            from {
+                opacity: 0;
+                transform: translateX(110%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes toast-fade-out {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+        .toast.fade-out {
+            animation: toast-fade-out 0.4s ease-in forwards;
+        }
+
+        @keyframes toast-progress-bar {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
         /* Responsive */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
@@ -307,41 +447,10 @@
     </style>
 </head>
 <body>
+    <div id="toast-container"></div> {# Adicionado container para mensagens toast #}
     <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
-                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li class="active"><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
-                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-                    </button>
-                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
-                </div>
-            </div>
-        </aside>
+        {# Inclui o conteúdo da barra de navegação (sidebar) do Nav.html #}
+        {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
@@ -362,6 +471,7 @@
             </header>
 
             <main>
+                {# Adicionado container para mensagens flash #}
                 {% with messages = get_flashed_messages(with_categories=true) %}
                   {% if messages %}
                     <div class="flash-messages">
@@ -487,84 +597,76 @@
         let auth = getAuth(initializeApp(firebaseConfig));
 
         document.addEventListener('DOMContentLoaded', () => {
-            const htmlEl = document.documentElement;
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
-            const logoutButton = document.getElementById('logoutButton');
+            // Remove as referências diretas a elementos da sidebar e topbar que são gerenciados por Nav.html
+            // const htmlEl = document.documentElement; // Mantido para o setupTheme local de toast
+            // const sidebar = document.querySelector('.sidebar'); // Removido
+            // const mainContent = document.querySelector('.main-content'); // Removido
+            // const menuBtnMobile = document.querySelector('.menu-btn-mobile'); // Removido
+            // const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop'); // Removido
+            // const themeToggle = document.querySelector('#theme-toggle'); // Removido
+            // const logoutButton = document.getElementById('logoutButton'); // Removido
 
-            // --- Sidebar Logic (Copiado de base.html) ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i');
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
+            // --- Lógica para Notificações Toast ---
+            const toastContainer = document.getElementById('toast-container');
+            function showToast(message, category = 'info') {
+                if (!toastContainer) return;
+
+                const toast = document.createElement('div');
+                toast.className = `toast ${category}`;
+                
+                let iconClass = 'fa-solid fa-circle-info';
+                let title = 'Informação';
+                if (category === 'success') {
+                    iconClass = 'fa-solid fa-check-circle';
+                    title = 'Sucesso';
                 }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
+                if (category === 'danger') {
+                    iconClass = 'fa-solid fa-times-circle';
+                    title = 'Erro';
                 }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
+                if (category === 'warning') {
+                    iconClass = 'fa-solid fa-exclamation-triangle';
+                    title = 'Atenção';
+                }
+
+                toast.innerHTML = `
+                    <div class="toast-icon">
+                        <i class="${iconClass}"></i>
+                    </div>
+                    <div class="toast-content">
+                        <strong class="toast-title">${title}</strong>
+                        <span class="toast-message">${message}</span>
+                    </div>
+                    <button class="toast-close">&times;</button>
+                    <div class="toast-progress"></div>
+                `;
+                
+                toastContainer.appendChild(toast);
+
+                const closeButton = toast.querySelector('.toast-close');
+                closeButton.addEventListener('click', () => {
+                    toast.classList.add('fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
                 });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
+
+                setTimeout(() => {
+                    toast.classList.add('fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
+                }, 5000);
             }
 
-            // --- Theme Logic (Copiado de base.html) ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
+            // --- Processa mensagens flash do backend e as exibe como toasts ---
+            {# Isso é um bloco Jinja2 que precisa ser processado pelo backend Flask #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    showToast({{ message|tojson|safe }}, "{{ category }}");
+                {% endfor %}
+            {% endwith %}
 
-            // --- Logout Logic (Copiado de base.html) ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
+            // --- Lógica da Sidebar, Tema e Logout (removidas daqui para evitar duplicação) ---
+            // Essas funcionalidades agora são gerenciadas exclusivamente pelo Nav.html.
+            // As funções setupSidebar(), setupTheme(), setupLogout() e setupSubmenus()
+            // não são mais necessárias aqui.
 
             // --- Confirmation Modal Logic (Copiado de estoque.html) ---
             function setupConfirmationModal() {
@@ -610,9 +712,8 @@
             }
 
             // --- Initialization ---
-            setupSidebar();
-            setupTheme();
-            setupLogout();
+            // As funções setupSidebar, setupTheme, setupLogout e setupSubmenus
+            // são inicializadas pelo script em Nav.html.
             setupConfirmationModal();
         });
     </script>

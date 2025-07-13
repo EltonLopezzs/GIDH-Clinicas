@@ -42,6 +42,54 @@
 </aside>
 
 <style>
+/* Estilos da Sidebar */
+.sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, var(--primary), var(--accent));
+    color: white;
+    position: fixed;
+    top: 0; left: 0; height: 100vh;
+    transition: width 0.3s ease, transform 0.3s ease;
+    z-index: 1000; display: flex; flex-direction: column;
+}
+.sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
+.sidebar-header {
+    padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
+}
+.sidebar-header .logo {
+    font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
+    display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
+}
+.sidebar-header .logo i { font-size: 1.8rem; }
+.sidebar.collapsed { width: 78px; }
+.sidebar.collapsed .sidebar-header .logo span { display: none; }
+.sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+.sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
+.sidebar nav ul { list-style: none; padding: 0; }
+.sidebar nav ul li { margin-bottom: 0.5rem; }
+.sidebar nav ul li a {
+    color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
+    padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
+    font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
+}
+.sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+.sidebar.collapsed nav ul li a span { display: none; }
+.sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
+.sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+.sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
+.sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
+.sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
+.sidebar-footer button, .sidebar-footer a {
+    background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
+    border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
+    transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
+    font-size: 0.95rem; text-decoration: none;
+}
+.sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+.sidebar.collapsed .sidebar-footer span { display: none; }
+.sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+
 /* Estilos para Submenu Financeiro */
 .sidebar nav ul li.has-submenu .submenu {
     list-style: none;
@@ -64,30 +112,41 @@
 .sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
 .sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
 .sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
+
+/* Responsivo para a sidebar */
+@media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+    .sidebar.collapsed { transform: translateX(-100%); width: 260px; } /* Em mobile, collapsed é igual a hidden */
+    .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
+    .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
+    .sidebar.collapsed .sidebar-header .logo span { display: inline; }
+}
 </style>
 
 <script type="module">
   document.addEventListener('DOMContentLoaded', () => {
+    const htmlEl = document.documentElement;
     const sidebar = document.querySelector('.sidebar');
     const mainContent = document.querySelector('.main-content');
     const menuBtnMobile = document.querySelector('.menu-btn-mobile');
     const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
     const themeToggle = document.querySelector('#theme-toggle');
-    const htmlEl = document.documentElement;
+    const logoutButton = document.getElementById('logoutButton');
 
     // Submenu functionality
     document.querySelectorAll('.has-submenu').forEach(item => {
       const toggle = item.querySelector('.submenu-toggle');
-      toggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        item.classList.toggle('open');
-      });
+      if (toggle) { // Ensure toggle exists
+        toggle.addEventListener('click', (e) => {
+          e.preventDefault();
+          item.classList.toggle('open');
+        });
+      }
     });
 
-    const getCssVar = (varName) => getComputedStyle(htmlEl).getPropertyValue(varName).trim();
-    
     function setupSidebar() {
-      if (!sidebar || !mainContent) return;
+      if (!sidebar || !mainContent) return; // Ensure elements exist
       const updateDesktopToggleIcon = () => {
         if (!toggleBtnDesktop) return;
         const icon = toggleBtnDesktop.querySelector('i');
@@ -102,28 +161,35 @@
           if (localStorage.getItem('sidebarCollapsed') === 'true') {
             sidebar.classList.add('collapsed');
             mainContent.classList.add('collapsed');
+          } else {
+            sidebar.classList.remove('collapsed');
+            mainContent.classList.remove('collapsed');
           }
         } else {
-            sidebar.classList.remove('open', 'collapsed');
-            mainContent.classList.remove('collapsed');
+            // On mobile, sidebar is initially hidden and expands
+            sidebar.classList.remove('open', 'collapsed'); // Ensure no conflicting classes
+            mainContent.classList.remove('collapsed'); // Main content always full width on mobile
         }
         updateDesktopToggleIcon();
       };
+      
       toggleBtnDesktop?.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
         mainContent.classList.toggle('collapsed');
         localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
         updateDesktopToggleIcon();
-        setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
       });
+
       menuBtnMobile?.addEventListener('click', (e) => {
-        e.stopPropagation();
+        e.stopPropagation(); // Prevent document click from closing immediately
         sidebar.classList.toggle('open');
         const icon = menuBtnMobile.querySelector('i');
         icon.classList.toggle('fa-times', sidebar.classList.contains('open'));
         icon.classList.toggle('fa-bars', !sidebar.classList.contains('open'));
       });
+
       document.addEventListener('click', (e) => {
+        // Close sidebar if clicked outside on mobile and it's open
         if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
           sidebar.classList.remove('open');
           const icon = menuBtnMobile.querySelector('i');
@@ -131,18 +197,21 @@
           icon.classList.add('fa-bars');
         }
       });
+
       applyInitialState();
-      window.addEventListener('resize', applyInitialState);
+      window.addEventListener('resize', applyInitialState); // Reapply on resize
     }
     
     function setupTheme() {
-        if (!themeToggle) return;
+        if (!themeToggle) return; // Ensure themeToggle exists
         const updateThemeIcon = (theme) => {
             const icon = themeToggle.querySelector('i');
-            if (theme === 'dark') {
-                icon.classList.replace('fa-sun', 'fa-moon');
-            } else {
-                icon.classList.replace('fa-moon', 'fa-sun');
+            if (icon) { // Ensure icon exists
+                if (theme === 'dark') {
+                    icon.classList.replace('fa-sun', 'fa-moon');
+                } else {
+                    icon.classList.replace('fa-moon', 'fa-sun');
+                }
             }
         };
         const applyInitialTheme = () => {
@@ -160,24 +229,12 @@
     }
 
     function setupLogout() {
-        const logoutButton = document.getElementById('logoutButton');
-        if (!logoutButton) return;
-
-        logoutButton.addEventListener('click', (event) => {
+        if (!logoutButton) return; // Ensure logoutButton exists
+        logoutButton.addEventListener('click', async (event) => {
             event.preventDefault(); 
-            
-            console.log("Tentando fazer logout...");
-
-            fetch("{{ url_for('logout') }}", { 
-                method: 'POST',
-            })
-            .then(response => {
-                window.location.href = "{{ url_for('login_page') }}";
-            })
-            .catch(error => {
-                console.error('Erro ao tentar fazer logout:', error);
-                window.location.href = "{{ url_for('login_page') }}";
-            });
+            fetch("{{ url_for('logout') }}", { method: 'POST' })
+                .then(() => window.location.href = "{{ url_for('login_page') }}")
+                .catch(() => window.location.href = "{{ url_for('login_page') }}");
         });
     }
 
