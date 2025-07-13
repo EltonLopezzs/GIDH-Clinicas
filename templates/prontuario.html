@@ -291,22 +291,24 @@
         .paciente-info-card h3 {
             font-size: 2rem; /* Larger font size */
             color: var(--primary-dark); /* Color from primary palette */
-            margin-bottom: 0.5rem; /* Reduced margin */
+            margin-bottom: 0.25rem; /* Reduced margin to bring closer to date */
             font-weight: 800; /* Extra bold */
             padding-top: 0.5rem;
             text-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle text shadow */
             width: 100%; /* Garante que o h3 ocupe a largura total */
-            border-bottom: 1px solid var(--border-color); /* Linha de separação */
-            padding-bottom: 0.75rem; /* Espaçamento abaixo da linha */
+            /* Removed border-bottom and padding-bottom from here */
         }
         .paciente-info-card .info-text {
             font-size: 1rem; /* Slightly larger text */
             color: var(--text);
             font-weight: 600;
-            margin-top: 0.75rem; /* Espaçamento acima da data de nascimento */
+            margin-top: 0; /* Removed margin-top to bring closer to name */
             display: flex; /* Para alinhar ícone e texto */
             align-items: center;
             gap: 0.5rem; /* Espaçamento entre ícone e texto */
+            padding-bottom: 0.75rem; /* Add padding-bottom here for separation */
+            border-bottom: 1px solid var(--border-color); /* Add border-bottom here */
+            width: 100%; /* Ensure it spans full width for the border */
         }
         .paciente-info-card .info-text i {
             color: var(--muted); /* Cor do ícone */
@@ -981,11 +983,9 @@
                     </div>
                     {# Content preview for documents can remain, or be simplified if preferred #}
                     <div class="registro-content" style="display: block;"> {# Keep display:block for document details #}
-                        <p><strong>Arquivo:</strong> {{ documento.nome_arquivo }}</p>
-                        <!-- <p><strong>Tamanho Original:</strong> {{ "%.2f" | format(documento.tamanho_original / 1024) }} KB</p> -->
-                        <!-- <p><strong>Tamanho Otimizado:</strong> {{ "%.2f" | format(documento.tamanho_comprimido / 1024) }} KB</p> -->
+                        <p><strong>Arquivo:</strong> {{ documento.nome_arquivo }}</p>                      
                         {% if documento.tamanho_original > 0 %}
-                            <!-- <p><strong>Redução:</strong> {{ "%.2f" | format((1 - (documento.tamanho_comprimido / documento.tamanho_original)) * 100) }}%</p> -->
+                   
                         {% endif %}
                     </div>
                     <div class="registro-actions">
@@ -1148,7 +1148,7 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="pdf_file">Arquivo PDF</label>
-                        <input type="file" id="pdf" name="pdf_file" accept=".pdf" required>
+                        <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required> {# CORRIGIDO: id="pdf_file" #}
                         <p class="text-sm text-gray-500 mt-1">Apenas arquivos PDF são permitidos. O arquivo será otimizado para reduzir o tamanho.</p>
                     </div>
                     <div class="form-group">
@@ -1295,7 +1295,7 @@
 
         // Configuração do Firebase. ATENÇÃO: Substitua pelos dados do seu projeto Firebase.
         const firebaseConfig = {
-            apiKey: "SUA_API_KEY", // Make sure this is replaced with a valid API key
+            apiKey: "SUA_API_KEY", // !!! IMPORTANTE: SUBSTITUA COM SUA CHAVE DE API VÁLIDA !!!
             authDomain: "SEU_AUTH_DOMAIN",
             projectId: "SEU_PROJECT_ID",
             storageBucket: "SEU_STORAGE_BUCKET",
@@ -1618,7 +1618,7 @@
                 });
 
                 // NOVO: Lógica para o formulário de upload de documentos
-                formUploadDocumento?.addEventListener('submit', (event) => {
+                formUploadDocumento?.addEventListener('submit', async (event) => { // Adicionado async
                     event.preventDefault(); // Impede o envio padrão
 
                     const file = fileInput.files[0];
@@ -1646,30 +1646,41 @@
                     formData.append('descricao', description);
                     formData.append('paciente_id', PACIENTE_DOC_ID); // Garante que o paciente_id seja enviado
 
-                    fetch(formUploadDocumento.action, {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json()) // Assumindo que o backend sempre retorna JSON
-                    .then(data => {
-                        if (data.success) {
-                            displayFlashMessage('success', data.message);
-                            // Redirecionar para recarregar a página e mostrar o novo documento
-                            window.location.reload(); 
+                    try {
+                        const response = await fetch(formUploadDocumento.action, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) { // Verifica se o status HTTP é 2xx (sucesso)
+                            // Tenta ler o JSON, mas não exige que ele exista para recarregar
+                            try {
+                                const data = await response.json();
+                                if (data.success) {
+                                    displayFlashMessage('success', data.message);
+                                } else {
+                                    displayFlashMessage('danger', data.message || 'Erro desconhecido ao fazer upload do documento.');
+                                }
+                            } catch (jsonError) {
+                                console.warn('Resposta não é JSON ou JSON inválido, mas a requisição HTTP foi OK. Recarregando a página.');
+                                displayFlashMessage('success', 'Documento enviado com sucesso! Recarregando a página...');
+                            }
+                            window.location.reload(); // Recarrega a página em caso de sucesso HTTP
                         } else {
-                            displayFlashMessage('danger', data.message);
+                            // Lida com erros HTTP (ex: 400, 500)
+                            const errorText = await response.text(); // Obtém o texto bruto do erro
+                            console.error('Erro HTTP no upload:', response.status, errorText);
+                            displayFlashMessage('danger', `Erro no servidor (${response.status}). Tente novamente. Detalhes: ${errorText.substring(0, 100)}...`);
                         }
-                    })
-                    .catch(error => {
-                        console.error('Erro no upload:', error);
-                        displayFlashMessage('danger', 'Erro ao fazer upload do documento. Tente novamente.');
-                    })
-                    .finally(() => {
+                    } catch (error) {
+                        console.error('Erro na requisição de upload:', error);
+                        displayFlashMessage('danger', 'Erro na comunicação com o servidor. Verifique sua conexão e tente novamente.');
+                    } finally {
                         hideLoading();
                         submitUploadDocumentoBtn.disabled = false;
                         submitUploadDocumentoBtn.classList.remove('loading');
-                        modalUploadDocumento.classList.remove('active'); // Fecha a modal após a tentativa
-                    });
+                        // Removido o fechamento do modal aqui para que mensagens de erro sejam visíveis
+                    }
                 });
 
 
