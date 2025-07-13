@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Horários - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+    <title>Gerenciar Agendamentos - {{ session.clinica_nome_display or 'Clínica On' }}</title>
     
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     
@@ -12,58 +12,77 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
     <style>
+        /* Estilos principais */
         :root {
-            --primary: #5587c2;
-            --accent: #9b53b8;
-            --primary-light: #c8dcf3;
-            --secondary: #f59e0b;
-            --danger: #dc2626;
-            --success: #16a34a;
-            --warning: #f59e0b;
-            --info: #0ea5e9;
-            --primary-dark: #115e59;  
-            --border-color: #e2e8f0;
-            --bg: #f1f5f9;
-            --card: #ffffff;
-            --text: #0f172a;
-            --muted: #64748b;
-            
+            --bg: #f1f5f9;                  /* Gray-100 */
+            --card: #ffffff;                /* White */
+            --text: #0f172a;                /* Gray-900 */
+            --muted: #64748b;               /* Gray-500 */
+            --accent: #9b53b8;              /* Purple-500 */
+            --primary-dark: #115e59;        
+            --primary: #5587c2;             /* Blue-500 */
+            --primary-light: #c8dcf3;       /* Blue-100 */
+            --secondary: #f59e0b;           /* Yellow-500 */
+            --danger: #dc2626;              /* Red-600 */
+            --success: #16a34a;             /* Green-600 */
+            --warning: #f59e0b;             /* Yellow-500 */
+            --info: #0ea5e9;                /* Sky-500 */
+            --border-color: #e2e8f0;        /* Gray-200 */
+
             /* Cores para os status dos agendamentos */
             --status-confirmado: #16a344; /* Verde */
             --status-concluido: #0ea5e9; /* Azul */
             --status-pendente: #f59e0b; /* Laranja */
             --status-cancelado: #dc2626; /* Vermelho */
-            
+
+            --dark-bg: #0f172a;             /* Gray-900 */
+            --dark-card: #1e293b;           /* Gray-800 */
+            --dark-text: #f1f5f9;           /* Gray-100 */
+            --dark-muted: #94a3b8;          /* Gray-400 */
+            --dark-border-color: #334155;   /* Gray-600 */
+
             color-scheme: light;
         }
 
         [data-theme="dark"] {
-            --primary: #7ba5d6;
-            --accent: #b974c7;
-            --primary-light: #4f7db8;
-            --secondary: #fbbf24;
-            --danger: #f87171;
-            --success: #34d399;
-            --warning: #fbbf24;
-            --info: #38bdf8;
-            --border-color: #374151;
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text: #f1f5f9;
-            --muted: #94a3b8;
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
             
             /* Cores para os status em tema escuro (opcionalmente ajustadas) */
             --status-confirmado: #22c55e;
             --status-concluido: #38bdf8;
             --status-pendente: #fbbf24;
             --status-cancelado: #ef4444;
-            
+
             color-scheme: dark;
         }
+        
+        ::-webkit-scrollbar {
+            background-color: var(--bg);
+            width: 0.5625rem;
+            height: 0.5625rem;
+            border-top-right-radius: 0.3125rem;
+            border-bottom-right-radius: 0.3125rem;
+            transition: background-color 0.8s ease;
+        }
 
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--muted);
+            border-radius: .3125rem;
+            transition: background-color 0.8s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            transition: background-color 0.8s ease;
+            background-color: var(--primary);
+        }
+        
         /* Reset básico e box-sizing */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; } /* Removido overflow-x: hidden; */
+        html, body { height: 100%; }
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
@@ -71,16 +90,13 @@
             min-height: 100vh;
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
-            overflow: hidden; /* Adicionado overflow: hidden; para desativar o scroll da página */
+            /* Removido overflow-x: hidden; para permitir que os toasts apareçam */
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* ============================================
-            --- SIDEBAR ---
-            ============================================
-        */
+        /* Sidebar */
         .sidebar {
-            width: 260px;
+            width: 280px; /* Ajustado para 280px para consistência com Nav.html */
             background: linear-gradient(180deg, var(--primary), var(--accent));
             color: white;
             position: fixed;
@@ -107,48 +123,50 @@
             white-space: nowrap; overflow: hidden;
         }
         .sidebar-header .logo i { font-size: 1.8rem; }
-        
-        .sidebar.collapsed { width: 78px; }
-        .sidebar.collapsed .sidebar-header .logo span, .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: none; }
-        .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
-
+        .sidebar.collapsed { width: 88px; } /* Ajustado para 88px */
+        .sidebar.collapsed .sidebar-header .logo span { display: none; }
+        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
         .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
-        .sidebar.collapsed nav { padding: 0 0.5rem; }
         .sidebar nav ul { list-style: none; padding: 0; }
         .sidebar nav ul li { margin-bottom: 0.5rem; }
         .sidebar nav ul li a {
             color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
             padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
-            font-weight: 500; white-space: nowrap; overflow: hidden;
-            transition: background 0.2s ease, color 0.2s ease;
+            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
         }
         .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+        .sidebar.collapsed nav ul li a span { display: none; }
+        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
         .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
-
         .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
         .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
         .sidebar-footer button, .sidebar-footer a {
-            background: none; border: none; cursor: pointer; color: #e2e8f0;
-            padding: 0.75rem 1rem; border-radius: 8px; width: 100%;
-            display: flex; align-items: center; gap: 1rem;
-            transition: background 0.2s ease, color 0.2s ease;
-            font-family: 'Inter', sans-serif; font-size: 0.95rem; text-decoration: none;
+            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
+            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
+            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
+            font-size: 0.95rem; text-decoration: none;
         }
         .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        
-        /* ============================================
-            --- CONTEÚDO PRINCIPAL & TOPBAR ---
-            ============================================
-        */
+        .sidebar.collapsed .sidebar-footer span { display: none; }
+        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+
+        /* --- Main Content & Topbar --- */
         .main-content {
-            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 260px);
-            height: calc(100vh - 2px); /* Definindo a altura do main-content */
+            flex: 1; margin-left: 280px; /* Ajustado para 280px */
+            transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado para 280px */
+            max-width: calc(100% - 280px); /* Ajustado para 280px */
+            box-sizing: border-box;
+            /* Removido overflow-x: hidden; para permitir que os toasts apareçam */
+            height: 100vh; /* Definindo a altura do main-content */
             overflow: hidden; /* Garante que o main-content não tenha scroll próprio */
         }
-        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
-
+        .main-content.collapsed { 
+            margin-left: 88px; /* Ajustado para 88px */
+            width: calc(100% - 88px); /* Ajustado para 88px */
+            max-width: calc(100% - 88px); /* Ajustado para 88px */
+        }
         .topbar {
             background-color: var(--card); color: var(--text); padding: 0 1.5rem;
             display: flex; align-items: center; justify-content: space-between;
@@ -163,21 +181,14 @@
             transition: background 0.2s ease, color 0.2s ease;
         }
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
-        .toggle-btn-desktop { display: none; }
-        .menu-btn-mobile { display: block; }
-        @media(min-width: 769px) {
-            .toggle-btn-desktop { display: grid; }
-            .menu-btn-mobile { display: none; }
-        }
-
-        /* New Filter Button in Topbar */
-        .topbar-right { 
+        .topbar-actions { 
             display: flex; 
+            gap: 0.75rem; 
             align-items: center; 
-            gap: 1rem; 
             flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha em telas menores */
             justify-content: flex-end; /* Alinha os itens à direita */
         }
+        /* New Filter Button in Topbar */
         .btn-filter {
             background: none;
             border: 1px solid var(--border-color);
@@ -660,6 +671,16 @@
             --- RESPONSIVIDADE ---
             ============================================
         */
+        .toggle-btn-desktop { display: none; }
+        .menu-btn-mobile { display: block; }
+        span.btn-text-desktop { display: none; }
+
+        @media(min-width: 769px) {
+            .toggle-btn-desktop { display: grid; }
+            .menu-btn-mobile { display: none; }
+            span.btn-text-desktop { display: inline; }
+        }
+
         @media (max-width: 992px) { /* Ajuste para telas menores que 992px */
             main { flex-direction: column; overflow: auto; }
             .weekly-calendar-container, .card-list-container { padding: 1rem; } /* Reduz o padding do container principal */
@@ -686,19 +707,24 @@
 
         @media (max-width: 768px) { /* Ajustes para mobile */
             .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); }
-            .main-content, .main-content.collapsed { margin-left: 0; }
+            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+            .sidebar.collapsed { transform: translateX(-100%); width: 280px; } /* Ajustado para 280px */
+            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
+            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
+            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
+            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; max-width: 100%; }
             main { padding: 1rem; flex-direction: column; } /* Garante que o main empilhe os elementos em mobile */
-            .topbar { padding: 0 1rem; }
+            .topbar { flex-wrap: wrap; height: auto; row-gap: 1rem; padding-top: 1rem; padding-bottom: 1rem; }
+            .topbar-left, .topbar-actions { width: 100%; justify-content: space-between; }
             .mini-calendar-wrapper { display: none; } /* Esconde o mini-calendário em mobile */
             .form-row { grid-template-columns: 1fr; }
             .professional-list-container { margin-top: 1rem; } /* Adiciona espaçamento em mobile */
-            .topbar-right {
+            .topbar-actions {
                 flex-direction: column; /* Empilha botões em mobile */
                 align-items: stretch; /* Estica botões para largura total */
                 gap: 0.5rem;
             }
-            .topbar-right .btn, .topbar-right .view-toggle-buttons {
+            .topbar-actions .btn, .topbar-actions .view-toggle-buttons {
                 width: 100%; /* Ocupa largura total */
             }
             .view-toggle-buttons {
@@ -925,82 +951,74 @@
             to { width: 0%; }
         }
 
-        /* Novas Regras para a Modal de Notificações */
-        .notification-modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 2100; /* Higher than other modals */
-            left: 0;
-            top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+        /* Nova modal para alertas gerais */
+        .alert-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15,23,42,0.7);
+            display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 4500; /* Maior que outras modals */
             opacity: 0;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
         }
-        .notification-modal.active {
+        .alert-modal-overlay.show {
             opacity: 1;
-            display: flex;
+            pointer-events: auto;
         }
-        .notification-modal-content {
-            background-color: var(--card);
-            color: var(--text);
-            padding: 2rem;
+        .alert-modal {
+            background: var(--card);
             border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            width: 90%;
-            max-width: 500px;
-            transform: translateY(-20px);
-            transition: transform 0.25s ease;
-            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 400px; /* Tamanho consistente */
+            width: 90vw;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            padding: 2rem;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
         }
-        .notification-modal.active .notification-modal-content {
-            transform: translateY(0);
+        .alert-modal-overlay.show .alert-modal {
+            transform: scale(1);
         }
-        .notification-modal-close-button {
-            color: var(--muted);
-            font-size: 1.8rem;
-            font-weight: bold;
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .notification-modal-close-button:hover,
-        .notification-modal-close-button:focus {
-            color: var(--danger);
-            text-decoration: none;
-        }
-        .notification-modal-title {
-            font-size: 1.6rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            color: var(--primary); /* Cor do título da notificação */
-        }
-        .notification-modal-message {
-            font-size: 1.1rem;
-            color: var(--text);
-            margin-bottom: 1.5rem;
-            line-height: 1.5;
-        }
-        .notification-modal-button {
-            background-color: var(--primary);
+        .alert-modal-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
             color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
         }
-        .notification-modal-button:hover {
-            background-color: var(--primary-dark);
+        .alert-modal-icon.info { background: var(--info); }
+        .alert-modal-icon.success { background: var(--success); }
+        .alert-modal-icon.warning { background: var(--warning); }
+        .alert-modal-icon.danger { background: var(--danger); }
+
+        .alert-modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+        .alert-modal-message {
+            font-size: 1rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .alert-modal-actions {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .alert-modal-actions .btn {
+            min-width: 100px;
         }
 
         /* Estilos para a nova lista de profissionais */
@@ -1164,41 +1182,20 @@
 </head>
 <body>
     <div id="toast-container"></div>
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-inner-content">
-                <div class="sidebar-header">
-                    <a href="{{ url_for('index') }}" class="logo">
-                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
-                    </a>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
-                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
-                        <li><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>                  
-                        <li class="active"><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
-                        {% if session.user_role == 'admin' %}
-                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
-                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
-                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
-                         <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
-                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
-                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
-                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
-                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
-                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <button id="theme-toggle" aria-label="Alternar tema">
-                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-                    </button>
-                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
-                </div>
+    <!-- Nova Modal para Alertas Gerais (copiada de pacientes.html) -->
+    <div id="general-alert-modal-overlay" class="alert-modal-overlay">
+        <div class="alert-modal">
+            <div id="alert-modal-icon" class="alert-modal-icon"></div>
+            <h3 id="alert-modal-title" class="alert-modal-title"></h3>
+            <p id="alert-modal-message" class="alert-modal-message"></p>
+            <div class="alert-modal-actions">
+                <button id="alert-modal-close-btn" class="btn btn-primary">OK</button>
             </div>
-        </aside>
+        </div>
+    </div>
+
+    <div class="layout">
+        {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
@@ -1207,7 +1204,7 @@
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
                     <h1 class="page-title">Agendamentos</h1>
                 </div>
-                <div class="topbar-right">
+                <div class="topbar-actions">
                     <!-- Botões de Alternar Visualização -->
                     <div class="view-toggle-buttons">
                         <button id="calendarViewBtn" class="btn active"><i class="fas fa-calendar-alt"></i> Calendário</button>
@@ -1434,14 +1431,16 @@
         </div>
     </div>
 
-    <!-- The Notification Modal -->
-    <div id="notificationModal" class="notification-modal">
+    <!-- The Notification Modal (copiada de pacientes.html) -->
+    <div id="notificationModal" class="alert-modal-overlay">
         <!-- Modal content -->
-        <div class="notification-modal-content">
-            <span class="notification-modal-close-button">&times;</span>
-            <h3 id="notificationModalTitle" class="notification-modal-title"></h3>
-            <p id="notificationModalMessage" class="notification-modal-message"></p>
-            <button onclick="closeNotificationModal()" class="notification-modal-button">Fechar</button>
+        <div class="alert-modal">
+            <div id="notificationModalIcon" class="alert-modal-icon"></div>
+            <h3 id="notificationModalTitle" class="alert-modal-title"></h3>
+            <p id="notificationModalMessage" class="alert-modal-message"></p>
+            <div class="alert-modal-actions">
+                <button onclick="closeNotificationModal()" class="btn btn-primary">Fechar</button>
+            </div>
         </div>
     </div>
 
@@ -1460,6 +1459,8 @@
 
 
         document.addEventListener('DOMContentLoaded', () => {
+            // As referências a elementos da sidebar e do tema são declaradas aqui
+            // para serem usadas pelas funções setupSidebar, setupTheme e setupLogout.
             const htmlEl = document.documentElement;
             const sidebar = document.querySelector('.sidebar');
             const mainContent = document.querySelector('.main-content');
@@ -1517,57 +1518,49 @@
                 }, 5000); // A notificação desaparece após 5 segundos
             }
 
-            // --- Lógica para a Nova Modal de Notificações ---
-            const notificationModal = document.getElementById("notificationModal");
-            const notificationModalTitle = document.getElementById("notificationModalTitle");
-            const notificationModalMessage = document.getElementById("notificationModalMessage");
-            const notificationModalCloseButton = document.querySelector(".notification-modal-close-button");
+            // --- Lógica para a Nova Modal de Notificações (general-alert-modal-overlay) ---
+            const generalAlertOverlay = document.getElementById('general-alert-modal-overlay');
+            const alertModalIcon = document.getElementById('alert-modal-icon');
+            const alertModalTitle = document.getElementById('alert-modal-title');
+            const alertModalMessage = document.getElementById('alert-modal-message');
+            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
 
-            // Function to open the notification modal with a specific message and title
-            window.openNotificationModal = function(title, message, category = 'info') {
-                notificationModalTitle.innerText = title;
-                notificationModalMessage.innerText = message;
+            function showGeneralAlertModal(title, message, category = 'info') {
+                alertModalTitle.textContent = title;
+                alertModalMessage.textContent = message;
                 
-                // Set title color based on category
-                if (category === 'success') {
-                    notificationModalTitle.style.color = 'var(--success)';
-                } else if (category === 'danger') {
-                    notificationModalTitle.style.color = 'var(--danger)';
-                } else if (category === 'warning') {
-                    notificationModalTitle.style.color = 'var(--warning)';
-                } else {
-                    notificationModalTitle.style.color = 'var(--primary)'; // Default or info
+                alertModalIcon.className = 'alert-modal-icon'; // Reset class
+                let iconClass = '';
+                switch (category) {
+                    case 'info': iconClass = 'fas fa-info-circle'; break;
+                    case 'success': iconClass = 'fas fa-check-circle'; break;
+                    case 'warning': iconClass = 'fas fa-exclamation-triangle'; break;
+                    case 'danger': iconClass = 'fas fa-times-circle'; break;
                 }
+                alertModalIcon.classList.add(category);
+                alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
 
-                notificationModal.classList.add('active');
+                generalAlertOverlay.classList.add('show');
+                document.body.style.overflow = 'hidden'; // Bloquear scroll do body
             }
 
-            // Function to close the notification modal
-            window.closeNotificationModal = function() {
-                notificationModal.classList.remove('active');
+            window.closeNotificationModal = function() { // Renomeado para closeNotificationModal para ser global
+                generalAlertOverlay.classList.remove('show');
+                document.body.style.overflow = 'auto'; // Restaurar scroll do body
             }
 
-            // When the user clicks on <span> (x), close the modal
-            if (notificationModalCloseButton) {
-                notificationModalCloseButton.onclick = function() {
+            alertModalCloseBtn.addEventListener('click', closeNotificationModal);
+            generalAlertOverlay.addEventListener('click', (e) => {
+                if (e.target === generalAlertOverlay) {
                     closeNotificationModal();
                 }
-            }
-
-            // When the user clicks anywhere outside of the modal, close it
-            if (notificationModal) {
-                notificationModal.addEventListener('click', function(event) {
-                    if (event.target === notificationModal) {
-                        closeNotificationModal();
-                    }
-                });
-            }
+            });
 
             // --- Processa mensagens flash do backend e as exibe na MODAL ---
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% for category, message in messages %}
                     // Use a nova função openNotificationModal para as mensagens flash
-                    openNotificationModal(
+                    showGeneralAlertModal(
                         "{{ 'Sucesso!' if category == 'success' else ('Erro!' if category == 'error' else ('Atenção!' if category == 'warning' else 'Informação')) }}",
                         {{ message|tojson|safe }},
                         "{{ category }}"
@@ -2071,7 +2064,9 @@
 
                     const baseUrl = window.location.origin + window.location.pathname;
                     const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-                    window.location.href = newUrl; 
+
+                    console.log('Mini-calendar next month clicked. Redirecting to:', newUrl);
+                    window.location.href = newUrl; // Redireciona para recarregar os dados do backend
                 });
  
                 addManualAppointmentBtn.addEventListener('click', () => {
@@ -2116,7 +2111,7 @@
                             checkbox.checked = false; // Uncheck days when recurring is off
                         });
                         // Reset "Termina em" radio to "Em data"
-                        document.getElementById('ends-on-date').checked = true; 
+                        document.querySelector('input[name="termina_em"][value="data"]').checked = true; 
                     }
                 });
             }
@@ -2272,13 +2267,13 @@
 
                 btnApagar.onclick = () => {
                     // Substituído o confirm nativo pela nova modal de notificação para confirmação
-                    openNotificationModal(
+                    showGeneralAlertModal( // Usando a nova modal de alerta geral
                         "Confirmação de Exclusão",
                         "Tem certeza que deseja apagar este agendamento? Esta ação não pode ser desfeita.",
                         "warning"
                     );
                     // Adiciona um listener temporário ao botão de fechar da modal de notificação para a ação de exclusão
-                    const confirmDeleteButton = document.querySelector(".notification-modal-button");
+                    const confirmDeleteButton = document.querySelector("#general-alert-modal-overlay .btn-primary"); // Seleciona o botão OK da modal de alerta geral
                     confirmDeleteButton.onclick = () => {
                         closeNotificationModal(); // Fecha a modal de notificação
                         formApagar.action = "{{ url_for('apagar_agendamento') }}";
@@ -2286,13 +2281,19 @@
                         formApagar.submit();
                     };
                     // Se o usuário clicar no 'x' ou fora da modal, ela apenas fecha sem ação
-                    notificationModalCloseButton.onclick = () => {
+                    document.getElementById('alert-modal-close-btn').onclick = () => { // Botão X da modal de alerta
                         closeNotificationModal();
                         // Restaura o onclick original do botão de fechar da modal de notificação
-                        notificationModalCloseButton.onclick = function() {
+                        document.getElementById('alert-modal-close-btn').onclick = function() {
                             closeNotificationModal();
                         };
                     };
+                    generalAlertOverlay.addEventListener('click', function handler(e) { // Clicar fora da modal
+                        if (e.target === generalAlertOverlay) {
+                            closeNotificationModal();
+                            generalAlertOverlay.removeEventListener('click', handler); // Remove o listener após o uso
+                        }
+                    });
                 };
 
                 modalDetalhes.classList.add('active');
@@ -2590,12 +2591,12 @@
 
                 if (isRecorrente) {
                     if (selectedDays.length === 0) {
-                        openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes, selecione pelo menos um dia da semana.", "danger");
+                        showGeneralAlertModal("Erro de Agendamento", "Para agendamentos recorrentes, selecione pelo menos um dia da semana.", "danger");
                         event.preventDefault(); // Impede o envio do formulário
                         return;
                     }
                     if (terminaEmValue === 'data' && !dataFimRecorrenciaInput.value) {
-                        openNotificationModal("Erro de Agendamento", "Para agendamentos recorrentes com data de término, a data de fim da recorrência é obrigatória.", "danger");
+                        showGeneralAlertModal("Erro de Agendamento", "Para agendamentos recorrentes com data de término, a data de fim da recorrência é obrigatória.", "danger");
                         event.preventDefault(); // Impede o envio do formulário
                         return;
                     }
@@ -2615,7 +2616,7 @@
                     });
 
                     if (conflito) {
-                        openNotificationModal("Erro de Agendamento", "Este profissional já possui um agendamento para o mesmo dia e horário.", "danger");
+                        showGeneralAlertModal("Erro de Agendamento", "Este profissional já possui um agendamento para o mesmo dia e horário.", "danger");
                         event.preventDefault(); // Impede o envio do formulário
                         return;
                     }
