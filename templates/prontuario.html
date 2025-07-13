@@ -65,9 +65,13 @@
 
         /* --- Sidebar (Barra de Navegação Lateral) --- */
         .sidebar {
-            width: 280px; /* Largura padrão */
+            width: 260px; /* Largura padrão - Ajustado para corresponder Nav.html */
             background: linear-gradient(180deg, var(--primary), var(--accent));
             color: white;
+            position: fixed; /* Mantido fixo como no Nav.html */
+            top: 0;
+            left: 0;
+            height: 100vh;
             transition: width 0.3s ease, transform 0.3s ease;
             z-index: 1000;
             display: flex;
@@ -84,7 +88,7 @@
             display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
         }
         .sidebar-header .logo i { font-size: 1.8rem; }
-        .sidebar.collapsed { width: 88px; } /* Largura quando recolhida */
+        .sidebar.collapsed { width: 78px; } /* Largura quando recolhida - Ajustado para corresponder Nav.html */
         .sidebar.collapsed .sidebar-header .logo span { display: none; }
         .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
         .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
@@ -115,15 +119,15 @@
         /* --- Main Content & Topbar (Conteúdo Principal e Barra Superior) --- */
         .main-content {
             flex: 1;
-            margin-left: 280px; /* Padrão para sidebar expandida */
+            margin-left: 260px; /* Ajustado para corresponder largura da sidebar */
             transition: margin-left 0.3s ease, width 0.3s ease;
             display: flex;
             flex-direction: column;
-            width: calc(100% - 280px); /* Padrão para sidebar expandida */
+            width: calc(100% - 260px); /* Ajustado para corresponder largura da sidebar */
         }
         .main-content.collapsed {
-            margin-left: 88px; /* Ajuste para sidebar recolhida */
-            width: calc(100% - 88px); /* Ajuste para sidebar recolhida */
+            margin-left: 78px; /* Ajuste para sidebar recolhida */
+            width: calc(100% - 78px); /* Ajuste para sidebar recolhida */
         }
         .topbar {
             background-color: var(--card); color: var(--text); padding: 0 1.5rem;
@@ -267,8 +271,8 @@
             transition: box-shadow 0.3s ease, transform 0.3s ease;
             display: flex; /* Use flexbox for simplified layout */
             flex-direction: column;
-            align-items: center; /* Center items horizontally */
-            text-align: center;
+            align-items: flex-start; /* Alinha o conteúdo à esquerda */
+            text-align: left; /* Alinha o texto à esquerda */
         }
         .paciente-info-card:hover {
             transform: translateY(-5px); /* More pronounced elevation */
@@ -291,12 +295,22 @@
             font-weight: 800; /* Extra bold */
             padding-top: 0.5rem;
             text-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle text shadow */
+            width: 100%; /* Garante que o h3 ocupe a largura total */
+            border-bottom: 1px solid var(--border-color); /* Linha de separação */
+            padding-bottom: 0.75rem; /* Espaçamento abaixo da linha */
         }
         .paciente-info-card .info-text {
             font-size: 1rem; /* Slightly larger text */
             color: var(--text);
             font-weight: 600;
-            margin-bottom: 0.5rem;
+            margin-top: 0.75rem; /* Espaçamento acima da data de nascimento */
+            display: flex; /* Para alinhar ícone e texto */
+            align-items: center;
+            gap: 0.5rem; /* Espaçamento entre ícone e texto */
+        }
+        .paciente-info-card .info-text i {
+            color: var(--muted); /* Cor do ícone */
+            font-size: 1.1rem;
         }
         .paciente-info-card .info-label {
             color: var(--muted);
@@ -304,7 +318,7 @@
             font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            display: block;
+            display: inline; /* Alterado para inline */
         }
         [data-theme="dark"] .paciente-info-card {
             box-shadow: 0 6px 20px -5px rgba(0,0,0,0.3), 0 2px 8px -2px rgba(0,0,0,0.2);
@@ -921,7 +935,7 @@
                 <div class="paciente-info-card">
                     <h3>{{ paciente.nome }}</h3>
                     <div class="info-text">
-                        <span class="info-label">Data Nasc.:</span>
+                        <i class="fas fa-calendar-alt"></i> <span class="info-label">Data Nasc.:</span>
                         <span>{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}</span>
                     </div>
                 </div>
@@ -968,10 +982,10 @@
                     {# Content preview for documents can remain, or be simplified if preferred #}
                     <div class="registro-content" style="display: block;"> {# Keep display:block for document details #}
                         <p><strong>Arquivo:</strong> {{ documento.nome_arquivo }}</p>
-                        <p><strong>Tamanho Original:</strong> {{ "%.2f" | format(documento.tamanho_original / 1024) }} KB</p>
-                        <p><strong>Tamanho Otimizado:</strong> {{ "%.2f" | format(documento.tamanho_comprimido / 1024) }} KB</p>
+                        <!-- <p><strong>Tamanho Original:</strong> {{ "%.2f" | format(documento.tamanho_original / 1024) }} KB</p> -->
+                        <!-- <p><strong>Tamanho Otimizado:</strong> {{ "%.2f" | format(documento.tamanho_comprimido / 1024) }} KB</p> -->
                         {% if documento.tamanho_original > 0 %}
-                            <p><strong>Redução:</strong> {{ "%.2f" | format((1 - (documento.tamanho_comprimido / documento.tamanho_original)) * 100) }}%</p>
+                            <!-- <p><strong>Redução:</strong> {{ "%.2f" | format((1 - (documento.tamanho_comprimido / documento.tamanho_original)) * 100) }}%</p> -->
                         {% endif %}
                     </div>
                     <div class="registro-actions">
@@ -1134,7 +1148,7 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="pdf_file">Arquivo PDF</label>
-                        <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required>
+                        <input type="file" id="pdf" name="pdf_file" accept=".pdf" required>
                         <p class="text-sm text-gray-500 mt-1">Apenas arquivos PDF são permitidos. O arquivo será otimizado para reduzir o tamanho.</p>
                     </div>
                     <div class="form-group">
@@ -1363,7 +1377,9 @@
                         htmlEl.dataset.theme = newTheme;
                         localStorage.setItem('theme', newTheme); // Salva a preferência no localStorage
                         themeIcon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                        console.log('Tema alterado para:', newTheme); // DEBUG
                     });
+                    console.log('Tema inicial aplicado:', currentTheme); // DEBUG
                 }
 
                 // 2. Lógica da Sidebar (Expandir/Recolher)
