@@ -19,8 +19,8 @@
             --muted: #64748b; /* Tailwind Slate-500 */
             --primary: #5587c2;
             --accent: #9b53b8;
-            --primary-light: #c8dcf3; /* Cor clara da paleta principal */
-            --primary-dark: #406a96; /* Uma sombra mais escura do primary para contraste */
+            --primary-light: #ccfbf1; /* Cor clara da paleta principal */
+            --primary-dark: #311b3e; /* Uma sombra mais escura do primary para contraste */
             --secondary: #f59e0b; /* Amber-500 */
             --danger: #dc2626; /* Red-600 */
             
@@ -64,9 +64,8 @@
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
         /* --- Sidebar (Barra de Navegação Lateral) --- */
-        /* Removido do prontuario.html, agora vem do Nav.html */
         .sidebar {
-            width: 280px; /* Ajustado para 280px para consistência com Nav.html */
+            width: 260px;
             background: linear-gradient(180deg, var(--primary), var(--accent));
             color: white;
             position: fixed;
@@ -84,7 +83,7 @@
             display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
         }
         .sidebar-header .logo i { font-size: 1.8rem; }
-        .sidebar.collapsed { width: 88px; } /* Ajustado para 88px */
+        .sidebar.collapsed { width: 78px; }
         .sidebar.collapsed .sidebar-header .logo span { display: none; }
         .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
         .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
@@ -92,12 +91,30 @@
         .sidebar nav ul li { margin-bottom: 0.5rem; }
         .sidebar nav ul li a {
             color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
-            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
+            padding: 0.75rem 1rem;
+            gap: 1rem; border-radius: 8px; font-size: 0.95rem;
             font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
         }
-        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+        .sidebar nav ul li a i {
+            width: 24px;
+            height: 24px;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
         .sidebar.collapsed nav ul li a span { display: none; }
-        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
+        .sidebar.collapsed nav ul li a {
+            justify-content: center;
+            padding: 0.75rem;
+            gap: 0;
+            align-items: center;
+        }
+        /* Garante que o ícone se centralize perfeitamente quando recolhido */
+        .sidebar.collapsed nav ul li a i {
+            margin: 0 auto;
+        }
         .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
         .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
         .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
@@ -114,11 +131,10 @@
 
         /* --- Main Content & Topbar (Conteúdo Principal e Barra Superior) --- */
         .main-content {
-            flex: 1; margin-left: 280px; /* Ajustado para 280px para consistência com Nav.html */
-            transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado para 280px */
+            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 260px);
         }
-        .main-content.collapsed { margin-left: 88px; width: calc(100% - 88px); } /* Ajustado para 88px */
+        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
         .topbar {
             background-color: var(--card); color: var(--text); padding: 0 1.5rem;
             display: flex; align-items: center; justify-content: space-between;
@@ -349,46 +365,34 @@
         }
         .prontuario-header h2 { font-size: 1.75rem; color: var(--text); margin: 0; font-weight: 700; }
 
-        /* Estilos para os cartões de registro - ATUALIZADOS para formato de lista */
-        .medical-record-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem; /* Espaçamento entre os itens da lista */
-            margin-top: 1.5rem; /* Espaço do topo */
-        }
-
+        /* Estilos para os cartões de registro - ATUALIZADOS */
         .registro-card {
             background: var(--card);
             padding: 1.5rem;
             border-radius: 16px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04); /* Mais proeminente */
+            margin-bottom: 0;
             position: relative;
             border: 1px solid var(--border-color); /* Adiciona borda geral */
             border-left: 8px solid transparent; /* Mantém a borda lateral colorida */
             display: flex;
             flex-direction: column;
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            height: 100%; /* Garante que os cards em um grid tenham altura igual */
             overflow: hidden; /* Garante que nada transborde */
-            min-height: 200px; /* Altura mínima para os cards */
         }
         .registro-card:hover {
             transform: translateY(-5px); /* Elevação mais notável */
             box-shadow: 0 15px 30px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.08); /* Sombra maior no hover */
         }
         [data-theme="dark"] .registro-card {
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.1);
+             box-shadow: 0 8px 24px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .registro-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;
             position: relative;
-            flex-wrap: wrap; /* Permite quebrar linha em telas menores */
-            gap: 0.5rem; /* Espaçamento entre título e meta */
         }
         .registro-header::after {
             content: '';
@@ -400,29 +404,14 @@
             background-color: var(--primary); /* Cor da linha de destaque */
             border-radius: 2px;
         }
-        .registro-header h4 {
-            font-size: 1.3rem;
-            color: var(--primary);
-            margin: 0;
-            font-weight: 700;
-            flex-grow: 1; /* Permite que o título ocupe o espaço */
-        }
-        .registro-meta {
-            font-size: 0.85rem;
-            color: var(--muted);
-            text-align: right;
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 0.2rem;
-        }
+        .registro-header h4 { font-size: 1.3rem; color: var(--primary); margin: 0; font-weight: 700; }
+        .registro-meta { font-size: 0.85rem; color: var(--muted); text-align: right; flex-shrink: 0;}
         .registro-meta span { display: block; line-height: 1.4; }
         .registro-meta i { margin-right: 0.4rem; color: var(--primary); } /* Icon color */
         .registro-content {
             font-size: 0.95rem; color: var(--text); line-height: 1.7;
             white-space: pre-wrap; overflow-wrap: break-word;
-            max-height: 100px; /* Altura máxima reduzida para o conteúdo */
-            overflow-y: auto; padding-right: 10px;
+            max-height: 250px; overflow-y: auto; padding-right: 10px;
             flex-grow: 1;
         }
         /* Scrollbar customizada para o conteúdo */
@@ -442,7 +431,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            /* Remove grid-column: 1 / -1; as it's no longer a grid */
+            grid-column: 1 / -1; /* Ensures it spans across all columns in a grid */
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             border: 1px dashed var(--border-color); /* Dashed border for empty state */
         }
@@ -595,9 +584,9 @@
             box-shadow: inset 0 1px 2px rgba(0,0,0,0.03); /* Inner shadow for inputs */
         }
         [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select, [data-theme="dark"] .form-group textarea, [data-theme="dark"] .form-group input[type="file"] {
-            background-color: var(--dark-bg);
-            border-color: var(--dark-border-color);
-            color: var(--dark-text);
+             background-color: var(--dark-bg);
+             border-color: var(--dark-border-color);
+             color: var(--dark-text);
         }
         .form-group input[type="text"]:focus,
         .form-group input[type="date"]:focus,
@@ -752,18 +741,37 @@
             .desktop-only { display: inline; }
             .mobile-only { display: none; }
 
-            /* Remove grid styles for records-grid on desktop to maintain list view */
-            .medical-record-list {
-                display: flex;
-                flex-direction: column;
+            /* Reverte para grid em desktop */
+            .records-grid {
+                /* Removido `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4` do HTML */
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Default flexível */
                 gap: 1.5rem;
+                overflow-x: visible;
+                flex-wrap: wrap;
+            }
+            .records-grid > .registro-card {
+                flex-shrink: 1;
+                width: auto;
             }
         }
-        
+        /* Ajuste para 3 cards por linha em telas maiores (a partir de 1024px) */
+        @media (min-width: 1024px) { /* Tailwind's 'lg' breakpoint */
+            .records-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        /* Ajuste para 4 cards por linha em telas muito grandes (opcional) */
+        @media (min-width: 1400px) {
+            .records-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 280px; } /* Ajustado para 280px */
+            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
             .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
             .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
@@ -796,7 +804,29 @@
                 justify-content: center;
             }
 
-            /* Estilos para scroll lateral de cards em mobile - REMOVIDO PARA LISTA */
+            /* Estilos para scroll lateral de cards em mobile */
+            .records-grid {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 1rem;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .records-grid > .registro-card {
+                flex-shrink: 0;
+                width: 85%; /* Adjusted for better fit on mobile */
+                max-width: 350px; /* Keep a max-width for very small screens */
+                margin-right: 1.5rem;
+                scroll-snap-align: start;
+            }
+
+            /* Esconde a scrollbar para uma estética mais limpa, mas mantém a funcionalidade */
+            .records-grid::-webkit-scrollbar {
+                display: none;
+            }
+
             /* Ajuste específico para o título do prontuário em mobile */
             .topbar .page-title {
                 font-size: 1.1rem;
@@ -825,7 +855,40 @@
 </head>
 <body>
     <div class="layout">
-        {% include 'Nav.html' %}
+        <aside class="sidebar">
+            <div class="sidebar-inner-content">
+                <div class="sidebar-header">
+                    <a href="{{ url_for('index') }}" class="logo">
+                        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
+                    </a>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span></a></li>
+                        <li><a href="{{ url_for('listar_pacientes') }}"><i class="fa-solid fa-hospital-user"></i> <span>Pacientes</span></a></li>
+                        <li class="active"><a href="{{ url_for('buscar_prontuario') }}"><i class="fa-solid fa-notes-medical"></i> <span>Prontuários</span></a></li>
+                        <li><a href="{{ url_for('listar_agendamentos') }}"><i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span></a></li>
+                        {% if session.user_role == 'admin' %}
+                        <li><a href="{{ url_for('listar_profissionais') }}"><i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span></a></li>
+                        <li><a href="{{ url_for('listar_servicos_procedimentos') }}"><i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span></a></li>
+                        <li><a href="{{ url_for('listar_convenios') }}"><i class="fa-solid fa-handshake"></i> <span>Convênios</span></a></li>
+                        <li><a href="{{ url_for('listar_horarios') }}"><i class="fa-regular fa-clock"></i> <span>Horários</span></a></li>
+                        <li><a href="{{ url_for('listar_usuarios') }}"><i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span></a></li>
+                        <li><a href="{{ url_for('listar_modelos_anamnese') }}"><i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span></a></li>
+                        <li><a href="{{ url_for('listar_estoque') }}"><i class="fa-solid fa-boxes-stacked"></i> <span>Estoque</span></a></li>
+                        <li><a href="{{ url_for('listar_contas_a_pagar') }}"><i class="fa-solid fa-money-bill-wave"></i> <span>Contas a Pagar</span></a></li>
+                        <li><a href="{{ url_for('patrimonio.listar_patrimonio') }}"><i class="fa-solid fa-building-columns"></i> <span>Patrimônio</span></a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="theme-toggle" aria-label="Alternar tema">
+                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
+                    </button>
+                    <a href="#" id="logoutButton"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span></a>
+                </div>
+            </div>
+        </aside>
 
         <div class="main-content">
             <header class="topbar">
@@ -958,7 +1021,7 @@
                         <div class="tab-content">
                             <div id="tab-panel-todos" class="tab-panel active">
                                 {# Ajustado para usar classes Tailwind para o grid #}
-                                <div class="medical-record-list">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set filtered_registros = [] %}
                                     {% for reg in registros %}
                                         {% if reg.tipo_registro != 'pei' %}
@@ -980,7 +1043,7 @@
                             </div>
 
                             <div id="tab-panel-anamnese" class="tab-panel">
-                                <div class="medical-record-list">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set anamneses = registros | selectattr('tipo_registro', 'equalto', 'anamnese') | list %}
                                     {% if anamneses %}
                                         {% for registro in anamneses %}
@@ -996,7 +1059,7 @@
                             </div>
 
                             <div id="tab-panel-laudo" class="tab-panel">
-                                <div class="medical-record-list">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set laudos = registros | selectattr('tipo_registro', 'equalto', 'laudo') | list %}
                                     {% if laudos %}
                                         {% for registro in laudos %}
@@ -1012,7 +1075,7 @@
                             </div>
 
                             <div id="tab-panel-orientacao" class="tab-panel">
-                                <div class="medical-record-list">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set orientacoes = registros | selectattr('tipo_registro', 'equalto', 'orientacao') | list %}
                                     {% if orientacoes %}
                                         {% for registro in orientacoes %}
@@ -1028,7 +1091,7 @@
                             </div>
 
                             <div id="tab-panel-procedimento" class="tab-panel">
-                                <div class="medical-record-list">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% set procedimentos = registros | selectattr('tipo_registro', 'equalto', 'procedimento') | list %}
                                     {% if procedimentos %}
                                         {% for registro in procedimentos %}
@@ -1045,7 +1108,7 @@
 
                             {# NOVO: Painel para Outros Documentos #}
                             <div id="tab-panel-documentos" class="tab-panel">
-                                <div class="medical-record-list">
+                                <div class="records-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                                     {% if outros_documentos %}
                                         {% for documento in outros_documentos %}
                                             {{ render_documento_card(documento) }}
@@ -1503,7 +1566,7 @@
                         conteudoRegistroGenericoEditor.innerHTML = registroData.conteudo || '';
                         conteudoGenericoHiddenTextarea.value = registroData.conteudo || '';
                         if (agendamentoIdReferenciaInput) {
-                            agendamentoIdReferenciaInput.value = registroData.agendamento_id_referencia || '';
+                           agendamentoIdReferenciaInput.value = registroData.agendamento_id_referencia || '';
                         }
                         // Altera a ação do formulário para o endpoint de edição
                         formRegistroGenerico.action = `{{ url_for('editar_registro_generico', paciente_doc_id=paciente.id, registro_doc_id='DUMMY_ID') }}`.replace('DUMMY_ID', registroData.id);
@@ -1784,8 +1847,8 @@
                         return;
                     }
                     if(target.matches('.modal-overlay')) {
-                            closeModalById(target.id);
-                            return;
+                         closeModalById(target.id);
+                         return;
                     }
                     if(target.closest('[data-close-modal]')) {
                         closeModalById(target.closest('[data-close-modal]').dataset.closeModal);
@@ -1891,10 +1954,10 @@
 
                     // Botão de IMPRIMIR PDF de registro
                     const printButton = target.closest('.btn-print-pdf');
-                    if (printButton) {
-                        generatePdfForRecord(printButton);
-                        return;
-                    }
+                     if (printButton) {
+                         generatePdfForRecord(printButton);
+                         return;
+                     }
                 });
 
                 // --- Funções AJAX para PEI/Metas/Alvos --- (REMOVIDAS)
@@ -1924,69 +1987,69 @@
 
                 // Gera um PDF para um registro específico (Anamnese, Laudo, etc.)
                 function generatePdfForRecord(button) {
-                    const recordCard = button.closest('.registro-card');
+                     const recordCard = button.closest('.registro-card');
 
-                    const title = recordCard.querySelector('.registro-header h4').textContent.trim();
-                    const date = recordCard.querySelector('.registro-meta span:first-child').textContent.trim().replace('📅 ', '');
-                    const professional = recordCard.querySelector('.registro-meta span:last-child').textContent.trim().replace('‍⚕️ ', '');
-                    const contentHtml = recordCard.querySelector('.registro-content').innerHTML;
+                     const title = recordCard.querySelector('.registro-header h4').textContent.trim();
+                     const date = recordCard.querySelector('.registro-meta span:first-child').textContent.trim().replace('📅 ', '');
+                     const professional = recordCard.querySelector('.registro-meta span:last-child').textContent.trim().replace('‍⚕️ ', '');
+                     const contentHtml = recordCard.querySelector('.registro-content').innerHTML;
 
-                    const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
-                    const patientCpf = "{{ paciente.cpf or 'N/A' }}";
-                    const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
-                    const clinicName = "{{ session.clinica_nome_display or 'Clinica On' }}";
+                     const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
+                     const patientCpf = "{{ paciente.cpf or 'N/A' }}";
+                     const patientDob = "{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}";
+                     const clinicName = "{{ session.clinica_nome_display or 'Clinica On' }}";
 
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
+                     const { jsPDF } = window.jspdf;
+                     const doc = new jsPDF();
 
-                    let yPos = 20;
-                    const margin = 15;
-                    // Ajustes de fonte e espaçamento
-                    const contentLineHeight = 5; // Altura da linha reduzida
-                    const contentFontSize = 9;    // Tamanho da fonte do conteúdo reduzido
-                    const maxWidth = doc.internal.pageSize.width - margin * 2;
+                     let yPos = 20;
+                     const margin = 15;
+                     // Ajustes de fonte e espaçamento
+                     const contentLineHeight = 5; // Altura da linha reduzida
+                     const contentFontSize = 9;   // Tamanho da fonte do conteúdo reduzido
+                     const maxWidth = doc.internal.pageSize.width - margin * 2;
 
-                    // Cabeçalho da Clínica
-                    doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, margin, yPos);
-                    yPos += 8;
-                    doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
-                    yPos += 8;
+                     // Cabeçalho da Clínica
+                     doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, margin, yPos);
+                     yPos += 8;
+                     doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
+                     yPos += 8;
 
-                    // Informações do Paciente
-                    doc.setFontSize(10).setFont("helvetica", "normal");
-                    doc.text(`Paciente: ${patientName}`, margin, yPos);
-                    yPos += 6;
-                    doc.text(`CPF: ${patientCpf}`, margin, yPos);
-                    doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
-                    yPos += 8;
+                     // Informações do Paciente
+                     doc.setFontSize(10).setFont("helvetica", "normal");
+                     doc.text(`Paciente: ${patientName}`, margin, yPos);
+                     yPos += 6;
+                     doc.text(`CPF: ${patientCpf}`, margin, yPos);
+                     doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
+                     yPos += 8;
 
-                    // Título do Registro
-                    doc.setFontSize(14).setFont("helvetica", "bold").text(title, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
-                    yPos += 8;
+                     // Título do Registro
+                     doc.setFontSize(14).setFont("helvetica", "bold").text(title, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                     yPos += 8;
 
-                    // Metadados do Registro
-                    doc.setFontSize(9).setFont("helvetica", "italic").text(`Data: ${date} | Profissional: ${professional}`, margin, yPos);
-                    yPos += 6;
-                    doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
-                    yPos += 8;
+                     // Metadados do Registro
+                     doc.setFontSize(9).setFont("helvetica", "italic").text(`Data: ${date} | Profissional: ${professional}`, margin, yPos);
+                     yPos += 6;
+                     doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
+                     yPos += 8;
 
-                    // Conteúdo do Registro
-                    doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                    const contentText = htmlToPlainText(contentHtml); // Converte HTML para texto plano
-                    const splitText = doc.splitTextToSize(contentText, maxWidth); // Divide o texto em linhas para o PDF
+                     // Conteúdo do Registro
+                     doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                     const contentText = htmlToPlainText(contentHtml); // Converte HTML para texto plano
+                     const splitText = doc.splitTextToSize(contentText, maxWidth); // Divide o texto em linhas para o PDF
 
-                    splitText.forEach(line => {
-                        // Adiciona nova página se não houver espaço suficiente
-                        if (yPos > doc.internal.pageSize.height - margin) {
-                            doc.addPage();
-                            yPos = margin;
-                        }
-                        doc.text(line, margin, yPos);
-                        yPos += contentLineHeight;
-                    });
+                     splitText.forEach(line => {
+                         // Adiciona nova página se não houver espaço suficiente
+                         if (yPos > doc.internal.pageSize.height - margin) {
+                             doc.addPage();
+                             yPos = margin;
+                         }
+                         doc.text(line, margin, yPos);
+                         yPos += contentLineHeight;
+                     });
 
-                    // Salva o PDF com um nome descritivo
-                    doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                     // Salva o PDF com um nome descritivo
+                     doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
 
                 // Function to display custom flash messages
