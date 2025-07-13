@@ -64,15 +64,15 @@
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
         /* --- Sidebar (Barra de Navegação Lateral) --- */
-        /* Removido do prontuario.html, agora vem do Nav.html */
         .sidebar {
-            width: 280px; /* Ajustado para 280px para consistência com Nav.html */
+            width: 280px; /* Largura padrão */
             background: linear-gradient(180deg, var(--primary), var(--accent));
             color: white;
-            position: fixed;
-            top: 0; left: 0; height: 100vh;
             transition: width 0.3s ease, transform 0.3s ease;
-            z-index: 1000; display: flex; flex-direction: column;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0; /* Impede que a sidebar encolha */
         }
         .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
         .sidebar-header {
@@ -84,7 +84,7 @@
             display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
         }
         .sidebar-header .logo i { font-size: 1.8rem; }
-        .sidebar.collapsed { width: 88px; } /* Ajustado para 88px */
+        .sidebar.collapsed { width: 88px; } /* Largura quando recolhida */
         .sidebar.collapsed .sidebar-header .logo span { display: none; }
         .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
         .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
@@ -114,11 +114,17 @@
 
         /* --- Main Content & Topbar (Conteúdo Principal e Barra Superior) --- */
         .main-content {
-            flex: 1; margin-left: 280px; /* Ajustado para 280px para consistência com Nav.html */
-            transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado para 280px */
+            flex: 1;
+            margin-left: 280px; /* Padrão para sidebar expandida */
+            transition: margin-left 0.3s ease, width 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            width: calc(100% - 280px); /* Padrão para sidebar expandida */
         }
-        .main-content.collapsed { margin-left: 88px; width: calc(100% - 88px); } /* Ajustado para 88px */
+        .main-content.collapsed {
+            margin-left: 88px; /* Ajuste para sidebar recolhida */
+            width: calc(100% - 88px); /* Ajuste para sidebar recolhida */
+        }
         .topbar {
             background-color: var(--card); color: var(--text); padding: 0 1.5rem;
             display: flex; align-items: center; justify-content: space-between;
@@ -230,8 +236,8 @@
             border: none;
             width: 100%;
             text-align: left;
-            transition: background-color 0.2s ease;
             font-size: 0.9rem;
+            transition: background-color 0.2s ease;
         }
 
         .dropdown-menu a:hover, .dropdown-menu button:hover {
@@ -259,6 +265,10 @@
             position: relative;
             overflow: hidden;
             transition: box-shadow 0.3s ease, transform 0.3s ease;
+            display: flex; /* Use flexbox for simplified layout */
+            flex-direction: column;
+            align-items: center; /* Center items horizontally */
+            text-align: center;
         }
         .paciente-info-card:hover {
             transform: translateY(-5px); /* More pronounced elevation */
@@ -277,31 +287,24 @@
         .paciente-info-card h3 {
             font-size: 2rem; /* Larger font size */
             color: var(--primary-dark); /* Color from primary palette */
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.5rem; /* Reduced margin */
             font-weight: 800; /* Extra bold */
             padding-top: 0.5rem;
             text-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle text shadow */
         }
-        .paciente-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem 2.5rem; /* Increased gap */
+        .paciente-info-card .info-text {
             font-size: 1rem; /* Slightly larger text */
+            color: var(--text);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
-        .paciente-info-item strong {
+        .paciente-info-card .info-label {
             color: var(--muted);
-            display: block;
-            font-weight: 700; /* Bolder labels */
-            font-size: 0.85rem; /* Slightly larger, more distinct labels */
-            margin-bottom: 0.4rem;
+            font-weight: 700;
+            font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-        }
-        .paciente-info-item span {
-            font-weight: 600;
-            color: var(--text);
-            word-break: break-word;
-            display: block; /* Ensure span takes full line */
+            display: block;
         }
         [data-theme="dark"] .paciente-info-card {
             box-shadow: 0 6px 20px -5px rgba(0,0,0,0.3), 0 2px 8px -2px rgba(0,0,0,0.2);
@@ -351,15 +354,15 @@
 
         /* Estilos para os cartões de registro - ATUALIZADOS para formato de lista */
         .medical-record-list {
-            display: flex;
-            flex-direction: column;
+            display: grid; /* Changed to grid */
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 3 columns on larger screens */
             gap: 1.5rem; /* Espaçamento entre os itens da lista */
             margin-top: 1.5rem; /* Espaço do topo */
         }
 
         .registro-card {
             background: var(--card);
-            padding: 1.5rem;
+            padding: 1rem; /* Reduced padding */
             border-radius: 16px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04); /* Mais proeminente */
             position: relative;
@@ -369,7 +372,8 @@
             flex-direction: column;
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
             overflow: hidden; /* Garante que nada transborde */
-            min-height: 200px; /* Altura mínima para os cards */
+            /* min-height: 200px; Removed min-height for smaller cards */
+            height: auto; /* Allow height to adjust based on content */
         }
         .registro-card:hover {
             transform: translateY(-5px); /* Elevação mais notável */
@@ -381,14 +385,15 @@
 
         .registro-header {
             display: flex;
+            flex-direction: column; /* Stack title and meta vertically */
             justify-content: space-between;
             align-items: flex-start;
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
+            padding-bottom: 0.75rem; /* Reduced padding */
+            margin-bottom: 0.75rem; /* Reduced margin */
             border-bottom: 1px solid var(--border-color);
             position: relative;
             flex-wrap: wrap; /* Permite quebrar linha em telas menores */
-            gap: 0.5rem; /* Espaçamento entre título e meta */
+            gap: 0.25rem; /* Reduced gap between title and meta */
         }
         .registro-header::after {
             content: '';
@@ -401,16 +406,16 @@
             border-radius: 2px;
         }
         .registro-header h4 {
-            font-size: 1.3rem;
+            font-size: 1.1rem; /* Smaller font size for title */
             color: var(--primary);
             margin: 0;
             font-weight: 700;
             flex-grow: 1; /* Permite que o título ocupe o espaço */
         }
         .registro-meta {
-            font-size: 0.85rem;
+            font-size: 0.8rem; /* Smaller font size for meta */
             color: var(--muted);
-            text-align: right;
+            text-align: left; /* Align meta to left */
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
@@ -419,21 +424,19 @@
         .registro-meta span { display: block; line-height: 1.4; }
         .registro-meta i { margin-right: 0.4rem; color: var(--primary); } /* Icon color */
         .registro-content {
-            font-size: 0.95rem; color: var(--text); line-height: 1.7;
-            white-space: pre-wrap; overflow-wrap: break-word;
-            max-height: 100px; /* Altura máxima reduzida para o conteúdo */
-            overflow-y: auto; padding-right: 10px;
-            flex-grow: 1;
+            display: none; /* Hide content in the card view */
         }
-        /* Scrollbar customizada para o conteúdo */
+        /* Scrollbar customizada para o conteúdo (still applies to modal) */
         .registro-content::-webkit-scrollbar { width: 6px; }
         .registro-content::-webkit-scrollbar-track { background: transparent; }
         .registro-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
         [data-theme="dark"] .registro-content::-webkit-scrollbar-thumb { background: #4b5563; }
 
         .registro-actions {
-            margin-top: 1.5rem; border-top: 1px solid var(--border-color);
-            padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;
+            margin-top: 1rem; /* Reduced margin */
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem; /* Reduced padding */
+            display: flex; justify-content: flex-end; gap: 0.5rem; /* Reduced gap */
         }
         .empty-state {
             text-align: center; padding: 2.5rem; color: var(--muted);
@@ -445,6 +448,7 @@
             /* Remove grid-column: 1 / -1; as it's no longer a grid */
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             border: 1px dashed var(--border-color); /* Dashed border for empty state */
+            grid-column: 1 / -1; /* Ensure empty state spans all columns in grid */
         }
         .empty-state i {
             font-size: 3.5rem; /* Larger icon */
@@ -558,9 +562,18 @@
             flex-direction: column;
             overflow: hidden; /* Ensures content doesn't spill out rounded corners */
         }
+        /* Specific override for the full record modal */
+        #registro-completo-modal .modal-content {
+            max-width: 90vw; /* Even wider for full record */
+            max-height: 90vh; /* Taller for full record */
+        }
+
         @media (min-width: 1024px) { /* Para telas maiores, aumente um pouco */
             .modal-content {
                 max-width: 1300px; /* Aumentado para 1300px em telas maiores */
+            }
+            #registro-completo-modal .modal-content {
+                max-width: 1400px; /* Even wider for full record on large screens */
             }
         }
         [data-theme="dark"] .modal-content {
@@ -752,25 +765,50 @@
             .desktop-only { display: inline; }
             .mobile-only { display: none; }
 
-            /* Remove grid styles for records-grid on desktop to maintain list view */
+            /* Adjust medical record list for desktop to maintain grid view */
             .medical-record-list {
-                display: flex;
-                flex-direction: column;
-                gap: 1.5rem;
+                grid-template-columns: repeat(3, 1fr); /* Force 3 columns on desktop */
             }
         }
         
         @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 280px; } /* Ajustado para 280px */
-            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
-            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
-            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
-            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
+            /* ATUALIZADO: Sidebar em mobile para ser fixed e deslizar */
+            .sidebar { 
+                position: fixed; /* Volta a ser fixed em mobile */
+                top: 0; 
+                left: 0; 
+                height: 100vh;
+                transform: translateX(-100%); 
+                width: 260px; /* Largura padrão para mobile */
+            }
+            .sidebar.open { 
+                transform: translateX(0); 
+                box-shadow: 4px 0 15px rgba(0,0,0,0.1); 
+            }
+            .sidebar.collapsed { /* Em mobile, collapsed é igual a hidden */
+                transform: translateX(-100%); 
+                width: 260px; 
+            } 
+            .sidebar.collapsed nav ul li a, 
+            .sidebar.collapsed .sidebar-footer button, 
+            .sidebar.collapsed .sidebar-footer a { 
+                justify-content: flex-start; 
+            }
+            .sidebar.collapsed nav ul li a span, 
+            .sidebar.collapsed .sidebar-footer span { 
+                display: inline; 
+            }
+            .sidebar.collapsed .sidebar-header .logo span { 
+                display: inline; 
+            }
+            /* Main content should not have margin-left on mobile */
+            .main-content, .main-content.collapsed { 
+                margin-left: 0; 
+                width: 100%; 
+            }
             main { padding: 1rem; }
             .paciente-info-card { padding: 1.5rem; }
-            .paciente-info-grid { grid-template-columns: 1fr; }
+            /* .paciente-info-grid { grid-template-columns: 1fr; } Removed as grid is simplified */
             .prontuario-header { flex-direction: column; align-items: stretch; text-align: center; }
             /* Ações do PEI móvel para empilhar */
             .pei-card-actions {
@@ -820,7 +858,13 @@
             .topbar-actions #addRecordDropdownBtn i:last-child {
                 margin-left: 0;
             }
-        </style>
+
+            /* Ensure medical records stack on mobile */
+            .medical-record-list {
+                grid-template-columns: 1fr; /* Single column on mobile */
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="layout">
@@ -876,12 +920,9 @@
                 {% if paciente %}
                 <div class="paciente-info-card">
                     <h3>{{ paciente.nome }}</h3>
-                    <div class="paciente-info-grid">
-                        <div class="paciente-info-item"><strong>Data Nasc.:</strong> <span>{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}</span></div>
-                        <div class="paciente-info-item"><strong>CPF:</strong> <span>{{ paciente.cpf or 'N/A' }}</span></div>
-                        <div class="paciente-info-item"><strong>Telefone:</strong> <span>{{ paciente.contato_telefone or 'N/A' }}</span></div>
-                        <div class="paciente-info-item"><strong>E-mail:</strong> <span>{{ paciente.contato_email or 'N/A' }}</span></div>
-                        <div class="paciente-info-item" style="grid-column: 1 / -1;"><strong>Endereço:</strong> <span>{{ paciente.endereco.logradouro or '' }}{% if paciente.endereco.logradouro and paciente.endereco.numero %}, {% endif %}{{ paciente.endereco.numero or '' }}{% if paciente.endereco.complemento %} {{ paciente.endereco.complemento }}{% endif %} - {{ paciente.endereco.bairro or '' }}, {{ paciente.endereco.cidade or '' }} - {{ paciente.endereco.estado or '' }} {{ paciente.endereco.cep or '' }}</span></div>
+                    <div class="info-text">
+                        <span class="info-label">Data Nasc.:</span>
+                        <span>{{ paciente.data_nascimento.strftime('%d/%m/%Y') if paciente.data_nascimento else 'N/A' }}</span>
                     </div>
                 </div>
                 {% endif %}
@@ -895,8 +936,9 @@
                             <span><i class="fas fa-user-md"></i> {{ registro.profissional_nome }}</span>
                         </div>
                     </div>
+                    {# The content div is intentionally empty/hidden in the card view #}
                     <div class="registro-content">
-                        {{ registro.conteudo | safe }}
+                        {# Content will be loaded into the full modal on expand #}
                     </div>
                     <div class="registro-actions">
                         <button class="btn btn-sm btn-secondary btn-expand-registro"><i class="fas fa-expand-alt"></i></button>
@@ -923,7 +965,8 @@
                             <span><i class="fas fa-user"></i> {{ documento.uploaded_by }}</span>
                         </div>
                     </div>
-                    <div class="registro-content">
+                    {# Content preview for documents can remain, or be simplified if preferred #}
+                    <div class="registro-content" style="display: block;"> {# Keep display:block for document details #}
                         <p><strong>Arquivo:</strong> {{ documento.nome_arquivo }}</p>
                         <p><strong>Tamanho Original:</strong> {{ "%.2f" | format(documento.tamanho_original / 1024) }} KB</p>
                         <p><strong>Tamanho Otimizado:</strong> {{ "%.2f" | format(documento.tamanho_comprimido / 1024) }} KB</p>
@@ -1337,10 +1380,10 @@
                         if (window.innerWidth > 768) { // Visualização desktop
                             if (localStorage.getItem('sidebarCollapsed') === 'true') {
                                 sidebar.classList.add('collapsed');
-                                mainContent.classList.add('collapsed');
+                                mainContent.classList.add('collapsed'); /* Adicionado para desktop */
                             } else {
                                 sidebar.classList.remove('collapsed');
-                                mainContent.classList.remove('collapsed');
+                                mainContent.classList.remove('collapsed'); /* Adicionado para desktop */
                             }
                             sidebar.classList.remove('open'); // Garante que a classe 'open' do mobile seja removida
                             updateDesktopToggleIcon(); // Atualiza o ícone do botão desktop
@@ -1354,7 +1397,7 @@
                     if (toggleBtnDesktop) {
                         toggleBtnDesktop.addEventListener('click', () => {
                             sidebar.classList.toggle('collapsed');
-                            mainContent.classList.toggle('collapsed');
+                            mainContent.classList.toggle('collapsed'); /* Adicionado para desktop */
                             localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
                             updateDesktopToggleIcon(); // Atualiza o ícone ao clicar
                         });
@@ -1795,17 +1838,24 @@
                     const expandButton = target.closest('.btn-expand-registro');
                     if (expandButton) {
                         const card = expandButton.closest('.registro-card');
-                        const contentDiv = card.querySelector('.registro-content');
-                        const titleText = card.querySelector('.registro-header h4').textContent;
+                        const recordId = card.id.replace('registro-', ''); // Get the ID from the card
+                        
+                        // Find the full record data from allRecordsData
+                        const fullRecord = allRecordsData.find(record => record.id === recordId);
 
-                        const modal = document.getElementById('registro-completo-modal');
-                        const modalTitle = document.getElementById('modal-registro-completo-title');
-                        const modalContent = document.getElementById('modal-registro-completo-content');
+                        if (fullRecord) {
+                            const modal = document.getElementById('registro-completo-modal');
+                            const modalTitle = document.getElementById('modal-registro-completo-title');
+                            const modalContent = document.getElementById('modal-registro-completo-content');
 
-                        if (modal && modalTitle && modalContent) {
-                            modalTitle.textContent = titleText;
-                            modalContent.innerHTML = contentDiv.innerHTML;
-                            modal.classList.add('active');
+                            if (modal && modalTitle && modalContent) {
+                                modalTitle.textContent = `${fullRecord.tipo_registro.charAt(0).toUpperCase() + fullRecord.tipo_registro.slice(1)} - ${fullRecord.titulo || ''}`;
+                                modalContent.innerHTML = fullRecord.conteudo || ''; // Use the full content from data
+                                modal.classList.add('active');
+                            }
+                        } else {
+                            console.error('Full record data not found for ID:', recordId);
+                            displayFlashMessage('danger', 'Erro ao carregar o conteúdo completo do registro.');
                         }
                         return;
                     }
@@ -1924,11 +1974,18 @@
                 // Gera um PDF para um registro específico (Anamnese, Laudo, etc.)
                 function generatePdfForRecord(button) {
                     const recordCard = button.closest('.registro-card');
+                    const recordId = recordCard.id.replace('registro-', '');
+                    const fullRecord = allRecordsData.find(record => record.id === recordId);
 
-                    const title = recordCard.querySelector('.registro-header h4').textContent.trim();
-                    const date = recordCard.querySelector('.registro-meta span:first-child').textContent.trim().replace('📅 ', '');
-                    const professional = recordCard.querySelector('.registro-meta span:last-child').textContent.trim().replace('‍⚕️ ', '');
-                    const contentHtml = recordCard.querySelector('.registro-content').innerHTML;
+                    if (!fullRecord) {
+                        displayFlashMessage('danger', 'Não foi possível encontrar os dados completos do registro para gerar o PDF.');
+                        return;
+                    }
+
+                    const title = `${fullRecord.tipo_registro.charAt(0).toUpperCase() + fullRecord.tipo_registro.slice(1)} - ${fullRecord.titulo || ''}`;
+                    const date = fullRecord.data_registro_fmt;
+                    const professional = fullRecord.profissional_nome;
+                    const contentHtml = fullRecord.conteudo || ''; // Use full content
 
                     const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
                     const patientCpf = "{{ paciente.cpf or 'N/A' }}";
@@ -1988,7 +2045,8 @@
                     doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
 
-                // Function to display custom flash messages
+                // Function to display custom flash messages (already defined globally, but keeping for context if moved)
+                /*
                 function displayFlashMessage(type, message) {
                     let flashMessagesContainer = document.querySelector('.flash-messages');
                     if (!flashMessagesContainer) {
@@ -2021,6 +2079,7 @@
                         messageDiv.remove();
                     }, 5000);
                 }
+                */
 
 
                 // --- Initial Renderings --- (PEI rendering removed)
