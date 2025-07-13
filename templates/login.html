@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - GIDH</title>
 
-    <link rel="icon" type="image/png" href="https://i.imgur.com/484AdCn.png"> <link rel="apple-touch-icon" href="https://i.imgur.com/484AdCn.png"> <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="icon" type="image/png" href="https://i.imgur.com/484AdCn.png">
+    <link rel="apple-touch-icon" href="https://i.imgur.com/484AdCn.png">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#29788d">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,25 +15,25 @@
     
     <style>
         :root {
-            --bg: #f1f5f9;                  /* Gray-100 */
-            --card: #ffffff;                /* White */
-            --text: #0f172a;                /* Gray-900 */
-            --muted: #64748b;               /* Gray-500 */
-            --accent: #9b53b8;              /* Purple-500 */
-            --primary: #5587c2;             /* Blue-500 */
-            --primary-light: #c8dcf3;       /* Blue-100 */
-            --secondary: #f59e0b;           /* Yellow-500 */
-            --danger: #dc2626;              /* Red-600 */
-            --success: #16a34a;             /* Green-600 */
-            --warning: #f59e0b;             /* Yellow-500 */
-            --info: #0ea5e9;                /* Sky-500 */
-            --border-color: #e2e8f0;        /* Gray-200 */
+            --bg: #f1f5f9;                 /* Gray-100 */
+            --card: #ffffff;               /* White */
+            --text: #0f172a;               /* Gray-900 */
+            --muted: #64748b;              /* Gray-500 */
+            --accent: #9b53b8;             /* Purple-500 */
+            --primary: #5587c2;            /* Blue-500 */
+            --primary-light: #c8dcf3;      /* Blue-100 */
+            --secondary: #f59e0b;          /* Yellow-500 */
+            --danger: #dc2626;             /* Red-600 */
+            --success: #16a34a;            /* Green-600 */
+            --warning: #f59e0b;            /* Yellow-500 */
+            --info: #0ea5e9;               /* Sky-500 */
+            --border-color: #e2e8f0;       /* Gray-200 */
 
-            --dark-bg: #0f172a;             /* Gray-900 */
-            --dark-card: #1e293b;           /* Gray-800 */
-            --dark-text: #f1f5f9;           /* Gray-100 */
-            --dark-muted: #94a3b8;          /* Gray-400 */
-            --dark-border-color: #334155;   /* Gray-600 */
+            --dark-bg: #0f172a;            /* Gray-900 */
+            --dark-card: #1e293b;          /* Gray-800 */
+            --dark-text: #f1f5f9;          /* Gray-100 */
+            --dark-muted: #94a3b8;         /* Gray-400 */
+            --dark-border-color: #334155;  /* Gray-600 */
 
             /* Compatibilidade com variáveis antigas */
             --primary-color: var(--primary);
@@ -512,10 +514,11 @@
     </div>
 
     <script type="module">
-        
+        // Importa os módulos necessários do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
         
+        // Configurações do seu projeto Firebase (verifique no console do Firebase)
         const firebaseConfig = {
             apiKey: "AIzaSyDSxPm71nf5oQ1FQb6nsTbkUYqFkqeRDMs",
             authDomain: "gidh-e8968.firebaseapp.com",
@@ -547,8 +550,8 @@
         const loginForm = document.getElementById('loginForm');
         const firebaseErrorMessage = document.getElementById('firebase-error-message');
         const loadingIndicator = document.getElementById('loading-indicator');
-        const passwordInput = document.getElementById('password'); // Adicionado
-        const togglePassword = document.getElementById('togglePassword'); // Adicionado
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
 
         // Elementos do DOM para o modal de redefinição de senha
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
@@ -566,6 +569,9 @@
                 const email = loginForm.email.value;
                 const password = loginForm.password.value;
 
+                // Adicionado: Loga o email e a senha que estão sendo usados para o login no Firebase
+                console.log(`[DEBUG FRONTEND] Tentando login com Firebase: Email=${email}, Senha=${password}`);
+
                 // Limpa mensagens de erro e mostra indicador de carregamento
                 firebaseErrorMessage.textContent = '';
                 firebaseErrorMessage.style.display = 'none';
@@ -582,8 +588,10 @@
                     const user = userCredential.user;
                     const idToken = await user.getIdToken();
                     console.log('[DEBUG - Firebase Auth]: Usuário logado com Firebase. Enviando ID Token para o servidor.');
+                    // Adicionado: Loga o ID Token obtido do Firebase (apenas os primeiros caracteres por segurança)
+                    console.log(`[DEBUG FRONTEND] ID Token obtido do Firebase: ${idToken.substring(0, 30)}...`);
 
-                    // Envia o ID Token para o servidor para validação de sessão
+                    // Envia o ID Token para o servidor Flask para validação de sessão
                     const response = await fetch("{{ url_for('session_login') }}", {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -596,16 +604,23 @@
 
                     // Redireciona se o login for bem-sucedido, caso contrário exibe erro
                     if (response.ok && serverResponse.success) {
+                        console.log('[DEBUG FRONTEND] Sessão Flask criada com sucesso! Redirecionando...');
                         window.location.href = "{{ url_for('index') }}";
                     } else {
+                        // Adicionado: Loga o erro retornado pelo backend Flask
+                        console.error('[DEBUG FRONTEND] Erro ao criar sessão Flask:', response.status, serverResponse.message || 'Erro desconhecido do servidor.');
                         firebaseErrorMessage.textContent = serverResponse.message || 'Utilizador não autorizado ou erro no servidor.';
                         firebaseErrorMessage.style.display = 'block';
-                        firebaseSignOut(auth).catch(err => console.error("Erro ao deslogar do Firebase:", err));
+                        // Tenta deslogar do Firebase se a sessão Flask falhou
+                        firebaseSignOut(auth).catch(err => console.error("Erro ao deslogar do Firebase após falha na sessão Flask:", err));
                     }
 
                 } catch (error) {
                     loadingIndicator.style.display = 'none'; // Esconde indicador de carregamento em caso de erro
                     console.error('[DEBUG - Login Process Error]:', error); 
+                    // Adicionado: Loga o código e a mensagem de erro exatos do Firebase
+                    console.error(`[DEBUG FRONTEND] Erro no login Firebase: Código=${error.code}, Mensagem=${error.message}`);
+                    
                     // Mapeia códigos de erro do Firebase para mensagens amigáveis
                     let friendlyMessage = "Erro ao fazer login. Verifique suas credenciais.";
                     if (error.code) {
@@ -627,7 +642,7 @@
                             default:
                                 friendlyMessage = `Erro: ${error.message}`;
                         }
-                    } else if (error.message.includes('Firebase Auth failed to initialize')) {
+                    } else if (error.message.includes('Firebase Auth não inicializado')) {
                         friendlyMessage = 'Problema de inicialização do Firebase Auth. Por favor, contacte o suporte (código: F002).';
                     }
                     firebaseErrorMessage.textContent = friendlyMessage;
