@@ -13,31 +13,31 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     /* ============================================
-     --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
-     ============================================
+      --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
+      ============================================
     */
    :root {
-     --bg: #f1f5f9;                  /* Gray-100 */
-     --card: #ffffff;                /* White */
-     --text: #0f172a;                /* Gray-900 */
-     --muted: #64748b;               /* Gray-500 */
-     --accent: #9b53b8;              /* Purple-500 */
-     --primary: #5587c2;             /* Blue-500 */
+     --bg: #f1f5f9;                 /* Gray-100 */
+     --card: #ffffff;               /* White */
+     --text: #0f172a;               /* Gray-900 */
+     --muted: #64748b;              /* Gray-500 */
+     --accent: #9b53b8;             /* Purple-500 */
+     --primary: #5587c2;            /* Blue-500 */
      
-     --primary-light: #c8dcf3;       /* Blue-100 */
-     --primary-dark: #115e59;        /* Teal-800 */
-     --secondary: #f59e0b;           /* Yellow-500 */
-     --danger: #dc2626;              /* Red-600 */
-     --success: #16a34a;             /* Green-600 */
-     --warning: #f59e0b;             /* Yellow-500 */
-     --info: #0ea5e9;                /* Sky-500 */
-     --border-color: #e2e8f0;        /* Gray-200 */
+     --primary-light: #c8dcf3;      /* Blue-100 */
+     --primary-dark: #115e59;       /* Teal-800 */
+     --secondary: #f59e0b;          /* Yellow-500 */
+     --danger: #dc2626;             /* Red-600 */
+     --success: #16a34a;            /* Green-600 */
+     --warning: #f59e0b;            /* Yellow-500 */
+     --info: #0ea5e9;               /* Sky-500 */
+     --border-color: #e2e8f0;       /* Gray-200 */
 
-     --dark-bg: #0f172a;             /* Gray-900 */
-     --dark-card: #1e293b;           /* Gray-800 */
-     --dark-text: #f1f5f9;           /* Gray-100 */
-     --dark-muted: #94a3b8;          /* Gray-400 */
-     --dark-border-color: #334155;   /* Gray-600 */
+     --dark-bg: #0f172a;            /* Gray-900 */
+     --dark-card: #1e293b;          /* Gray-800 */
+     --dark-text: #f1f5f9;          /* Gray-100 */
+     --dark-muted: #94a3b8;         /* Gray-400 */
+     --dark-border-color: #334155;  /* Gray-600 */
      
      color-scheme: light;
    }
@@ -64,8 +64,8 @@
    .layout { display: flex; min-height: 100vh; width: 100%; }
 
     /* ============================================
-     --- SIDEBAR ---
-     ============================================
+      --- SIDEBAR ---
+      ============================================
     */
    .sidebar {
      width: 280px; /* Aumentado de 260px para 280px */
@@ -182,8 +182,8 @@
    .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
 
     /* ============================================
-     --- CONTEÚDO PRINCIPAL & TOPBAR ---
-     ============================================
+      --- CONTEÚDO PRINCIPAL & TOPBAR ---
+      ============================================
     */
    .main-content {
      flex: 1; margin-left: 280px; /* Ajustado de 260px para 280px */
@@ -216,8 +216,8 @@
    main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
    
     /* ============================================
-     --- CARDS DE RESUMO (KPIs) ---
-     ============================================
+      --- CARDS DE RESUMO (KPIs) ---
+      ============================================
     */
    .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
    .card {
@@ -243,8 +243,8 @@
    .stat-comparison.info { color: var(--muted); }
 
     /* ============================================
-     --- GRÁFICOS E TABELAS ---
-     ============================================
+      --- GRÁFICOS E TABELAS ---
+      ============================================
     */
    .charts-section-full {
       margin-bottom: 1.5rem;
@@ -293,10 +293,35 @@
    tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
    tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
 
+    /* Estilo para o novo botão de ação na tabela */
+    .btn-table-action {
+        background-color: var(--primary);
+        color: white;
+        padding: 0.5rem 1rem; /* Slightly smaller padding for table context */
+        border: none;
+        border-radius: 8px; /* Slightly less rounded */
+        cursor: pointer;
+        font-size: 0.85rem; /* Smaller font size */
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        display: inline-flex; /* Use inline-flex to keep it in line with text but allow flex properties */
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none; /* Remove underline for anchor tags */
+        white-space: nowrap; /* Prevent text wrapping */
+    }
+    .btn-table-action:hover {
+        background-color: color-mix(in srgb, var(--primary) 80%, black);
+        transform: translateY(-1px); /* Slightly less transform */
+    }
+    .btn-table-action i {
+        font-size: 1rem; /* Adjust icon size */
+    }
+
 
     /* ============================================
-     --- RESPONSIVIDADE E MOBILE ---
-     ============================================
+      --- RESPONSIVIDADE E MOBILE ---
+      ============================================
     */
    @media (max-width: 991px) {
      .table-container { display: none; }
@@ -546,16 +571,17 @@
         color: white;
         font-size: 0.8rem;
         line-height: 20px;
+        /* mix-blend-mode: difference; REMOVED as it caused issues */
         transition: width 0.5s ease-out;
     }
     .independence-percentage-text {
         position: absolute;
         right: 5px;
-        color: var(--text);
+        color: var(--text); /* Set text color explicitly */
         font-weight: 600;
         font-size: 0.8rem;
         line-height: 20px;
-        mix-blend-mode: difference; /* Garante que o texto seja visível sobre a barra */
+        /* mix-blend-mode: difference; REMOVED as it caused issues */
     }
 
     /* Estilos para o novo gráfico de áreas de desenvolvimento */
@@ -841,20 +867,21 @@
                                     <td>{{ paciente.total_targets }}</td>
                                     <td>{{ paciente.completed_targets }}</td>
                                     <td>
-                                        <div style="width: 100px; background-color: var(--border-color); border-radius: 5px; overflow: hidden;">
-                                            <div style="width: {{ paciente.progress_percentage }}%; background-color: var(--primary); height: 20px; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;">
+                                        <div style="width: 100px; background-color: var(--border-color); border-radius: 5px; overflow: hidden; position: relative;">
+                                            <div style="width: {{ paciente.progress_percentage }}%; background-color: var(--primary); height: 20px; border-radius: 5px;"></div>
+                                            <span style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); color: var(--text); font-size: 0.8rem; line-height: 20px; width: 100%; text-align: center;">
                                                 {{ paciente.progress_percentage }}%
-                                            </div>
+                                            </span>
                                         </div>
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('peis.ver_peis_paciente', paciente_doc_id=paciente.id) }}" class="action-link">
+                                        <a href="{{ url_for('peis.ver_peis_paciente', paciente_doc_id=paciente.id) }}" class="btn-table-action">
                                             <i class="fa-solid fa-file-alt"></i> Ver PEIs
                                         </a>
                                     </td>
                                     <td> {# Célula para o Mapa Mental #}
                                         {% if paciente.total_peis_ativos > 0 %}
-                                            <button class="action-link view-mental-map-btn" data-patient-id="{{ paciente.id }}" data-patient-name="{{ paciente.nome }}">
+                                            <button class="btn-table-action view-mental-map-btn" data-patient-id="{{ paciente.id }}" data-patient-name="{{ paciente.nome }}">
                                                 <i class="fa-solid fa-brain"></i> Ver Mapa
                                             </button>
                                         {% else %}
@@ -867,44 +894,6 @@
                             <tr>
                                 <td colspan="7" style="text-align: center; padding: 2rem;">Nenhum dado de progresso de PEI encontrado.</td>
                             </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-        
-        <section class="list-section">
-            <h2 class="section-title">Próximos Agendamentos Confirmados</h2>
-            
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th><th>Hora</th><th>Paciente</th><th>Profissional</th><th>Serviço/Procedimento</th><th>Preço</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% set items_rendered = namespace(count=0) %}
-                        {% for agendamento in proximos_agendamentos %}
-                            {# --- LÓGICA DE VISUALIZAÇÃO --- #}
-                            {# Condição: mostra o agendamento se o usuário for 'admin' OU se o agendamento pertencer ao usuário logado. #}
-                            {# IMPORTANTE: Certifique-se que 'agendamento.id_profissional' e 'session.user_id' correspondem aos nomes das variáveis no seu backend #}
-                            {% if session.user_role == 'admin' or agendamento.id_profissional == session.user_id %}
-                                {% set items_rendered.count = items_rendered.count + 1 %}
-                                <tr>
-                                    <td>{{ agendamento.data_agendamento }}</td>
-                                    <td>{{ agendamento.hora_agendamento }}</td>
-                                    <td>{{ agendamento.cliente_nome }}</td>
-                                    <td>{{ agendamento.profissional_nome }}</td>
-                                    <td>{{ agendamento.servico_procedimento_nome }}</td>
-                                    <td>R$ {{ "%.2f"|format(agendamento.preco|float) | replace('.', ',') }}</td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {# Mensagem se, após o filtro, nenhum agendamento for exibido #}
-                        {% if items_rendered.count == 0 %}
-                            <tr><td colspan="6" style="text-align: center; padding: 2rem;">Nenhum próximo agendamento para exibir.</td></tr>
                         {% endif %}
                     </tbody>
                 </table>
@@ -1074,6 +1063,7 @@
                                 yAxisID: 'y1',
                                 pointRadius: 4,
                                 pointBackgroundColor: themeColors.secondary,
+                                pointBorderColor: themeColors.secondary,
                             },
                             {
                                 type: 'bar',
@@ -1200,7 +1190,7 @@
     const themeObserver = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-                setTimeout(renderCharts, 50); 
+                setTimeout(renderCharts, 50);  
                 // Também renderiza o gráfico do modal novamente se estiver visível
                 if (mentalMapChartInstance && document.getElementById('mentalMapModal').style.display === 'flex') {
                     const patientId = document.getElementById('mentalMapModal').dataset.patientId;
@@ -1489,14 +1479,20 @@
             closeBtn.style.display = 'none';
 
             // Temporariamente ajusta estilos para garantir que o fundo seja branco no PDF
-            const originalBgColor = document.body.style.backgroundColor;
+            const originalBodyBgColor = document.body.style.backgroundColor;
             document.body.style.backgroundColor = '#fff';
-            const originalModalContentBg = mentalMapModal.querySelector('.modal-content').style.backgroundColor; // Correção aqui
-            mentalMapModal.querySelector('.modal-content').style.backgroundColor = '#fff'; // Correção aqui
-            const originalChartBg = mentalMapChartCtx.canvas.style.backgroundColor;
-            mentalMapChartCtx.canvas.style.backgroundColor = '#fff';
-            const originalDevChartBg = developmentAreasChartCtx.canvas.style.backgroundColor;
-            developmentAreasChartCtx.canvas.style.backgroundColor = '#fff';
+            const modalContent = mentalMapModal.querySelector('.modal-content');
+            const originalModalContentBg = modalContent.style.backgroundColor;
+            modalContent.style.backgroundColor = '#fff';
+            
+            // Get canvas elements and their original background colors
+            const mentalMapCanvas = document.getElementById('mentalMapChart');
+            const developmentAreasCanvas = document.getElementById('developmentAreasChart');
+            const originalMentalMapChartBg = mentalMapCanvas ? mentalMapCanvas.style.backgroundColor : '';
+            const originalDevelopmentAreasChartBg = developmentAreasCanvas ? developmentAreasCanvas.style.backgroundColor : '';
+
+            if (mentalMapCanvas) mentalMapCanvas.style.backgroundColor = '#fff';
+            if (developmentAreasCanvas) developmentAreasCanvas.style.backgroundColor = '#fff';
 
 
             // Captura o conteúdo do modal
@@ -1527,7 +1523,7 @@
                 const imgProps = doc.getImageProperties(imgData);
                 const imgRatio = imgProps.width / imgProps.height;
                 
-                let imgWidth = pdfWidth - 20; 
+                let imgWidth = pdfWidth - 20;  
                 let imgHeight = imgWidth / imgRatio;
 
                 let positionX = 10;
@@ -1544,15 +1540,30 @@
                 doc.save(`Progresso_PEI_${patientName.replace(/\s/g, '_')}.pdf`);
             }).catch(error => {
                 console.error("Erro ao gerar PDF:", error);
-                alert("Erro ao gerar o PDF. Por favor, tente novamente.");
+                // Use a custom message box instead of alert()
+                const messageBox = document.createElement('div');
+                messageBox.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background-color: var(--card); color: var(--text); padding: 20px;
+                    border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 9999;
+                    text-align: center; font-size: 1.1rem;
+                `;
+                messageBox.innerHTML = `
+                    <p>Erro ao gerar o PDF. Por favor, tente novamente.</p>
+                    <button style="margin-top: 15px; padding: 8px 15px; background-color: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer;">OK</button>
+                `;
+                document.body.appendChild(messageBox);
+                messageBox.querySelector('button').addEventListener('click', () => {
+                    document.body.removeChild(messageBox);
+                });
             }).finally(() => {
                 // Reexibe os botões e restaura os estilos originais
                 printMentalMapBtn.style.display = 'flex';
                 closeBtn.style.display = 'block';
-                document.body.style.backgroundColor = originalBgColor;
-                mentalMapModal.querySelector('.modal-content').style.backgroundColor = originalModalContentBg; // Correção aqui
-                mentalMapChartCtx.canvas.style.backgroundColor = originalChartBg;
-                developmentAreasChartCtx.canvas.style.backgroundColor = originalDevChartBg;
+                document.body.style.backgroundColor = originalBodyBgColor;
+                modalContent.style.backgroundColor = originalModalContentBg;
+                if (mentalMapCanvas) mentalMapCanvas.style.backgroundColor = originalMentalMapChartBg;
+                if (developmentAreasCanvas) developmentAreasCanvas.style.backgroundColor = originalDevelopmentAreasChartBg;
             });
         });
     }
