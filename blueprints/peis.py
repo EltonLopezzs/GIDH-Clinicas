@@ -17,7 +17,7 @@ def _format_professional_names(db_instance, clinica_id, professional_ids):
     """
     if not professional_ids:
         return 'N/A'
-    
+
     professional_names = []
     for prof_id in professional_ids:
         try:
@@ -29,7 +29,7 @@ def _format_professional_names(db_instance, clinica_id, professional_ids):
         except Exception as e:
             print(f"Erro ao buscar nome do profissional {prof_id}: {e}")
             professional_names.append(f"Erro ao Carregar Profissional ({prof_id})")
-    
+
     return ", ".join(professional_names)
 
 def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals_map=None):
@@ -100,7 +100,7 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
         else:
             activity['timestamp_fmt'] = 'N/A'
         pei['activities'].append(activity)
-    
+
     # Busca metas e alvos das subcoleções
     pei['goals'] = []
     metas_ref = db_instance.collection(f'clinicas/{clinica_id}/peis/{pei_doc.id}/metas')
@@ -110,7 +110,7 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
         meta = convert_doc_to_dict(meta_doc)
         meta['id'] = meta_doc.id
         # Garante que meta_id esteja no dicionário, se for salvo como campo
-        meta['meta_id'] = meta_doc.id 
+        meta['meta_id'] = meta_doc.id
         # A referência da meta deve ser para o PEI pai
         if 'doc_reference' in meta and isinstance(meta['doc_reference'], firestore.DocumentReference):
             meta['doc_reference'] = meta['doc_reference'].path
@@ -168,42 +168,74 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
 # FUNÇÕES DE TRANSAÇÃO (Helpers para PEI)
 # =================================================================
 
-def _recursive_delete_collection(db_instance, coll_ref, batch_size=50):
+def _recursive_delete_collection(db_instance, coll_ref, batch_size=500):
     """
-    Deleta recursivamente documentos e subcoleções de uma coleção.
+    Deleta recursivamente documentos e subcoleções de uma coleção,
+    gerenciando seus próprios lotes e commits.
     Args:
         db_instance: Instância do Firestore DB.
         coll_ref: Referência da coleção a ser deletada.
-        batch_size: Número de documentos a serem deletados por lote.
+        batch_size: Número máximo de documentos a serem deletados em um único lote.
+                    (Firestore tem um limite de 500 operações por lote).
+    Returns:
+        O número total de documentos deletados nesta chamada e suas subcoleções.
     """
-    docs = coll_ref.limit(batch_size).stream()
-    deleted = 0
-    for doc in docs:
-        # Deleta subcoleções primeiro
-        # Usando doc.reference.collections() que é o método recomendado em versões mais recentes
-        # Adicionado try-except para compatibilidade com versões mais antigas que podem não ter 'collections()'
-        try:
-            for sub_coll_ref in doc.reference.collections():
-                print(f"Deletando subcoleção: {sub_coll_ref.id} de documento {doc.id}")
-                _recursive_delete_collection(db_instance, sub_coll_ref)
-        except AttributeError:
-            print(f"AVISO: DocumentReference {doc.id} não possui o método 'collections()'. "
-                  "Isso pode indicar uma uma versão desatualizada da biblioteca google-cloud-firestore. "
-                  "Subcoleções deste documento podem não ser deletadas recursivamente.")
-            # Se 'collections()' não estiver disponível, não podemos deletar subcoleções genéricas.
-            # As subcoleções conhecidas (alvos, ajudas) são tratadas por chamadas explícitas nas rotas de exclusão.
-            pass
+    total_deleted = 0
+    while True:
+        # Stream documents in chunks
+        docs = coll_ref.limit(batch_size).stream()
+        
+        # Collect documents for the current batch and check if any documents were found
+        documents_in_current_chunk = list(docs)
+        if not documents_in_current_chunk:
+            break # No more documents to delete in this collection
+
+        batch = db_instance.batch()
+        deleted_in_this_batch_count = 0
+
+        for doc in documents_in_current_chunk:
+            # Recursively delete subcollections first
+            # Note: doc.reference.collections() is a good general approach,
+            # but for known fixed subcollections like 'alvos' and 'ajudas',
+            # direct access is more explicit and potentially safer.
+            if coll_ref.id == 'metas': # If we are deleting from 'metas' collection
+                alvos_sub_coll_ref = doc.reference.collection('alvos')
+                print(f"DEBUG: Chamando recursivamente para 'alvos' de meta: {doc.id}")
+                total_deleted += _recursive_delete_collection(db_instance, alvos_sub_coll_ref, batch_size)
+            elif coll_ref.id == 'alvos': # If we are deleting from 'alvos' collection
+                ajudas_sub_coll_ref = doc.reference.collection('ajudas')
+                print(f"DEBUG: Chamando recursivamente para 'ajudas' de alvo: {doc.id}")
+                total_deleted += _recursive_delete_collection(db_instance, ajudas_sub_coll_ref, batch_size)
+
+            # Handle generic subcollections (if doc.reference.collections() works)
+            try:
+                for sub_coll_ref_generic in doc.reference.collections():
+                    # Avoid re-processing known subcollections that are already handled above
+                    if sub_coll_ref_generic.id not in ['alvos', 'ajudas', 'activities', 'metas']:
+                        print(f"DEBUG: Chamando recursivamente para subcoleção genérica: {sub_coll_ref_generic.id} de documento: {doc.id}")
+                        total_deleted += _recursive_delete_collection(db_instance, sub_coll_ref_generic, batch_size)
+            except AttributeError:
+                print(f"AVISO: DocumentReference {doc.id} não possui o método 'collections()'. "
+                      "Subcoleções genéricas deste documento podem não ser deletadas recursivamente.")
+                pass
+
+            # Add the current document to the batch for deletion
+            batch.delete(doc.reference)
+            deleted_in_this_batch_count += 1
 
         try:
-            doc.reference.delete()
+            batch.commit()
+            print(f"DEBUG: Lote de {deleted_in_this_batch_count} documentos da coleção {coll_ref.id} comitado com sucesso.")
+            total_deleted += deleted_in_this_batch_count
         except Exception as e:
-            print(f"Erro ao deletar documento {doc.id}: {e}")
-            # Loga o erro, mas continua se possível, ou relança se for crítico
-            raise # Relança para garantir que a transação/operação falhe se um documento não puder ser deletado
-        deleted += 1
-    if deleted >= batch_size:
-        print(f"Deletados {deleted} documentos, verificando por mais no caminho: {coll_ref.path}")
-        _recursive_delete_collection(db_instance, coll_ref, batch_size)
+            print(f"ERROR: Falha ao comitar lote para coleção {coll_ref.id}: {e}")
+            raise # Re-raise the exception if batch commit fails
+
+        if deleted_in_this_batch_count < batch_size:
+            # If we retrieved fewer documents than batch_size, it means we've reached the end of the collection
+            break
+    return total_deleted
+
 
 @firestore.transactional
 def _delete_goal_transaction(transaction, pei_ref, goal_id_to_delete, db_instance):
@@ -222,8 +254,9 @@ def _delete_goal_transaction(transaction, pei_ref, goal_id_to_delete, db_instanc
 
     if not goal_snapshot.exists:
         raise Exception("Meta não encontrada para exclusão.")
-    
+
     # A deleção recursiva das subcoleções 'alvos' e 'ajudas' será feita na rota Flask.
+    # A operação de exclusão da meta principal é adicionada à transação.
     transaction.delete(goal_doc_ref)
 
 @firestore.transactional
@@ -240,7 +273,7 @@ def _update_target_status_transaction(transaction, target_ref, new_target_status
     snapshot = target_ref.get(transaction=transaction)
     if not snapshot.exists:
         raise Exception("Alvo não encontrado.")
-    
+
     updated_data = {'status': new_target_status}
     transaction.update(target_ref, updated_data)
 
@@ -276,9 +309,9 @@ def _finalize_goal_transaction(transaction, goal_ref, db_instance):
 
     # Atualizar alvos na subcoleção
     alvos_ref = goal_ref.collection('alvos')
-    alvos_docs = alvos_ref.stream()
+    alvos_docs = alvos_ref.stream() # Correção: Use alvos_docs aqui
 
-    for alvo_doc in alvos_docs:
+    for alvo_doc in alvos_docs: # Correção: Iterar sobre alvos_docs
         print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'finalizada' dentro da meta {goal_ref.id}.")
         updated_alvo_data = {'status': 'finalizada'}
         transaction.update(alvo_doc.reference, updated_alvo_data)
@@ -474,7 +507,7 @@ def _update_target_and_aid_data_transaction(transaction, target_ref, aid_id=None
         aid_snapshot = aid_ref.get(transaction=transaction)
         if not aid_snapshot.exists:
             raise Exception("Ajuda (Aid) não encontrada no alvo.")
-        
+
         if new_attempts_count is not None:
             try:
                 # Define a contagem de tentativas para o novo valor fornecido
@@ -616,10 +649,10 @@ def add_pei(paciente_doc_id):
             'profissionais_ids': profissionais_ids_selecionados,
             'doc_reference': clinica_ref # Adiciona a referência para a clínica
         }
-        
+
         # Adiciona o PEI e obtém a referência do documento
         _, pei_doc_ref = peis_ref.add(new_pei_data)
-        
+
         flash('PEI adicionado com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao adicionar PEI: {e}', 'danger')
@@ -634,7 +667,7 @@ def delete_pei(paciente_doc_id):
     clinica_id = session['clinica_id']
     user_role = session.get('user_role') # Explicitly define user_role
     is_admin = user_role == 'admin' # Explicitly define is_admin
-    
+
     try:
         pei_id = request.form.get('pei_id')
         print(f"Tentando excluir PEI com ID: {pei_id} para clínica: {clinica_id}")
@@ -643,7 +676,7 @@ def delete_pei(paciente_doc_id):
             print("Erro: ID do PEI não fornecido para exclusão.")
         else:
             pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
-            
+
             # Verifica se o PEI existe antes de tentar deletar subcoleções
             pei_doc_snapshot = pei_ref.get()
             if not pei_doc_snapshot.exists:
@@ -651,24 +684,23 @@ def delete_pei(paciente_doc_id):
                 print(f"Erro: PEI com ID {pei_id} não encontrado.")
                 return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
 
-
             print(f"Iniciando exclusão recursiva de metas para PEI: {pei_id}")
-            metas_ref = pei_ref.collection('metas') # This is a CollectionReference
-            _recursive_delete_collection(db_instance, metas_ref) # This call is correct
+            metas_ref = pei_ref.collection('metas')
+            _recursive_delete_collection(db_instance, metas_ref) # _recursive_delete_collection now manages its own batches
             print(f"Exclusão de metas concluída para PEI: {pei_id}")
 
             print(f"Iniciando exclusão recursiva de atividades para PEI: {pei_id}")
-            activities_ref = pei_ref.collection('activities') # This is a CollectionReference
-            _recursive_delete_collection(db_instance, activities_ref) # This call is correct
+            activities_ref = pei_ref.collection('activities')
+            _recursive_delete_collection(db_instance, activities_ref) # _recursive_delete_collection now manages its own batches
             print(f"Exclusão de atividades concluída para PEI: {pei_id}")
 
-            # Finalmente, deletar o documento PEI
+            # Delete the main PEI document directly after subcollections are deleted
             pei_ref.delete()
-            print(f"PEI principal deletado: {pei_id}")
+            print(f"PEI principal {pei_id} excluído com sucesso.")
             flash('PEI excluído com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao excluir PEI: {e}', 'danger')
-        print(f"Erro crítico ao excluir PEI {pei_id}: {e}")
+        print(f"Erro crítico ao excluir PEI {pei_id}: {str(e)}") # Usando str(e) para evitar problemas de formatação
     return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
 
 @peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/finalize', methods=['POST'], endpoint='finalize_pei')
@@ -710,7 +742,6 @@ def finalize_pei(paciente_doc_id):
             associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
             print(f"Profissionais associados ao PEI: {associated_professionals_ids}")
             if logged_in_professional_id not in associated_professionals_ids:
-                print(f"Erro de permissão: Profissional {logged_in_professional_id} não está associado ao PEI {pei_id}.")
                 return jsonify({'success': False, 'message': 'Você não tem permissão para finalizar este PEI.'}), 403
             print(f"Permissão concedida: Usuário é administrador.")
         else:
@@ -738,7 +769,7 @@ def finalize_pei(paciente_doc_id):
 
         return jsonify({'success': True, 'message': 'PEI finalizado com sucesso!', 'peis': all_peis}), 200
     except Exception as e:
-        print(f"Erro crítico ao finalizar PEI {pei_id}: {e}")
+        print(f"Erro crítico ao finalizar PEI {pei_id}: {str(e)}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
 @peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/add_goal', methods=['POST'], endpoint='add_goal')
@@ -746,7 +777,7 @@ def finalize_pei(paciente_doc_id):
 @admin_required
 def add_goal(paciente_doc_id):
     db_instance = get_db()
-    clinica_id = session['clinica_id']
+    clinica_id = session['clinica_id'] # Corrigido de session['clinica'] para session['clinica_id']
     user_role = session.get('user_role') # Explicitly define user_role
     is_admin = user_role == 'admin' # Explicitly define is_admin
 
@@ -768,7 +799,7 @@ def add_goal(paciente_doc_id):
             'status': 'ativo',
             'pei_id': pei_id
         }
-        
+
         meta_doc_ref = metas_ref.document()
         new_goal_data['meta_id'] = meta_doc_ref.id
         # Adiciona o doc_reference para a meta, referenciando o PEI pai
@@ -831,7 +862,7 @@ def add_target_to_goal(paciente_doc_id):
             return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar alvo.'}), 400
 
         goal_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).collection('metas').document(goal_id)
-        
+
         transaction = db_instance.transaction()
         _add_target_to_goal_transaction(transaction, goal_ref, target_description)
         transaction.commit()
@@ -889,23 +920,93 @@ def delete_goal(paciente_doc_id):
                 print(f"Erro: Meta com ID {goal_id} não encontrada no PEI {pei_id}.")
                 return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
 
-            # Deletar recursivamente a subcoleção 'alvos' da meta, incluindo suas subcoleções 'ajudas'
+            # Delete recursively the 'alvos' subcollection of the goal, including their 'ajudas' subcollections
             print(f"Iniciando exclusão recursiva de alvos para meta: {goal_id}")
             alvos_ref = goal_doc_ref.collection('alvos')
-            _recursive_delete_collection(db_instance, alvos_ref)
+            _recursive_delete_collection(db_instance, alvos_ref) # _recursive_delete_collection now manages its own batches
             print(f"Exclusão de alvos concluída para meta: {goal_id}")
 
-            # Deletar o documento da meta
-            transaction = db_instance.transaction()
-            _delete_goal_transaction(transaction, pei_ref, goal_id, db_instance)
-            transaction.commit()
-            print(f"Meta principal deletada: {goal_id}")
-            
+            # Delete the main goal document directly after subcollections are deleted
+            goal_doc_ref.delete()
+            print(f"Meta principal {goal_id} excluída com sucesso.")
+
             flash('Meta excluída com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao excluir meta: {e}', 'danger')
-        print(f"Erro crítico ao excluir meta {goal_id}: {e}")
+        print(f"Erro crítico ao excluir meta {goal_id}: {str(e)}")
     return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
+
+@peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/delete_target', methods=['POST'], endpoint='delete_target')
+@login_required
+@admin_required
+def delete_target(paciente_doc_id):
+    db_instance = get_db()
+    clinica_id = session['clinica_id']
+    user_role = session.get('user_role')
+    is_admin = user_role == 'admin'
+
+    try:
+        data = request.get_json()
+        pei_id = data.get('pei_id')
+        goal_id = data.get('goal_id')
+        target_id = data.get('target_id')
+
+        print(f"Tentando excluir alvo {target_id} da meta {goal_id} do PEI {pei_id}")
+
+        if not all([pei_id, goal_id, target_id]):
+            return jsonify({'success': False, 'message': 'Dados insuficientes para excluir alvo.'}), 400
+
+        target_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).collection('metas').document(goal_id).collection('alvos').document(target_id)
+        target_doc_snapshot = target_ref.get()
+
+        if not target_doc_snapshot.exists:
+            return jsonify({'success': False, 'message': 'Alvo não encontrado para exclusão.'}), 404
+
+        if not is_admin:
+            # Check if the logged-in professional is associated with the PEI
+            pei_doc = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).get()
+            if not pei_doc.exists:
+                return jsonify({'success': False, 'message': 'PEI associado não encontrado.'}), 404
+            associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
+            logged_in_professional_id = None
+            if session.get('user_uid'):
+                user_doc = db_instance.collection('User').document(session.get('user_uid')).get()
+                if user_doc.exists:
+                    logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+
+            if logged_in_professional_id not in associated_professionals_ids:
+                return jsonify({'success': False, 'message': 'Você não tem permissão para excluir este alvo.'}), 403
+
+        # Delete recursively the 'ajudas' subcollection of the target
+        print(f"Iniciando exclusão recursiva de ajudas para alvo: {target_id}")
+        ajudas_ref = target_ref.collection('ajudas')
+        _recursive_delete_collection(db_instance, ajudas_ref)
+        print(f"Exclusão de ajudas concluída para alvo: {target_id}")
+
+        # Delete the main target document
+        target_ref.delete()
+        print(f"Alvo principal {target_id} excluído com sucesso.")
+
+        # Re-fetch all PEIs for the patient and return them
+        all_peis = []
+        profissionais_map = {}
+        profissionais_docs = db_instance.collection(f'clinicas/{clinica_id}/profissionais').stream()
+        for doc in profissionais_docs:
+            profissionais_map[doc.id] = doc.to_dict().get('nome', 'N/A')
+
+        peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
+        if not is_admin and logged_in_professional_id:
+            peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
+
+        for doc in peis_query.stream():
+            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            all_peis.append(pei_data_converted)
+
+        return jsonify({'success': True, 'message': 'Alvo excluído com sucesso!', 'peis': all_peis}), 200
+
+    except Exception as e:
+        print(f"Erro crítico ao excluir alvo {target_id}: {str(e)}")
+        return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
 @peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/finalize_goal', methods=['POST'], endpoint='finalize_goal')
 @login_required
@@ -922,6 +1023,8 @@ def finalize_goal(paciente_doc_id):
             user_doc = db_instance.collection('User').document(user_uid).get()
             if user_doc.exists:
                 logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+            else:
+                print(f"Documento de usuário não encontrado para UID: {user_uid}")
         except Exception as e:
             return jsonify({'success': False, 'message': f'Erro ao verificar permissões: {e}'}), 500
 
