@@ -260,123 +260,117 @@ def index():
                 flash("Sua conta de usuário não está corretamente associada a um perfil de profissional. Contate o administrador.", "warning")
         except Exception as e:
             flash(f"Erro ao buscar informações do profissional: {e}", "danger")
-            return render_template('dashboard.html', kpi={}, proximos_agendamentos=[])
+            # Continue to render the dashboard, but with potentially incomplete data
+            print(f"Erro ao buscar informações do profissional: {e}")
 
     # Referências das coleções
     agendamentos_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos')
     pacientes_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')
-    peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis') # Referência para PEIs
+    peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
 
     current_year = datetime.datetime.now(SAO_PAULO_TZ).year
     hoje_dt = datetime.datetime.now(SAO_PAULO_TZ)
     mes_atual_nome = hoje_dt.strftime('%B').capitalize()
 
-    # --- Novas contagens para o dashboard ---
-    total_peis = 0
-    peis_finalizados = 0
-    peis_em_progresso = 0
-    total_atendimentos_concluidos = 0 # Contagem de atendimentos com status 'concluido'
-    total_agendamentos = 0 # Contagem de todos os agendamentos
-    total_pacientes = 0
+    # --- Otimização das Contagens para o Dashboard (KPIs) ---
+    kpi_cards = {
+        'total_pacientes': 0,
+        'total_peis': 0,
+        'peis_finalizados': 0,
+        'peis_em_progresso': 0,
+        'total_agendamentos': 0,
+        'total_atendimentos_concluidos': 0,
+    }
 
     try:
-        # Contagem de Pacientes
-        total_pacientes = pacientes_ref.count().get()[0][0].value
+        # Contagem de Pacientes (já otimizado)
+        kpi_cards['total_pacientes'] = pacientes_ref.count().get()[0][0].value
     except Exception as e:
         print(f"Erro ao contar pacientes: {e}")
         flash("Erro ao carregar contagem de pacientes.", "danger")
 
     try:
-        # Contagem de PEIs
-        peis_docs = peis_ref.stream()
-        for doc in peis_docs:
-            total_peis += 1
-            pei_data = doc.to_dict()
-            if pei_data.get('status') == 'finalizado':
-                peis_finalizados += 1
-            elif pei_data.get('status') == 'ativo': # Assumindo 'ativo' como em progresso
-                peis_em_progresso += 1
+        # Contagem de PEIs (Otimizado com count())
+        kpi_cards['total_peis'] = peis_ref.count().get()[0][0].value
+        kpi_cards['peis_finalizados'] = peis_ref.where(filter=FieldFilter('status', '==', 'finalizado')).count().get()[0][0].value
+        kpi_cards['peis_em_progresso'] = peis_ref.where(filter=FieldFilter('status', '==', 'ativo')).count().get()[0][0].value
     except Exception as e:
         print(f"Erro ao contar PEIs: {e}")
         flash("Erro ao carregar contagem de PEIs.", "danger")
 
     try:
-        # Contagem de Agendamentos e Atendimentos Concluídos
-        agendamentos_docs = agendamentos_ref.stream()
-        for doc in agendamentos_docs:
-            total_agendamentos += 1
-            ag_data = doc.to_dict()
-            if ag_data.get('status') == 'concluido':
-                total_atendimentos_concluidos += 1
+        # Contagem de Agendamentos e Atendimentos Concluídos (Otimizado com count())
+        kpi_cards['total_agendamentos'] = agendamentos_ref.count().get()[0][0].value
+        kpi_cards['total_atendimentos_concluidos'] = agendamentos_ref.where(filter=FieldFilter('status', '==', 'concluido')).count().get()[0][0].value
     except Exception as e:
         print(f"Erro ao contar agendamentos: {e}")
         flash("Erro ao carregar contagem de agendamentos.", "danger")
 
 
-    # Dados para os novos cards de KPI
-    kpi_cards = {
-        'total_pacientes': total_pacientes,
-        'total_peis': total_peis,
-        'peis_finalizados': peis_finalizados,
-        'peis_em_progresso': peis_em_progresso,
-        'total_agendamentos': total_agendamentos,
-        'total_atendimentos_concluidos': total_atendimentos_concluidos,
-    }
-
-    # --- PEI Progress per Patient ---
+    # --- PEI Progress per Patient (Otimização da Busca de Dados) ---
+    # Este é o ponto mais crítico para otimização. A abordagem com subcoleções aninhadas
+    # naturalmente gera muitas leituras. A solução ideal seria desnormalizar os dados
+    # (ex: agregar contagens de alvos e ajudas diretamente no documento PEI ou Paciente
+    # no momento da escrita), mas isso requer uma mudança de esquema e lógica de escrita.
+    # Por enquanto, vamos otimizar a leitura o máximo possível dentro da estrutura existente.
+    
     pacientes_pei_progress = []
-    pacientes_pei_mental_map_data = {} # NOVO: Para armazenar dados do mapa mental
-
+    pacientes_pei_mental_map_data = {}
+    
     try:
-        # Fetch all patients
+        # 1. Buscar todos os pacientes
         all_patients_docs = pacientes_ref.order_by('nome').stream()
-        for patient_doc in all_patients_docs:
-            patient_id = patient_doc.id
-            patient_name = patient_doc.to_dict().get('nome', 'N/A')
+        patients_map = {doc.id: doc.to_dict() for doc in all_patients_docs}
 
+        # 2. Buscar todos os PEIs ativos relevantes (para admin ou profissional logado)
+        #    e organizar por paciente.
+        
+        # Consulta base para PEIs ativos
+        active_peis_query = peis_ref.where(filter=FieldFilter('status', '==', 'ativo'))
+        
+        if user_role != 'admin' and profissional_id_logado:
+            active_peis_query = active_peis_query.where(
+                filter=FieldFilter('profissionais_ids', 'array_contains', profissional_id_logado)
+            )
+        elif user_role != 'admin' and not profissional_id_logado:
+            # Se não é admin e não tem profissional_id, não deve ver nenhum PEI relevante
+            # Retorna uma query que não encontrará nada.
+            active_peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', 'INVALID_ID_TO_RETURN_NONE'))
+
+        active_peis_by_patient = defaultdict(list)
+        for pei_doc in active_peis_query.stream():
+            pei_data = pei_doc.to_dict()
+            if pei_data and 'paciente_id' in pei_data:
+                active_peis_by_patient[pei_data['paciente_id']].append({'id': pei_doc.id, 'data': pei_data})
+
+        # 3. Processar dados para cada paciente
+        for patient_id, patient_data in patients_map.items():
+            patient_name = patient_data.get('nome', 'N/A')
+            
             total_targets_patient = 0
             completed_targets_patient = 0
             total_active_peis_patient = 0
             
-            # NOVO: Para o mapa mental, agregaremos as tentativas por tipo de ajuda
             aids_attempts_by_type = defaultdict(int)
-            aids_counts_by_type = defaultdict(int) # Para calcular a média
+            aids_counts_by_type = defaultdict(int)
 
-            # Fetch active PEIs for this patient
-            patient_peis_query = peis_ref.where(
-                filter=FieldFilter('paciente_id', '==', patient_id)
-            ).where(
-                filter=FieldFilter('status', '==', 'ativo') # Only active PEIs
-            )
-
-            if user_role != 'admin' and profissional_id_logado:
-                patient_peis_query = patient_peis_query.where(
-                    filter=FieldFilter('profissionais_ids', 'array_contains', profissional_id_logado)
-                )
-            elif user_role != 'admin' and not profissional_id_logado:
-                # Se não é admin e não tem profissional_id, não deve ver nenhum PEI
-                patient_peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', 'INVALID_ID_TO_RETURN_NONE'))
-
-
-            for pei_doc in patient_peis_query.stream(): # Adicionado .stream()
+            # Iterar sobre os PEIs ativos deste paciente
+            for pei_info in active_peis_by_patient[patient_id]:
                 total_active_peis_patient += 1
-                # For each active PEI, fetch its metas
-                metas_ref = peis_ref.document(pei_doc.id).collection('metas')
-                metas_docs = metas_ref.stream()
+                pei_doc_id = pei_info['id']
 
+                # Buscar metas para este PEI
+                metas_docs = peis_ref.document(pei_doc_id).collection('metas').stream()
                 for meta_doc in metas_docs:
-                    # For each meta, fetch its alvos (targets)
-                    alvos_ref = metas_ref.document(meta_doc.id).collection('alvos')
-                    alvos_docs = alvos_ref.stream()
-
+                    # Buscar alvos para esta meta
+                    alvos_docs = peis_ref.document(pei_doc_id).collection('metas').document(meta_doc.id).collection('alvos').stream()
                     for alvo_doc in alvos_docs:
                         total_targets_patient += 1
                         if alvo_doc.to_dict().get('status') == 'finalizada':
                             completed_targets_patient += 1
                         
-                        # NOVO: Coletar dados das ajudas para o mapa mental
-                        ajudas_ref = alvos_ref.document(alvo_doc.id).collection('ajudas')
-                        ajudas_docs = ajudas_ref.stream()
+                        # Coletar dados das ajudas para o mapa mental
+                        ajudas_docs = peis_ref.document(pei_doc_id).collection('metas').document(meta_doc.id).collection('alvos').document(alvo_doc.id).collection('ajudas').stream()
                         for ajuda_doc in ajudas_docs:
                             ajuda_data = ajuda_doc.to_dict()
                             sigla = ajuda_data.get('sigla')
@@ -389,17 +383,13 @@ def index():
             if total_targets_patient > 0:
                 progress_percentage = (completed_targets_patient / total_targets_patient) * 100
 
-            # NOVO: Calcular a média de tentativas para cada tipo de ajuda
+            # Calcular a média de tentativas para cada tipo de ajuda
             mental_map_data_for_patient = {}
-            for sigla, total_attempts in aids_attempts_by_type.items():
+            all_siglas = ['AFT', 'AFP', 'AG', 'AE', 'I'] # Garantir que todas as siglas estejam presentes
+            for sigla in all_siglas:
+                total_attempts = aids_attempts_by_type[sigla]
                 count = aids_counts_by_type[sigla]
                 mental_map_data_for_patient[sigla] = round(total_attempts / count, 1) if count > 0 else 0
-
-            # Garantir que todas as siglas estejam presentes, mesmo que com 0 tentativas
-            all_siglas = ['AFT', 'AFP', 'AG', 'AE', 'I']
-            for sigla in all_siglas:
-                if sigla not in mental_map_data_for_patient:
-                    mental_map_data_for_patient[sigla] = 0
 
             pacientes_pei_progress.append({
                 'id': patient_id,
@@ -416,13 +406,14 @@ def index():
         flash("Erro ao carregar progresso de PEIs por paciente.", "danger")
 
 
-    # --- Lógica para gráficos (mantida, mas os dados de receita serão removidos no template) ---
+    # --- Lógica para gráficos (mantida, com ajustes para dados de receita zerados) ---
     agendamentos_para_analise = []
     try:
+        # Consulta agendamentos confirmados/concluídos dos últimos 15 dias
         query_analise = agendamentos_ref.where(
             filter=FieldFilter('status', 'in', ['confirmado', 'concluido'])
         ).where(
-            filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt - datetime.timedelta(days=15)) # Últimos 15 dias
+            filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt - datetime.timedelta(days=15))
         )
 
         if user_role != 'admin':
@@ -432,7 +423,8 @@ def index():
                 )
             else:
                 agendamentos_para_analise = [] # Se não tem profissional_id logado, não mostra nada
-
+        
+        # Só executa a query se houver um profissional logado ou for admin
         if user_role == 'admin' or profissional_id_logado:
             docs_analise = query_analise.stream()
             for doc in docs_analise:
@@ -446,7 +438,7 @@ def index():
 
     atendimentos_por_dia = Counter()
     hoje_date = hoje_dt.date()
-    for i in range(15):
+    for i in range(15): # Inicializa os últimos 15 dias com 0 atendimentos
         data = hoje_date - datetime.timedelta(days=i)
         atendimentos_por_dia[data] = 0
 
@@ -454,7 +446,7 @@ def index():
         ag_ts = ag.get('data_agendamento_ts')
         if ag_ts:
           ag_date = ag_ts.date()
-          if (hoje_date - ag_date).days < 15:
+          if (hoje_date - ag_date).days < 15: # Garante que está dentro dos últimos 15 dias
               atendimentos_por_dia[ag_date] += 1
 
     labels_atend_receita = sorted(atendimentos_por_dia.keys())
@@ -464,27 +456,24 @@ def index():
         "receitas": [0 for _ in labels_atend_receita] # Manter a estrutura, mas com valores zerados
     }
 
-    # Gráfico de Top Procedimentos (pode ser adaptado para contagem se preferir)
-    # Mantendo a estrutura original, mas o template pode ignorar se não houver dados de receita
-    contagem_procedimento = Counter() # Alterado para contagem
+    # Gráfico de Top Procedimentos por Atendimentos (Mês Atual)
+    contagem_procedimento = Counter()
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
-        # Apenas para o mês atual, se relevante
         if ag_ts and ag_ts.month == hoje_dt.month and ag_ts.year == hoje_dt.year:
             nome_proc = ag.get('servico_procedimento_nome', 'Desconhecido')
-            contagem_procedimento[nome_proc] += 1 # Contagem de procedimentos
+            contagem_procedimento[nome_proc] += 1
 
     top_5_procedimentos = contagem_procedimento.most_common(5)
-    dados_receita_procedimento = { # Renomeie se quiser, mas o template usa este nome
+    dados_receita_procedimento = {
         "labels": [item[0] for item in top_5_procedimentos],
         "valores": [item[1] for item in top_5_procedimentos]
     }
 
-    # Gráfico de Top Profissionais por Atendimentos
+    # Gráfico de Top Profissionais por Atendimentos (Mês Atual)
     atendimentos_por_profissional = Counter()
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
-        # Apenas para o mês atual, se relevante
         if ag_ts and ag_ts.month == hoje_dt.month and ag_ts.year == hoje_dt.year:
             nome_prof = ag.get('profissional_nome', 'Desconhecido')
             atendimentos_por_profissional[nome_prof] += 1
@@ -497,6 +486,7 @@ def index():
 
     proximos_agendamentos_lista = []
     try:
+        # Consulta próximos 10 agendamentos confirmados a partir de hoje
         query_proximos = agendamentos_ref.where(
             filter=FieldFilter('status', '==', 'confirmado')
         ).where(
@@ -510,7 +500,8 @@ def index():
                 )
             else:
                 proximos_agendamentos_lista = [] # Se não tem profissional_id logado, não mostra nada
-
+        
+        # Só executa a query se houver um profissional logado ou for admin
         if user_role == 'admin' or profissional_id_logado:
             docs_proximos = query_proximos.order_by('data_agendamento_ts').limit(10).stream()
             for doc in docs_proximos:
@@ -539,7 +530,7 @@ def index():
         dados_receita_procedimento=json.dumps(dados_receita_procedimento),
         dados_desempenho_profissional=json.dumps(dados_desempenho_profissional),
         pacientes_pei_progress=pacientes_pei_progress,
-        pacientes_pei_mental_map_data=json.dumps(pacientes_pei_mental_map_data) # NOVO: Passando dados do mapa mental
+        pacientes_pei_mental_map_data=json.dumps(pacientes_pei_mental_map_data)
     )
 
 # NOVO: Rota para a página de busca de PEIs
@@ -572,7 +563,7 @@ def busca_peis():
     return render_template('busca_peis.html', pacientes=pacientes_lista, current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
 
-# Chamar as funções para registrar as rotas diretamente no app
+ 
 register_users_routes(app)
 register_professionals_routes(app)
 register_patients_routes(app)
@@ -588,3 +579,4 @@ register_patrimonio_routes(app)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
+
