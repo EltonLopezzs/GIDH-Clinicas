@@ -469,11 +469,12 @@
         gap: 1.5rem;
     }
 
-    .chart-container-modal {
+    /* New generic container for charts and visualizations */
+    .chart-or-viz-container-modal {
         position: relative;
-        height: 450px; /* Altura fixa para o gráfico no modal */
+        height: 450px; /* Fixed height for the chart in the modal */
         width: 100%;
-        background-color: var(--bg); /* Fundo para o gráfico */
+        background-color: var(--bg); /* Background for the chart */
         border-radius: 10px;
         padding: 1rem;
         flex-shrink: 0; /* Prevent chart from shrinking */
@@ -571,7 +572,6 @@
         color: white;
         font-size: 0.8rem;
         line-height: 20px;
-        /* mix-blend-mode: difference; REMOVED as it caused issues */
         transition: width 0.5s ease-out;
     }
     .independence-percentage-text {
@@ -581,7 +581,6 @@
         font-weight: 600;
         font-size: 0.8rem;
         line-height: 20px;
-        /* mix-blend-mode: difference; REMOVED as it caused issues */
     }
 
     /* Estilos para o novo gráfico de áreas de desenvolvimento */
@@ -650,14 +649,14 @@
             border: none;
             background-color: transparent;
         }
-        .chart-container-modal, .development-areas-chart-container, .modal-info-box {
+        .chart-or-viz-container-modal, .development-areas-chart-container, .modal-info-box {
             background-color: #fff !important; /* Garante fundo branco para impressão */
             border: 1px solid #eee; /* Adiciona uma borda leve para separar elementos */
             padding: 0.5rem;
             margin-bottom: 1rem;
             page-break-inside: avoid;
         }
-        canvas {
+        canvas, svg {
             width: 100% !important;
             height: auto !important;
         }
@@ -694,21 +693,23 @@
     @media (min-width: 992px) { /* Ajustado de 769px para 992px para telas maiores */
         .modal-charts-and-info {
             flex-direction: row; /* Layout em linha para telas maiores */
+            flex-wrap: wrap; /* Allow items to wrap to the next line */
             align-items: flex-start; /* Alinha itens ao topo */
         }
-        .chart-container-modal {
-            flex: 1; /* Radar chart ocupa 1 parte */
-            min-width: 350px; /* Largura mínima para o gráfico */
-            height: 450px; /* Altura do gráfico */
+        .chart-or-viz-container-modal, .development-areas-chart-container {
+            flex: 1 1 calc(33.33% - 1rem); /* Three columns with some gap */
+            min-width: 300px; /* Minimum width for each chart/viz */
+            height: 450px; /* Fixed height */
+            margin-right: 1.5rem; /* Add spacing between items */
         }
-        .development-areas-chart-container {
-            flex: 1; /* Novo gráfico ocupa 1 parte */
-            min-width: 350px; /* Largura mínima para o gráfico */
-            height: 450px; /* Altura do gráfico */
+        .chart-or-viz-container-modal:nth-child(3n),
+        .development-areas-chart-container:nth-child(3n) {
+            margin-right: 0; /* No right margin for the last item in a row */
         }
+
         .modal-info-section {
-            flex: 1; /* Seção de informações ocupa o espaço restante */
-            min-width: 300px; /* Largura mínima para a seção de informações */
+            flex: 1 1 100%; /* Take full width below charts */
+            min-width: unset; /* Remove min-width inherited from previous context */
         }
         .modal-info-box-main { flex: 1; }
         .modal-info-box-legend { flex: 1; }
@@ -729,7 +730,7 @@
             max-width: 700px; /* Reduz a largura máxima em telas menores */
         }
         .modal-title { font-size: 1.4rem; }
-        .chart-container-modal, .development-areas-chart-container { height: 300px; }
+        .chart-or-viz-container-modal, .development-areas-chart-container { height: 300px; margin-right: 0; }
         .btn-modal-action { padding: 0.6rem 1.2rem; font-size: 0.9rem; }
         .modal-info-box p, .modal-info-box ul { font-size: 0.85rem; }
         .independence-indicator-label { width: 120px; } /* Ajuste para telas menores */
@@ -958,9 +959,35 @@
       <div class="modal-body">
         <div id="printableModalContent"> {# Novo contêiner para o conteúdo a ser impresso #}
             <div class="modal-charts-and-info">
-                <div class="chart-container-modal">
+                <div class="chart-or-viz-container-modal">
                     <h4>Gráfico de Média de Tentativas por Ajuda</h4>
                     <canvas id="mentalMapChart"></canvas>
+                </div>
+                <div class="chart-or-viz-container-modal">
+                    <h4>Visualização do Nível de Ajuda por Tipo</h4>
+                    <div id="brainVisualizationContainer" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                        <svg id="brainVisualization" viewBox="0 0 200 200" style="width: 100%; height: auto; max-width: 400px;">
+                            <defs>
+                                <path id="brainOutline" d="M100,20 C140,0 180,40 180,90 C180,140 140,180 100,180 C60,180 20,140 20,90 C20,40 60,0 100,20Z" fill="none" stroke="var(--text)" stroke-width="2"/>
+                                <clipPath id="brainClip">
+                                    <use href="#brainOutline"/>
+                                </clipPath>
+                            </defs>
+                            
+                            <use href="#brainOutline" fill="var(--bg)" stroke="none"/>
+
+                            <!-- Layers for coloring, clipped by the brain outline -->
+                            <!-- These rectangles will be positioned to fill the brain from bottom to top.
+                                 The opacity will reflect the average attempts for each aid type.
+                                 Higher average attempts for a specific aid means higher opacity for its corresponding color.
+                            -->
+                            <rect id="brain-fill-AFT" x="0" y="150" width="200" height="50" fill="var(--danger)" opacity="0" clip-path="url(#brainClip)"/>
+                            <rect id="brain-fill-AFP" x="0" y="120" width="200" height="30" fill="var(--secondary)" opacity="0" clip-path="url(#brainClip)"/>
+                            <rect id="brain-fill-AG" x="0" y="90" width="200" height="30" fill="var(--warning)" opacity="0" clip-path="url(#brainClip)"/>
+                            <rect id="brain-fill-AE" x="0" y="60" width="200" height="30" fill="var(--info)" opacity="0" clip-path="url(#brainClip)"/>
+                            <rect id="brain-fill-I" x="0" y="0" width="200" height="60" fill="var(--primary)" opacity="0" clip-path="url(#brainClip)"/>
+                        </svg>
+                    </div>
                 </div>
                 <div class="development-areas-chart-container">
                     <h4>Nível de Independência por Ajuda</h4>
@@ -970,13 +997,13 @@
             
             <div class="modal-info-section">
                 <div class="modal-info-box modal-info-box-main">
-                    <h4>Sobre o Gráfico de Radar</h4>
-                    <p>Este gráfico de radar ilustra a **média de tentativas por tipo de ajuda** para os alvos ativos dos Planos Educacionais Individualizados (PEIs) do paciente. Cada ponto na teia representa a média de vezes que um tipo específico de ajuda foi necessário para o paciente atingir um alvo.</p>
+                    <h4>Sobre a Visualização do Cérebro</h4>
+                    <p>Esta visualização do cérebro ilustra o **nível de ajuda necessária por tipo** para os alvos ativos dos Planos Educacionais Individualizados (PEIs) do paciente. Cada seção colorida representa a intensidade com que um tipo específico de ajuda foi utilizado para o paciente atingir um alvo.</p>
                     <p><strong>Interpretação:</strong></p>
                     <ul>
-                        <li>Valores **mais altos** indicam uma maior dependência daquela ajuda.</li>
-                        <li>Valores **mais baixos** sugerem que o paciente está se tornando mais independente naquele tipo de ajuda.</li>
-                        <li>O objetivo é que o gráfico se mova em direção ao centro (menor necessidade de ajuda) e, idealmente, que o ponto 'I' (Independente) tenha um valor baixo, indicando que o paciente está realizando as tarefas de forma autônoma.</li>
+                        <li>Seções com **maior intensidade de cor** (mais opacas) indicam uma maior dependência daquele tipo de ajuda.</li>
+                        <li>Seções com **menor intensidade de cor** (mais transparentes) sugerem que o paciente está se tornando mais independente naquele tipo de ajuda.</li>
+                        <li>O objetivo é que a seção 'I' (Independente) tenha a maior intensidade de cor, indicando que o paciente está realizando as tarefas de forma autônoma.</li>
                     </ul>
                 </div>
                 <div class="modal-info-box modal-info-box-legend">
@@ -1013,7 +1040,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     let charts = {};
     let mentalMapChartInstance = null; // Para controlar a instância do gráfico de radar
-    let developmentAreasChartInstance = null; // NOVO: Para controlar a instância do gráfico de áreas de desenvolvimento
+    let developmentAreasChartInstance = null; // Para controlar a instância do gráfico de áreas de desenvolvimento
 
     const getCssVar = (varName) => getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
     
@@ -1191,12 +1218,13 @@
         mutations.forEach((mutation) => {
             if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
                 setTimeout(renderCharts, 50);  
-                // Também renderiza o gráfico do modal novamente se estiver visível
-                if (mentalMapChartInstance && document.getElementById('mentalMapModal').style.display === 'flex') {
+                // Também renderiza os gráficos do modal novamente se estiver visível
+                if (document.getElementById('mentalMapModal').style.display === 'flex') {
                     const patientId = document.getElementById('mentalMapModal').dataset.patientId;
-                    const patientName = document.getElementById('modalPatientName').textContent; // Get name from modal title
-                    renderMentalMapChart(patientId, patientName);
-                    renderDevelopmentAreasChart(patientId); // NOVO: Renderiza o novo gráfico
+                    const patientName = document.getElementById('modalPatientName').textContent;
+                    renderMentalMapChart(patientId, patientName); // Re-renderiza o gráfico de radar
+                    renderBrainVisualization(patientId); // Renderiza a visualização do cérebro
+                    renderDevelopmentAreasChart(patientId); // Renderiza o novo gráfico
                     renderIndependenceIndicators(patientId); // Renderiza também os indicadores de independência
                 }
             }
@@ -1214,8 +1242,8 @@
     const mentalMapModal = document.getElementById('mentalMapModal');
     const closeBtn = mentalMapModal.querySelector('.modal-close-btn'); // Seleciona dentro da modal
     const modalPatientName = document.getElementById('modalPatientName');
-    const mentalMapChartCtx = document.getElementById('mentalMapChart')?.getContext('2d');
-    const developmentAreasChartCtx = document.getElementById('developmentAreasChart')?.getContext('2d'); // NOVO: Contexto para o novo gráfico
+    const mentalMapChartCtx = document.getElementById('mentalMapChart')?.getContext('2d'); // Contexto para o gráfico de radar
+    const developmentAreasChartCtx = document.getElementById('developmentAreasChart')?.getContext('2d'); // Contexto para o novo gráfico
     const scriptEl = document.getElementById('dashboard-script');
     const pacientesMentalMapData = JSON.parse(scriptEl.dataset.pacientesPeiMentalMapData || '{}');
     const clinicaNomeDisplay = scriptEl.dataset.clinicaNomeDisplay;
@@ -1306,7 +1334,44 @@
         });
     }
 
-    // NOVO: Função para renderizar o gráfico de áreas de desenvolvimento (Doughnut Chart)
+
+    // Função para renderizar a visualização do cérebro
+    function renderBrainVisualization(patientId) {
+        const patientData = pacientesMentalMapData[patientId];
+        
+        const aids = ['AFT', 'AFP', 'AG', 'AE', 'I'];
+        const aidRectIds = {
+            'AFT': 'brain-fill-AFT',
+            'AFP': 'brain-fill-AFP',
+            'AG': 'brain-fill-AG',
+            'AE': 'brain-fill-AE',
+            'I': 'brain-fill-I'
+        };
+
+        let currentPatientMaxAttempts = 0;
+        if (patientData) {
+            aids.forEach(aid => {
+                const avgAttempts = patientData[aid] || 0;
+                if (avgAttempts > currentPatientMaxAttempts) {
+                    currentPatientMaxAttempts = avgAttempts;
+                }
+            });
+        }
+
+        aids.forEach(aid => {
+            const rectElement = document.getElementById(aidRectIds[aid]);
+            if (rectElement) {
+                const avgAttempts = patientData ? patientData[aid] : 0;
+                let opacity = 0;
+                if (currentPatientMaxAttempts > 0) {
+                    opacity = avgAttempts / currentPatientMaxAttempts;
+                }
+                rectElement.style.opacity = opacity;
+            }
+        });
+    }
+
+    // Função para renderizar o gráfico de áreas de desenvolvimento (Doughnut Chart)
     function renderDevelopmentAreasChart(patientId) {
         if (!developmentAreasChartCtx) {
             console.error("Canvas para o gráfico de áreas de desenvolvimento não encontrado.");
@@ -1410,7 +1475,7 @@
 
             const itemDiv = document.createElement('div');
             itemDiv.classList.add('independence-indicator-item');
-            itemDiv.innerHTML = `
+            item.innerHTML = `
                 <span class="independence-indicator-label">${aidsFullNames[sigla]} (${sigla}):</span>
                 <div class="independence-progress-bar-container">
                     <div class="independence-progress-bar" style="width: ${independencePercentage}%;"></div>
@@ -1430,8 +1495,9 @@
             
             mentalMapModal.style.display = 'flex'; // Exibe o modal
             mentalMapModal.dataset.patientId = patientId; // Armazena o ID do paciente no modal
-            renderMentalMapChart(patientId, patientName);
-            renderDevelopmentAreasChart(patientId); // NOVO: Renderiza o novo gráfico
+            renderMentalMapChart(patientId, patientName); // Renderiza o gráfico de radar
+            renderBrainVisualization(patientId); // Renderiza a visualização do cérebro
+            renderDevelopmentAreasChart(patientId); // Renderiza o novo gráfico
             renderIndependenceIndicators(patientId); // Renderiza os indicadores de independência
         });
     });
@@ -1440,10 +1506,10 @@
     closeBtn.addEventListener('click', () => {
         mentalMapModal.style.display = 'none';
         if (mentalMapChartInstance) {
-            mentalMapChartInstance.destroy(); // Destrói o gráfico ao fechar o modal
+            mentalMapChartInstance.destroy(); // Destrói o gráfico de radar ao fechar
             mentalMapChartInstance = null;
         }
-        if (developmentAreasChartInstance) { // NOVO: Destrói o novo gráfico
+        if (developmentAreasChartInstance) { // Destrói o novo gráfico
             developmentAreasChartInstance.destroy();
             developmentAreasChartInstance = null;
         }
@@ -1458,7 +1524,7 @@
                 mentalMapChartInstance.destroy();
                 mentalMapChartInstance = null;
             }
-            if (developmentAreasChartInstance) { // NOVO: Destrói o novo gráfico
+            if (developmentAreasChartInstance) { // Destrói o novo gráfico
                 developmentAreasChartInstance.destroy();
                 developmentAreasChartInstance = null;
             }
@@ -1486,12 +1552,16 @@
             modalContent.style.backgroundColor = '#fff';
             
             // Get canvas elements and their original background colors
-            const mentalMapCanvas = document.getElementById('mentalMapChart');
+            const mentalMapCanvas = document.getElementById('mentalMapChart'); // Agora é o canvas do radar
+            const brainSvg = document.getElementById('brainVisualization'); // O SVG do cérebro
             const developmentAreasCanvas = document.getElementById('developmentAreasChart');
+            
             const originalMentalMapChartBg = mentalMapCanvas ? mentalMapCanvas.style.backgroundColor : '';
+            const originalBrainSvgBg = brainSvg ? brainSvg.style.backgroundColor : ''; // Get SVG background
             const originalDevelopmentAreasChartBg = developmentAreasCanvas ? developmentAreasCanvas.style.backgroundColor : '';
 
             if (mentalMapCanvas) mentalMapCanvas.style.backgroundColor = '#fff';
+            if (brainSvg) brainSvg.style.backgroundColor = '#fff'; // Set SVG background to white
             if (developmentAreasCanvas) developmentAreasCanvas.style.backgroundColor = '#fff';
 
 
@@ -1563,6 +1633,7 @@
                 document.body.style.backgroundColor = originalBodyBgColor;
                 modalContent.style.backgroundColor = originalModalContentBg;
                 if (mentalMapCanvas) mentalMapCanvas.style.backgroundColor = originalMentalMapChartBg;
+                if (brainSvg) brainSvg.style.backgroundColor = originalBrainSvgBg; // Restore SVG background
                 if (developmentAreasCanvas) developmentAreasCanvas.style.backgroundColor = originalDevelopmentAreasChartBg;
             });
         });
