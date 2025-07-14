@@ -8,6 +8,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <!-- Bibliotecas para PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     /* ============================================
      --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
@@ -237,7 +240,7 @@
    }
    .stat-comparison.success { color: var(--success); }
    .stat-comparison.danger { color: var(--danger); }
-   .stat-comparison.info { color: var(--info); } /* Alterado para info para um tone neutro */
+   .stat-comparison.info { color: var(--muted); }
 
     /* ============================================
      --- GRÁFICOS E TABELAS ---
@@ -307,7 +310,6 @@
      .sidebar.collapsed .sidebar-footer button,
      .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
      .sidebar.collapsed nav ul li a span,
-     .sidebar.collapsed .sidebar-footer span { display: inline; }
      .sidebar.collapsed .sidebar-header .logo span { display: inline; }
 
      .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
@@ -361,6 +363,351 @@
    .flash-message.info { color: var(--info); background-color: color-mix(in srgb, var(--info) 15%, transparent); border-color: color-mix(in srgb, var(--info) 30%, transparent); }
    .flash-message.warning { color: #854d0e; background-color: #fefce8; border-color: #fde047; }
    [data-theme="dark"] .flash-message.warning { color: #fde047; background-color: #422006; border-color: #854d0e; }
+
+    /* Estilos para o Modal */
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1001; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgba(0,0,0,0.6); /* Black w/ more opacity */
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px); /* Efeito de blur no fundo */
+    }
+
+    .modal-content {
+        background-color: var(--card);
+        margin: 3% auto; /* Ajustado para centralizar melhor e permitir mais altura */
+        padding: 30px; /* Mais padding */
+        border-radius: 16px; /* Mais arredondado */
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3); /* Sombra mais pronunciada */
+        width: 95%; /* Mais largo */
+        max-width: 1200px; /* Aumentado para 1200px para mais espaço horizontal */
+        position: relative;
+        animation: fadeInScale 0.3s ease-out; /* Animação de entrada */
+        border: 2px solid var(--primary); /* Borda primária */
+        max-height: 94vh; /* Limit height to 90% of viewport height */
+        overflow-y: hidden; /* Prevent scrolling on the modal content itself */
+        display: flex; /* Use flexbox for internal layout */
+        flex-direction: column; /* Stack children vertically by default */
+    }
+
+    .modal-header-controls { /* Novo contêiner para título e botão de impressão */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .modal-title {
+        font-size: 1.8rem; /* Maior */
+        font-weight: 700;
+        color: var(--primary); /* Cor primária para o título */
+        text-align: center;
+        flex-grow: 1; /* Permite que o título ocupe o espaço disponível */
+    }
+
+    .modal-close-btn {
+        color: var(--muted);
+        font-size: 32px; /* Maior */
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.2s ease, transform 0.2s ease;
+        flex-shrink: 0; /* Previne que o botão encolha */
+    }
+
+    .modal-close-btn:hover,
+    .modal-close-btn:focus {
+        color: var(--danger);
+        transform: rotate(90deg); /* Gira ao passar o mouse */
+    }
+
+    .modal-body {
+        padding: 1rem 0;
+        display: flex;
+        flex-direction: column; /* Default to column for small screens */
+        gap: 1.5rem;
+        flex-grow: 1; /* Allow body to grow and take available space */
+        overflow-y: auto; /* Allow scrolling within the body if content overflows */
+    }
+
+    .modal-charts-and-info {
+        display: flex;
+        flex-direction: column; /* Stack vertically on small screens */
+        gap: 1.5rem;
+    }
+
+    .chart-container-modal {
+        position: relative;
+        height: 450px; /* Altura fixa para o gráfico no modal */
+        width: 100%;
+        background-color: var(--bg); /* Fundo para o gráfico */
+        border-radius: 10px;
+        padding: 1rem;
+        flex-shrink: 0; /* Prevent chart from shrinking */
+    }
+
+    .modal-info-section { /* Nova classe para agrupar as caixas de informação */
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .modal-info-box {
+        background-color: var(--bg);
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        font-size: 0.95rem;
+        color: var(--text);
+    }
+    .modal-info-box h4 {
+        font-size: 1.1rem;
+        color: var(--primary);
+        margin-bottom: 0.75rem;
+    }
+    .modal-info-box p { margin-bottom: 0.5rem; }
+    .modal-info-box ul { list-style: inside; padding-left: 1rem; }
+    .modal-info-box ul li { margin-bottom: 0.25rem; }
+
+    .modal-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        flex-shrink: 0; /* Prevent actions from shrinking */
+    }
+    .btn-modal-action {
+        background-color: var(--primary);
+        color: white;
+        padding: 0.8rem 1.8rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        display: flex; /* Ensure flex for icon alignment */
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .btn-modal-action:hover {
+        background-color: color-mix(in srgb, var(--primary) 80%, black);
+        transform: translateY(-2px);
+    }
+    .btn-modal-action i { font-size: 1.1rem; }
+
+    /* Novo estilo para os indicadores de independência */
+    .independence-indicators {
+        background-color: var(--bg);
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .independence-indicators h4 {
+        font-size: 1.1rem;
+        color: var(--primary);
+        margin-bottom: 0.75rem;
+    }
+    .independence-indicator-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .independence-indicator-label {
+        font-weight: 600;
+        color: var(--text);
+        width: 150px; /* Largura fixa para as labels */
+        flex-shrink: 0;
+    }
+    .independence-progress-bar-container {
+        flex-grow: 1;
+        background-color: var(--border-color);
+        border-radius: 5px;
+        height: 20px;
+        overflow: hidden;
+        position: relative;
+    }
+    .independence-progress-bar {
+        height: 100%;
+        background-color: var(--success); /* Cor para o progresso */
+        border-radius: 5px;
+        text-align: center;
+        color: white;
+        font-size: 0.8rem;
+        line-height: 20px;
+        transition: width 0.5s ease-out;
+    }
+    .independence-percentage-text {
+        position: absolute;
+        right: 5px;
+        color: var(--text);
+        font-weight: 600;
+        font-size: 0.8rem;
+        line-height: 20px;
+        mix-blend-mode: difference; /* Garante que o texto seja visível sobre a barra */
+    }
+
+    /* Estilos para o novo gráfico de áreas de desenvolvimento */
+    .development-areas-chart-container {
+        position: relative;
+        height: 450px; /* Altura fixa para o gráfico */
+        width: 100%;
+        background-color: var(--bg);
+        border-radius: 10px;
+        padding: 1rem;
+        flex-shrink: 0;
+    }
+    .development-areas-chart-container h4 {
+        font-size: 1.1rem;
+        color: var(--primary);
+        margin-bottom: 0.75rem;
+        text-align: center;
+    }
+
+    /* Estilos para o cabeçalho e rodapé do PDF */
+    .pdf-header, .pdf-footer {
+        display: none; /* Oculta por padrão */
+    }
+
+    /* Estilos específicos para impressão */
+    @media print {
+        body {
+            background-color: #fff;
+            color: #000;
+        }
+        .modal {
+            position: relative;
+            display: block;
+            background-color: #fff;
+            padding: 0;
+            margin: 0;
+            width: auto;
+            height: auto;
+            overflow: visible;
+            backdrop-filter: none;
+        }
+        .modal-content {
+            box-shadow: none;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            margin: 0;
+            max-width: none;
+            width: 100%;
+            max-height: none;
+            overflow: visible;
+        }
+        .modal-header-controls, .modal-actions, .modal-close-btn {
+            display: none !important; /* Oculta controles da modal na impressão */
+        }
+        .modal-body {
+            overflow: visible;
+            padding: 0;
+            margin: 0;
+        }
+        .modal-charts-and-info, .modal-info-section, .independence-indicators {
+            flex-direction: column !important; /* Garante layout de coluna para impressão */
+            page-break-inside: avoid; /* Evita quebras de página dentro desses blocos */
+            margin-bottom: 1rem;
+            padding: 0;
+            border: none;
+            background-color: transparent;
+        }
+        .chart-container-modal, .development-areas-chart-container, .modal-info-box {
+            background-color: #fff !important; /* Garante fundo branco para impressão */
+            border: 1px solid #eee; /* Adiciona uma borda leve para separar elementos */
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            page-break-inside: avoid;
+        }
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+        .pdf-header, .pdf-footer {
+            display: block; /* Exibe cabeçalho e rodapé específicos do PDF */
+            text-align: center;
+            font-size: 10px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .pdf-header {
+            position: fixed;
+            top: 10mm;
+            left: 0;
+            right: 0;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .pdf-footer {
+            position: fixed;
+            bottom: 10mm;
+            left: 0;
+            right: 0;
+        }
+    }
+
+
+    @keyframes fadeInScale {
+        from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    
+    /* Responsividade para telas maiores */
+    @media (min-width: 992px) { /* Ajustado de 769px para 992px para telas maiores */
+        .modal-charts-and-info {
+            flex-direction: row; /* Layout em linha para telas maiores */
+            align-items: flex-start; /* Alinha itens ao topo */
+        }
+        .chart-container-modal {
+            flex: 1; /* Radar chart ocupa 1 parte */
+            min-width: 350px; /* Largura mínima para o gráfico */
+            height: 450px; /* Altura do gráfico */
+        }
+        .development-areas-chart-container {
+            flex: 1; /* Novo gráfico ocupa 1 parte */
+            min-width: 350px; /* Largura mínima para o gráfico */
+            height: 450px; /* Altura do gráfico */
+        }
+        .modal-info-section {
+            flex: 1; /* Seção de informações ocupa o espaço restante */
+            min-width: 300px; /* Largura mínima para a seção de informações */
+        }
+        .modal-info-box-main { flex: 1; }
+        .modal-info-box-legend { flex: 1; }
+        .modal-body > .independence-indicators { /* Estilo para o novo gráfico de independência */
+            flex-basis: 100%; /* Ocupa a largura total abaixo dos outros elementos */
+        }
+        .modal-actions {
+            justify-content: flex-end; /* Alinha o botão de impressão à direita */
+        }
+    }
+
+    /* Responsividade para telas menores */
+    @media (max-width: 991px) {
+        .modal-content {
+            width: 98%;
+            margin: 2% auto;
+            padding: 15px;
+            max-width: 700px; /* Reduz a largura máxima em telas menores */
+        }
+        .modal-title { font-size: 1.4rem; }
+        .chart-container-modal, .development-areas-chart-container { height: 300px; }
+        .btn-modal-action { padding: 0.6rem 1.2rem; font-size: 0.9rem; }
+        .modal-info-box p, .modal-info-box ul { font-size: 0.85rem; }
+        .independence-indicator-label { width: 120px; } /* Ajuste para telas menores */
+    }
 
   </style>
 </head>
@@ -482,6 +829,7 @@
                             <th>Alvos Concluídos (PEIs Ativos)</th>
                             <th>Progresso (%)</th>
                             <th>Ações</th>
+                            <th>Mapa Mental</th> {# NOVA COLUNA #}
                         </tr>
                     </thead>
                     <tbody>
@@ -504,11 +852,20 @@
                                             <i class="fa-solid fa-file-alt"></i> Ver PEIs
                                         </a>
                                     </td>
+                                    <td> {# Célula para o Mapa Mental #}
+                                        {% if paciente.total_peis_ativos > 0 %}
+                                            <button class="action-link view-mental-map-btn" data-patient-id="{{ paciente.id }}" data-patient-name="{{ paciente.nome }}">
+                                                <i class="fa-solid fa-brain"></i> Ver Mapa
+                                            </button>
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 2rem;">Nenhum dado de progresso de PEI encontrado.</td>
+                                <td colspan="7" style="text-align: center; padding: 2rem;">Nenhum dado de progresso de PEI encontrado.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -599,13 +956,75 @@
     </div>
   </div>
 
+  <!-- Modal para o Mapa Mental do Paciente -->
+  <div id="mentalMapModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header-controls">
+        <h3 class="modal-title">Progresso do Paciente - <span id="modalPatientName"></span></h3>
+        <button id="printMentalMapBtn" class="btn-modal-action">
+            <i class="fa-solid fa-print"></i> Imprimir Relatório
+        </button>
+        <span class="modal-close-btn">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="printableModalContent"> {# Novo contêiner para o conteúdo a ser impresso #}
+            <div class="modal-charts-and-info">
+                <div class="chart-container-modal">
+                    <h4>Gráfico de Média de Tentativas por Ajuda</h4>
+                    <canvas id="mentalMapChart"></canvas>
+                </div>
+                <div class="development-areas-chart-container">
+                    <h4>Nível de Independência por Ajuda</h4>
+                    <canvas id="developmentAreasChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="modal-info-section">
+                <div class="modal-info-box modal-info-box-main">
+                    <h4>Sobre o Gráfico de Radar</h4>
+                    <p>Este gráfico de radar ilustra a **média de tentativas por tipo de ajuda** para os alvos ativos dos Planos Educacionais Individualizados (PEIs) do paciente. Cada ponto na teia representa a média de vezes que um tipo específico de ajuda foi necessário para o paciente atingir um alvo.</p>
+                    <p><strong>Interpretação:</strong></p>
+                    <ul>
+                        <li>Valores **mais altos** indicam uma maior dependência daquela ajuda.</li>
+                        <li>Valores **mais baixos** sugerem que o paciente está se tornando mais independente naquele tipo de ajuda.</li>
+                        <li>O objetivo é que o gráfico se mova em direção ao centro (menor necessidade de ajuda) e, idealmente, que o ponto 'I' (Independente) tenha um valor baixo, indicando que o paciente está realizando as tarefas de forma autônoma.</li>
+                    </ul>
+                </div>
+                <div class="modal-info-box modal-info-box-legend">
+                    <h4>Legenda das Ajudas</h4>
+                    <ul>
+                        <li><strong>AFT:</strong> Ajuda Física Total (Maior dependência)</li>
+                        <li><strong>AFP:</strong> Ajuda Física Parcial</li>
+                        <li><strong>AG:</strong> Ajuda Gestual</li>
+                        <li><strong>AE:</strong> Ajuda Ecóica</li>
+                        <li><strong>I:</strong> Independente (Menor dependência)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="independence-indicators">
+                <h4>Indicadores de Independência (Percentual)</h4>
+                <p style="font-size: 0.9rem; color: var(--muted);">Percentual de independência para cada tipo de ajuda (100% = totalmente independente, 0% = totalmente dependente).</p>
+                <div id="independenceIndicatorsContainer">
+                    <!-- Indicadores serão injetados aqui via JavaScript -->
+                </div>
+            </div>
+        </div> {# Fim do printableModalContent #}
+      </div>
+    </div>
+  </div>
+
 <script type="module" id="dashboard-script"
     data-atendimento-vs-receita='{{ dados_atendimento_vs_receita | safe }}'
     data-receita-procedimento='{{ dados_receita_procedimento | safe }}'
-    data-desempenho-profissional='{{ dados_desempenho_profissional | safe }}'>
+    data-desempenho-profissional='{{ dados_desempenho_profissional | safe }}'
+    data-pacientes-pei-mental-map-data='{{ pacientes_pei_mental_map_data | safe }}'
+    data-clinica-nome-display="{{ session.clinica_nome_display | default('Clínica On') | safe }}">
 
   document.addEventListener('DOMContentLoaded', () => {
     let charts = {};
+    let mentalMapChartInstance = null; // Para controlar a instância do gráfico de radar
+    let developmentAreasChartInstance = null; // NOVO: Para controlar a instância do gráfico de áreas de desenvolvimento
 
     const getCssVar = (varName) => getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
     
@@ -646,10 +1065,23 @@
                         labels: dadosAtendVsReceita.labels,
                         datasets: [
                             {
-                                label: 'Nº de Atendimentos',
+                                type: 'line',
+                                label: 'Receita (R$)',
+                                data: dadosAtendVsReceita.receitas,
+                                borderColor: themeColors.secondary,
+                                backgroundColor: themeColors.secondary,
+                                tension: 0.3,
+                                yAxisID: 'y1',
+                                pointRadius: 4,
+                                pointBackgroundColor: themeColors.secondary,
+                            },
+                            {
+                                type: 'bar',
+                                label: 'Atendimentos',
                                 data: dadosAtendVsReceita.atendimentos,
                                 backgroundColor: themeColors.primary,
                                 borderRadius: 6,
+                                yAxisID: 'y',
                             }
                         ]
                     },
@@ -662,7 +1094,16 @@
                             y: {
                                 type: 'linear', display: true, position: 'left',
                                 title: { display: true, text: 'Nº de Atendimentos' },
+                                grid: { drawOnChartArea: false },
                                 ticks: { precision: 0, beginAtZero: true }
+                            },
+                            y1: {
+                                type: 'linear', display: true, position: 'right',
+                                title: { display: true, text: 'Receita (R$)' },
+                                grid: { drawOnChartArea: true, borderDash: [2, 4], color: themeColors.grid },
+                                ticks: {
+                                    callback: (value) => `R$ ${value >= 1000 ? (value/1000).toFixed(1) + 'k' : value}`
+                                }
                             }
                         }
                     }
@@ -760,6 +1201,14 @@
         mutations.forEach((mutation) => {
             if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
                 setTimeout(renderCharts, 50); 
+                // Também renderiza o gráfico do modal novamente se estiver visível
+                if (mentalMapChartInstance && document.getElementById('mentalMapModal').style.display === 'flex') {
+                    const patientId = document.getElementById('mentalMapModal').dataset.patientId;
+                    const patientName = document.getElementById('modalPatientName').textContent; // Get name from modal title
+                    renderMentalMapChart(patientId, patientName);
+                    renderDevelopmentAreasChart(patientId); // NOVO: Renderiza o novo gráfico
+                    renderIndependenceIndicators(patientId); // Renderiza também os indicadores de independência
+                }
             }
         });
     });
@@ -767,6 +1216,346 @@
 
     renderCharts();
     setupMobileSlider();
+
+
+    // ============================================
+    // Lógica do Modal de Mapa Mental
+    // ============================================
+    const mentalMapModal = document.getElementById('mentalMapModal');
+    const closeBtn = mentalMapModal.querySelector('.modal-close-btn'); // Seleciona dentro da modal
+    const modalPatientName = document.getElementById('modalPatientName');
+    const mentalMapChartCtx = document.getElementById('mentalMapChart')?.getContext('2d');
+    const developmentAreasChartCtx = document.getElementById('developmentAreasChart')?.getContext('2d'); // NOVO: Contexto para o novo gráfico
+    const scriptEl = document.getElementById('dashboard-script');
+    const pacientesMentalMapData = JSON.parse(scriptEl.dataset.pacientesPeiMentalMapData || '{}');
+    const clinicaNomeDisplay = scriptEl.dataset.clinicaNomeDisplay;
+    const printMentalMapBtn = document.getElementById('printMentalMapBtn');
+    const independenceIndicatorsContainer = document.getElementById('independenceIndicatorsContainer');
+
+
+    // Função para renderizar o gráfico de radar
+    function renderMentalMapChart(patientId, patientName) {
+        if (!mentalMapChartCtx) {
+            console.error("Canvas para o gráfico mental não encontrado.");
+            return;
+        }
+
+        if (mentalMapChartInstance) {
+            mentalMapChartInstance.destroy(); // Destrói a instância anterior se existir
+        }
+
+        modalPatientName.textContent = patientName;
+        const patientData = pacientesMentalMapData[patientId];
+        
+        // As siglas das ajudas em ordem de dependência (do mais dependente para o mais independente)
+        const labels = ['AFT', 'AFP', 'AG', 'AE', 'I'];
+        const dataValues = labels.map(label => patientData ? patientData[label] : 0);
+
+        // Encontrar o valor máximo para a escala do gráfico
+        const maxValue = Math.max(...dataValues, 5); // Garante que o max seja pelo menos 5 para melhor visualização
+
+        mentalMapChartInstance = new Chart(mentalMapChartCtx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Média de Tentativas por Ajuda',
+                    data: dataValues,
+                    backgroundColor: 'rgba(85, 135, 194, 0.4)', /* Cor primária com transparência */
+                    borderColor: getCssVar('--primary'),
+                    pointBackgroundColor: getCssVar('--primary'),
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: getCssVar('--primary'),
+                    borderWidth: 2,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false // Não exibir a legenda do dataset
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Média de Tentativas: ${context.raw}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: getCssVar('--border-color')
+                        },
+                        grid: {
+                            color: getCssVar('--border-color')
+                        },
+                        pointLabels: {
+                            color: getCssVar('--text'),
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            display: false, // Oculta os números da escala radial
+                            beginAtZero: true,
+                            max: maxValue + (maxValue * 0.1), // Adiciona uma margem ao máximo
+                            stepSize: Math.ceil(maxValue / 5), // Exemplo: 5 passos
+                            color: getCssVar('--muted')
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: maxValue + (maxValue * 0.1) // Garante que a escala se ajuste
+                    }
+                }
+            }
+        });
+    }
+
+    // NOVO: Função para renderizar o gráfico de áreas de desenvolvimento (Doughnut Chart)
+    function renderDevelopmentAreasChart(patientId) {
+        if (!developmentAreasChartCtx) {
+            console.error("Canvas para o gráfico de áreas de desenvolvimento não encontrado.");
+            return;
+        }
+
+        if (developmentAreasChartInstance) {
+            developmentAreasChartInstance.destroy(); // Destrói a instância anterior se existir
+        }
+
+        const patientData = pacientesMentalMapData[patientId];
+        const labels = ['Ajuda Física Total (AFT)', 'Ajuda Física Parcial (AFP)', 'Ajuda Gestual (AG)', 'Ajuda Ecóica (AE)', 'Independente (I)'];
+        const dataValues = [
+            patientData ? patientData['AFT'] : 0,
+            patientData ? patientData['AFP'] : 0,
+            patientData ? patientData['AG'] : 0,
+            patientData ? patientData['AE'] : 0,
+            patientData ? patientData['I'] : 0
+        ];
+
+        // Cores para as fatias do doughnut chart
+        const backgroundColors = [
+            'rgba(255, 99, 132, 0.7)', // AFT - Vermelho (mais dependência)
+            'rgba(255, 159, 64, 0.7)', // AFP - Laranja
+            'rgba(255, 205, 86, 0.7)', // AG - Amarelo
+            'rgba(75, 192, 192, 0.7)', // AE - Verde-água
+            'rgba(54, 162, 235, 0.7)'  // I - Azul (mais independência)
+        ];
+        const borderColors = [
+            'rgb(255, 99, 132)',
+            'rgb(255, 159, 64)',
+            'rgb(255, 205, 86)',
+            'rgb(75, 192, 192)',
+            'rgb(54, 162, 235)'
+        ];
+
+        developmentAreasChartInstance = new Chart(developmentAreasChartCtx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Média de Tentativas',
+                    data: dataValues,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right', // Posiciona a legenda à direita
+                        labels: {
+                            color: getCssVar('--text')
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed) {
+                                    label += context.parsed.toFixed(1);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    // Função para renderizar os indicadores de independência
+    function renderIndependenceIndicators(patientId) {
+        if (!independenceIndicatorsContainer) return;
+
+        independenceIndicatorsContainer.innerHTML = ''; // Limpa o conteúdo anterior
+        const patientData = pacientesMentalMapData[patientId];
+        
+        const aidsFullNames = {
+            'AFT': 'Ajuda Física Total',
+            'AFP': 'Ajuda Física Parcial',
+            'AG': 'Ajuda Gestual',
+            'AE': 'Ajuda Ecóica',
+            'I': 'Independente'
+        };
+
+        const labels = ['AFT', 'AFP', 'AG', 'AE', 'I'];
+        const maxTheoreticalAttempts = 10; // Valor máximo teórico para calcular a independência (0 = 100% indep., 10 = 0% indep.)
+
+        labels.forEach(sigla => {
+            const avgAttempts = patientData ? patientData[sigla] : 0;
+            // Calcula a porcentagem de independência: (max_tentativas - media_tentativas) / max_tentativas * 100
+            const independencePercentage = Math.max(0, Math.min(100, ((maxTheoreticalAttempts - avgAttempts) / maxTheoreticalAttempts) * 100));
+
+            const itemDiv = document.createElement('div');
+            itemDiv.classList.add('independence-indicator-item');
+            itemDiv.innerHTML = `
+                <span class="independence-indicator-label">${aidsFullNames[sigla]} (${sigla}):</span>
+                <div class="independence-progress-bar-container">
+                    <div class="independence-progress-bar" style="width: ${independencePercentage}%;"></div>
+                    <span class="independence-percentage-text">${independencePercentage.toFixed(1)}%</span>
+                </div>
+            `;
+            independenceIndicatorsContainer.appendChild(itemDiv);
+        });
+    }
+
+
+    // Event listeners para abrir o modal
+    document.querySelectorAll('.view-mental-map-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const patientId = this.dataset.patientId;
+            const patientName = this.dataset.patientName;
+            
+            mentalMapModal.style.display = 'flex'; // Exibe o modal
+            mentalMapModal.dataset.patientId = patientId; // Armazena o ID do paciente no modal
+            renderMentalMapChart(patientId, patientName);
+            renderDevelopmentAreasChart(patientId); // NOVO: Renderiza o novo gráfico
+            renderIndependenceIndicators(patientId); // Renderiza os indicadores de independência
+        });
+    });
+
+    // Event listener para fechar o modal
+    closeBtn.addEventListener('click', () => {
+        mentalMapModal.style.display = 'none';
+        if (mentalMapChartInstance) {
+            mentalMapChartInstance.destroy(); // Destrói o gráfico ao fechar o modal
+            mentalMapChartInstance = null;
+        }
+        if (developmentAreasChartInstance) { // NOVO: Destrói o novo gráfico
+            developmentAreasChartInstance.destroy();
+            developmentAreasChartInstance = null;
+        }
+        independenceIndicatorsContainer.innerHTML = ''; // Limpa os indicadores ao fechar
+    });
+
+    // Fechar o modal clicando fora do conteúdo
+    window.addEventListener('click', (event) => {
+        if (event.target == mentalMapModal) {
+            mentalMapModal.style.display = 'none';
+            if (mentalMapChartInstance) {
+                mentalMapChartInstance.destroy();
+                mentalMapChartInstance = null;
+            }
+            if (developmentAreasChartInstance) { // NOVO: Destrói o novo gráfico
+                developmentAreasChartInstance.destroy();
+                developmentAreasChartInstance = null;
+            }
+            independenceIndicatorsContainer.innerHTML = ''; // Limpa os indicadores ao fechar
+        }
+    });
+
+    // ============================================
+    // Lógica de Impressão em PDF
+    // ============================================
+    if (printMentalMapBtn) {
+        printMentalMapBtn.addEventListener('click', async () => {
+            const patientName = modalPatientName.textContent;
+            const printableContent = document.getElementById('printableModalContent');
+            
+            // Oculta os botões de controle da modal para a impressão
+            printMentalMapBtn.style.display = 'none';
+            closeBtn.style.display = 'none';
+
+            // Temporariamente ajusta estilos para garantir que o fundo seja branco no PDF
+            const originalBgColor = document.body.style.backgroundColor;
+            document.body.style.backgroundColor = '#fff';
+            const originalModalContentBg = mentalMapModal.querySelector('.modal-content').style.backgroundColor; // Correção aqui
+            mentalMapModal.querySelector('.modal-content').style.backgroundColor = '#fff'; // Correção aqui
+            const originalChartBg = mentalMapChartCtx.canvas.style.backgroundColor;
+            mentalMapChartCtx.canvas.style.backgroundColor = '#fff';
+            const originalDevChartBg = developmentAreasChartCtx.canvas.style.backgroundColor;
+            developmentAreasChartCtx.canvas.style.backgroundColor = '#fff';
+
+
+            // Captura o conteúdo do modal
+            html2canvas(printableContent, { 
+                scale: 2, 
+                useCORS: true, 
+                backgroundColor: '#fff', // Garante fundo branco na captura
+                windowWidth: printableContent.scrollWidth, 
+                windowHeight: printableContent.scrollHeight 
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const pdfHeight = doc.internal.pageSize.getHeight();
+
+                // Adicionar cabeçalho e rodapé fixos
+                doc.setFontSize(16);
+                doc.setTextColor(getCssVar('--primary'));
+                doc.text(clinicaNomeDisplay, 10, 15);
+                doc.setFontSize(12);
+                doc.setTextColor(getCssVar('--text'));
+                doc.text(`Relatório de Progresso do Paciente: ${patientName}`, 10, 25);
+                doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 10, 32);
+
+                // Adicionar imagem do conteúdo capturado
+                const imgProps = doc.getImageProperties(imgData);
+                const imgRatio = imgProps.width / imgProps.height;
+                
+                let imgWidth = pdfWidth - 20; 
+                let imgHeight = imgWidth / imgRatio;
+
+                let positionX = 10;
+                let positionY = 40;
+
+                if (imgHeight > pdfHeight - positionY - 10) {
+                    imgHeight = pdfHeight - positionY - 10;
+                    imgWidth = imgHeight * imgRatio;
+                    positionX = (pdfWidth - imgWidth) / 2;
+                }
+
+                doc.addImage(imgData, 'PNG', positionX, positionY, imgWidth, imgHeight);
+
+                doc.save(`Progresso_PEI_${patientName.replace(/\s/g, '_')}.pdf`);
+            }).catch(error => {
+                console.error("Erro ao gerar PDF:", error);
+                alert("Erro ao gerar o PDF. Por favor, tente novamente.");
+            }).finally(() => {
+                // Reexibe os botões e restaura os estilos originais
+                printMentalMapBtn.style.display = 'flex';
+                closeBtn.style.display = 'block';
+                document.body.style.backgroundColor = originalBgColor;
+                mentalMapModal.querySelector('.modal-content').style.backgroundColor = originalModalContentBg; // Correção aqui
+                mentalMapChartCtx.canvas.style.backgroundColor = originalChartBg;
+                developmentAreasChartCtx.canvas.style.backgroundColor = originalDevChartBg;
+            });
+        });
+    }
   });
 </script>
 </body>

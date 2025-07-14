@@ -8,7 +8,7 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 from flask_cors import CORS
 
 from google.cloud.firestore_v1.base_query import FieldFilter
-from collections import Counter
+from collections import Counter, defaultdict # Importar defaultdict
 
 # Importar utils e as funções de registro de rotas dos módulos de blueprint
 from utils import set_db, get_db, login_required, admin_required, SAO_PAULO_TZ, parse_date_input, convert_doc_to_dict
@@ -325,6 +325,8 @@ def index():
 
     # --- PEI Progress per Patient ---
     pacientes_pei_progress = []
+    pacientes_pei_mental_map_data = {} # NOVO: Para armazenar dados do mapa mental
+
     try:
         # Fetch all patients
         all_patients_docs = pacientes_ref.order_by('nome').stream()
@@ -335,15 +337,28 @@ def index():
             total_targets_patient = 0
             completed_targets_patient = 0
             total_active_peis_patient = 0
+            
+            # NOVO: Para o mapa mental, agregaremos as tentativas por tipo de ajuda
+            aids_attempts_by_type = defaultdict(int)
+            aids_counts_by_type = defaultdict(int) # Para calcular a média
 
             # Fetch active PEIs for this patient
             patient_peis_query = peis_ref.where(
                 filter=FieldFilter('paciente_id', '==', patient_id)
             ).where(
                 filter=FieldFilter('status', '==', 'ativo') # Only active PEIs
-            ).stream()
+            )
 
-            for pei_doc in patient_peis_query:
+            if user_role != 'admin' and profissional_id_logado:
+                patient_peis_query = patient_peis_query.where(
+                    filter=FieldFilter('profissionais_ids', 'array_contains', profissional_id_logado)
+                )
+            elif user_role != 'admin' and not profissional_id_logado:
+                # Se não é admin e não tem profissional_id, não deve ver nenhum PEI
+                patient_peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', 'INVALID_ID_TO_RETURN_NONE'))
+
+
+            for pei_doc in patient_peis_query.stream(): # Adicionado .stream()
                 total_active_peis_patient += 1
                 # For each active PEI, fetch its metas
                 metas_ref = peis_ref.document(pei_doc.id).collection('metas')
@@ -358,10 +373,33 @@ def index():
                         total_targets_patient += 1
                         if alvo_doc.to_dict().get('status') == 'finalizada':
                             completed_targets_patient += 1
+                        
+                        # NOVO: Coletar dados das ajudas para o mapa mental
+                        ajudas_ref = alvos_ref.document(alvo_doc.id).collection('ajudas')
+                        ajudas_docs = ajudas_ref.stream()
+                        for ajuda_doc in ajudas_docs:
+                            ajuda_data = ajuda_doc.to_dict()
+                            sigla = ajuda_data.get('sigla')
+                            attempts_count = ajuda_data.get('attempts_count', 0)
+                            if sigla:
+                                aids_attempts_by_type[sigla] += attempts_count
+                                aids_counts_by_type[sigla] += 1
             
             progress_percentage = 0
             if total_targets_patient > 0:
                 progress_percentage = (completed_targets_patient / total_targets_patient) * 100
+
+            # NOVO: Calcular a média de tentativas para cada tipo de ajuda
+            mental_map_data_for_patient = {}
+            for sigla, total_attempts in aids_attempts_by_type.items():
+                count = aids_counts_by_type[sigla]
+                mental_map_data_for_patient[sigla] = round(total_attempts / count, 1) if count > 0 else 0
+
+            # Garantir que todas as siglas estejam presentes, mesmo que com 0 tentativas
+            all_siglas = ['AFT', 'AFP', 'AG', 'AE', 'I']
+            for sigla in all_siglas:
+                if sigla not in mental_map_data_for_patient:
+                    mental_map_data_for_patient[sigla] = 0
 
             pacientes_pei_progress.append({
                 'id': patient_id,
@@ -371,6 +409,7 @@ def index():
                 'completed_targets': completed_targets_patient,
                 'progress_percentage': round(progress_percentage, 1)
             })
+            pacientes_pei_mental_map_data[patient_id] = mental_map_data_for_patient
 
     except Exception as e:
         print(f"Erro ao calcular progresso de PEIs por paciente: {e}")
@@ -499,7 +538,8 @@ def index():
         dados_atendimento_vs_receita=json.dumps(dados_atendimento_vs_receita),
         dados_receita_procedimento=json.dumps(dados_receita_procedimento),
         dados_desempenho_profissional=json.dumps(dados_desempenho_profissional),
-        pacientes_pei_progress=pacientes_pei_progress # NOVO: Passando dados de progresso de PEI
+        pacientes_pei_progress=pacientes_pei_progress,
+        pacientes_pei_mental_map_data=json.dumps(pacientes_pei_mental_map_data) # NOVO: Passando dados do mapa mental
     )
 
 # NOVO: Rota para a página de busca de PEIs
