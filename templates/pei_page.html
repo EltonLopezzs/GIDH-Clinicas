@@ -1850,15 +1850,6 @@
             transition: all 0.2s ease;
         }
 
-        .goal-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .goal-card.finalizado {
-            background: var(--bg-subtle);
-            border-color: var(--success);
-        }
-
         .goal-card-header {
             display: flex;
             justify-content: space-between;
@@ -1901,91 +1892,196 @@
             gap: 0.5rem;
         }
 
+        /* === GOAL ACTIONS DROPDOWN MODERNIZADO === */
         .goal-actions-dropdown {
             position: relative;
+            z-index: 10;
         }
 
         .goal-actions-toggle {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
-            background: var(--bg);
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--bg) 0%, var(--card) 100%);
             color: var(--muted);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border: 1.5px solid transparent;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.875rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .goal-actions-toggle::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 8px;
         }
 
         .goal-actions-toggle:hover {
-            background: var(--bg-subtle);
-            color: var(--text);
+            transform: translateY(-2px) scale(1.05);
             border-color: var(--primary);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .goal-actions-toggle:hover::before {
+            opacity: 0.1;
+        }
+
+        .goal-actions-toggle:hover {
+            color: var(--primary);
+        }
+
+        .goal-actions-toggle.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: scale(0.95);
+        }
+
+        .goal-actions-toggle.active::before {
+            opacity: 0;
         }
 
         .goal-actions-menu {
             position: absolute;
-            top: calc(100% + 0.5rem);
+            top: calc(100% + 8px);
             right: 0;
             background: var(--card);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transform: translateY(-8px);
-            transition: all 0.2s ease;
-            min-width: 140px;
+            transform: translateY(-12px) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 220px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .goal-actions-menu::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            right: 12px;
+            width: 12px;
+            height: 12px;
+            background: var(--card);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-right: none;
+            transform: rotate(45deg);
+            z-index: -1;
         }
 
         .goal-actions-menu.active {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
         }
 
+        /* === SEÇÕES DO DROPDOWN === */
+        .goal-actions-section {
+            padding: 8px;
+        }
+
+        .goal-actions-section:not(:last-child) {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .goal-actions-section-label {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding: 0.25rem 1rem;
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            opacity: 0.7;
+            margin: 0.25rem 0 0.1rem 0;
+            user-select: none;
+        }
+
+        .goal-actions-section-label i {
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+
+        /* === ITENS DE AÇÃO === */
         .goal-action-item {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 12px;
             width: 100%;
-            padding: 0.75rem 1rem;
+            padding: 12px 16px;
             background: none;
             border: none;
             text-align: left;
             color: var(--text);
             font-size: 0.875rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: background 0.2s ease;
-            border-radius: 0;
-        }
-
-        .goal-action-item:first-child {
-            border-radius: 8px 8px 0 0;
-        }
-
-        .goal-action-item:last-child {
-            border-radius: 0 0 8px 8px;
-        }
-
-        .goal-action-item:only-child {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 8px;
+            margin: 2px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .goal-action-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 0;
+            background: currentColor;
+            opacity: 0.1;
+            transition: width 0.3s ease;
+        }
+
+        .goal-action-item:hover::before {
+            width: 4px;
         }
 
         .goal-action-item:hover {
             background: var(--bg);
+            transform: translateX(4px);
+            padding-left: 20px;
         }
 
+        .goal-action-item i {
+            font-size: 0.875rem;
+            flex-shrink: 0;
+            width: 16px;
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+
+        .goal-action-item:hover i {
+            transform: scale(1.1);
+        }
+
+        /* === TIPOS DE AÇÃO === */
         .goal-action-item.finalize {
             color: var(--success);
         }
 
         .goal-action-item.finalize:hover {
-            background: rgba(34, 197, 94, 0.1);
+            background: color-mix(in srgb, var(--success) 8%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success) 20%, transparent);
         }
 
         .goal-action-item.activate {
@@ -1993,11 +2089,124 @@
         }
 
         .goal-action-item.activate:hover {
-            background: rgba(245, 158, 11, 0.1);
+            background: color-mix(in srgb, var(--warning) 8%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 20%, transparent);
+        }
+
+        .goal-action-item.edit {
+            color: var(--info);
+        }
+
+        .goal-action-item.edit:hover {
+            background: color-mix(in srgb, var(--info) 8%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--info) 20%, transparent);
         }
 
         .goal-action-item.delete {
             color: var(--danger);
+        }
+
+        .goal-action-item.delete:hover {
+            background: color-mix(in srgb, var(--danger) 8%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 20%, transparent);
+        }
+
+        /* === ESTILO PARA ITENS DESABILITADOS === */
+        .goal-action-item:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* === BADGES DE STATUS === */
+        .goal-action-item .action-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-left: auto;
+            opacity: 0.7;
+        }
+
+        .goal-action-item.finalize .action-badge {
+            background: color-mix(in srgb, var(--success) 15%, transparent);
+            color: var(--success);
+        }
+
+        .goal-action-item.activate .action-badge {
+            background: color-mix(in srgb, var(--warning) 15%, transparent);
+            color: var(--warning);
+        }
+
+        /* === ANIMAÇÕES E EFEITOS === */
+        @keyframes goalDropdownSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-12px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes goalDropdownSlideOut {
+            from {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-12px) scale(0.95);
+            }
+        }
+
+        .goal-actions-menu.show {
+            animation: goalDropdownSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .goal-actions-menu.hide {
+            animation: goalDropdownSlideOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* === RESPONSIVIDADE === */
+        @media (max-width: 768px) {
+            .goal-actions-menu {
+                right: -8px;
+                min-width: 160px;
+            }
+            
+            .goal-action-item {
+                padding: 10px 14px;
+                font-size: 0.85rem;
+            }
+            
+            .goal-actions-toggle {
+                width: 32px;
+                height: 32px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* === DARK MODE ESPECÍFICO === */
+        [data-theme="dark"] .goal-actions-toggle {
+            background: linear-gradient(135deg, var(--dark-card) 0%, var(--dark-bg) 100%);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .goal-actions-menu {
+            background: var(--dark-card);
+            border-color: var(--dark-border-color);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        [data-theme="dark"] .goal-actions-menu::before {
+            background: var(--dark-card);
+            border-color: var(--dark-border-color);
         }
 
         .goal-action-item.delete:hover {
@@ -2034,8 +2243,9 @@
         }
 
         .target-item.concluido {
-            background: var(--success-bg);
-            border-color: var(--success);
+            /* background: var(--success-bg);
+            border-color: var(--success); */
+            background: var(--bg);
         }
 
         .target-item.concluido .target-text-content {
@@ -2183,25 +2393,25 @@
             transition: all 0.2s ease;
         }
 
-        .btn-finalize-goal {
+        /* .btn-finalize-goal {
             background: var(--success);
             color: white;
-        }
+        } */
 
-        .btn-finalize-goal:hover {
+        /* .btn-finalize-goal:hover {
             background: var(--success-dark);
-        }
+        } */
 
-        .btn-delete-goal {
+        /* .btn-delete-goal {
             background: transparent;
             color: var(--danger);
             border-color: var(--danger);
-        }
+        } */
 
-        .btn-delete-goal:hover {
+        /* .btn-delete-goal:hover {
             background: var(--danger);
             color: white;
-        }
+        } */
 
         .btn-add-target {
             padding: 0.5rem 1rem;
@@ -2288,12 +2498,14 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .goal-card:hover {
+
+        /* .goal-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+        } */
+
         .goal-card.finalizado {
-            border-left-color: var(--status-finalizado);
+            /* border-left-color: var(--status-finalizado); */
             opacity: 0.9;
             filter: grayscale(0.2);
         }
@@ -2991,33 +3203,20 @@
         let allPeisData = {{ peis | tojson | safe }} || []; // Garante que seja um array, mesmo que vazio
         let currentlyOpenPeiId = null; // Rastreia o PEI aberto no modal
 
-        // Passa as variáveis de role do Python para o JavaScript
         const IS_ADMIN = {{ is_admin | tojson }};
         const IS_PROFESSIONAL = {{ is_professional | tojson }};
-        const LOGGED_IN_PROFESSIONAL_ID = {{ logged_in_professional_id | tojson }}; // Agora passa o ID do profissional logado
-        const ALL_PROFESSIONALS = {{ all_professionals | tojson | safe }}; // Lista de todos os profissionais
+        const LOGGED_IN_PROFESSIONAL_ID = {{ logged_in_professional_id | tojson }};
+        const ALL_PROFESSIONALS = {{ all_professionals | tojson | safe }};
         const PACIENTE_DOC_ID = "{{ paciente_doc_id }}";
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement; // Elemento HTML raiz para manipular atributos de tema
             const loadingOverlay = document.getElementById('loading-overlay'); // Obtém o overlay de carregamento
 
-            // ** DEBUG LOGS **
-            console.log('--- Configurações de Permissão (Frontend) ---');
-            console.log('É Administrador (IS_ADMIN):', IS_ADMIN);
-            console.log('É Profissional (IS_PROFESSIONAL):', IS_PROFESSIONAL);
-            console.log('ID do Profissional Logado (LOGGED_IN_PROFESSIONAL_ID):', LOGGED_IN_PROFESSIONAL_ID);
-            console.log('Todos os PEIs carregados:', allPeisData);
-            console.log('PACIENTE_DOC_ID:', PACIENTE_DOC_ID);
-            console.log('-------------------------------------------');
-
-
-            // Função para mostrar o overlay de carregamento
             function showLoading() {
                 loadingOverlay.classList.add('active');
             }
 
-            // Função para ocultar o overlay de carregamento
             function hideLoading() {
                 loadingOverlay.classList.remove('active');
             }
@@ -3054,7 +3253,6 @@
                     }
                 }
 
-                // Função para abrir o modal de confirmação genérico
                 function openConfirmDeleteModal(title, message, action, data) {
                     confirmModalTitle.textContent = title;
                     confirmDeleteMessage.textContent = message;
@@ -3081,10 +3279,6 @@
                 // Event listener unificado para cliques no corpo do documento
                 document.body.addEventListener('click', async function(e) {
                     const target = e.target;
-                    
-                    // Debug: log todos os cliques
-                    console.log('Clique detectado em:', target, 'Classe:', target.className);
-
                     // Lógica para fechar modais (botões com data-close-modal ou clicando no overlay)
                     const closeBtn = target.closest('.modal-close-btn');
                     if (closeBtn) {
@@ -3159,16 +3353,7 @@
                     const peiCard = target.closest('.pei-card-modern');
                     const viewDetailsBtn = target.closest('.btn-view-details');
                     
-                    console.log('=== DEBUG PEI CARD CLICK ===');
-                    console.log('Target element:', target);
-                    console.log('Target classes:', target.className);
-                    console.log('PEI Card found:', peiCard);
-                    console.log('View Details Button found:', viewDetailsBtn);
-                    
                     if (peiCard) {
-                        console.log('Card dataset:', peiCard.dataset);
-                        console.log('Card ID:', peiCard.dataset.peiId);
-                        
                         // Verificar se não clicou em elementos específicos que devem ser ignorados
                         const isDropdownClick = target.closest('.professionals-toggle') || target.closest('.professionals-hidden');
                         const isDropdownMenu = target.closest('.dropdown-menu');
@@ -3177,29 +3362,17 @@
                         const isFinalizeBtn = target.closest('.btn-finalize-pei');
                         const isDropdownToggle = target.closest('[data-dropdown-toggle]');
                         
-                        console.log('Exclusion checks:', {
-                            isDropdownClick, isDropdownMenu, isPrintBtn, isDeleteBtn, isFinalizeBtn, isDropdownToggle
-                        });
-                        
                         // Se clicou no card mas não em elementos específicos que devem ser ignorados
                         if (!isDropdownClick && !isDropdownMenu && !isPrintBtn && !isDeleteBtn && !isFinalizeBtn && !isDropdownToggle) {
-                            console.log('✅ VALID CARD CLICK - Opening modal');
                             e.preventDefault();
                             e.stopPropagation();
                             
                             const peiId = peiCard.dataset.peiId;
-                            console.log('PEI ID:', peiId);
-                            
                             const peiData = allPeisData.find(p => p.id == peiId);
                             if (peiData) {
-                                console.log('PEI data found:', peiData);
                                 openPeiDetailsModal(peiData);
                                 document.body.style.overflow = 'hidden';
-                            } else {
-                                console.error('❌ PEI not found:', peiId, 'Available IDs:', allPeisData.map(p => p.id));
                             }
-                        } else {
-                            console.log('❌ CLICK IGNORED - Hit excluded element');
                         }
                         return;
                     }
@@ -3210,15 +3383,10 @@
                         e.stopPropagation();
                         
                         const peiId = viewDetailsBtn.dataset.peiId;
-                        console.log('Clique no botão Ver Detalhes - PEI ID:', peiId); // Debug
-                        
                         const peiData = allPeisData.find(p => p.id == peiId);
                         if (peiData) {
-                            console.log('PEI encontrado via botão, abrindo modal:', peiData); // Debug
                             openPeiDetailsModal(peiData);
                             document.body.style.overflow = 'hidden';
-                        } else {
-                            console.error('PEI não encontrado via botão:', peiId, 'IDs disponíveis:', allPeisData.map(p => p.id));
                         }
                         return;
                     }
@@ -3295,7 +3463,6 @@
                             </button>
                         `;
                         container.appendChild(newItem);
-                        // Mostra o botão de remover para todos os alvos se houver mais de um
                         container.querySelectorAll('.btn-remove-target').forEach(btn => {
                             btn.style.display = container.children.length > 1 ? 'block' : 'none';
                         });
@@ -3320,29 +3487,59 @@
                         return;
                     }
 
-                    // Goal Actions Dropdown Toggle
+                    // Goal Actions Dropdown
                     const goalActionsToggle = target.closest('.goal-actions-toggle');
                     if (goalActionsToggle) {
                         e.preventDefault();
                         e.stopPropagation();
                         
-                        // Fechar outros dropdowns abertos
+                        // Fechar outros dropdowns abertos com animação
                         document.querySelectorAll('.goal-actions-menu.active').forEach(menu => {
                             if (menu !== goalActionsToggle.nextElementSibling) {
-                                menu.classList.remove('active');
+                                menu.classList.add('hide');
+                                setTimeout(() => {
+                                    menu.classList.remove('active', 'show', 'hide');
+                                }, 200);
                             }
                         });
                         
-                        // Toggle do dropdown atual
+                        // Remover estado ativo de outros botões
+                        document.querySelectorAll('.goal-actions-toggle.active').forEach(btn => {
+                            if (btn !== goalActionsToggle) {
+                                btn.classList.remove('active');
+                            }
+                        });
+                        
+                        // Toggle do dropdown atual com animação melhorada
                         const menu = goalActionsToggle.nextElementSibling;
-                        menu.classList.toggle('active');
+                        const isCurrentlyActive = menu.classList.contains('active');
+                        
+                        if (isCurrentlyActive) {
+                            // Fechar com animação
+                            menu.classList.add('hide');
+                            goalActionsToggle.classList.remove('active');
+                            setTimeout(() => {
+                                menu.classList.remove('active', 'show', 'hide');
+                            }, 200);
+                        } else {
+                            // Abrir com animação
+                            goalActionsToggle.classList.add('active');
+                            menu.classList.add('active', 'show');
+                        }
                         return;
                     }
 
-                    // Fechar dropdown ao clicar fora
+                    // Fechar dropdown ao clicar fora (melhorado)
                     if (!target.closest('.goal-actions-dropdown')) {
                         document.querySelectorAll('.goal-actions-menu.active').forEach(menu => {
-                            menu.classList.remove('active');
+                            menu.classList.add('hide');
+                            setTimeout(() => {
+                                menu.classList.remove('active', 'show', 'hide');
+                            }, 200);
+                        });
+                        
+                        document.querySelectorAll('.goal-actions-toggle.active').forEach(btn => {
+                            btn.classList.remove('active');
                         });
                     }
 
@@ -3351,8 +3548,20 @@
                     if (activateGoalButton) {
                         const peiId = activateGoalButton.dataset.peiId;
                         const goalId = activateGoalButton.dataset.goalId;
-                        // Abre o modal de confirmação para ativar a meta
-                        openConfirmDeleteModal('Confirmar Ativação da Meta', 'Tem certeza que deseja ativar esta meta novamente?', 'activate_goal', { peiId: peiId, goalId: goalId });
+                        
+                        // Fechar dropdown
+                        const menu = activateGoalButton.closest('.goal-actions-menu');
+                        if (menu) {
+                            menu.classList.remove('active', 'show');
+                            menu.closest('.goal-actions-dropdown').querySelector('.goal-actions-toggle').classList.remove('active');
+                        }
+                        
+                        openConfirmDeleteModal(
+                            'Reativar Meta', 
+                            'Tem certeza que deseja reativar esta meta? Ela ficará disponível para edição novamente.', 
+                            'activate_goal', 
+                            { peiId: peiId, goalId: goalId }
+                        );
                         return;
                     }
 
@@ -3361,23 +3570,86 @@
                     if (finalizeGoalButton) {
                         const peiId = finalizeGoalButton.dataset.peiId;
                         const goalId = finalizeGoalButton.dataset.goalId;
-                        // Abre o modal de confirmação para finalizar a meta
-                        openConfirmDeleteModal('Confirmar Finalização da Meta', 'Tem certeza que deseja finalizar esta meta? Uma vez finalizada, não poderá ser editada.', 'finalize_goal', { peiId: peiId, goalId: goalId });
+                        
+                        // Fechar dropdown
+                        const menu = finalizeGoalButton.closest('.goal-actions-menu');
+                        if (menu) {
+                            menu.classList.remove('active', 'show');
+                            menu.closest('.goal-actions-dropdown').querySelector('.goal-actions-toggle').classList.remove('active');
+                        }
+                        
+                        openConfirmDeleteModal(
+                            'Finalizar Meta', 
+                            'Tem certeza que deseja finalizar esta meta? Uma vez finalizada, não será possível adicionar novos alvos.', 
+                            'finalize_goal', 
+                            { peiId: peiId, goalId: goalId }
+                        );
+                        return;
+                    }
+
+                    // Botão Editar Meta (NOVO)
+                    const editGoalButton = target.closest('.btn-edit-goal');
+                    if (editGoalButton) {
+                        const peiId = editGoalButton.dataset.peiId;
+                        const goalId = editGoalButton.dataset.goalId;
+                        
+                        // Fechar dropdown
+                        const menu = editGoalButton.closest('.goal-actions-menu');
+                        if (menu) {
+                            menu.classList.remove('active', 'show');
+                            menu.closest('.goal-actions-dropdown').querySelector('.goal-actions-toggle').classList.remove('active');
+                        }
+                        
+                        displayFlashMessage('info', 'Funcionalidade de edição de meta em desenvolvimento.');
+                        return;
+                    }
+
+                    // Botão Duplicar Meta (NOVO)
+                    const duplicateGoalButton = target.closest('.btn-duplicate-goal');
+                    if (duplicateGoalButton) {
+                        const peiId = duplicateGoalButton.dataset.peiId;
+                        const goalId = duplicateGoalButton.dataset.goalId;
+                        
+                        // Fechar dropdown
+                        const menu = duplicateGoalButton.closest('.goal-actions-menu');
+                        if (menu) {
+                            menu.classList.remove('active', 'show');
+                            menu.closest('.goal-actions-dropdown').querySelector('.goal-actions-toggle').classList.remove('active');
+                        }
+                        
+                        openConfirmDeleteModal(
+                            'Duplicar Meta', 
+                            'Tem certeza que deseja criar uma cópia desta meta? A nova meta será criada como ativa.', 
+                            'duplicate_goal', 
+                            { peiId: peiId, goalId: goalId }
+                        );
                         return;
                     }
 
                     // Botão Excluir Meta
                     const deleteGoalButton = target.closest('.btn-delete-goal');
                     if (deleteGoalButton) {
-                        // Apenas admins podem excluir metas
                         if (!IS_ADMIN) {
                             displayFlashMessage('danger', 'Você não tem permissão para excluir metas.');
                             return;
                         }
+                        
                         const peiId = deleteGoalButton.dataset.peiId;
                         const goalId = deleteGoalButton.dataset.goalId;
-                        // Abre o modal de confirmação para excluir a meta
-                        openConfirmDeleteModal('Confirmar Exclusão da Meta', 'Tem certeza que deseja apagar esta meta e todos os seus alvos? Esta ação não pode ser desfeita.', 'delete_goal', { peiId: peiId, goalId: goalId });
+                        
+                        // Fechar dropdown
+                        const menu = deleteGoalButton.closest('.goal-actions-menu');
+                        if (menu) {
+                            menu.classList.remove('active', 'show');
+                            menu.closest('.goal-actions-dropdown').querySelector('.goal-actions-toggle').classList.remove('active');
+                        }
+                        
+                        openConfirmDeleteModal(
+                            'Excluir Meta', 
+                            'Tem certeza que deseja excluir esta meta permanentemente? Todos os alvos associados também serão removidos. Esta ação não pode ser desfeita.', 
+                            'delete_goal', 
+                            { peiId: peiId, goalId: goalId }
+                        );
                         return;
                     }
 
@@ -3411,14 +3683,10 @@
 
                         try {
                             if (currentDeleteAction === 'delete_pei') {
-                                console.log('Preparando para submeter formulário de exclusão de PEI para ID:', currentDeleteData.peiId);
-                                // Define os valores e submete o formulário de exclusão de PEI
                                 formApagarPei.querySelector('#pei_id_apagar').value = currentDeleteData.peiId;
                                 formApagarPei.action = `/pacientes/${PACIENTE_DOC_ID}/peis/delete_pei`;
-                                formApagarPei.submit(); // Isso causará um recarregamento completo da página
+                                formApagarPei.submit();
                             } else if (currentDeleteAction === 'delete_goal') {
-                                console.log('Preparando para submeter formulário de exclusão de meta para PEI:', currentDeleteData.peiId, 'Meta:', currentDeleteData.goalId);
-                                // Define os valores e submete o formulário de exclusão de meta
                                 formApagarGoal.querySelector('#goal_delete_pei_id').value = currentDeleteData.peiId;
                                 formApagarGoal.querySelector('#goal_id_apagar').value = currentDeleteData.goalId;
                                 formApagarGoal.action = `/pacientes/${PACIENTE_DOC_ID}/peis/delete_goal`;
@@ -3473,7 +3741,7 @@
                     }
                 });
                 
-                // --- Funções AJAX para PEI/Metas/Alvos ---
+                // Funções AJAX para PEI/Metas/Alvos
                 // Adiciona um novo alvo a uma meta existente dentro de um PEI
                 async function addTargetToGoal(peiId, goalId, targetDescription) {
                     showLoading();
@@ -3714,7 +3982,7 @@
                     }
                 }
 
-                // --- Função auxiliar para renderizar PEIs (após uma atualização do Flask) ---
+                // Função auxiliar para renderizar PEIs
                 // Esta função reconstrói os cartões de PEI na interface para refletir as últimas mudanças
                 function renderPeis(peis) {
                     const activePeisList = document.getElementById('active-peis-list');
@@ -3755,7 +4023,6 @@
                     }
                 }
                 
-                // NOVO: Função para renderizar o HTML de um PEI como um card moderno
                 function renderPeiCardHtml(pei) {
                     // Formata a data de criação para o card de resumo (DD/MM/YYYY)
                     const dataCriacao = pei.data_criacao ? new Date(pei.data_criacao) : null;
@@ -3892,7 +4159,6 @@
                 }
 
 
-                // Função para abrir e popular o modal de detalhes do PEI
                 function openPeiDetailsModal(pei) {
                     console.log('🚀 openPeiDetailsModal called with:', pei);
                     
@@ -4126,7 +4392,7 @@
                             <div class="goal-card-header">
                                 <strong>Meta: ${goal.descricao}</strong>
                                 <div class="flex items-center gap-2">
-                                    <span class="goal-status ${isGoalFinalizado ? 'finalizado-status' : 'active-status'}">${isGoalFinalizado ? 'Finalizada' : 'Ativa'}</span>
+                                    <!-- <span class="goal-status ${isGoalFinalizado ? 'finalizado-status' : 'active-status'}">${isGoalFinalizado ? 'Finalizada' : 'Ativa'}</span> -->
                                     ${IS_ADMIN && !isPeiFinalizado ? `
                                         <div class="goal-actions">
                                             <div class="goal-actions-dropdown">
@@ -4134,21 +4400,54 @@
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </button>
                                                 <div class="goal-actions-menu">
-                                                    ${!isGoalFinalizado ? `
-                                                        <button type="button" class="goal-action-item finalize btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
-                                                            <i class="fas fa-check"></i>
-                                                            Finalizar
+                                                    <!-- Seção de Status -->
+                                                    <div class="goal-actions-section">
+                                                        <div class="goal-actions-section-label">
+                                                            <i class="fas fa-tasks"></i>
+                                                            Status
+                                                        </div>
+                                                        ${!isGoalFinalizado ? `
+                                                            <button type="button" class="goal-action-item finalize btn-finalize-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
+                                                                <i class="fas fa-check-circle"></i>
+                                                                Finalizar Meta
+                                                                <!--<span class="action-badge">Concluir</span>-->
+                                                            </button>
+                                                        ` : `
+                                                            <button type="button" class="goal-action-item activate btn-activate-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
+                                                                <i class="fas fa-play-circle"></i>
+                                                                Reativar Meta
+                                                                <!--<span class="action-badge">Ativo</span>-->
+                                                            </button>
+                                                        `}
+                                                    </div>
+                                                    
+                                                    <!-- Seção de Edição -->
+                                                    <div class="goal-actions-section">
+                                                        <div class="goal-actions-section-label">
+                                                            <i class="fas fa-edit"></i>
+                                                            Editar
+                                                        </div>
+                                                        <button type="button" class="goal-action-item edit btn-edit-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
+                                                            <i class="fas fa-pencil-alt"></i>
+                                                            Editar Descrição
                                                         </button>
-                                                    ` : `
-                                                        <button type="button" class="goal-action-item activate btn-activate-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
-                                                            <i class="fas fa-play"></i>
-                                                            Ativar
+                                                        <button type="button" class="goal-action-item edit btn-duplicate-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
+                                                            <i class="fas fa-copy"></i>
+                                                            Duplicar Meta
                                                         </button>
-                                                    `}
-                                                    <button type="button" class="goal-action-item delete btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                        Apagar
-                                                    </button>
+                                                    </div>
+                                                    
+                                                    <!-- Seção de Ações Avançadas -->
+                                                    <div class="goal-actions-section">
+                                                        <div class="goal-actions-section-label">
+                                                            <i class="fas fa-cog"></i>
+                                                            Avançado
+                                                        </div>
+                                                        <button type="button" class="goal-action-item delete btn-delete-goal" data-pei-id="${pei.id}" data-goal-id="${goal.id}">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                            Excluir Meta
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -4169,7 +4468,7 @@
                 }
 
 
-                // --- Lógica de Geração de PDF ---
+                // Lógica de Geração de PDF
                 // Função para converter HTML em texto plano para inclusão no PDF
                 function htmlToPlainText(html) {
                     const tempDiv = document.createElement('div');
@@ -4276,7 +4575,6 @@
                         yPos += contentLineHeight;
                     }
 
-                    // Salva o PDF com um nome descritivo
                     doc.save(`pei-${pei.titulo.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                     displayFlashMessage('success', 'PDF do PEI gerado com sucesso!');
                 }
@@ -4297,7 +4595,6 @@
                     const contentFontSize = 9;
                     const maxWidth = doc.internal.pageSize.width - margin * 2;
 
-                    // Helper function to add page and reset yPos if needed
                     const checkPageBreak = (heightNeeded) => {
                         if (yPos + heightNeeded > doc.internal.pageSize.height - margin) {
                             doc.addPage();
@@ -4383,12 +4680,11 @@
                         }
                     });
 
-                    // Salva o PDF de todos os PEIs
                     doc.save(`todos-peis-${patientName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`);
                 }
 
 
-                // --- Initial PEI Rendering ---
+                // Initial PEI Rendering
                 renderPeis(allPeisData); // Call to render PEIs when the page loads
 
                 // Event listener for "Add Target" button in each goal (delegated as elements are dynamically rendered)
@@ -4461,7 +4757,7 @@
                 });
             }
 
-            // --- General Initialization ---
+            // General Initialization
             // setupCommonUI(); // Removido para evitar duplicação, pois Nav.html já o faz.
             setupPeiPage();
         });
