@@ -237,7 +237,7 @@
    }
    .stat-comparison.success { color: var(--success); }
    .stat-comparison.danger { color: var(--danger); }
-   .stat-comparison.info { color: var(--muted); }
+   .stat-comparison.info { color: var(--info); } /* Alterado para info para um tone neutro */
 
     /* ============================================
      --- GRÁFICOS E TABELAS ---
@@ -391,45 +391,63 @@
 
         <section class="summary-cards">
             <div class="card">
-                <h3>Receita do Mês ({{ mes_atual_nome or 'N/A' }})</h3>
-                <p class="stat-number">R$ {{ "%.2f"|format(kpi.receita_mes_atual|float) | replace('.', ',') }}</p>
-                <div class="stat-comparison {{ 'success' if kpi.variacao_receita >= 0 else 'danger' }}">
-                    <i class="fa-solid {{ 'fa-arrow-trend-up' if kpi.variacao_receita >= 0 else 'fa-arrow-trend-down' }}"></i>
-                    <span>{{ "%.1f"|format(kpi.variacao_receita|float) | replace('.', ',') }}% vs Mês Anterior</span>
+                <h3>Total de Pacientes</h3>
+                <p class="stat-number">{{ kpi.total_pacientes }}</p>
+                <div class="stat-comparison info">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Pacientes cadastrados na clínica</span>
                 </div>
             </div>
 
             <div class="card">
-                <h3>Atendimentos no Mês</h3>
-                <p class="stat-number">{{ kpi.atendimentos_mes_atual }}</p>
-                <div class="stat-comparison {{ 'success' if kpi.variacao_atendimentos >= 0 else 'danger' }}">
-                    <i class="fa-solid {{ 'fa-arrow-trend-up' if kpi.variacao_atendimentos >= 0 else 'fa-arrow-trend-down' }}"></i>
-                    <span>{{ "%.1f"|format(kpi.variacao_atendimentos|float) | replace('.', ',') }}% vs Mês Anterior</span>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h3>Novos Pacientes (Mês)</h3>
-                <p class="stat-number">{{ kpi.novos_pacientes_mes }}</p>
-                <div class="stat-comparison success">
-                    <i class="fa-solid fa-user-plus"></i>
-                    <span>Total de novos cadastros</span>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h3>Taxa de Ocupação</h3>
-                <p class="stat-number">N/A</p>
+                <h3>Total de PEIs</h3>
+                <p class="stat-number">{{ kpi.total_peis }}</p>
                 <div class="stat-comparison info">
-                    <i class="fa-solid fa-chart-pie"></i>
-                    <span>Em desenvolvimento</span>
+                    <i class="fa-solid fa-file-alt"></i>
+                    <span>Planos Educacionais Individualizados</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>PEIs Finalizados</h3>
+                <p class="stat-number">{{ kpi.peis_finalizados }}</p>
+                <div class="stat-comparison success">
+                    <i class="fa-solid fa-check-circle"></i>
+                    <span>PEIs concluídos com sucesso</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>PEIs em Progresso</h3>
+                <p class="stat-number">{{ kpi.peis_em_progresso }}</p>
+                <div class="stat-comparison warning">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                    <span>PEIs atualmente ativos</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Total de Agendamentos</h3>
+                <p class="stat-number">{{ kpi.total_agendamentos }}</p>
+                <div class="stat-comparison info">
+                    <i class="fa-solid fa-calendar-alt"></i>
+                    <span>Todos os agendamentos registrados</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Atendimentos Concluídos</h3>
+                <p class="stat-number">{{ kpi.total_atendimentos_concluidos }}</p>
+                <div class="stat-comparison success">
+                    <i class="fa-solid fa-handshake"></i>
+                    <span>Atendimentos com status 'Concluído'</span>
                 </div>
             </div>
         </section>
 
         <section class="charts-section-full">
             <div class="graph-card">
-                <h3 class="chart-title">Visão Geral: Atendimentos vs. Receita (Últimos 15 dias)</h3>
+                <h3 class="chart-title">Atendimentos Diários (Últimos 15 dias)</h3>
                 <div class="chart-container">
                     <canvas id="atendimentoVsReceitaChart"></canvas>
                 </div>
@@ -438,9 +456,9 @@
 
         <section class="charts-section-split">
             <div class="graph-card">
-                <h3 class="chart-title">Top 5 Procedimentos por Receita (Mês)</h3>
+                <h3 class="chart-title">Top 5 Procedimentos por Atendimentos (Mês)</h3>
                 <div class="chart-container">
-                    <canvas id="receitaPorProcedimentoChart"></canvas>
+                    <canvas id="receitaPorProcedimentoChart"></canvas> {# Reutilizando o ID, mas o gráfico mostrará contagens #}
                 </div>
             </div>
             
@@ -449,6 +467,52 @@
                 <div class="chart-container">
                     <canvas id="desempenhoProfissionalChart"></canvas>
                 </div>
+            </div>
+        </section>
+
+        <section class="list-section">
+            <h2 class="section-title">Progresso dos Pacientes em PEIs</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Paciente</th>
+                            <th>PEIs Ativos</th>
+                            <th>Alvos Totais (PEIs Ativos)</th>
+                            <th>Alvos Concluídos (PEIs Ativos)</th>
+                            <th>Progresso (%)</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if pacientes_pei_progress %}
+                            {% for paciente in pacientes_pei_progress %}
+                                <tr>
+                                    <td>{{ paciente.nome }}</td>
+                                    <td>{{ paciente.total_peis_ativos }}</td>
+                                    <td>{{ paciente.total_targets }}</td>
+                                    <td>{{ paciente.completed_targets }}</td>
+                                    <td>
+                                        <div style="width: 100px; background-color: var(--border-color); border-radius: 5px; overflow: hidden;">
+                                            <div style="width: {{ paciente.progress_percentage }}%; background-color: var(--primary); height: 20px; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;">
+                                                {{ paciente.progress_percentage }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('peis.ver_peis_paciente', paciente_doc_id=paciente.id) }}" class="action-link">
+                                            <i class="fa-solid fa-file-alt"></i> Ver PEIs
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 2rem;">Nenhum dado de progresso de PEI encontrado.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </section>
         
@@ -559,6 +623,9 @@
             grid: getCssVar('--border-color'),
             primary: getCssVar('--primary'),
             secondary: getCssVar('--secondary'),
+            success: getCssVar('--success'),
+            warning: getCssVar('--warning'),
+            info: getCssVar('--info'),
         };
         
         Chart.defaults.color = themeColors.text;
@@ -579,23 +646,10 @@
                         labels: dadosAtendVsReceita.labels,
                         datasets: [
                             {
-                                type: 'line',
-                                label: 'Receita (R$)',
-                                data: dadosAtendVsReceita.receitas,
-                                borderColor: themeColors.secondary,
-                                backgroundColor: themeColors.secondary,
-                                tension: 0.3,
-                                yAxisID: 'y1',
-                                pointRadius: 4,
-                                pointBackgroundColor: themeColors.secondary,
-                            },
-                            {
-                                type: 'bar',
-                                label: 'Atendimentos',
+                                label: 'Nº de Atendimentos',
                                 data: dadosAtendVsReceita.atendimentos,
                                 backgroundColor: themeColors.primary,
                                 borderRadius: 6,
-                                yAxisID: 'y',
                             }
                         ]
                     },
@@ -608,16 +662,7 @@
                             y: {
                                 type: 'linear', display: true, position: 'left',
                                 title: { display: true, text: 'Nº de Atendimentos' },
-                                grid: { drawOnChartArea: false },
                                 ticks: { precision: 0, beginAtZero: true }
-                            },
-                            y1: {
-                                type: 'linear', display: true, position: 'right',
-                                title: { display: true, text: 'Receita (R$)' },
-                                grid: { drawOnChartArea: true, borderDash: [2, 4], color: themeColors.grid },
-                                ticks: {
-                                    callback: (value) => `R$ ${value >= 1000 ? (value/1000).toFixed(1) + 'k' : value}`
-                                }
                             }
                         }
                     }
@@ -631,9 +676,9 @@
                     data: {
                         labels: dadosReceitaProc.labels,
                         datasets: [{
-                            label: 'Receita Gerada',
+                            label: 'Nº de Atendimentos', /* Alterado para refletir contagem */
                             data: dadosReceitaProc.valores,
-                            backgroundColor: [getCssVar('--primary'), getCssVar('--secondary'), '#3b82f6', '#8b5cf6', '#ec4899'],
+                            backgroundColor: [themeColors.primary, themeColors.secondary, themeColors.info, themeColors.accent, themeColors.success],
                             borderRadius: 6,
                         }]
                     },
@@ -641,7 +686,7 @@
                         indexAxis: 'y', maintainAspectRatio: false, responsive: true,
                         plugins: { legend: { display: false } },
                         scales: {
-                            x: { ticks: { callback: (value) => `R$ ${value}` } }
+                            x: { ticks: { precision: 0, beginAtZero: true } } /* Alterado para contagem */
                         }
                     }
                 });
@@ -656,7 +701,7 @@
                         datasets: [{
                             label: 'Nº de Atendimentos',
                             data: dadosDesempenhoProf.valores,
-                            backgroundColor: [getCssVar('--primary'), getCssVar('--secondary'), '#3b82f6', '#8b5cf6', '#ec4899'],
+                            backgroundColor: [themeColors.primary, themeColors.secondary, themeColors.info, themeColors.accent, themeColors.success],
                             borderRadius: 6,
                         }]
                     },

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscar PEIs - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+  <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ============================================
+     --- ESTILOS GERAIS E VARIÁVEIS DE TEMA ---
+     ============================================
+    */
+   :root {
+     --bg: #f1f5f9;                  /* Gray-100 */
+     --card: #ffffff;                /* White */
+     --text: #0f172a;                /* Gray-900 */
+     --muted: #64748b;               /* Gray-500 */
+     --accent: #9b53b8;              /* Purple-500 */
+     --primary: #5587c2;             /* Blue-500 */
+     
+     --primary-light: #c8dcf3;       /* Blue-100 */
+     --primary-dark: #115e59;        /* Teal-800 */
+     --secondary: #f59e0b;           /* Yellow-500 */
+     --danger: #dc2626;              /* Red-600 */
+     --success: #16a34a;             /* Green-600 */
+     --warning: #f59e0b;             /* Yellow-500 */
+     --info: #0ea5e9;                /* Sky-500 */
+     --border-color: #e2e8f0;        /* Gray-200 */
+
+     --dark-bg: #0f172a;             /* Gray-900 */
+     --dark-card: #1e293b;           /* Gray-800 */
+     --dark-text: #f1f5f9;           /* Gray-100 */
+     --dark-muted: #94a3b8;          /* Gray-400 */
+     --dark-border-color: #334155;   /* Gray-600 */
+     
+     color-scheme: light;
+   }
+
+   [data-theme="dark"] {
+     --bg: var(--dark-bg);
+     --text: var(--dark-text);
+     --card: var(--dark-card);
+     --muted: var(--dark-muted);
+     --border-color: var(--dark-border-color);
+     color-scheme: dark;
+   }
+
+   * { box-sizing: border-box; margin: 0; padding: 0; }
+   html, body { height: 100%; overflow-x: hidden; }
+   body {
+     font-family: 'Inter', sans-serif;
+     background-color: var(--bg);
+     color: var(--text);
+     min-height: 100vh;
+     line-height: 1.6;
+     transition: background-color 0.3s ease, color 0.3s ease;
+   }
+   .layout { display: flex; min-height: 100vh; width: 100%; }
+
+    /* ============================================
+     --- SIDEBAR ---
+     ============================================
+    */
+   .sidebar {
+     width: 280px; /* Aumentado de 260px para 280px */
+     background: linear-gradient(180deg, var(--primary), var(--accent));
+     color: white;
+     position: fixed;
+     top: 0; left: 0;
+     height: 100vh;
+     transition: width 0.3s ease, transform 0.3s ease;
+     z-index: 1000;
+     display: flex;
+     flex-direction: column;
+   }
+   .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
+   .sidebar-header {
+     padding: 0 1rem;
+     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+     flex-shrink: 0;
+     height: 70px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+   }
+   .sidebar-header .logo {
+     font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
+     display: flex; align-items: center; gap: 0.75rem;
+     white-space: nowrap; overflow: hidden;
+   }
+   .sidebar-header .logo i { font-size: 1.8rem; }
+   
+   .sidebar.collapsed { width: 88px; } /* Ajustado de 78px para 88px */
+   .sidebar.collapsed .sidebar-header .logo span { display: none; }
+   .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
+
+   .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
+   .sidebar.collapsed nav { padding: 0 0.5rem; }
+   .sidebar nav ul { list-style: none; padding: 0; }
+   .sidebar nav ul li { margin-bottom: 0.5rem; }
+   .sidebar nav ul li a {
+     color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
+     padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
+     font-weight: 500; white-space: nowrap; overflow: hidden;
+     transition: background 0.2s ease, color 0.2s ease;
+   }
+   .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
+   .sidebar.collapsed nav ul li a span { display: none; }
+   .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
+   .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+   .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
+
+    /* Estilos para Submenu Financeiro */
+    .sidebar nav ul li.has-submenu {
+        position: relative;
+    }
+
+    .sidebar nav ul li.has-submenu .submenu-toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .sidebar nav ul li.has-submenu .submenu-arrow {
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar nav ul li.has-submenu.open .submenu-arrow {
+        transform: rotate(180deg);
+    }
+
+    .sidebar nav ul li.has-submenu .submenu {
+        list-style: none;
+        padding: 0;
+        margin-left: 1.5rem; /* Indent sub-menu items */
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+        background: rgba(255, 255, 255, 0.05); /* Slightly different background for sub-menu */
+        border-radius: 8px;
+    }
+
+    .sidebar nav ul li.has-submenu.open .submenu {
+        max-height: 500px; /* Adjust as needed to fit all sub-items */
+        transition: max-height 0.5s ease-in;
+    }
+
+    .sidebar nav ul li.has-submenu .submenu li a {
+        padding: 0.75rem 1rem 0.75rem 2.5rem; /* Adjust padding for sub-items */
+        font-size: 0.9rem;
+        border-radius: 0; /* No rounded corners for individual sub-items */
+    }
+
+    .sidebar nav ul li.has-submenu .submenu li:last-child a {
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    /* Ajustar estado colapsado para o submenu */
+    .sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
+    .sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
+    .sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
+
+
+   .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
+   .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
+   .sidebar-footer button, .sidebar-footer a {
+     background: none; border: none; cursor: pointer; color: #e2e8f0;
+     padding: 0.75rem 1rem; border-radius: 8px; width: 100%;
+     display: flex; align-items: center; gap: 1rem;
+     transition: background 0.2s ease, color 0.2s ease;
+     font-family: 'Inter', sans-serif; font-size: 0.95rem; text-decoration: none;
+   }
+   .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+   .sidebar.collapsed .sidebar-footer span { display: none; }
+   .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
+
+    /* ============================================
+     --- CONTEÚDO PRINCIPAL & TOPBAR ---
+     ============================================
+    */
+   .main-content {
+     flex: 1; margin-left: 280px; /* Ajustado de 260px para 280px */
+     transition: margin-left 0.3s ease;
+     display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado de 260px para 280px */
+   }
+   .main-content.collapsed { margin-left: 88px; width: calc(100% - 88px); } /* Ajustado de 78px para 88px */
+
+   .topbar {
+     background-color: var(--card); color: var(--text); padding: 0 1.5rem;
+     display: flex; align-items: center; justify-content: space-between;
+     border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
+     position: sticky; top: 0; z-index: 900;
+   }
+   .topbar-left { display: flex; align-items: center; gap: 1rem; }
+   .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
+   .toggle-btn {
+     background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
+     width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+     transition: background 0.2s ease, color 0.2s ease;
+   }
+   .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+   .toggle-btn-desktop { display: none; }
+   .menu-btn-mobile { display: block; }
+   @media(min-width: 769px) {
+     .toggle-btn-desktop { display: grid; }
+     .menu-btn-mobile { display: none; }
+   }
+
+   main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+   
+    /* ============================================
+     --- FORMULÁRIOS E TABELAS DE BUSCA ---
+     ============================================
+    */
+    .form-card {
+        background: var(--card);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .form-group input[type="text"],
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+        background-color: var(--bg);
+        color: var(--text);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: color-mix(in srgb, var(--primary) 80%, black);
+    }
+
+    .btn-secondary {
+        background-color: var(--muted);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+        background-color: color-mix(in srgb, var(--muted) 80%, black);
+    }
+
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+        background: var(--card);
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        color: var(--text);
+    }
+
+    th, td {
+        padding: 0.9rem 1rem;
+        font-size: 0.9rem;
+        text-align: left;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    thead th {
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        background-color: var(--bg);
+        border-bottom-width: 2px;
+    }
+
+    thead th:first-child { border-top-left-radius: 8px; }
+    thead th:last-child { border-top-right-radius: 8px; }
+    tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+    tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+
+    .action-link {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+
+    .action-link:hover {
+        color: var(--accent);
+    }
+
+    .flash-message {
+      padding: 1rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent;
+      border-radius: 0.5rem; font-size: 0.95rem; font-weight: 500;
+   }
+   .flash-message.success { color: var(--success); background-color: color-mix(in srgb, var(--success) 15%, transparent); border-color: color-mix(in srgb, var(--success) 30%, transparent); }
+   .flash-message.danger, .flash-message.error { color: var(--danger); background-color: color-mix(in srgb, var(--danger) 15%, transparent); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+   .flash-message.info { color: var(--info); background-color: color-mix(in srgb, var(--info) 15%, transparent); border-color: color-mix(in srgb, var(--info) 30%, transparent); }
+   .flash-message.warning { color: #854d0e; background-color: #fefce8; border-color: #fde047; }
+   [data-theme="dark"] .flash-message.warning { color: #fde047; background-color: #422006; border-color: #854d0e; }
+
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- Inclui a barra de navegação lateral a partir do arquivo Nav.html -->
+    {% include 'Nav.html' %}
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
+          <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
+          <h1 class="page-title">Buscar PEIs</h1>
+        </div>
+      </header>
+
+      <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash-message {{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <section class="form-card">
+            <h2>Selecionar Paciente para PEI</h2>
+            <form action="{{ url_for('peis.ver_peis_paciente', paciente_doc_id='_') }}" method="get" id="search-form">
+                <div class="form-group">
+                    <label for="paciente_id">Selecione o Paciente:</label>
+                    <select id="paciente_id" name="paciente_doc_id" required>
+                        <option value="">-- Selecione um Paciente --</option>
+                        {% for paciente in pacientes %}
+                            <option value="{{ paciente.id }}">{{ paciente.nome }} ({{ paciente.contato_telefone or 'N/A' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">
+                        <i class="fa-solid fa-search"></i> Buscar PEIs
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="list-section">
+            <h2 class="section-title">Pacientes Cadastrados</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Telefone</th>
+                            <th>Data de Nascimento</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if pacientes %}
+                            {% for paciente in pacientes %}
+                                <tr>
+                                    <td>{{ paciente.nome }}</td>
+                                    <td>{{ paciente.contato_telefone or 'N/A' }}</td>
+                                    <td>{{ paciente.data_nascimento_fmt or 'N/A' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('peis.ver_peis_paciente', paciente_doc_id=paciente.id) }}" class="action-link">
+                                            <i class="fa-solid fa-file-alt"></i> Ver PEIs
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 2rem;">Nenhum paciente encontrado.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+      </main>
+
+      <footer style="margin-top: auto; text-align: center; padding: 1.5rem; font-size: 0.9rem; color: var(--muted);">
+        <p>&copy; {{ current_year or '2025' }} Clínica On. Todos os direitos reservados.</p>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Script para garantir que o formulário redirecione corretamente
+        const form = document.getElementById('search-form');
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const pacienteId = document.getElementById('paciente_id').value;
+            if (pacienteId) {
+                window.location.href = `/pacientes/${pacienteId}/peis`;
+            } else {
+                alert('Por favor, selecione um paciente.');
+            }
+        });
+    });
+  </script>
+</body>
+</html>

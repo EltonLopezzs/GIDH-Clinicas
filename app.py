@@ -207,7 +207,7 @@ def setup_mapeamento_admin():
           {% if messages %}
             <ul style="list-style-type: none; padding: 0;">
             {% for category, message in messages %}
-              <li class="flash-message {{ category }}">{{ message | safe }}</li>
+              <li class="flash-message {{ category | safe }}">{{ message | safe }}</li>
             {% endfor %}
             </ul>
           {% endif %}
@@ -262,23 +262,128 @@ def index():
             flash(f"Erro ao buscar informações do profissional: {e}", "danger")
             return render_template('dashboard.html', kpi={}, proximos_agendamentos=[])
 
+    # Referências das coleções
     agendamentos_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos')
     pacientes_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')
-    current_year = datetime.datetime.now(SAO_PAULO_TZ).year
+    peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis') # Referência para PEIs
 
+    current_year = datetime.datetime.now(SAO_PAULO_TZ).year
     hoje_dt = datetime.datetime.now(SAO_PAULO_TZ)
     mes_atual_nome = hoje_dt.strftime('%B').capitalize()
 
-    inicio_mes_atual_dt = hoje_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    fim_mes_anterior_dt = inicio_mes_atual_dt - datetime.timedelta(seconds=1)
-    inicio_mes_anterior_dt = fim_mes_anterior_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # --- Novas contagens para o dashboard ---
+    total_peis = 0
+    peis_finalizados = 0
+    peis_em_progresso = 0
+    total_atendimentos_concluidos = 0 # Contagem de atendimentos com status 'concluido'
+    total_agendamentos = 0 # Contagem de todos os agendamentos
+    total_pacientes = 0
 
+    try:
+        # Contagem de Pacientes
+        total_pacientes = pacientes_ref.count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar pacientes: {e}")
+        flash("Erro ao carregar contagem de pacientes.", "danger")
+
+    try:
+        # Contagem de PEIs
+        peis_docs = peis_ref.stream()
+        for doc in peis_docs:
+            total_peis += 1
+            pei_data = doc.to_dict()
+            if pei_data.get('status') == 'finalizado':
+                peis_finalizados += 1
+            elif pei_data.get('status') == 'ativo': # Assumindo 'ativo' como em progresso
+                peis_em_progresso += 1
+    except Exception as e:
+        print(f"Erro ao contar PEIs: {e}")
+        flash("Erro ao carregar contagem de PEIs.", "danger")
+
+    try:
+        # Contagem de Agendamentos e Atendimentos Concluídos
+        agendamentos_docs = agendamentos_ref.stream()
+        for doc in agendamentos_docs:
+            total_agendamentos += 1
+            ag_data = doc.to_dict()
+            if ag_data.get('status') == 'concluido':
+                total_atendimentos_concluidos += 1
+    except Exception as e:
+        print(f"Erro ao contar agendamentos: {e}")
+        flash("Erro ao carregar contagem de agendamentos.", "danger")
+
+
+    # Dados para os novos cards de KPI
+    kpi_cards = {
+        'total_pacientes': total_pacientes,
+        'total_peis': total_peis,
+        'peis_finalizados': peis_finalizados,
+        'peis_em_progresso': peis_em_progresso,
+        'total_agendamentos': total_agendamentos,
+        'total_atendimentos_concluidos': total_atendimentos_concluidos,
+    }
+
+    # --- PEI Progress per Patient ---
+    pacientes_pei_progress = []
+    try:
+        # Fetch all patients
+        all_patients_docs = pacientes_ref.order_by('nome').stream()
+        for patient_doc in all_patients_docs:
+            patient_id = patient_doc.id
+            patient_name = patient_doc.to_dict().get('nome', 'N/A')
+
+            total_targets_patient = 0
+            completed_targets_patient = 0
+            total_active_peis_patient = 0
+
+            # Fetch active PEIs for this patient
+            patient_peis_query = peis_ref.where(
+                filter=FieldFilter('paciente_id', '==', patient_id)
+            ).where(
+                filter=FieldFilter('status', '==', 'ativo') # Only active PEIs
+            ).stream()
+
+            for pei_doc in patient_peis_query:
+                total_active_peis_patient += 1
+                # For each active PEI, fetch its metas
+                metas_ref = peis_ref.document(pei_doc.id).collection('metas')
+                metas_docs = metas_ref.stream()
+
+                for meta_doc in metas_docs:
+                    # For each meta, fetch its alvos (targets)
+                    alvos_ref = metas_ref.document(meta_doc.id).collection('alvos')
+                    alvos_docs = alvos_ref.stream()
+
+                    for alvo_doc in alvos_docs:
+                        total_targets_patient += 1
+                        if alvo_doc.to_dict().get('status') == 'finalizada':
+                            completed_targets_patient += 1
+            
+            progress_percentage = 0
+            if total_targets_patient > 0:
+                progress_percentage = (completed_targets_patient / total_targets_patient) * 100
+
+            pacientes_pei_progress.append({
+                'id': patient_id,
+                'nome': patient_name,
+                'total_peis_ativos': total_active_peis_patient,
+                'total_targets': total_targets_patient,
+                'completed_targets': completed_targets_patient,
+                'progress_percentage': round(progress_percentage, 1)
+            })
+
+    except Exception as e:
+        print(f"Erro ao calcular progresso de PEIs por paciente: {e}")
+        flash("Erro ao carregar progresso de PEIs por paciente.", "danger")
+
+
+    # --- Lógica para gráficos (mantida, mas os dados de receita serão removidos no template) ---
     agendamentos_para_analise = []
     try:
         query_analise = agendamentos_ref.where(
             filter=FieldFilter('status', 'in', ['confirmado', 'concluido'])
         ).where(
-            filter=FieldFilter('data_agendamento_ts', '>=', inicio_mes_anterior_dt)
+            filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt - datetime.timedelta(days=15)) # Últimos 15 dias
         )
 
         if user_role != 'admin':
@@ -287,99 +392,61 @@ def index():
                     filter=FieldFilter('profissional_id', '==', profissional_id_logado)
                 )
             else:
-                query_analise = query_analise.where(
-                    filter=FieldFilter('profissional_id', '==', 'ID_INVALIDO_PARA_NAO_RETORNAR_NADA')
-                )
+                agendamentos_para_analise = [] # Se não tem profissional_id logado, não mostra nada
 
-        docs_analise = query_analise.stream()
-        for doc in docs_analise:
-            ag_data = doc.to_dict()
-            if ag_data:
-                agendamentos_para_analise.append(ag_data)
+        if user_role == 'admin' or profissional_id_logado:
+            docs_analise = query_analise.stream()
+            for doc in docs_analise:
+                ag_data = doc.to_dict()
+                if ag_data:
+                    agendamentos_para_analise.append(ag_data)
 
     except Exception as e:
         print(f"Erro na consulta de agendamentos para o painel: {e}")
         flash("Erro ao calcular estatísticas do painel. Verifique seus índices do Firestore.", "danger")
 
-    receita_mes_atual = 0.0
-    atendimentos_mes_atual = 0
-    receita_mes_anterior = 0.0
-    atendimentos_mes_anterior = 0
-
-    try:
-        novos_pacientes_mes = pacientes_ref.where(
-            filter=FieldFilter('data_cadastro', '>=', inicio_mes_atual_dt)
-        ).count().get()[0][0].value
-    except Exception:
-        novos_pacientes_mes = 0
-
-    for ag in agendamentos_para_analise:
-        ag_timestamp = ag.get('data_agendamento_ts')
-        preco = float(ag.get('servico_procedimento_preco', 0))
-
-        if ag_timestamp and inicio_mes_atual_dt <= ag_timestamp:
-            receita_mes_atual += preco
-            atendimentos_mes_atual += 1
-        elif ag_timestamp and inicio_mes_anterior_dt <= ag_timestamp < inicio_mes_atual_dt:
-            receita_mes_anterior += preco
-            atendimentos_mes_anterior += 1
-
-    def calcular_variacao(atual, anterior):
-        if anterior == 0:
-            return 100.0 if atual > 0 else 0.0
-        return ((atual - anterior) / anterior) * 100
-
-    kpi_cards = {
-        'receita_mes_atual': receita_mes_atual,
-        'atendimentos_mes_atual': atendimentos_mes_atual,
-        'variacao_receita': calcular_variacao(receita_mes_atual, receita_mes_anterior),
-        'variacao_atendimentos': calcular_variacao(atendimentos_mes_atual, atendimentos_mes_anterior),
-        'novos_pacientes_mes': novos_pacientes_mes,
-    }
-
     atendimentos_por_dia = Counter()
-    receita_por_dia = Counter()
     hoje_date = hoje_dt.date()
     for i in range(15):
         data = hoje_date - datetime.timedelta(days=i)
-        # Armazena o objeto date diretamente como chave, não a string formatada
         atendimentos_por_dia[data] = 0
-        receita_por_dia[data] = 0
 
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
         if ag_ts:
           ag_date = ag_ts.date()
           if (hoje_date - ag_date).days < 15:
-              # Usa o objeto date como chave
               atendimentos_por_dia[ag_date] += 1
-              receita_por_dia[ag_date] += float(ag.get('servico_procedimento_preco', 0))
 
-    # Ordena as chaves (objetos date) e depois as formata para exibição
     labels_atend_receita = sorted(atendimentos_por_dia.keys())
     dados_atendimento_vs_receita = {
-        "labels": [label.strftime('%d/%m') for label in labels_atend_receita], # Formata para exibição aqui
+        "labels": [label.strftime('%d/%m') for label in labels_atend_receita],
         "atendimentos": [atendimentos_por_dia[label] for label in labels_atend_receita],
-        "receitas": [receita_por_dia[label] for label in labels_atend_receita]
+        "receitas": [0 for _ in labels_atend_receita] # Manter a estrutura, mas com valores zerados
     }
 
-    receita_por_procedimento = Counter()
+    # Gráfico de Top Procedimentos (pode ser adaptado para contagem se preferir)
+    # Mantendo a estrutura original, mas o template pode ignorar se não houver dados de receita
+    contagem_procedimento = Counter() # Alterado para contagem
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
-        if ag_ts and ag_ts >= inicio_mes_atual_dt:
+        # Apenas para o mês atual, se relevante
+        if ag_ts and ag_ts.month == hoje_dt.month and ag_ts.year == hoje_dt.year:
             nome_proc = ag.get('servico_procedimento_nome', 'Desconhecido')
-            receita_por_procedimento[nome_proc] += float(ag.get('servico_procedimento_preco', 0))
+            contagem_procedimento[nome_proc] += 1 # Contagem de procedimentos
 
-    top_5_procedimentos = receita_por_procedimento.most_common(5)
-    dados_receita_procedimento = {
+    top_5_procedimentos = contagem_procedimento.most_common(5)
+    dados_receita_procedimento = { # Renomeie se quiser, mas o template usa este nome
         "labels": [item[0] for item in top_5_procedimentos],
         "valores": [item[1] for item in top_5_procedimentos]
     }
 
+    # Gráfico de Top Profissionais por Atendimentos
     atendimentos_por_profissional = Counter()
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
-        if ag_ts and ag_ts >= inicio_mes_atual_dt:
+        # Apenas para o mês atual, se relevante
+        if ag_ts and ag_ts.month == hoje_dt.month and ag_ts.year == hoje_dt.year:
             nome_prof = ag.get('profissional_nome', 'Desconhecido')
             atendimentos_por_profissional[nome_prof] += 1
 
@@ -403,7 +470,7 @@ def index():
                     filter=FieldFilter('profissional_id', '==', profissional_id_logado)
                 )
             else:
-                proximos_agendamentos_lista = []
+                proximos_agendamentos_lista = [] # Se não tem profissional_id logado, não mostra nada
 
         if user_role == 'admin' or profissional_id_logado:
             docs_proximos = query_proximos.order_by('data_agendamento_ts').limit(10).stream()
@@ -431,8 +498,39 @@ def index():
         proximos_agendamentos=proximos_agendamentos_lista,
         dados_atendimento_vs_receita=json.dumps(dados_atendimento_vs_receita),
         dados_receita_procedimento=json.dumps(dados_receita_procedimento),
-        dados_desempenho_profissional=json.dumps(dados_desempenho_profissional)
+        dados_desempenho_profissional=json.dumps(dados_desempenho_profissional),
+        pacientes_pei_progress=pacientes_pei_progress # NOVO: Passando dados de progresso de PEI
     )
+
+# NOVO: Rota para a página de busca de PEIs
+@app.route('/busca_peis', endpoint='busca_peis')
+@login_required
+def busca_peis():
+    db_instance = get_db()
+    clinica_id = session['clinica_id']
+    pacientes_lista = []
+
+    try:
+        # Busca todos os pacientes para preencher o dropdown
+        pacientes_docs = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').order_by('nome').stream()
+        for doc in pacientes_docs:
+            paciente_data = doc.to_dict()
+            if paciente_data:
+                paciente_data['id'] = doc.id
+                # Formata a data de nascimento para exibição na tabela
+                if paciente_data.get('data_nascimento') and isinstance(paciente_data['data_nascimento'], datetime.date):
+                    paciente_data['data_nascimento_fmt'] = paciente_data['data_nascimento'].strftime('%d/%m/%Y')
+                elif isinstance(paciente_data.get('data_nascimento'), datetime.datetime):
+                    paciente_data['data_nascimento_fmt'] = paciente_data['data_nascimento'].date().strftime('%d/%m/%Y')
+                else:
+                    paciente_data['data_nascimento_fmt'] = 'N/A'
+                pacientes_lista.append(paciente_data)
+    except Exception as e:
+        flash(f'Erro ao carregar pacientes para busca de PEIs: {e}', 'danger')
+        print(f"Erro busca_peis: {e}")
+
+    return render_template('busca_peis.html', pacientes=pacientes_lista, current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
+
 
 # Chamar as funções para registrar as rotas diretamente no app
 register_users_routes(app)
