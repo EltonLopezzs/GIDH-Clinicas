@@ -1985,6 +1985,27 @@
                                     <div class="paciente-card-fields single">
                                         <div class="paciente-field"><label for="steps-convenio_id">Convênio</label><select id="steps-convenio_id" name="convenio_id"><option value="">Nenhum / Particular</option></select></div>
                                         <div class="paciente-field"><label for="steps-observacoes">Observações Gerais</label><textarea id="steps-observacoes" name="observacoes" rows="3" placeholder="Informações relevantes sobre o paciente, alergias, etc."></textarea></div>
+                                        
+                                        <!-- Novos campos para Responsável 1 -->
+                                        <div class="paciente-field">
+                                            <label for="steps-responsavel1_nome">Nome do Responsável 1 (Opcional)</label>
+                                            <input type="text" id="steps-responsavel1_nome" name="responsavel1_nome" placeholder="Nome completo do responsável 1">
+                                        </div>
+                                        <div class="paciente-field">
+                                            <label for="steps-responsavel1_telefone">Telefone do Responsável 1 (Opcional)</label>
+                                            <input type="tel" id="steps-responsavel1_telefone" name="responsavel1_telefone" placeholder="(XX) XXXXX-XXXX">
+                                        </div>
+
+                                        <!-- Novos campos para Responsável 2 -->
+                                        <div class="paciente-field">
+                                            <label for="steps-responsavel2_nome">Nome do Responsável 2 (Opcional)</label>
+                                            <input type="text" id="steps-responsavel2_nome" name="responsavel2_nome" placeholder="Nome completo do responsável 2">
+                                        </div>
+                                        <div class="paciente-field">
+                                            <label for="steps-responsavel2_telefone">Telefone do Responsável 2 (Opcional)</label>
+                                            <input type="tel" id="steps-responsavel2_telefone" name="responsavel2_telefone" placeholder="(XX) XXXXX-XXXX">
+                                        </div>
+
                                     </div>
                                 </div>
                                 <div class="paciente-actions paciente-actions-sticky" style="justify-content:space-between; gap:1rem; margin-top:2rem;">
@@ -2214,6 +2235,7 @@
 
             // Dados de pacientes passados pelo Jinja2
             const allPatients = {{ pacientes | tojson | safe }};
+            const allConvenios = {{ convenios | tojson | safe }}; // Dados de convênios
             let filteredPatients = []; // Lista de pacientes após a filtragem
 
             let currentPage = 1;
@@ -2337,7 +2359,13 @@
                     const matchesName = paciente.nome && paciente.nome.toLowerCase().includes(lowerCaseQuery);
                     const matchesPhone = paciente.contato_telefone && paciente.contato_telefone.toLowerCase().includes(lowerCaseQuery);
                     const matchesCpf = paciente.cpf && paciente.cpf.toLowerCase().includes(lowerCaseQuery);
-                    return matchesName || matchesPhone || matchesCpf;
+                    // Adicionado busca por responsáveis
+                    const matchesResponsavel1Name = paciente.responsavel1_nome && paciente.responsavel1_nome.toLowerCase().includes(lowerCaseQuery);
+                    const matchesResponsavel1Phone = paciente.responsavel1_telefone && paciente.responsavel1_telefone.toLowerCase().includes(lowerCaseQuery);
+                    const matchesResponsavel2Name = paciente.responsavel2_nome && paciente.responsavel2_nome.toLowerCase().includes(lowerCaseQuery);
+                    const matchesResponsavel2Phone = paciente.responsavel2_telefone && paciente.responsavel2_telefone.toLowerCase().includes(lowerCaseQuery);
+
+                    return matchesName || matchesPhone || matchesCpf || matchesResponsavel1Name || matchesResponsavel1Phone || matchesResponsavel2Name || matchesResponsavel2Phone;
                 });
             }
 
@@ -2470,7 +2498,7 @@
                                         <i class="fas fa-child-reaching"></i>
                                         Ver PEI
                                     </a>
-                                    ${paciente.contato_telefone || paciente.contato_email ? `
+                                    ${paciente.contato_telefone || paciente.contato_email || paciente.responsavel1_telefone || paciente.responsavel2_telefone ? `
                                         <div class="dropdown-divider"></div>
                                         <div class="dropdown-section-label">
                                             <i class="fas fa-address-book"></i> Contatos
@@ -2484,6 +2512,16 @@
                                         <button type="button" class="dropdown-item" onclick="makePhoneCall('${paciente.contato_telefone}')">
                                             <i class="fas fa-phone"></i>
                                             ${formatPhone(paciente.contato_telefone)}
+                                        </button>
+                                    ` : ''}
+                                    ${paciente.responsavel1_nome && paciente.responsavel1_telefone ? `
+                                        <button type="button" class="dropdown-item" onclick="callPatient('${paciente.responsavel1_telefone}')">
+                                            <i class="fas fa-user-shield"></i> Resp. 1: ${paciente.responsavel1_nome} (${formatPhone(paciente.responsavel1_telefone)})
+                                        </button>
+                                    ` : ''}
+                                    ${paciente.responsavel2_nome && paciente.responsavel2_telefone ? `
+                                        <button type="button" class="dropdown-item" onclick="callPatient('${paciente.responsavel2_telefone}')">
+                                            <i class="fas fa-user-shield"></i> Resp. 2: ${paciente.responsavel2_nome} (${formatPhone(paciente.responsavel2_telefone)})
                                         </button>
                                     ` : ''}
                                     ${paciente.contato_email ? `
@@ -2879,11 +2917,22 @@
                 const steps = modal.querySelectorAll('.paciente-step');
                 const sections = modal.querySelectorAll('.paciente-card-section');
                 const form = document.getElementById('steps-patient-form');
-                
+                const convenioSelect = document.getElementById('steps-convenio_id');
+
                 if (!form) {
                     return;
                 }
                 
+                // Limpar e popular o select de convênios
+                convenioSelect.innerHTML = '<option value="">Nenhum / Particular</option>';
+                allConvenios.forEach(convenio => {
+                    const option = document.createElement('option');
+                    option.value = convenio.id;
+                    option.textContent = convenio.nome;
+                    convenioSelect.appendChild(option);
+                });
+
+
                 // Configurar navegação dos steps TODA VEZ que a modal for aberta
                 function setupStepsForThisModal() {
                     let currentStep = 0;
@@ -3005,6 +3054,11 @@
                         form.elements['complemento'].value = paciente.endereco?.complemento || '';
                         form.elements['convenio_id'].value = paciente.convenio_id || '';
                         form.elements['observacoes'].value = paciente.observacoes || '';
+                        // Preencher novos campos de responsável
+                        form.elements['responsavel1_nome'].value = paciente.responsavel1_nome || '';
+                        form.elements['responsavel1_telefone'].value = paciente.responsavel1_telefone || '';
+                        form.elements['responsavel2_nome'].value = paciente.responsavel2_nome || '';
+                        form.elements['responsavel2_telefone'].value = paciente.responsavel2_telefone || '';
                     }
                 } else {
                     form.action = "{{ url_for('adicionar_paciente') }}";
@@ -3380,6 +3434,40 @@
                     }
                 });
             }
+
+            // Máscara para telefone dos responsáveis
+            const responsavel1TelefoneInput = document.getElementById('steps-responsavel1_telefone');
+            const responsavel2TelefoneInput = document.getElementById('steps-responsavel2_telefone');
+
+            function applyPhoneMask(input) {
+                if (!input) return;
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 11) {
+                        value = value.slice(0, 11);
+                    }
+                    if (value.length === 11) {
+                        value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+                    } else if (value.length === 10) {
+                        value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+                    } else if (value.length > 5) {
+                        value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+                    } else if (value.length > 2) {
+                        value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+                    }
+                    e.target.value = value;
+                });
+                input.addEventListener('keypress', function(e) {
+                    if (!/[0-9]/.test(e.key) && 
+                        !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+
+            applyPhoneMask(responsavel1TelefoneInput);
+            applyPhoneMask(responsavel2TelefoneInput);
+
 
             // Busca CEP
             if (cepInput) {

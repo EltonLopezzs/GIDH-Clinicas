@@ -20,10 +20,14 @@ def register_patients_routes(app):
         pacientes_lista = []
         
         convenios_dict = {}
+        convenios_lista = [] # Inicializa a lista de convênios para passar ao template
         try:
             convenios_docs = convenios_ref.stream()
             for doc in convenios_docs:
-                convenios_dict[doc.id] = doc.to_dict().get('nome', 'Convênio Desconhecido')
+                conv_data = doc.to_dict()
+                if conv_data:
+                    convenios_dict[doc.id] = conv_data.get('nome', 'Convênio Desconhecido')
+                    convenios_lista.append({'id': doc.id, 'nome': conv_data.get('nome', doc.id)}) # Adiciona à lista
         except Exception as e:
             print(f"Erro ao carregar convênios para pacientes: {e}")
             flash('Erro ao carregar informações de convênios.', 'danger')
@@ -34,15 +38,32 @@ def register_patients_routes(app):
             query = pacientes_ref.order_by('nome')
 
             if search_query:
-                query_nome = pacientes_ref.where(filter=FieldFilter('nome', '>=', search_query))\
+                # Busca por nome do paciente
+                query_nome_paciente = pacientes_ref.where(filter=FieldFilter('nome', '>=', search_query))\
                                              .where(filter=FieldFilter('nome', '<=', search_query + '\uf8ff'))
-                query_telefone = pacientes_ref.order_by('contato_telefone')\
+                # Busca por telefone do paciente
+                query_telefone_paciente = pacientes_ref.order_by('contato_telefone')\
                                              .where(filter=FieldFilter('contato_telefone', '>=', search_query))\
                                              .where(filter=FieldFilter('contato_telefone', '<=', search_query + '\uf8ff'))
+                # Busca por nome do responsável 1
+                query_responsavel1_nome = pacientes_ref.where(filter=FieldFilter('responsavel1_nome', '>=', search_query))\
+                                             .where(filter=FieldFilter('responsavel1_nome', '<=', search_query + '\uf8ff'))
+                # Busca por telefone do responsável 1
+                query_responsavel1_telefone = pacientes_ref.order_by('responsavel1_telefone')\
+                                             .where(filter=FieldFilter('responsavel1_telefone', '>=', search_query))\
+                                             .where(filter=FieldFilter('responsavel1_telefone', '<=', search_query + '\uf8ff'))
+                # Busca por nome do responsável 2
+                query_responsavel2_nome = pacientes_ref.where(filter=FieldFilter('responsavel2_nome', '>=', search_query))\
+                                             .where(filter=FieldFilter('responsavel2_nome', '<=', search_query + '\uf8ff'))
+                # Busca por telefone do responsável 2
+                query_responsavel2_telefone = pacientes_ref.order_by('responsavel2_telefone')\
+                                             .where(filter=FieldFilter('responsavel2_telefone', '>=', search_query))\
+                                             .where(filter=FieldFilter('responsavel2_telefone', '<=', search_query + '\uf8ff'))
                 
                 pacientes_set = set()
                 
-                for doc in query_nome.stream():
+                # Adiciona resultados de todas as consultas ao set
+                for doc in query_nome_paciente.stream():
                     paciente_data = doc.to_dict()
                     if paciente_data:
                         paciente_data['id'] = doc.id
@@ -52,7 +73,47 @@ def register_patients_routes(app):
                             paciente_data['convenio_nome'] = 'Particular'
                         pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
                 
-                for doc in query_telefone.stream():
+                for doc in query_telefone_paciente.stream():
+                    paciente_data = doc.to_dict()
+                    if paciente_data:
+                        paciente_data['id'] = doc.id
+                        if paciente_data.get('convenio_id') and paciente_data['convenio_id'] in convenios_dict:
+                            paciente_data['convenio_nome'] = convenios_dict[paciente_data['convenio_id']]
+                        else:
+                            paciente_data['convenio_nome'] = 'Particular'
+                        pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
+
+                for doc in query_responsavel1_nome.stream():
+                    paciente_data = doc.to_dict()
+                    if paciente_data:
+                        paciente_data['id'] = doc.id
+                        if paciente_data.get('convenio_id') and paciente_data['convenio_id'] in convenios_dict:
+                            paciente_data['convenio_nome'] = convenios_dict[paciente_data['convenio_id']]
+                        else:
+                            paciente_data['convenio_nome'] = 'Particular'
+                        pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
+
+                for doc in query_responsavel1_telefone.stream():
+                    paciente_data = doc.to_dict()
+                    if paciente_data:
+                        paciente_data['id'] = doc.id
+                        if paciente_data.get('convenio_id') and paciente_data['convenio_id'] in convenios_dict:
+                            paciente_data['convenio_nome'] = convenios_dict[paciente_data['convenio_id']]
+                        else:
+                            paciente_data['convenio_nome'] = 'Particular'
+                        pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
+
+                for doc in query_responsavel2_nome.stream():
+                    paciente_data = doc.to_dict()
+                    if paciente_data:
+                        paciente_data['id'] = doc.id
+                        if paciente_data.get('convenio_id') and paciente_data['convenio_id'] in convenios_dict:
+                            paciente_data['convenio_nome'] = convenios_dict[paciente_data['convenio_id']]
+                        else:
+                            paciente_data['convenio_nome'] = 'Particular'
+                        pacientes_set.add(json.dumps(paciente_data, sort_keys=True))
+
+                for doc in query_responsavel2_telefone.stream():
                     paciente_data = doc.to_dict()
                     if paciente_data:
                         paciente_data['id'] = doc.id
@@ -87,7 +148,7 @@ def register_patients_routes(app):
             'pendente': {'count': 0, 'total_valor': 0.0}
         }
 
-        return render_template('pacientes.html', pacientes=pacientes_lista, search_query=search_query)
+        return render_template('pacientes.html', pacientes=pacientes_lista, search_query=search_query, convenios=convenios_lista)
 
     @app.route('/pacientes/novo', methods=['GET', 'POST'], endpoint='adicionar_paciente')
     @login_required
@@ -127,6 +188,13 @@ def register_patients_routes(app):
             cidade = request.form.get('cidade', '').strip()
             estado = request.form.get('estado', '').strip()
 
+            # Novos campos de responsável
+            responsavel1_nome = request.form.get('responsavel1_nome', '').strip()
+            responsavel1_telefone = request.form.get('responsavel1_telefone', '').strip()
+            responsavel2_nome = request.form.get('responsavel2_nome', '').strip()
+            responsavel2_telefone = request.form.get('responsavel2_telefone', '').strip()
+
+
             if not nome:
                 flash('O nome do paciente é obrigatório.', 'danger')
                 return render_template('paciente_form.html', paciente=request.form, action_url=url_for('adicionar_paciente'), convenios=convenios_lista)
@@ -159,6 +227,10 @@ def register_patients_routes(app):
                         'cidade': cidade if cidade else None,
                         'estado': estado if estado else None,
                     },
+                    'responsavel1_nome': responsavel1_nome if responsavel1_nome else None,
+                    'responsavel1_telefone': responsavel1_telefone if responsavel1_telefone else None,
+                    'responsavel2_nome': responsavel2_nome if responsavel2_nome else None,
+                    'responsavel2_telefone': responsavel2_telefone if responsavel2_telefone else None,
                     'data_cadastro': firestore.SERVER_TIMESTAMP
                 }
                 
@@ -216,6 +288,12 @@ def register_patients_routes(app):
             cidade = request.form.get('cidade', '').strip()
             estado = request.form.get('estado', '').strip()
 
+            # Novos campos de responsável
+            responsavel1_nome = request.form.get('responsavel1_nome', '').strip()
+            responsavel1_telefone = request.form.get('responsavel1_telefone', '').strip()
+            responsavel2_nome = request.form.get('responsavel2_nome', '').strip()
+            responsavel2_telefone = request.form.get('responsavel2_telefone', '').strip()
+
             if not nome:
                 flash('O nome do paciente é obrigatório.', 'danger')
                 return render_template('paciente_form.html', paciente=request.form, action_url=url_for('editar_paciente', paciente_doc_id=paciente_doc_id), convenios=convenios_lista)
@@ -248,6 +326,10 @@ def register_patients_routes(app):
                         'cidade': cidade if cidade else None,
                         'estado': estado if estado else None,
                     },
+                    'responsavel1_nome': responsavel1_nome if responsavel1_nome else None,
+                    'responsavel1_telefone': responsavel1_telefone if responsavel1_telefone else None,
+                    'responsavel2_nome': responsavel2_nome if responsavel2_nome else None,
+                    'responsavel2_telefone': responsavel2_telefone if responsavel2_telefone else None,
                     'atualizado_em': firestore.SERVER_TIMESTAMP
                 }
                 
