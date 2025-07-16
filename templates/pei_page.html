@@ -1195,7 +1195,7 @@
         .professionals-toggle:hover {
             background: var(--primary-dark);
             transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .toggle-text {
@@ -2382,37 +2382,6 @@
             color: var(--danger);
         }
 
-        .btn-finalize-goal,
-        .btn-delete-goal {
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            border: 1px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        /* .btn-finalize-goal {
-            background: var(--success);
-            color: white;
-        } */
-
-        /* .btn-finalize-goal:hover {
-            background: var(--success-dark);
-        } */
-
-        /* .btn-delete-goal {
-            background: transparent;
-            color: var(--danger);
-            border-color: var(--danger);
-        } */
-
-        /* .btn-delete-goal:hover {
-            background: var(--danger);
-            color: white;
-        } */
-
         .btn-add-target {
             padding: 0.5rem 1rem;
             background: var(--primary);
@@ -2802,6 +2771,70 @@
             font-size: 2rem;
             color: var(--muted);
         }
+
+        /* New styles for aid selection */
+        .aid-selection-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .aid-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            background: var(--bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .aid-item:hover {
+            background: color-mix(in srgb, var(--primary) 5%, var(--bg));
+            border-color: var(--primary);
+        }
+
+        .aid-item input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .aid-item label {
+            flex-grow: 1;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            margin-bottom: 0; /* Override default label margin */
+        }
+
+        .aid-item input[type="number"] {
+            width: 80px; /* Adjust width as needed */
+            padding: 0.4rem 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--card);
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .aid-item input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+        }
+
+        .aid-item input[type="number"]:disabled {
+            background-color: var(--bg);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body>
@@ -2990,6 +3023,21 @@
                             <button type="button" class="btn btn-secondary btn-sm add-target-button-modal mt-3">
                                 <i class="fas fa-plus mr-2"></i> Adicionar Outro Alvo
                             </button>
+                        </div>
+
+                        <!-- Nova seção para seleção de Ajudas -->
+                        <div class="form-group">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ajudas Atreladas aos Alvos</label>
+                            <div id="aid-selection-container" class="aid-selection-container">
+                                {% for aid in available_aids %}
+                                <div class="aid-item">
+                                    <input type="checkbox" id="aid_selected_{{ aid.sigla }}" name="aid_selected_{{ aid.sigla }}" data-aid-sigla="{{ aid.sigla }}">
+                                    <label for="aid_selected_{{ aid.sigla }}">{{ aid.sigla }} - {{ aid.description }}</label>
+                                    <input type="number" id="aid_quant_max_{{ aid.sigla }}" name="aid_quant_max_{{ aid.sigla }}" placeholder="Quant. Máx" min="0" disabled>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Selecione as ajudas que serão associadas a cada alvo desta meta e defina a quantidade máxima para cada uma.</p>
                         </div>
                     </div>
                 </div>
@@ -3202,6 +3250,7 @@
         // Variáveis globais para dados, vindos do Jinja2
         let allPeisData = {{ peis | tojson | safe }} || []; // Garante que seja um array, mesmo que vazio
         let currentlyOpenPeiId = null; // Rastreia o PEI aberto no modal
+        const AVAILABLE_AIDS = {{ available_aids | tojson | safe }}; // Ajudas disponíveis do backend
 
         const IS_ADMIN = {{ is_admin | tojson }};
         const IS_PROFESSIONAL = {{ is_professional | tojson }};
@@ -3439,6 +3488,17 @@
                                 </button>
                             </div>
                         `;
+                        // Reinicia a seleção de ajudas
+                        document.querySelectorAll('#aid-selection-container input[type="checkbox"]').forEach(checkbox => {
+                            checkbox.checked = false;
+                            const sigla = checkbox.dataset.aidSigla;
+                            const quantMaxInput = document.getElementById(`aid_quant_max_${sigla}`);
+                            if (quantMaxInput) {
+                                quantMaxInput.value = '';
+                                quantMaxInput.disabled = true;
+                            }
+                        });
+
                         document.getElementById('addGoalModal').classList.add('active'); // Abre o modal
                         document.body.style.overflow = 'hidden'; // Impede o scroll do body
                         return;
@@ -3484,6 +3544,20 @@
                         container.querySelectorAll('.btn-remove-target').forEach(btn => {
                             btn.style.display = container.children.length > 1 ? 'block' : 'none';
                         });
+                        return;
+                    }
+
+                    // Lógica para habilitar/desabilitar input de quant_max
+                    const aidCheckbox = target.closest('.aid-item input[type="checkbox"]');
+                    if (aidCheckbox) {
+                        const sigla = aidCheckbox.dataset.aidSigla;
+                        const quantMaxInput = document.getElementById(`aid_quant_max_${sigla}`);
+                        if (quantMaxInput) {
+                            quantMaxInput.disabled = !aidCheckbox.checked;
+                            if (!aidCheckbox.checked) {
+                                quantMaxInput.value = ''; // Limpa o valor se desmarcado
+                            }
+                        }
                         return;
                     }
 
@@ -3735,7 +3809,7 @@
 
                     // Botão para imprimir todos os PEIs
                     const printAllPeisButton = target.closest('#printAllPeisBtn');
-                    if (printAllPeiButton) {
+                    if (printAllPeisButton) {
                         generatePdfForAllPeis(allPeisData);
                         return;
                     }
@@ -3743,13 +3817,13 @@
                 
                 // Funções AJAX para PEI/Metas/Alvos
                 // Adiciona um novo alvo a uma meta existente dentro de um PEI
-                async function addTargetToGoal(peiId, goalId, targetDescription) {
+                async function addTargetToGoal(peiId, goalId, targetDescription, selectedAids) {
                     showLoading();
                     try {
                         const response = await fetch(`/pacientes/${PACIENTE_DOC_ID}/peis/add_target_to_goal`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_description: targetDescription })
+                            body: JSON.stringify({ pei_id: peiId, goal_id: goalId, target_description: targetDescription, selected_aids: selectedAids })
                         });
 
                         const contentType = response.headers.get('content-type');
@@ -4239,6 +4313,7 @@
                                 countSpan.textContent = hiddenProfs.length;
                             }
                             professionalsToggleButton.style.display = 'inline-flex';
+ 
                             
                             // Remover listeners anteriores e adicionar novo
                             const newToggleButton = professionalsToggleButton.cloneNode(true);
