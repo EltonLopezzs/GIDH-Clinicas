@@ -1,7 +1,6 @@
-import datetime # Alterado para importar datetime diretamente
+import datetime
 import json
 import os
-from functools import wraps
 
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth_admin
@@ -12,10 +11,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from collections import Counter, defaultdict # Importar defaultdict
 
 # Importar utils e as funções de registro de rotas dos módulos de blueprint
-# Assumindo que 'utils.py' existe e contém 'set_db', 'get_db', 'login_required', 'admin_required', 'SAO_PAULO_TZ', 'parse_date_input', 'convert_doc_to_dict'
 from utils import set_db, get_db, login_required, admin_required, SAO_PAULO_TZ, parse_date_input, convert_doc_to_dict
-
-# Importar as funções de registro de rotas de cada blueprint
 from blueprints.users import register_users_routes
 from blueprints.professionals import register_professionals_routes
 from blueprints.patients import register_patients_routes
@@ -26,28 +22,26 @@ from blueprints.appointments import register_appointments_routes
 from blueprints.medical_records import register_medical_records_routes
 from blueprints.estoque import register_estoque_routes # Importar o blueprint de Estoque
 from blueprints.contas_a_pagar import register_contas_a_pagar_routes # Importar o blueprint de Contas a Pagar
-from blueprints.peis import peis_bp # Importar o blueprint de PEIs (mantido como blueprint direto)
+from blueprints.peis import peis_bp # Importar o blueprint de PEIs
 from blueprints.patrimonio import register_patrimonio_routes # NOVO: Importar o blueprint de Patrimônio
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24) # Usando os.urandom para gerar uma chave secreta forte
+app.secret_key = os.urandom(24)
 CORS(app)
 
 _db_client_instance = None
 try:
-    # Tenta obter a configuração do Firebase de uma variável de ambiente (usada no ambiente Canvas)
     firebase_config_str = os.environ.get('__firebase_config')
     if firebase_config_str:
         firebase_config_dict = json.loads(firebase_config_str)
         cred = credentials.Certificate(firebase_config_dict)
-        if not firebase_admin._apps: # Verifica se o app Firebase já foi inicializado
+        if not firebase_admin._apps:
             firebase_admin.initialize_app(cred)
             print("🔥 Firebase Admin SDK inicializado usando __firebase_config!")
         else:
             print("🔥 Firebase Admin SDK já foi inicializado.")
         _db_client_instance = firestore.client()
     else:
-        # Fallback para serviceAccountKey.json para desenvolvimento local
         cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
         if os.path.exists(cred_path):
             cred = credentials.Certificate(cred_path)
@@ -62,25 +56,17 @@ try:
 except Exception as e:
     print(f"🚨 ERRO CRÍTICO ao inicializar o Firebase Admin SDK: {e}")
 
-# Define a instância do Firestore para ser acessível globalmente via utils
 if _db_client_instance:
     set_db(_db_client_instance)
 
-# --- Rotas de Autenticação ---
-
 @app.route('/login', methods=['GET'])
 def login_page():
-    """Renderiza a página de login."""
     if 'logged_in' in session:
-        return redirect(url_for('index')) # Redireciona para o dashboard se já logado
+        return redirect(url_for('index'))
     return render_template('login.html')
 
 @app.route('/session-login', methods=['POST'])
 def session_login():
-    """
-    Processa o ID Token enviado do frontend para estabelecer a sessão do servidor.
-    Isso é uma abordagem mais segura para autenticação em Flask com Firebase.
-    """
     db_instance = get_db()
     if not db_instance:
         return jsonify({"success": False, "message": "Erro crítico do servidor (DB não inicializado)."}), 500
@@ -90,29 +76,25 @@ def session_login():
         return jsonify({"success": False, "message": "ID Token não fornecido."}), 400
 
     try:
-        # Verifica o ID Token com o Firebase Admin SDK
         decoded_token = firebase_auth_admin.verify_id_token(id_token)
         uid_from_token = decoded_token['uid']
         email = decoded_token.get('email', '')
 
-        # Busca o documento do usuário na coleção 'User' para obter a role e clinica_id
         mapeamento_ref = db_instance.collection('User').document(uid_from_token.strip())
         mapeamento_doc = mapeamento_ref.get()
 
         if mapeamento_doc.exists:
             mapeamento_data = mapeamento_doc.to_dict()
-            # Valida se os dados essenciais estão presentes
             if not mapeamento_data or 'clinica_id' not in mapeamento_data or 'role' not in mapeamento_data:
                 return jsonify({"success": False, "message": "Configuração de usuário incompleta. Entre em contato com o administrador."}), 500
 
-            # Define as variáveis de sessão
             session['logged_in'] = True
             session['user_uid'] = uid_from_token
             session['user_email'] = email
             session['clinica_id'] = mapeamento_data['clinica_id']
             session['clinica_nome_display'] = mapeamento_data.get('nome_clinica_display', 'Clínica On')
             session['user_role'] = mapeamento_data['role']
-            session['user_name'] = mapeamento_data.get('nome_completo', email) # Pega o nome completo se existir, senão usa o email
+            session['user_name'] = mapeamento_data.get('nome_completo', email)
 
             print(f"Usuário {email} logado com sucesso. Função: {session['user_role']}")
             return jsonify({"success": True, "message": "Login bem-sucedido!"})
@@ -131,34 +113,25 @@ def session_login():
 
 @app.route('/setup-mapeamento-admin', methods=['GET', 'POST'])
 def setup_mapeamento_admin():
-    """
-    Rota para configurar manualmente a associação de um UID de usuário do Firebase Auth
-    a uma clínica e uma role no Firestore. Útil para o setup inicial de administradores.
-    """
     db_instance = get_db()
-    if not db_instance:
-        return "Firebase não inicializado. Verifique a configuração do servidor.", 500
-
+    if not db_instance: return "Firebase não inicializado", 500
     if request.method == 'POST':
         user_uid = request.form['user_uid'].strip()
         email_para_referencia = request.form['email_para_referencia'].strip().lower()
         clinica_id_associada = request.form['clinica_id_associada'].strip()
         nome_clinica_display = request.form['nome_clinica_display'].strip()
-        user_role = request.form.get('user_role', 'medico').strip() # Padrão para 'medico'
+        user_role = request.form.get('user_role', 'medico').strip()
 
         if not all([user_uid, email_para_referencia, clinica_id_associada, nome_clinica_display, user_role]):
             flash("Todos os campos são obrigatórios.", "danger")
         else:
             try:
-                # Cria ou verifica a existência da clínica
                 clinica_ref = db_instance.collection('clinicas').document(clinica_id_associada)
                 if not clinica_ref.get().exists:
                     clinica_ref.set({
                         'nome_oficial': nome_clinica_display,
                         'criada_em_dashboard_setup': firestore.SERVER_TIMESTAMP
                     })
-                
-                # Associa o UID do usuário à clínica e role
                 db_instance.collection('User').document(user_uid).set({
                     'email': email_para_referencia,
                     'clinica_id': clinica_id_associada,
@@ -172,7 +145,6 @@ def setup_mapeamento_admin():
                 print(f"Erro em setup_mapeamento_admin: {e}")
         return redirect(url_for('setup_mapeamento_admin'))
 
-    # HTML inline para o formulário de setup
     return render_template_string("""
         <!DOCTYPE html>
         <html>
@@ -256,19 +228,15 @@ def setup_mapeamento_admin():
         </body></html>
     """)
 
+
 @app.route('/logout', methods=['POST'])
 def logout():
-    """Limpa a sessão do usuário e retorna uma resposta JSON."""
     session.clear()
     return jsonify({"success": True, "message": "Sessão do servidor limpa."})
 
 @app.route('/', endpoint='index')
 @login_required
 def index():
-    """
-    Rota principal do dashboard. Coleta e organiza os dados para exibição,
-    com lógica de filtragem por profissional se o usuário não for admin.
-    """
     db_instance = get_db()
     try:
         clinica_id = session['clinica_id']
@@ -290,89 +258,77 @@ def index():
 
             if not profissional_id_logado:
                 flash("Sua conta de usuário não está corretamente associada a um perfil de profissional. Contate o administrador.", "warning")
-                # Retorna um dashboard vazio para evitar erros, mas com a mensagem de aviso
-                return render_template('dashboard.html', kpi={}, proximos_agendamentos=[],
-                                       dados_atendimento_vs_receita=json.dumps({'labels':[], 'atendimentos':[], 'receitas':[]}),
-                                       dados_receita_procedimento=json.dumps({'labels':[], 'valores':[]}),
-                                       dados_desempenho_profissional=json.dumps({'labels':[], 'valores':[]}),
-                                       pacientes_pei_progress=[], pacientes_pei_mental_map_data=json.dumps({}))
         except Exception as e:
             flash(f"Erro ao buscar informações do profissional: {e}", "danger")
-            return render_template('dashboard.html', kpi={}, proximos_agendamentos=[],
-                                   dados_atendimento_vs_receita=json.dumps({'labels':[], 'atendimentos':[], 'receitas':[]}),
-                                   dados_receita_procedimento=json.dumps({'labels':[], 'valores':[]}),
-                                   dados_desempenho_profissional=json.dumps({'labels':[], 'valores':[]}),
-                                   pacientes_pei_progress=[], pacientes_pei_mental_map_data=json.dumps({}))
+            return render_template('dashboard.html', kpi={}, proximos_agendamentos=[])
 
-    # Referências das coleções específicas da clínica
+    # Referências das coleções
     agendamentos_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos')
     pacientes_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')
-    peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
+    peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis') # Referência para PEIs
 
     current_year = datetime.datetime.now(SAO_PAULO_TZ).year
     hoje_dt = datetime.datetime.now(SAO_PAULO_TZ)
     mes_atual_nome = hoje_dt.strftime('%B').capitalize()
 
-    # --- Coleta de Dados para KPIs ---
-    kpi_cards = {
-        'total_pacientes': 0,
-        'total_peis': 0,
-        'peis_finalizados': 0,
-        'peis_em_progresso': 0,
-        'total_agendamentos': 0,
-        'total_atendimentos_concluidos': 0,
-    }
+    # --- Novas contagens para o dashboard ---
+    total_peis = 0
+    peis_finalizados = 0
+    peis_em_progresso = 0
+    total_atendimentos_concluidos = 0 # Contagem de atendimentos com status 'concluido'
+    total_agendamentos = 0 # Contagem de todos os agendamentos
+    total_pacientes = 0
 
     try:
         # Contagem de Pacientes
-        # Usando .count().get()[0][0].value para contagens agregadas
         total_pacientes = pacientes_ref.count().get()[0][0].value
-        kpi_cards['total_pacientes'] = total_pacientes
     except Exception as e:
         print(f"Erro ao contar pacientes: {e}")
         flash("Erro ao carregar contagem de pacientes.", "danger")
 
     try:
-        # Contagem de PEIs e seus status
-        # Para contagens de status, ainda é necessário iterar ou usar agregações mais complexas se disponíveis
-        peis_query = peis_ref
-        if user_role != 'admin' and profissional_id_logado:
-            peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', profissional_id_logado))
-
-        peis_docs_kpi = peis_query.stream()
-        for doc in peis_docs_kpi:
-            kpi_cards['total_peis'] += 1
+        # Contagem de PEIs
+        peis_docs = peis_ref.stream()
+        for doc in peis_docs:
+            total_peis += 1
             pei_data = doc.to_dict()
             if pei_data.get('status') == 'finalizado':
-                kpi_cards['peis_finalizados'] += 1
+                peis_finalizados += 1
             elif pei_data.get('status') == 'ativo': # Assumindo 'ativo' como em progresso
-                kpi_cards['peis_em_progresso'] += 1
+                peis_em_progresso += 1
     except Exception as e:
         print(f"Erro ao contar PEIs: {e}")
         flash("Erro ao carregar contagem de PEIs.", "danger")
 
     try:
         # Contagem de Agendamentos e Atendimentos Concluídos
-        agendamentos_query_kpi = agendamentos_ref
-        if user_role != 'admin' and profissional_id_logado:
-            agendamentos_query_kpi = agendamentos_query_kpi.where(filter=FieldFilter('profissional_id', '==', profissional_id_logado))
-
-        agendamentos_docs_kpi = agendamentos_query_kpi.stream()
-        for doc in agendamentos_docs_kpi:
-            kpi_cards['total_agendamentos'] += 1
+        agendamentos_docs = agendamentos_ref.stream()
+        for doc in agendamentos_docs:
+            total_agendamentos += 1
             ag_data = doc.to_dict()
             if ag_data.get('status') == 'concluido':
-                kpi_cards['total_atendimentos_concluidos'] += 1
+                total_atendimentos_concluidos += 1
     except Exception as e:
         print(f"Erro ao contar agendamentos: {e}")
         flash("Erro ao carregar contagem de agendamentos.", "danger")
 
-    # --- Progresso dos Pacientes em PEIs e Dados para Mapa Mental ---
+
+    # Dados para os novos cards de KPI
+    kpi_cards = {
+        'total_pacientes': total_pacientes,
+        'total_peis': total_peis,
+        'peis_finalizados': peis_finalizados,
+        'peis_em_progresso': peis_em_progresso,
+        'total_agendamentos': total_agendamentos,
+        'total_atendimentos_concluidos': total_atendimentos_concluidos,
+    }
+
+    # --- PEI Progress per Patient ---
     pacientes_pei_progress = []
-    pacientes_pei_mental_map_data = {} # Para armazenar dados do gráfico de radar
+    pacientes_pei_mental_map_data = {} # NOVO: Para armazenar dados do mapa mental
 
     try:
-        # Fetch all patients (or a paginated subset if there are too many)
+        # Fetch all patients
         all_patients_docs = pacientes_ref.order_by('nome').stream()
         for patient_doc in all_patients_docs:
             patient_id = patient_doc.id
@@ -382,11 +338,11 @@ def index():
             completed_targets_patient = 0
             total_active_peis_patient = 0
             
-            # Para o mapa mental, agregaremos as tentativas por tipo de ajuda
+            # NOVO: Para o mapa mental, agregaremos as tentativas por tipo de ajuda
             aids_attempts_by_type = defaultdict(int)
             aids_counts_by_type = defaultdict(int) # Para calcular a média
 
-            # Fetch active PEIs for this patient, filtered by professional if not admin
+            # Fetch active PEIs for this patient
             patient_peis_query = peis_ref.where(
                 filter=FieldFilter('paciente_id', '==', patient_id)
             ).where(
@@ -398,14 +354,12 @@ def index():
                     filter=FieldFilter('profissionais_ids', 'array_contains', profissional_id_logado)
                 )
             elif user_role != 'admin' and not profissional_id_logado:
-                # Se não é admin e não tem profissional_id associado, este profissional não deve ver nenhum PEI
-                # Usamos uma condição que sempre retorna vazio para evitar erros
+                # Se não é admin e não tem profissional_id, não deve ver nenhum PEI
                 patient_peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', 'INVALID_ID_TO_RETURN_NONE'))
 
 
-            for pei_doc in patient_peis_query.stream():
+            for pei_doc in patient_peis_query.stream(): # Adicionado .stream()
                 total_active_peis_patient += 1
-                
                 # For each active PEI, fetch its metas
                 metas_ref = peis_ref.document(pei_doc.id).collection('metas')
                 metas_docs = metas_ref.stream()
@@ -420,13 +374,13 @@ def index():
                         if alvo_doc.to_dict().get('status') == 'finalizada':
                             completed_targets_patient += 1
                         
-                        # Coletar dados das ajudas para o mapa mental
+                        # NOVO: Coletar dados das ajudas para o mapa mental
                         ajudas_ref = alvos_ref.document(alvo_doc.id).collection('ajudas')
                         ajudas_docs = ajudas_ref.stream()
                         for ajuda_doc in ajudas_docs:
                             ajuda_data = ajuda_doc.to_dict()
                             sigla = ajuda_data.get('sigla')
-                            attempts_count = ajuda_data.get('tentativas_necessarias', 0)
+                            attempts_count = ajuda_data.get('attempts_count', 0)
                             if sigla:
                                 aids_attempts_by_type[sigla] += attempts_count
                                 aids_counts_by_type[sigla] += 1
@@ -435,13 +389,17 @@ def index():
             if total_targets_patient > 0:
                 progress_percentage = (completed_targets_patient / total_targets_patient) * 100
 
-            # Calcular a média de tentativas para cada tipo de ajuda
+            # NOVO: Calcular a média de tentativas para cada tipo de ajuda
             mental_map_data_for_patient = {}
-            all_siglas = ['AFT', 'AFP', 'AG', 'AE', 'I'] # Ordem desejada para o gráfico
-            for sigla in all_siglas:
-                total_attempts = aids_attempts_by_type[sigla]
+            for sigla, total_attempts in aids_attempts_by_type.items():
                 count = aids_counts_by_type[sigla]
                 mental_map_data_for_patient[sigla] = round(total_attempts / count, 1) if count > 0 else 0
+
+            # Garantir que todas as siglas estejam presentes, mesmo que com 0 tentativas
+            all_siglas = ['AFT', 'AFP', 'AG', 'AE', 'I']
+            for sigla in all_siglas:
+                if sigla not in mental_map_data_for_patient:
+                    mental_map_data_for_patient[sigla] = 0
 
             pacientes_pei_progress.append({
                 'id': patient_id,
@@ -458,24 +416,24 @@ def index():
         flash("Erro ao carregar progresso de PEIs por paciente.", "danger")
 
 
-    # --- Lógica para gráficos (Atendimentos Diários, Top Procedimentos, Top Profissionais) ---
+    # --- Lógica para gráficos (mantida, mas os dados de receita serão removidos no template) ---
     agendamentos_para_analise = []
     try:
-        # Busca agendamentos dos últimos 15 dias com status relevante
         query_analise = agendamentos_ref.where(
             filter=FieldFilter('status', 'in', ['confirmado', 'concluido'])
         ).where(
             filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt - datetime.timedelta(days=15)) # Últimos 15 dias
         )
 
-        if user_role != 'admin' and profissional_id_logado:
-            query_analise = query_analise.where(
-                filter=FieldFilter('profissional_id', '==', profissional_id_logado)
-            )
-        elif user_role != 'admin' and not profissional_id_logado:
-            agendamentos_para_analise = [] # Se não tem profissional_id logado, não mostra nada
+        if user_role != 'admin':
+            if profissional_id_logado:
+                query_analise = query_analise.where(
+                    filter=FieldFilter('profissional_id', '==', profissional_id_logado)
+                )
+            else:
+                agendamentos_para_analise = [] # Se não tem profissional_id logado, não mostra nada
 
-        if user_role == 'admin' or profissional_id_logado: # Garante que só executa a query se houver permissão
+        if user_role == 'admin' or profissional_id_logado:
             docs_analise = query_analise.stream()
             for doc in docs_analise:
                 ag_data = doc.to_dict()
@@ -486,50 +444,47 @@ def index():
         print(f"Erro na consulta de agendamentos para o painel: {e}")
         flash("Erro ao calcular estatísticas do painel. Verifique seus índices do Firestore.", "danger")
 
-    # Atendimentos Diários (Últimos 15 dias)
     atendimentos_por_dia = Counter()
-    receita_por_dia = defaultdict(float) # Para somar a receita por dia
-
     hoje_date = hoje_dt.date()
-    # Inicializa os últimos 15 dias com 0 atendimentos e 0 receita
     for i in range(15):
         data = hoje_date - datetime.timedelta(days=i)
         atendimentos_por_dia[data] = 0
-        receita_por_dia[data] = 0.0
 
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
         if ag_ts:
-            ag_date = ag_ts.date()
-            if (hoje_date - ag_date).days < 15:
-                atendimentos_por_dia[ag_date] += 1
-                receita_por_dia[ag_date] += float(ag.get('servico_procedimento_preco', 0.0))
+          ag_date = ag_ts.date()
+          if (hoje_date - ag_date).days < 15:
+              atendimentos_por_dia[ag_date] += 1
 
     labels_atend_receita = sorted(atendimentos_por_dia.keys())
     dados_atendimento_vs_receita = {
         "labels": [label.strftime('%d/%m') for label in labels_atend_receita],
         "atendimentos": [atendimentos_por_dia[label] for label in labels_atend_receita],
-        "receitas": [round(receita_por_dia[label], 2) for label in labels_atend_receita]
+        "receitas": [0 for _ in labels_atend_receita] # Manter a estrutura, mas com valores zerados
     }
 
-    # Gráfico de Top Procedimentos por Atendimentos (Mês Atual)
-    contagem_procedimento = Counter()
+    # Gráfico de Top Procedimentos (pode ser adaptado para contagem se preferir)
+    # Mantendo a estrutura original, mas o template pode ignorar se não houver dados de receita
+    contagem_procedimento = Counter() # Alterado para contagem
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
+        # Apenas para o mês atual, se relevante
         if ag_ts and ag_ts.month == hoje_dt.month and ag_ts.year == hoje_dt.year:
             nome_proc = ag.get('servico_procedimento_nome', 'Desconhecido')
-            contagem_procedimento[nome_proc] += 1
+            contagem_procedimento[nome_proc] += 1 # Contagem de procedimentos
 
     top_5_procedimentos = contagem_procedimento.most_common(5)
-    dados_receita_procedimento = {
+    dados_receita_procedimento = { # Renomeie se quiser, mas o template usa este nome
         "labels": [item[0] for item in top_5_procedimentos],
         "valores": [item[1] for item in top_5_procedimentos]
     }
 
-    # Gráfico de Top Profissionais por Atendimentos (Mês Atual)
+    # Gráfico de Top Profissionais por Atendimentos
     atendimentos_por_profissional = Counter()
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
+        # Apenas para o mês atual, se relevante
         if ag_ts and ag_ts.month == hoje_dt.month and ag_ts.year == hoje_dt.year:
             nome_prof = ag.get('profissional_nome', 'Desconhecido')
             atendimentos_por_profissional[nome_prof] += 1
@@ -540,14 +495,12 @@ def index():
         "valores": [item[1] for item in top_5_profissionais]
     }
 
-    # --- Próximos Agendamentos para Mobile Slider ---
     proximos_agendamentos_lista = []
     try:
-        # Busca agendamentos futuros ou de hoje com status 'confirmado'
         query_proximos = agendamentos_ref.where(
             filter=FieldFilter('status', '==', 'confirmado')
         ).where(
-            filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt.replace(hour=0, minute=0, second=0, microsecond=0)) # A partir do início do dia atual
+            filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt.replace(hour=0, minute=0, second=0))
         )
 
         if user_role != 'admin':
@@ -558,8 +511,8 @@ def index():
             else:
                 proximos_agendamentos_lista = [] # Se não tem profissional_id logado, não mostra nada
 
-        if user_role == 'admin' or profissional_id_logado: # Garante que só executa a query se houver permissão
-            docs_proximos = query_proximos.order_by('data_agendamento_ts').limit(10).stream() # Limita para mobile
+        if user_role == 'admin' or profissional_id_logado:
+            docs_proximos = query_proximos.order_by('data_agendamento_ts').limit(10).stream()
             for doc in docs_proximos:
                 ag_data = doc.to_dict()
                 if ag_data and ag_data.get('data_agendamento_ts'):
@@ -586,17 +539,13 @@ def index():
         dados_receita_procedimento=json.dumps(dados_receita_procedimento),
         dados_desempenho_profissional=json.dumps(dados_desempenho_profissional),
         pacientes_pei_progress=pacientes_pei_progress,
-        pacientes_pei_mental_map_data=json.dumps(pacientes_pei_mental_map_data)
+        pacientes_pei_mental_map_data=json.dumps(pacientes_pei_mental_map_data) # NOVO: Passando dados do mapa mental
     )
 
 # NOVO: Rota para a página de busca de PEIs
 @app.route('/busca_peis', endpoint='busca_peis')
 @login_required
 def busca_peis():
-    """
-    Renderiza a página de busca de PEIs, carregando a lista de pacientes
-    para preencher o dropdown de filtro.
-    """
     db_instance = get_db()
     clinica_id = session['clinica_id']
     pacientes_lista = []
@@ -622,12 +571,8 @@ def busca_peis():
 
     return render_template('busca_peis.html', pacientes=pacientes_lista, current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
-@app.route('/offline')
-def offline():
-    """Renderiza a página offline para PWA."""
-    return render_template('offline.html')
 
-# Chamar as funções para registrar as rotas de cada blueprint
+# Chamar as funções para registrar as rotas diretamente no app
 register_users_routes(app)
 register_professionals_routes(app)
 register_patients_routes(app)
@@ -638,9 +583,8 @@ register_appointments_routes(app)
 register_medical_records_routes(app)
 register_estoque_routes(app)
 register_contas_a_pagar_routes(app)
-app.register_blueprint(peis_bp) # PEIs é registrado como blueprint direto
+app.register_blueprint(peis_bp) 
 register_patrimonio_routes(app) 
 
 if __name__ == '__main__':
-    # Define o host e a porta para a execução do Flask, usando variáveis de ambiente se disponíveis
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
