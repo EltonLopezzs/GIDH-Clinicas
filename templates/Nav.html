@@ -1,187 +1,451 @@
 <aside class="sidebar">
+
   <div class="sidebar-inner-content">
+
     <div class="sidebar-header">
       <a href="{{ url_for('index') }}" class="logo" title="{{ session.clinica_nome_display or 'ClínicaOn' }}">
         <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
       </a>
     </div>
+
     <nav>
       <ul>
+
         <li class="{% if request.endpoint == 'index' %}active{% endif %}">
           <a href="{{ url_for('index') }}" title="Dashboard">
-            <i class="fa-solid fa-house-chimney"></i> <span>Dashboard</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-solid fa-house-chimney"></i>
+              <span>Dashboard</span>
+            </div>
           </a>
         </li>
         
-        <!-- Novo item de menu "Pacientes" com submenu -->
-        <li class="has-submenu {% if request.endpoint in ['listar_pacientes', 'buscar_prontuario', 'peis.pei_page'] %}open{% endif %}">
+        <li class="has-submenu {% if request.endpoint in ['listar_pacientes', 'buscar_prontuario', 'busca_peis'] %}open{% endif %}">
+
           <a href="#" class="submenu-toggle" title="Gerir Pacientes">
-            <i class="fa-solid fa-hospital-user"></i> <span>Gerir Pacientes</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-solid fa-hospital-user"></i>
+              <span>Gerir Pacientes</span>
+            </div>
+
             <i class="fa-solid fa-chevron-down submenu-arrow"></i>
           </a>
+
           <ul class="submenu">
-            <li class="{% if request.endpoint == 'listar_pacientes' or request.endpoint == 'peis.pei_page' %}active{% endif %}">
-              <a href="{{ url_for('listar_pacientes') }}" title="Pacientes"><span>Pacientes</span></a>
+            <li class="{% if request.endpoint == 'listar_pacientes' %}active{% endif %}">
+              <a href="{{ url_for('listar_pacientes') }}" title="Pacientes">
+                <span>Pacientes</span>
+              </a>
             </li>
+
             <li class="{% if request.endpoint == 'buscar_prontuario' %}active{% endif %}">
-              <a href="{{ url_for('buscar_prontuario') }}" title="Prontuários"><span>Prontuários</span></a>
+              <a href="{{ url_for('buscar_prontuario') }}" title="Prontuários">
+                <span>Prontuários</span>
+              </a>
             </li>
-             <li class="{% if request.endpoint == 'busca_peis' %}active{% endif %}">
-              <a href="{{ url_for('busca_peis') }}" title="Prontuários"><span>peis</span></a>
+
+            <li class="{% if request.endpoint == 'busca_peis' %}active{% endif %}">
+              <a href="{{ url_for('busca_peis') }}" title="PEI's">
+                <span>PEI's</span>
+              </a>
             </li>
-           
           </ul>
+
         </li>
-        <!-- Fim do novo item de menu "Pacientes" -->
 
         <li class="{% if request.endpoint == 'listar_agendamentos' %}active{% endif %}">
           <a href="{{ url_for('listar_agendamentos') }}" title="Agendamentos">
-            <i class="fa-regular fa-calendar-check"></i> <span>Agendamentos</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-regular fa-calendar-check"></i>
+              <span>Agendamentos</span>
+            </div>
           </a>
         </li>
+
         {% if session.user_role == 'admin' %}
         <li class="{% if request.endpoint == 'listar_profissionais' %}active{% endif %}">
           <a href="{{ url_for('listar_profissionais') }}" title="Profissionais">
-            <i class="fa-solid fa-user-doctor"></i> <span>Profissionais</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-solid fa-user-doctor"></i>
+              <span>Profissionais</span>
+            </div>
           </a>
         </li>
+
         <li class="{% if request.endpoint == 'listar_servicos_procedimentos' %}active{% endif %}">
           <a href="{{ url_for('listar_servicos_procedimentos') }}" title="Serviços/Procedimentos">
-            <i class="fa-solid fa-syringe"></i> <span>Serviços/Proc.</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-solid fa-syringe"></i>
+              <span>Serviços/Proc.</span>
+            </div>
           </a>
         </li>
+
         <li class="{% if request.endpoint == 'listar_convenios' %}active{% endif %}">
           <a href="{{ url_for('listar_convenios') }}" title="Convênios">
-            <i class="fa-solid fa-handshake"></i> <span>Convênios</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-solid fa-handshake"></i>
+              <span>Convênios</span>
+            </div>
           </a>
         </li>
+
         <li class="{% if request.endpoint == 'listar_horarios' %}active{% endif %}">
           <a href="{{ url_for('listar_horarios') }}" title="Horários">
-            <i class="fa-regular fa-clock"></i> <span>Horários</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-regular fa-clock"></i>
+              <span>Horários</span>
+            </div>
           </a>
         </li>
+
         <li class="has-submenu {% if request.endpoint in ['listar_contas_a_pagar', 'listar_estoque', 'patrimonio.listar_patrimonio'] %}open{% endif %}">
+
           <a href="#" class="submenu-toggle" title="Financeiro">
-            <i class="fa-solid fa-money-bill-wave"></i> <span>Financeiro</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-solid fa-money-bill-wave"></i>
+              <span>Financeiro</span>
+            </div>
+
             <i class="fa-solid fa-chevron-down submenu-arrow"></i>
           </a>
+
           <ul class="submenu">
             <li class="{% if request.endpoint == 'listar_contas_a_pagar' %}active{% endif %}">
-              <a href="{{ url_for('listar_contas_a_pagar') }}" title="Contas a Pagar"><span>Contas a Pagar</span></a>
+              <a href="{{ url_for('listar_contas_a_pagar') }}" title="Contas a Pagar">
+                <span>Contas a Pagar</span>
+              </a>
             </li>
+
             <li class="{% if request.endpoint == 'listar_estoque' %}active{% endif %}">
-              <a href="{{ url_for('listar_estoque') }}" title="Estoque"><span>Estoque</span></a>
+              <a href="{{ url_for('listar_estoque') }}" title="Estoque">
+                <span>Estoque</span>
+              </a>
             </li>
+
             <li class="{% if request.endpoint == 'patrimonio.listar_patrimonio' %}active{% endif %}">
-              <a href="{{ url_for('patrimonio.listar_patrimonio') }}" title="Patrimônio"><span>Patrimônio</span></a>
+              <a href="{{ url_for('patrimonio.listar_patrimonio') }}" title="Patrimônio">
+                <span>Patrimônio</span>
+              </a>
             </li>
           </ul>
+
         </li>
+
         <li class="{% if request.endpoint == 'listar_usuarios' %}active{% endif %}">
           <a href="{{ url_for('listar_usuarios') }}" title="Utilizadores">
-            <i class="fa-solid fa-users-gear"></i> <span>Utilizadores</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-solid fa-users-gear"></i>
+              <span>Utilizadores</span>
+            </div>
           </a>
         </li>
+
         <li class="{% if request.endpoint == 'listar_modelos_anamnese' %}active{% endif %}">
           <a href="{{ url_for('listar_modelos_anamnese') }}" title="Modelos Anamnese">
-            <i class="fa-regular fa-file-lines"></i> <span>Modelos Anamnese</span>
+            <div class="submenu-toggle-content">
+              <i class="fa-regular fa-file-lines"></i>
+              <span>Modelos Anamnese</span>
+            </div>
           </a>
         </li>
+
         {% endif %}
       </ul>
     </nav>
+
     <div class="sidebar-footer">
+
       <button id="theme-toggle" aria-label="Alternar tema" title="Alternar Tema">
         <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
       </button>
+
       <a href="#" id="logoutButton" title="Sair">
         <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span>
       </a>
+
     </div>
+
   </div>
 </aside>
 
 <style>
-/* Estilos da Sidebar */
-.sidebar {
-    width: 260px;
-    background: linear-gradient(180deg, var(--primary), var(--accent));
-    color: white;
-    position: fixed;
-    top: 0; left: 0; height: 100vh;
-    transition: width 0.3s ease, transform 0.3s ease;
-    z-index: 1000; display: flex; flex-direction: column;
-}
-.sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
-.sidebar-header {
-    padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
-}
-.sidebar-header .logo {
-    font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
-    display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
-}
-.sidebar-header .logo i { font-size: 1.8rem; }
-.sidebar.collapsed { width: 78px; }
-.sidebar.collapsed .sidebar-header .logo span { display: none; }
-.sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
-.sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
-.sidebar nav ul { list-style: none; padding: 0; }
-.sidebar nav ul li { margin-bottom: 0.5rem; }
-.sidebar nav ul li a {
-    color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
-    padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
-    font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
-}
-.sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
-.sidebar.collapsed nav ul li a span { display: none; }
-.sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
-.sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-.sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
-.sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
-.sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
-.sidebar-footer button, .sidebar-footer a {
-    background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
-    border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
-    transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
-    font-size: 0.95rem; text-decoration: none;
-}
-.sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-.sidebar.collapsed .sidebar-footer span { display: none; }
-.sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
 
-/* Estilos para Submenu */
+::-webkit-scrollbar {
+  background-color: var(--bg);
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border-top-right-radius: 0.3125rem;
+  border-bottom-right-radius: 0.3125rem;
+  transition: background-color 0.8s ease;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--muted);
+  border-radius: 0.3125rem;
+  transition: background-color 0.8s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  transition: background-color 0.8s ease;
+  background-color: var(--primary);
+}
+
+.sidebar {
+  background: linear-gradient(180deg, var(--primary), var(--accent));
+  color: white;
+  transition: width 0.3s ease, transform 0.3s ease;
+  z-index: 1000;
+
+  position: fixed;
+  width: 16.25rem;
+  height: 100vh;
+  top: 0;
+  left: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-inner-content {
+  padding: 0rem;
+  height: 100%;
+  overflow-y: auto;
+  
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-header {
+  padding: 0 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: 4.375rem;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-header .logo {
+  color: white;
+  font-weight: 700;
+  font-size: 1.4rem;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sidebar-header .logo i {
+  font-size: 1.8rem;
+}
+
+.sidebar.collapsed {
+  width: 4.875rem;
+}
+
+.sidebar.collapsed .sidebar-header .logo span {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-header .logo i {
+  margin-right: 0;
+}
+
+.sidebar nav {
+  flex-grow: 1;
+  margin-top: 1rem;
+  padding: 0 0.75rem;
+}
+
+.sidebar nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar nav ul li {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar nav ul li a {
+  color: #e2e8f0;
+  text-decoration: none;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* gap: 1rem; */
+}
+
+.submenu-toggle-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sidebar nav ul li a i {
+  width: 1.5rem;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.sidebar.collapsed nav ul li a span {
+  display: none;
+}
+
+.sidebar.collapsed nav ul li a {
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.sidebar nav ul li a:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.sidebar nav ul li.active a {
+  background: white;
+  color: var(--primary);
+  border-radius: 0.5rem;
+  font-weight: 600;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 1rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 1rem 0.5rem;
+}
+
+.sidebar-footer button,
+.sidebar-footer a {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #e2e8f0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sidebar-footer button:hover,
+.sidebar-footer a:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;;
+}
+
+.sidebar.collapsed .sidebar-footer span {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-footer button,
+.sidebar.collapsed .sidebar-footer a {
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+/* Estilos para Submenu (Dropdown) */
 .sidebar nav ul li.has-submenu .submenu {
-    list-style: none;
-    padding: 0;
-    margin-left: 1.5rem; /* Indent sub-menu items */
-    max-height: 0;
-    overflow: hidden; /* Important for the transition */
-    transition: max-height 0.3s ease-out;
-    background: rgba(255, 255, 255, 0.05); /* Slightly different background for sub-menu */
-    border-radius: 8px;
+  padding: 0rem;
+  max-height: 0rem;
+  list-style: none;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 0rem 0rem 0.5rem 0.5rem;
+}
+
+.sidebar nav ul li ul.submenu li.active a {
+  border-radius: 0rem;
 }
 
 .sidebar nav ul li.has-submenu.open .submenu {
-    max-height: 1000px; /* Increased to a very large value to ensure content fits */
-    overflow-y: auto; /* Add scrollbar if content exceeds max-height */
-    transition: max-height 0.5s ease-in;
+  overflow-y: hidden;
+  transition: max-height 0.5s ease-in;
+  max-height: 62.5rem;
+}
+
+.sidebar nav ul li.has-submenu.open .submenu-toggle {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 0.5rem 0.5rem 0rem 0rem;
+}
+
+.sidebar nav ul li.has-submenu.open ul.submenu li a:hover {
+  border-radius: 0rem;
+}
+
+.sidebar nav ul.submenu li {
+  margin-bottom: 0rem;
 }
 
 /* Ajustar estado colapsado para o submenu */
-.sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
-.sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
-.sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
+.sidebar.collapsed .has-submenu .submenu-toggle span {
+  display: none;
+}
+
+.sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow {
+  display: none;
+}
+
+.sidebar.collapsed .has-submenu .submenu {
+  display: none;
+}
 
 /* Responsivo para a sidebar */
 @media (max-width: 768px) {
-    .sidebar { transform: translateX(-100%); }
-    .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-    .sidebar.collapsed { transform: translateX(-100%); width: 260px; } /* Em mobile, collapsed é igual a hidden */
-    .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
-    .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
-    .sidebar.collapsed .sidebar-header .logo span { display: inline; }
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 0.25rem 0 0.9375rem rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 16.25rem;
+  }
+
+  .sidebar.collapsed nav ul li a,
+  .sidebar.collapsed .sidebar-footer button,
+  .sidebar.collapsed .sidebar-footer a {
+    justify-content: flex-start;
+  }
+
+  .sidebar.collapsed nav ul li a span,
+  .sidebar.collapsed .sidebar-footer span {
+    display: inline;
+  }
+
+  .sidebar.collapsed .sidebar-header .logo span {
+    display: inline;
+  }
 }
+
 </style>
 
 <script type="module">
@@ -197,105 +461,145 @@
     // Submenu functionality
     document.querySelectorAll('.has-submenu').forEach(item => {
       const toggle = item.querySelector('.submenu-toggle');
+
       if (toggle) { // Ensure toggle exists
         toggle.addEventListener('click', (e) => {
           e.preventDefault();
           item.classList.toggle('open');
         });
       }
+
     });
 
     function setupSidebar() {
-      if (!sidebar || !mainContent) return; // Ensure elements exist
+
+      if (!sidebar || !mainContent) return;
+      
       const updateDesktopToggleIcon = () => {
+
         if (!toggleBtnDesktop) return;
+
         const icon = toggleBtnDesktop.querySelector('i');
+
         if (sidebar.classList.contains('collapsed')) {
           icon.classList.replace('fa-bars-staggered', 'fa-bars');
         } else {
           icon.classList.replace('fa-bars', 'fa-bars-staggered');
         }
+
       };
+
       const applyInitialState = () => {
+
         if (window.innerWidth > 768) {
+
           if (localStorage.getItem('sidebarCollapsed') === 'true') {
+
             sidebar.classList.add('collapsed');
             mainContent.classList.add('collapsed');
+
           } else {
+
             sidebar.classList.remove('collapsed');
             mainContent.classList.remove('collapsed');
+
           }
         } else {
-            // On mobile, sidebar is initially hidden and expands
-            sidebar.classList.remove('open', 'collapsed'); // Ensure no conflicting classes
-            mainContent.classList.remove('collapsed'); // Main content always full width on mobile
+
+            sidebar.classList.remove('open', 'collapsed');
+            mainContent.classList.remove('collapsed');
+
         }
+
         updateDesktopToggleIcon();
+
       };
       
       toggleBtnDesktop?.addEventListener('click', () => {
+        
         sidebar.classList.toggle('collapsed');
         mainContent.classList.toggle('collapsed');
         localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+
         updateDesktopToggleIcon();
+
       });
 
       menuBtnMobile?.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent document click from closing immediately
+
+        e.stopPropagation();
         sidebar.classList.toggle('open');
+
         const icon = menuBtnMobile.querySelector('i');
         icon.classList.toggle('fa-times', sidebar.classList.contains('open'));
         icon.classList.toggle('fa-bars', !sidebar.classList.contains('open'));
+
       });
 
       document.addEventListener('click', (e) => {
-        // Close sidebar if clicked outside on mobile and it's open
+        
         if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
+          
           sidebar.classList.remove('open');
           const icon = menuBtnMobile.querySelector('i');
           icon.classList.remove('fa-times');
           icon.classList.add('fa-bars');
+
         }
       });
 
       applyInitialState();
-      window.addEventListener('resize', applyInitialState); // Reapply on resize
+      window.addEventListener('resize', applyInitialState);
     }
     
     function setupTheme() {
-        if (!themeToggle) return; // Ensure themeToggle exists
+      
+      if (!themeToggle) return;
+        
         const updateThemeIcon = (theme) => {
+            
             const icon = themeToggle.querySelector('i');
-            if (icon) { // Ensure icon exists
-                if (theme === 'dark') {
-                    icon.classList.replace('fa-sun', 'fa-moon');
-                } else {
-                    icon.classList.replace('fa-moon', 'fa-sun');
-                }
+            
+            if (icon) {
+              if (theme === 'dark') {
+                  icon.classList.replace('fa-sun', 'fa-moon');
+              } else {
+                  icon.classList.replace('fa-moon', 'fa-sun');
+              }
             }
         };
+
         const applyInitialTheme = () => {
+            
             const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             htmlEl.setAttribute('data-theme', storedTheme);
             updateThemeIcon(storedTheme);
+            
         };
+        
         themeToggle.addEventListener('click', () => {
-            const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            htmlEl.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon(newTheme);
+          
+          const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          htmlEl.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+          updateThemeIcon(newTheme);
+          
         });
+        
         applyInitialTheme();
     }
 
     function setupLogout() {
-        if (!logoutButton) return; // Ensure logoutButton exists
-        logoutButton.addEventListener('click', async (event) => {
-            event.preventDefault(); 
-            fetch("{{ url_for('logout') }}", { method: 'POST' })
-                .then(() => window.location.href = "{{ url_for('login_page') }}")
-                .catch(() => window.location.href = "{{ url_for('login_page') }}");
-        });
+      if (!logoutButton) return;
+
+      logoutButton.addEventListener('click', async (event) => {
+        
+        event.preventDefault(); 
+        fetch("{{ url_for('logout') }}", { method: 'POST' })
+            .then(() => window.location.href = "{{ url_for('login_page') }}")
+            .catch(() => window.location.href = "{{ url_for('login_page') }}");
+        
+      });
     }
 
     setupSidebar();
