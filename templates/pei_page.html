@@ -78,63 +78,6 @@
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* Sidebar */
-        .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, var(--primary), var(--accent));
-            color: white;
-            position: fixed;
-            top: 0; left: 0;
-            height: 100vh;
-            transition: width 0.3s ease, transform 0.3s ease;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-        }
-        .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
-        .sidebar-header {
-            padding: 0 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .sidebar-header .logo {
-            font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
-            display: flex; align-items: center; gap: 0.75rem;
-            white-space: nowrap; overflow: hidden;
-        }
-        .sidebar-header .logo i { font-size: 1.8rem; }
-        .sidebar.collapsed { width: 78px; }
-        .sidebar.collapsed .sidebar-header .logo span { display: none; }
-        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
-        .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
-        .sidebar nav ul { list-style: none; padding: 0; }
-        .sidebar nav ul li { margin-bottom: 0.5rem; }
-        .sidebar nav ul li a {
-            color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
-            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
-            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
-        }
-        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
-        .sidebar.collapsed nav ul li a span { display: none; }
-        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
-        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
-        .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
-        .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
-        .sidebar-footer button, .sidebar-footer a {
-            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
-            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
-            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
-            font-size: 0.95rem; text-decoration: none;
-        }
-        .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        .sidebar.collapsed .sidebar-footer span { display: none; }
-        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
-
         /* --- Main Content & Topbar --- */
         .main-content {
             flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
@@ -604,55 +547,129 @@
             flex-wrap: wrap;
         }
 
-        /* Tabs */
-        .tabs {
-            display: flex;
-            border-bottom: 2px solid var(--border-color);
+        /* Status Cards Container */
+        .status-cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 2rem;
-            gap: 0;
-            border-radius: 8px 8px 0 0;
-            overflow: hidden;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* Status Cards Modernos */
+        .status-card {
             background: var(--card);
-        }
-
-        .tab-button {
-            padding: 1rem 1.5rem;
-            background-color: var(--bg);
-            color: var(--muted);
-            border: none;
+            border-radius: 20px;
+            padding: 2rem;
             cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            flex: 1;
-            text-align: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-            font-size: 0.95rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
         }
 
-        .tab-button:hover {
-            background-color: var(--card);
-            color: var(--primary);
-        }
-
-        .tab-button.active {
-            background-color: var(--card);
-            color: var(--primary);
-            border-bottom: 3px solid var(--primary);
-        }
-
-        .tab-button.active::before {
+        .status-card.active::before {
             content: '';
             position: absolute;
-            bottom: -2px;
+            top: 0;
             left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--primary);
-            border-radius: 2px 2px 0 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: height 0.4s ease;
+        }
+
+        .status-card:hover {
+            scale: 1.02;
+            box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.15);
+            border-color: var(--primary);
+        }
+
+        /* Status Card Content */
+        .status-card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .status-card[data-status="active"] .status-icon {
+            background: var(--info);
+            color: white;
+        }
+
+        .status-card[data-status="finalized"] .status-icon {
+            background: #22c55e;
+            color: white;
+        }
+
+        
+        .status-card-content {
+            flex: 1;
+        }
+        
+        .status-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 0.5rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .status-subtitle {
+            font-size: 0.9rem;
+            color: var(--muted);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        
+        /* Status Count */
+        .status-count {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            height: 3.5rem;
+            background-color: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            transition: color 0.3s ease, transform 0.2s ease;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-card:hover .status-icon {
+            transform: scale(1.1);
+        }
+
+        .status-card:hover .status-title {
+            color: var(--primary);
+        }
+
+        /* Tabs - Mantidas para compatibilidade */
+        .tabs {
+            display: none; /* Oculta as tabs antigas */
         }
 
         .tab-content {
-            display: none;
+            display: block; /* Sempre mostra o conteúdo */
         }
 
         .tab-content.active {
@@ -919,6 +936,35 @@
                 gap: 1rem;
             }
 
+            .status-cards-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .status-card {
+                height: 10rem;
+                padding: 1.5rem;
+            }
+
+            .status-card-header {
+                margin-bottom: 0.75rem;
+            }
+
+            .status-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
+            }
+
+            .status-title {
+                font-size: 1.1rem;
+            }
+
+            .status-count {
+                font-size: 2rem;
+            }
+
             .paciente-info-card {
                 flex-direction: column;
                 text-align: center;
@@ -1167,8 +1213,6 @@
         }
 
         .professional-tag:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             border-color: var(--primary-light);
         }
 
@@ -2887,15 +2931,44 @@
                 {% endif %}
 
                 <div class="pei-container">
-                    <!-- Tabs for PEIs -->
-                    <div class="tabs">
+                    <!-- Status Cards for PEI filtering -->
+                    <div class="status-cards-container">
+                        <div class="status-card active" data-status="active" data-tab="active-peis">
+                            <div class="status-card-header">
+                                <div class="status-icon">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <div class="status-card-content">
+                                    <h3 class="status-title">PEI's Ativos</h3>
+                                    <p class="status-subtitle professional-tag">Em andamento</p>
+                                </div>
+                            </div>
+                            <div class="status-count" id="active-peis-count">0</div>
+                        </div>
+
+                        <div class="status-card" data-status="finalized" data-tab="finalized-peis">
+                            <div class="status-card-header">
+                                <div class="status-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="status-card-content">
+                                    <h3 class="status-title">PEI's Finalizados</h3>
+                                    <p class="status-subtitle professional-tag">Concluídos</p>
+                                </div>
+                            </div>
+                            <div class="status-count" id="finalized-peis-count">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs (mantidas para compatibilidade - antigas) -->
+                    <!-- <div class="tabs">
                         <button class="tab-button active" data-tab="active-peis">
                             <i class="fas fa-play-circle"></i> PEIs Ativos
                         </button>
                         <button class="tab-button" data-tab="finalized-peis">
                             <i class="fas fa-check-circle"></i> PEIs Finalizados
                         </button>
-                    </div>
+                    </div> -->
 
                     <!-- Tab Content for Active PEIs -->
                     <div id="active-peis-tab-content" class="tab-content active">
@@ -3353,6 +3426,28 @@
                         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
                         tabButton.classList.add('active');
                         document.getElementById(`${tabId}-tab-content`).classList.add('active');
+                        return;
+                    }
+
+                    // Status Cards switching logic
+                    const statusCard = target.closest('.status-card');
+                    if (statusCard) {
+                        const tabId = statusCard.dataset.tab;
+                        // Remove active de todos os status cards
+                        document.querySelectorAll('.status-card').forEach(card => card.classList.remove('active'));
+                        // Remove active de todos os tab buttons (compatibilidade)
+                        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                        // Remove active de todos os tab contents
+                        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                        
+                        // Ativa o status card clicado
+                        statusCard.classList.add('active');
+                        // Ativa o tab button correspondente (compatibilidade)
+                        const correspondingTabButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
+                        if (correspondingTabButton) correspondingTabButton.classList.add('active');
+                        // Ativa o conteúdo da tab correspondente
+                        const tabContent = document.getElementById(`${tabId}-tab-content`);
+                        if (tabContent) tabContent.classList.add('active');
                         return;
                     }
 
@@ -4056,6 +4151,41 @@
                     }
                 }
 
+                // Função para atualizar os contadores dos status cards
+                function updateStatusCardsCounters() {
+                    const filteredPeis = allPeisData.filter(pei => {
+                        if (IS_PROFESSIONAL && !IS_ADMIN) {
+                            return pei.profissionais_ids && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID);
+                        }
+                        return true;
+                    });
+
+                    const activePeisCount = filteredPeis.filter(pei => pei.status === 'ativo').length;
+                    const finalizedPeisCount = filteredPeis.filter(pei => pei.status === 'finalizado').length;
+
+                    // Atualiza os contadores nos cards
+                    const activeCountElement = document.getElementById('active-peis-count');
+                    const finalizedCountElement = document.getElementById('finalized-peis-count');
+                    
+                    if (activeCountElement) {
+                        activeCountElement.textContent = activePeisCount;
+                        // Adiciona animação de contagem
+                        activeCountElement.style.transform = 'scale(1.2)';
+                        setTimeout(() => {
+                            activeCountElement.style.transform = 'scale(1)';
+                        }, 200);
+                    }
+                    
+                    if (finalizedCountElement) {
+                        finalizedCountElement.textContent = finalizedPeisCount;
+                        // Adiciona animação de contagem
+                        finalizedCountElement.style.transform = 'scale(1.2)';
+                        setTimeout(() => {
+                            finalizedCountElement.style.transform = 'scale(1)';
+                        }, 200);
+                    }
+                }
+
                 // Função auxiliar para renderizar PEIs
                 // Esta função reconstrói os cartões de PEI na interface para refletir as últimas mudanças
                 function renderPeis(peis) {
@@ -4095,6 +4225,9 @@
                     if (!hasFinalizedPeis) {
                         finalizedPeisList.innerHTML = `<div class="empty-state-small"><i class="fas fa-check-double fa-2x mb-2"></i><p>Nenhum PEI finalizado para este paciente.</p></div>`;
                     }
+
+                    // Atualiza os contadores dos status cards
+                    updateStatusCardsCounters();
                 }
                 
                 function renderPeiCardHtml(pei) {
@@ -4828,6 +4961,10 @@
                         );
                     }
                 });
+
+                // Inicializa a renderização dos PEIs e os contadores dos status cards
+                renderPeis(allPeisData);
+                updateStatusCardsCounters();
             }
 
             // General Initialization
