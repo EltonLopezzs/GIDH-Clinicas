@@ -156,6 +156,8 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
                     ajuda['status'] = 'pendente'
                 if 'attempts_count' not in ajuda:
                     ajuda['attempts_count'] = 0
+                if 'quant_max' not in ajuda: # Adicionado: Garante que quant_max exista
+                    ajuda['quant_max'] = None
                 alvo['aids'].append(ajuda)
 
             meta['targets'].append(alvo)
@@ -395,13 +397,14 @@ def _finalize_pei_transaction(transaction, pei_ref, db_instance):
 
 
 @firestore.transactional
-def _add_target_to_goal_transaction(transaction, goal_ref, new_target_description):
+def _add_target_to_goal_transaction(transaction, goal_ref, new_target_description, selected_aids_data):
     """
-    Adiciona um novo alvo a uma meta existente dentro de um PEI.
+    Adiciona um novo alvo a uma meta existente dentro de um PEI, com ajudas selecionadas e quant_max.
     Args:
         transaction: Objeto de transação do Firestore.
         goal_ref: Referência do documento da meta.
         new_target_description: Descrição do novo alvo.
+        selected_aids_data: Lista de dicionários com as ajudas selecionadas e suas quant_max.
     Raises:
         Exception: Se a meta não for encontrada.
     """
@@ -423,26 +426,25 @@ def _add_target_to_goal_transaction(transaction, goal_ref, new_target_descriptio
     new_alvo_data['doc_reference'] = goal_ref # Salva a referência do documento (DocumentReference)
     transaction.set(alvo_doc_ref, new_alvo_data) # Usa transaction.set() para adicionar o alvo
 
-    # Definindo as ajudas fixas para o novo alvo e adicionando-as como subcoleção
-    fixed_aids = [
-        {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFT', 'id_ordenacao': 1},
-        {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFP', 'id_ordenacao': 2},
-        {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AG', 'id_ordenacao': 3},
-        {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AE', 'id_ordenacao': 4},
-        {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'I', 'id_ordenacao': 5},
-    ]
-    for aid_data in fixed_aids:
-        # Adiciona cada ajuda como um documento na subcoleção 'ajudas' do alvo
-        # Obtém uma nova referência de documento para a ajuda dentro da transação
-        aid_doc_ref = alvo_doc_ref.collection('ajudas').document()
-        aid_data['ajuda_id'] = aid_doc_ref.id # Adiciona o ID da ajuda ao dado
-        # Adiciona os IDs dos ancestrais (pei_id, meta_id, alvo_id) ao documento da ajuda
-        aid_data['pei_id'] = new_alvo_data['pei_id']
-        aid_data['meta_id'] = new_alvo_data['meta_id']
-        aid_data['alvo_id'] = new_alvo_data['alvo_id']
-        # Adiciona o doc_reference para a ajuda, referenciando o alvo pai
-        aid_data['doc_reference'] = alvo_doc_ref # Salva a referência do documento (DocumentReference)
-        transaction.set(aid_doc_ref, aid_data) # Usa transaction.set() para adicionar a ajuda
+    # Adicionando as ajudas selecionadas com suas quant_max
+    for aid_data in selected_aids_data:
+        ajuda_doc_ref = alvo_doc_ref.collection('ajudas').document()
+        # Cria uma cópia para não modificar o dicionário original da lista de ajudas
+        aid_to_save = aid_data.copy()
+        aid_to_save['ajuda_id'] = ajuda_doc_ref.id
+        aid_to_save['pei_id'] = new_alvo_data['pei_id']
+        aid_to_save['meta_id'] = new_alvo_data['meta_id']
+        aid_to_save['alvo_id'] = new_alvo_data['alvo_id']
+        aid_to_save['doc_reference'] = alvo_doc_ref
+        
+        # Garante que status e attempts_count existam, se não vierem do frontend
+        if 'status' not in aid_to_save:
+            aid_to_save['status'] = 'pendente'
+        if 'attempts_count' not in aid_to_save:
+            aid_to_save['attempts_count'] = 0
+
+        transaction.set(ajuda_doc_ref, aid_to_save)
+
 
 @firestore.transactional
 def _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_name):
@@ -516,6 +518,46 @@ def _update_target_and_aid_data_transaction(transaction, target_ref, aid_id=None
                 raise Exception(f"Valor inválido para tentativas: {new_attempts_count}. Erro: {e}")
 
 
+@firestore.transactional
+def _activate_goal_transaction(transaction, goal_ref, db_instance):
+    """
+    Ativa uma meta específica, marcando-a como 'ativo'
+    e todos os seus alvos e ajudas como pendentes.
+    Args:
+        transaction: Objeto de transação do Firestore.
+        goal_ref: Referência do documento da meta.
+        db_instance: Instância do Firestore DB (necessário para buscar subcoleções).
+    Raises:
+        Exception: Se a meta não for encontrada.
+    """
+    print(f"DEBUG: Iniciando _activate_goal_transaction para meta: {goal_ref.id}")
+    snapshot = goal_ref.get(transaction=transaction)
+    if not snapshot.exists:
+        print(f"ERROR: Em _activate_goal_transaction: Meta {goal_ref.id} não encontrada.")
+        raise Exception("Meta não encontrada para ativar.")
+
+    updated_goal_data = {'status': 'ativo'}
+    transaction.update(goal_ref, updated_goal_data)
+    print(f"DEBUG: Meta {goal_ref.id} atualizada para status 'ativo'.")
+
+    # Atualizar alvos na subcoleção
+    alvos_ref = goal_ref.collection('alvos')
+    alvos_docs = alvos_ref.stream()
+
+    for alvo_doc in alvos_docs:
+        print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'pendente' dentro da meta {goal_ref.id}.")
+        updated_alvo_data = {'status': 'pendente'}
+        transaction.update(alvo_doc.reference, updated_alvo_data)
+
+        # Atualizar ajudas na subcoleção do alvo
+        ajudas_ref = alvo_doc.reference.collection('ajudas')
+        ajudas_docs = ajudas_ref.stream()
+        for ajuda_doc in ajudas_docs:
+            print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'pendente' dentro do alvo {alvo_doc.id}.")
+            transaction.update(ajuda_doc.reference, {'status': 'pendente'})
+    print(f"DEBUG: Finalizado _activate_goal_transaction para meta: {goal_ref.id}")
+
+
 # =================================================================
 # ROTAS DO PEI (Plano Educacional Individualizado)
 # =================================================================
@@ -579,6 +621,15 @@ def ver_peis_paciente(paciente_doc_id):
         flash(f'Erro ao carregar lista de profissionais: {e}', 'warning')
         print(f"Erro ao carregar profissionais para PEI: {e}")
 
+    # Definir as ajudas disponíveis para seleção
+    available_aids = [
+        {'sigla': 'AFT', 'description': 'Ajuda Física Total'},
+        {'sigla': 'AFP', 'description': 'Ajuda Física Parcial'},
+        {'sigla': 'AG', 'description': 'Ajuda Gestual'},
+        {'sigla': 'AE', 'description': 'Ajuda Ecóica'},
+        {'sigla': 'I', 'description': 'Independente'},
+    ]
+
     # Obter PEIs do paciente
     try:
         peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
@@ -610,7 +661,8 @@ def ver_peis_paciente(paciente_doc_id):
                            is_admin=is_admin,
                            is_professional=is_professional,
                            logged_in_professional_id=logged_in_professional_id,
-                           all_professionals=profissionais_lista
+                           all_professionals=profissionais_lista,
+                           available_aids=available_aids # Passa as ajudas disponíveis para o template
                            )
 
 
@@ -619,7 +671,10 @@ def ver_peis_paciente(paciente_doc_id):
 @admin_required
 def add_pei(paciente_doc_id):
     db_instance = get_db()
-    clinica_id = session['clinica_id']
+    clinica_id = session['clinica_id'] # Corrigido de session['clinica'] para session['clinica_id']
+    user_role = session.get('user_role') # Explicitly define user_role
+    is_admin = user_role == 'admin' # Explicitly define is_admin
+
     try:
         data = request.form
         titulo = data.get('titulo')
@@ -777,15 +832,43 @@ def finalize_pei(paciente_doc_id):
 @admin_required
 def add_goal(paciente_doc_id):
     db_instance = get_db()
-    clinica_id = session['clinica_id'] # Corrigido de session['clinica'] para session['clinica_id']
-    user_role = session.get('user_role') # Explicitly define user_role
-    is_admin = user_role == 'admin' # Explicitly define is_admin
+    clinica_id = session['clinica_id']
+    user_role = session.get('user_role')
+    is_admin = user_role == 'admin'
 
     try:
         data = request.form
         pei_id = data.get('pei_id')
         descricao_goal = data.get('descricao')
         targets_desc = request.form.getlist('targets[]')
+        
+        # Coleta as ajudas selecionadas e suas quant_max
+        selected_aids_data = []
+        # As chaves virão no formato 'aid_selected_AFT', 'aid_quant_max_AFT'
+        # Itera sobre as siglas das ajudas fixas para verificar quais foram selecionadas
+        fixed_aids_template = [
+            {'description': 'Ajuda Física Total', 'sigla': 'AFT', 'id_ordenacao': 1},
+            {'description': 'Ajuda Física Parcial', 'sigla': 'AFP', 'id_ordenacao': 2},
+            {'description': 'Ajuda Gestual', 'sigla': 'AG', 'id_ordenacao': 3},
+            {'description': 'Ajuda Ecóica', 'sigla': 'AE', 'id_ordenacao': 4},
+            {'description': 'Independente', 'sigla': 'I', 'id_ordenacao': 5},
+        ]
+        
+        for aid_info in fixed_aids_template:
+            sigla = aid_info['sigla']
+            if data.get(f'aid_selected_{sigla}') == 'on': # Verifica se o checkbox foi marcado
+                quant_max_str = data.get(f'aid_quant_max_{sigla}')
+                quant_max = int(quant_max_str) if quant_max_str and quant_max_str.isdigit() else None
+                
+                selected_aids_data.append({
+                    'description': aid_info['description'],
+                    'sigla': sigla,
+                    'id_ordenacao': aid_info['id_ordenacao'],
+                    'quant_max': quant_max,
+                    'attempts_count': 0, # Inicializa com 0 tentativas
+                    'status': 'pendente' # Inicializa como pendente
+                })
+
 
         if not pei_id or not descricao_goal:
             flash('Dados insuficientes para adicionar meta.', 'danger')
@@ -802,17 +885,9 @@ def add_goal(paciente_doc_id):
 
         meta_doc_ref = metas_ref.document()
         new_goal_data['meta_id'] = meta_doc_ref.id
-        # Adiciona o doc_reference para a meta, referenciando o PEI pai
-        new_goal_data['doc_reference'] = pei_ref # Salva a referência do documento (DocumentReference)
+        new_goal_data['doc_reference'] = pei_ref
         meta_doc_ref.set(new_goal_data)
 
-        fixed_aids_template = [
-            {'description': 'Ajuda Física Total', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFT', 'id_ordenacao': 1},
-            {'description': 'Ajuda Física Parcial', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AFP', 'id_ordenacao': 2},
-            {'description': 'Ajuda Gestual', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AG', 'id_ordenacao': 3},
-            {'description': 'Ajuda Ecóica', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'AE', 'id_ordenacao': 4},
-            {'description': 'Independente', 'attempts_count': 0, 'status': 'pendente', 'sigla': 'I', 'id_ordenacao': 5},
-        ]
         for desc in targets_desc:
             if desc.strip():
                 new_alvo_data = {
@@ -823,19 +898,19 @@ def add_goal(paciente_doc_id):
                 }
                 alvo_doc_ref = meta_doc_ref.collection('alvos').document()
                 new_alvo_data['alvo_id'] = alvo_doc_ref.id
-                # Adiciona o doc_reference para o alvo, referenciando a meta pai
-                new_alvo_data['doc_reference'] = meta_doc_ref # Salva a referência do documento (DocumentReference)
+                new_alvo_data['doc_reference'] = meta_doc_ref
                 alvo_doc_ref.set(new_alvo_data)
 
-                for aid_data in fixed_aids_template:
+                # Adiciona apenas as ajudas selecionadas para este alvo
+                for aid_data in selected_aids_data:
                     ajuda_doc_ref = alvo_doc_ref.collection('ajudas').document()
-                    aid_data['ajuda_id'] = ajuda_doc_ref.id
-                    aid_data['pei_id'] = pei_id
-                    aid_data['meta_id'] = meta_doc_ref.id
-                    aid_data['alvo_id'] = alvo_doc_ref.id
-                    # Adiciona o doc_reference para a ajuda, referenciando o alvo pai
-                    aid_data['doc_reference'] = alvo_doc_ref # Salva a referência do documento (DocumentReference)
-                    ajuda_doc_ref.set(aid_data)
+                    aid_to_save = aid_data.copy() # Copia para não modificar o original
+                    aid_to_save['ajuda_id'] = ajuda_doc_ref.id
+                    aid_to_save['pei_id'] = pei_id
+                    aid_to_save['meta_id'] = meta_doc_ref.id
+                    aid_to_save['alvo_id'] = alvo_doc_ref.id
+                    aid_to_save['doc_reference'] = alvo_doc_ref
+                    ajuda_doc_ref.set(aid_to_save)
 
         flash('Meta e alvos adicionados com sucesso ao PEI!', 'success')
     except Exception as e:
@@ -849,14 +924,15 @@ def add_goal(paciente_doc_id):
 def add_target_to_goal(paciente_doc_id):
     db_instance = get_db()
     clinica_id = session['clinica_id']
-    user_role = session.get('user_role') # Explicitly define user_role
-    is_admin = user_role == 'admin' # Explicitly define is_admin
+    user_role = session.get('user_role')
+    is_admin = user_role == 'admin'
 
     try:
         data = request.get_json()
         pei_id = data.get('pei_id')
         goal_id = data.get('goal_id')
         target_description = data.get('target_description')
+        selected_aids_data = data.get('selected_aids', []) # Recebe as ajudas selecionadas do frontend
 
         if not all([pei_id, goal_id, target_description]):
             return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar alvo.'}), 400
@@ -864,11 +940,10 @@ def add_target_to_goal(paciente_doc_id):
         goal_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).collection('metas').document(goal_id)
 
         transaction = db_instance.transaction()
-        _add_target_to_goal_transaction(transaction, goal_ref, target_description)
+        _add_target_to_goal_transaction(transaction, goal_ref, target_description, selected_aids_data)
         transaction.commit()
 
         all_peis = []
-        # user_role = session.get('user_role') # Redundant here, already defined above
         logged_in_professional_id = None
         if user_role == 'medico':
             user_doc = db_instance.collection('User').document(session.get('user_uid')).get()
@@ -900,8 +975,8 @@ def add_target_to_goal(paciente_doc_id):
 def delete_goal(paciente_doc_id):
     db_instance = get_db()
     clinica_id = session['clinica_id']
-    user_role = session.get('user_role') # Explicitly define user_role
-    is_admin = user_role == 'admin' # Explicitly define is_admin
+    user_role = session.get('user_role')
+    is_admin = user_role == 'admin'
 
     try:
         pei_id = request.form.get('pei_id')
@@ -1070,9 +1145,9 @@ def finalize_goal(paciente_doc_id):
         print(f"Erro ao finalizar meta: {e}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
-@peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/add_activity', methods=['POST'], endpoint='add_pei_activity')
+@peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/activate_goal', methods=['POST'], endpoint='activate_goal')
 @login_required
-def add_pei_activity(paciente_doc_id):
+def activate_goal(paciente_doc_id):
     db_instance = get_db()
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
@@ -1085,30 +1160,32 @@ def add_pei_activity(paciente_doc_id):
             user_doc = db_instance.collection('User').document(user_uid).get()
             if user_doc.exists:
                 logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+            else:
+                print(f"Documento de usuário não encontrado para UID: {user_uid}")
         except Exception as e:
             return jsonify({'success': False, 'message': f'Erro ao verificar permissões: {e}'}), 500
 
     try:
         data = request.get_json()
         pei_id = data.get('pei_id')
-        activity_content = data.get('content')
+        goal_id = data.get('goal_id')
+        if not all([pei_id, goal_id]):
+            return jsonify({'success': False, 'message': 'Dados insuficientes para ativar meta.'}), 400
 
-        if not all([pei_id, activity_content]):
-            return jsonify({'success': False, 'message': 'Dados insuficientes para adicionar atividade.'}), 400
+        goal_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).collection('metas').document(goal_id)
+        goal_doc = goal_ref.get()
+        if not goal_doc.exists:
+            return jsonify({'success': False, 'message': 'Meta não encontrada.'}), 404
 
-        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
-        pei_doc = pei_ref.get()
-        if not pei_doc.exists:
-            return jsonify({'success': False, 'message': 'PEI não encontrado.'}), 404
-
+        # Verifica permissão do profissional associado ao PEI
+        pei_doc = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).get()
         if not is_admin:
             associated_professionals_ids = pei_doc.to_dict().get('profissionais_ids', [])
             if logged_in_professional_id not in associated_professionals_ids:
-                return jsonify({'success': False, 'message': 'Você não tem permissão para adicionar atividades a este PEI.'}), 403
+                return jsonify({'success': False, 'message': 'Você não tem permissão para ativar esta meta.'}), 403
 
-        user_name = session.get('user_name', 'Desconhecido')
         transaction = db_instance.transaction()
-        _add_pei_activity_transaction(transaction, pei_ref, activity_content, user_name)
+        _activate_goal_transaction(transaction, goal_ref, db_instance)
         transaction.commit()
 
         all_peis = []
@@ -1125,10 +1202,9 @@ def add_pei_activity(paciente_doc_id):
             pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
             all_peis.append(pei_data_converted)
 
-        return jsonify({'success': True, 'message': 'Atividade adicionada com sucesso!', 'peis': all_peis}), 200
-
+        return jsonify({'success': True, 'message': 'Meta ativada com sucesso!', 'peis': all_peis}), 200
     except Exception as e:
-        print(f"Erro ao adicionar atividade ao PEI: {e}")
+        print(f"Erro ao ativar meta: {e}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
 
 @peis_bp.route('/pacientes/<string:paciente_doc_id>/peis/update_target_and_aid_data', methods=['POST'], endpoint='update_target_and_aid_data')
