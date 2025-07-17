@@ -134,8 +134,8 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
                 alvo['doc_reference'] = alvo.get('doc_reference') or meta_doc.reference.path
 
             if 'status' not in alvo:
-                alvo['status'] = 'pendente'
-            alvo['concluido'] = (alvo['status'] == 'finalizada') # Para compatibilidade
+                alvo['status'] = 'Pendente'
+            alvo['Concluido'] = (alvo['status'] == 'Finalizado') # Para compatibilidade
 
             # Busca as ajudas da subcoleção 'ajudas' para cada alvo
             alvo['aids'] = []
@@ -153,7 +153,7 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
                     ajuda['doc_reference'] = ajuda.get('doc_reference') or alvo_doc.reference.path
 
                 if 'status' not in ajuda:
-                    ajuda['status'] = 'pendente'
+                    ajuda['status'] = 'Pendente'
                 if 'attempts_count' not in ajuda:
                     ajuda['attempts_count'] = 0
                 if 'quant_max' not in ajuda: # Adicionado: Garante que quant_max exista
@@ -268,7 +268,7 @@ def _update_target_status_transaction(transaction, target_ref, new_target_status
     Args:
         transaction: Objeto de transação do Firestore.
         target_ref: Referência do documento do alvo.
-        new_target_status: Novo status do alvo (pendente, andamento, finalizada).
+        new_target_status: Novo status do alvo (Pendente, Andamento, Finalizado).
     Raises:
         Exception: Se o alvo não for encontrado.
     """
@@ -279,12 +279,12 @@ def _update_target_status_transaction(transaction, target_ref, new_target_status
     updated_data = {'status': new_target_status}
     transaction.update(target_ref, updated_data)
 
-    # Se o alvo for marcado como finalizado, todas as ajudas associadas também são finalizadas.
-    if new_target_status == 'finalizada':
+    # Se o alvo for marcado como finalizado, todas as ajudas associadas também são Finalizados.
+    if new_target_status == 'Finalizado':
         ajudas_ref = target_ref.collection('ajudas')
         ajudas_docs = ajudas_ref.stream()
         for ajuda_doc in ajudas_docs:
-            transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
+            transaction.update(ajuda_doc.reference, {'status': 'Finalizado'})
 
 
 @firestore.transactional
@@ -314,16 +314,16 @@ def _finalize_goal_transaction(transaction, goal_ref, db_instance):
     alvos_docs = alvos_ref.stream() # Correção: Use alvos_docs aqui
 
     for alvo_doc in alvos_docs: # Correção: Iterar sobre alvos_docs
-        print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'finalizada' dentro da meta {goal_ref.id}.")
-        updated_alvo_data = {'status': 'finalizada'}
+        print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'Finalizado' dentro da meta {goal_ref.id}.")
+        updated_alvo_data = {'status': 'Finalizado'}
         transaction.update(alvo_doc.reference, updated_alvo_data)
 
         # Atualizar ajudas na subcoleção do alvo
         ajudas_ref = alvo_doc.reference.collection('ajudas')
         ajudas_docs = ajudas_ref.stream()
         for ajuda_doc in ajudas_docs:
-            print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'finalizada' dentro do alvo {alvo_doc.id}.")
-            transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
+            print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'Finalizado' dentro do alvo {alvo_doc.id}.")
+            transaction.update(ajuda_doc.reference, {'status': 'Finalizado'})
     print(f"DEBUG: Finalizado _finalize_goal_transaction para meta: {goal_ref.id}")
 
 
@@ -331,7 +331,7 @@ def _finalize_goal_transaction(transaction, goal_ref, db_instance):
 def _finalize_pei_transaction(transaction, pei_ref, db_instance):
     """
     Finaliza um PEI, marcando-o como 'finalizado' e todas as suas metas ativas
-    e respectivos alvos como 'finalizado'/'concluido'.
+    e respectivos alvos como 'finalizado'/'Concluido'.
     Args:
         transaction: Objeto de transação do Firestore.
         pei_ref: Referência do documento PEI.
@@ -374,8 +374,8 @@ def _finalize_pei_transaction(transaction, pei_ref, db_instance):
 
             for alvo_doc in alvos_docs:
                 try:
-                    print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'finalizada' dentro da meta {meta_doc.id}.")
-                    updated_alvo_data = {'status': 'finalizada'}
+                    print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'Finalizado' dentro da meta {meta_doc.id}.")
+                    updated_alvo_data = {'status': 'Finalizado'}
                     transaction.update(alvo_doc.reference, updated_alvo_data)
                 except Exception as e:
                     print(f"ERROR: Falha ao atualizar alvo {alvo_doc.id}: {e}")
@@ -386,13 +386,13 @@ def _finalize_pei_transaction(transaction, pei_ref, db_instance):
                 ajudas_docs = ajudas_ref.stream()
                 for ajuda_doc in ajudas_docs:
                     try:
-                        print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'finalizada' dentro do alvo {alvo_doc.id}.")
-                        transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
+                        print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'Finalizado' dentro do alvo {alvo_doc.id}.")
+                        transaction.update(ajuda_doc.reference, {'status': 'Finalizado'})
                     except Exception as e:
                         print(f"ERROR: Falha ao atualizar ajuda {ajuda_doc.id}: {e}")
                         raise # Re-raise the exception
         else:
-            print(f"DEBUG: Meta {meta_doc.id} já está finalizada ou inativa, pulando atualização.")
+            print(f"DEBUG: Meta {meta_doc.id} já está Finalizado ou inativa, pulando atualização.")
     print(f"DEBUG: Finalizado _finalize_pei_transaction para PEI: {pei_ref.id}")
 
 
@@ -415,7 +415,7 @@ def _add_target_to_goal_transaction(transaction, goal_ref, new_target_descriptio
     # Cria o novo alvo como um documento na subcoleção 'alvos'
     new_alvo_data = {
         'descricao': new_target_description,
-        'status': 'pendente',
+        'status': 'Pendente',
         'meta_id': goal_ref.id,
         'pei_id': goal_ref.parent.parent.id # Obtém o ID do PEI pai
     }
@@ -439,7 +439,7 @@ def _add_target_to_goal_transaction(transaction, goal_ref, new_target_descriptio
         
         # Garante que status e attempts_count existam, se não vierem do frontend
         if 'status' not in aid_to_save:
-            aid_to_save['status'] = 'pendente'
+            aid_to_save['status'] = 'Pendente'
         if 'attempts_count' not in aid_to_save:
             aid_to_save['attempts_count'] = 0
 
@@ -496,12 +496,12 @@ def _update_target_and_aid_data_transaction(transaction, target_ref, aid_id=None
     # Atualiza o status geral do alvo, se fornecido
     if new_target_status is not None:
         transaction.update(target_ref, {'status': new_target_status})
-        # Se o alvo for marcado como finalizado, todas as ajudas devem ser finalizadas
-        if new_target_status == 'finalizada':
+        # Se o alvo for marcado como finalizado, todas as ajudas devem ser Finalizados
+        if new_target_status == 'Finalizado':
             ajudas_ref = target_ref.collection('ajudas')
             ajudas_docs = ajudas_ref.stream()
             for ajuda_doc in ajudas_docs:
-                transaction.update(ajuda_doc.reference, {'status': 'finalizada'})
+                transaction.update(ajuda_doc.reference, {'status': 'Finalizado'})
 
     # Atualiza dados de uma ajuda específica, se aid_id for fornecido
     if aid_id is not None:
@@ -522,7 +522,7 @@ def _update_target_and_aid_data_transaction(transaction, target_ref, aid_id=None
 def _activate_goal_transaction(transaction, goal_ref, db_instance):
     """
     Ativa uma meta específica, marcando-a como 'ativo'
-    e todos os seus alvos e ajudas como pendentes.
+    e todos os seus alvos e ajudas como Pendentes.
     Args:
         transaction: Objeto de transação do Firestore.
         goal_ref: Referência do documento da meta.
@@ -545,16 +545,16 @@ def _activate_goal_transaction(transaction, goal_ref, db_instance):
     alvos_docs = alvos_ref.stream()
 
     for alvo_doc in alvos_docs:
-        print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'pendente' dentro da meta {goal_ref.id}.")
-        updated_alvo_data = {'status': 'pendente'}
+        print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'Pendente' dentro da meta {goal_ref.id}.")
+        updated_alvo_data = {'status': 'Pendente'}
         transaction.update(alvo_doc.reference, updated_alvo_data)
 
         # Atualizar ajudas na subcoleção do alvo
         ajudas_ref = alvo_doc.reference.collection('ajudas')
         ajudas_docs = ajudas_ref.stream()
         for ajuda_doc in ajudas_docs:
-            print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'pendente' dentro do alvo {alvo_doc.id}.")
-            transaction.update(ajuda_doc.reference, {'status': 'pendente'})
+            print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'Pendente' dentro do alvo {alvo_doc.id}.")
+            transaction.update(ajuda_doc.reference, {'status': 'Pendente'})
     print(f"DEBUG: Finalizado _activate_goal_transaction para meta: {goal_ref.id}")
 
 
@@ -627,7 +627,7 @@ def ver_peis_paciente(paciente_doc_id):
         {'sigla': 'AFP', 'description': 'Ajuda Física Parcial'},
         {'sigla': 'AG', 'description': 'Ajuda Gestual'},
         {'sigla': 'AE', 'description': 'Ajuda Ecóica'},
-        {'sigla': 'I', 'description': 'Independente'},
+        {'sigla': 'I', 'description': 'IndePendente'},
     ]
 
     # Obter PEIs do paciente
@@ -851,7 +851,7 @@ def add_goal(paciente_doc_id):
             {'description': 'Ajuda Física Parcial', 'sigla': 'AFP', 'id_ordenacao': 2},
             {'description': 'Ajuda Gestual', 'sigla': 'AG', 'id_ordenacao': 3},
             {'description': 'Ajuda Ecóica', 'sigla': 'AE', 'id_ordenacao': 4},
-            {'description': 'Independente', 'sigla': 'I', 'id_ordenacao': 5},
+            {'description': 'IndePendente', 'sigla': 'I', 'id_ordenacao': 5},
         ]
         
         for aid_info in fixed_aids_template:
@@ -866,7 +866,7 @@ def add_goal(paciente_doc_id):
                     'id_ordenacao': aid_info['id_ordenacao'],
                     'quant_max': quant_max,
                     'attempts_count': 0, # Inicializa com 0 tentativas
-                    'status': 'pendente' # Inicializa como pendente
+                    'status': 'Pendente' # Inicializa como Pendente
                 })
 
 
@@ -892,7 +892,7 @@ def add_goal(paciente_doc_id):
             if desc.strip():
                 new_alvo_data = {
                     'descricao': desc.strip(),
-                    'status': 'pendente',
+                    'status': 'Pendente',
                     'meta_id': meta_doc_ref.id,
                     'pei_id': pei_id
                 }
@@ -1140,7 +1140,7 @@ def finalize_goal(paciente_doc_id):
             pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
             all_peis.append(pei_data_converted)
 
-        return jsonify({'success': True, 'message': 'Meta finalizada com sucesso!', 'peis': all_peis}), 200
+        return jsonify({'success': True, 'message': 'Meta Finalizado com sucesso!', 'peis': all_peis}), 200
     except Exception as e:
         print(f"Erro ao finalizar meta: {e}")
         return jsonify({'success': False, 'message': f'Erro interno: {e}'}), 500
