@@ -169,28 +169,7 @@
      font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--text); font-weight: 600; text-align: left;
    }
    .chart-container { position: relative; flex-grow: 1; }
-   canvas { max-height: 100%; max-width: 100%; display: none; /* Oculta o canvas inicialmente */ }
-
-   /* Estilos para o Skeleton Loader */
-   .skeleton-loader {
-        background-color: var(--border-color);
-        border-radius: 8px;
-        animation: pulse 1.5s infinite ease-in-out;
-        width: 100%;
-        height: 100%;
-        min-height: 300px; /* Altura mínima para o skeleton do gráfico */
-        display: flex; /* Garante que o skeleton ocupe o espaço */
-        align-items: center;
-        justify-content: center;
-        color: var(--muted);
-        font-size: 1.2rem;
-        font-weight: 600;
-   }
-   @keyframes pulse {
-        0% { opacity: 0.7; }
-        50% { opacity: 1; }
-        100% { opacity: 0.7; }
-   }
+   canvas { max-height: 100%; max-width: 100%; }
 
    .list-section h2.section-title {
      margin-bottom: 1.5rem; font-size: 1.4rem; color: var(--text); font-weight: 600;
@@ -745,7 +724,6 @@
             <div class="graph-card">
                 <h3 class="chart-title">Atendimentos Diários (Últimos 15 dias)</h3>
                 <div class="chart-container">
-                    <div id="atendimentoVsReceitaChartSkeleton" class="skeleton-loader">Carregando Gráfico...</div>
                     <canvas id="atendimentoVsReceitaChart"></canvas>
                 </div>
             </div>
@@ -755,7 +733,6 @@
             <div class="graph-card">
                 <h3 class="chart-title">Top 5 Procedimentos por Atendimentos (Mês)</h3>
                 <div class="chart-container">
-                    <div id="receitaPorProcedimentoChartSkeleton" class="skeleton-loader">Carregando Gráfico...</div>
                     <canvas id="receitaPorProcedimentoChart"></canvas> {# Reutilizando o ID, mas o gráfico mostrará contagens #}
                 </div>
             </div>
@@ -763,7 +740,6 @@
             <div class="graph-card">
                 <h3 class="chart-title">Top 5 Profissionais por Atendimentos (Mês)</h3>
                 <div class="chart-container">
-                    <div id="desempenhoProfissionalChartSkeleton" class="skeleton-loader">Carregando Gráfico...</div>
                     <canvas id="desempenhoProfissionalChart"></canvas>
                 </div>
             </div>
@@ -886,12 +862,10 @@
             <div class="modal-charts-and-info">
                 <div class="chart-container-modal">
                     <h4>Gráfico de Média de Tentativas por Ajuda</h4>
-                    <div id="mentalMapChartSkeleton" class="skeleton-loader">Carregando Gráfico...</div>
                     <canvas id="mentalMapChart"></canvas>
                 </div>
                 <div class="development-areas-chart-container">
                     <h4>Nível de Independência por Ajuda</h4>
-                    <div id="developmentAreasChartSkeleton" class="skeleton-loader">Carregando Gráfico...</div>
                     <canvas id="developmentAreasChart"></canvas>
                 </div>
             </div>
@@ -945,18 +919,7 @@
 
     const getCssVar = (varName) => getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
     
-    // Função para mostrar/esconder skeletons e canvases
-    function toggleChartVisibility(chartId, showChart) {
-        const canvas = document.getElementById(chartId);
-        const skeleton = document.getElementById(chartId + 'Skeleton');
-        if (canvas && skeleton) {
-            canvas.style.display = showChart ? 'block' : 'none';
-            skeleton.style.display = showChart ? 'none' : 'flex'; // Flex para centralizar o texto
-        }
-    }
-
     function renderCharts() {
-        // Destrói gráficos existentes antes de renderizar novamente
         Object.values(charts).forEach(chart => chart?.destroy());
 
         const scriptEl = document.getElementById('dashboard-script');
@@ -1037,9 +1000,6 @@
                         }
                     }
                 });
-                toggleChartVisibility('atendimentoVsReceitaChart', true); // Mostra o gráfico após renderizar
-            } else {
-                toggleChartVisibility('atendimentoVsReceitaChart', false); // Mantém skeleton se não há dados
             }
 
             const receitaProcedimentoCtx = document.getElementById('receitaPorProcedimentoChart')?.getContext('2d');
@@ -1063,9 +1023,6 @@
                         }
                     }
                 });
-                toggleChartVisibility('receitaPorProcedimentoChart', true); // Mostra o gráfico após renderizar
-            } else {
-                toggleChartVisibility('receitaPorProcedimentoChart', false); // Mantém skeleton se não há dados
             }
 
             const desempenhoProfissionalCtx = document.getElementById('desempenhoProfissionalChart')?.getContext('2d');
@@ -1087,16 +1044,9 @@
                         scales: { x: { ticks: { precision: 0, beginAtZero: true } } }
                     }
                 });
-                toggleChartVisibility('desempenhoProfissionalChart', true); // Mostra o gráfico após renderizar
-            } else {
-                toggleChartVisibility('desempenhoProfissionalChart', false); // Mantém skeleton se não há dados
             }
         } catch (e) {
             console.error("Erro ao renderizar os gráficos:", e);
-            // Em caso de erro, garante que os skeletons sejam mostrados
-            toggleChartVisibility('atendimentoVsReceitaChart', false);
-            toggleChartVisibility('receitaPorProcedimentoChart', false);
-            toggleChartVisibility('desempenhoProfissionalChart', false);
         }
     }
 
@@ -1142,24 +1092,20 @@
     const themeObserver = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-                // Pequeno delay para garantir que as variáveis CSS sejam atualizadas
-                setTimeout(() => {
-                    renderCharts();
-                    // Também renderiza o gráfico do modal novamente se estiver visível
-                    if (mentalMapChartInstance && document.getElementById('mentalMapModal').style.display === 'flex') {
-                        const patientId = document.getElementById('mentalMapModal').dataset.patientId;
-                        const patientName = document.getElementById('modalPatientName').textContent; // Get name from modal title
-                        renderMentalMapChart(patientId, patientName);
-                        renderDevelopmentAreasChart(patientId); // NOVO: Renderiza o novo gráfico
-                        renderIndependenceIndicators(patientId); // Renderiza também os indicadores de independência
-                    }
-                }, 50);  
+                setTimeout(renderCharts, 50);  
+                // Também renderiza o gráfico do modal novamente se estiver visível
+                if (mentalMapChartInstance && document.getElementById('mentalMapModal').style.display === 'flex') {
+                    const patientId = document.getElementById('mentalMapModal').dataset.patientId;
+                    const patientName = document.getElementById('modalPatientName').textContent; // Get name from modal title
+                    renderMentalMapChart(patientId, patientName);
+                    renderDevelopmentAreasChart(patientId); // NOVO: Renderiza o novo gráfico
+                    renderIndependenceIndicators(patientId); // Renderiza também os indicadores de independência
+                }
             }
         });
     });
     themeObserver.observe(document.documentElement, { attributes: true });
 
-    // Renderiza os gráficos e configura o slider móvel
     renderCharts();
     setupMobileSlider();
 
@@ -1181,9 +1127,6 @@
 
     // Função para renderizar o gráfico de radar
     function renderMentalMapChart(patientId, patientName) {
-        // Mostra skeleton e oculta canvas antes de renderizar
-        toggleChartVisibility('mentalMapChart', false);
-
         if (!mentalMapChartCtx) {
             console.error("Canvas para o gráfico mental não encontrado.");
             return;
@@ -1263,14 +1206,10 @@
                 }
             }
         });
-        toggleChartVisibility('mentalMapChart', true); // Mostra o gráfico após renderizar
     }
 
     // NOVO: Função para renderizar o gráfico de áreas de desenvolvimento (Doughnut Chart)
     function renderDevelopmentAreasChart(patientId) {
-        // Mostra skeleton e oculta canvas antes de renderizar
-        toggleChartVisibility('developmentAreasChart', false);
-
         if (!developmentAreasChartCtx) {
             console.error("Canvas para o gráfico de áreas de desenvolvimento não encontrado.");
             return;
@@ -1345,7 +1284,6 @@
                 }
             }
         });
-        toggleChartVisibility('developmentAreasChart', true); // Mostra o gráfico após renderizar
     }
 
 
@@ -1412,9 +1350,6 @@
             developmentAreasChartInstance = null;
         }
         independenceIndicatorsContainer.innerHTML = ''; // Limpa os indicadores ao fechar
-        // Garante que os skeletons do modal voltem a aparecer se o modal for reaberto
-        toggleChartVisibility('mentalMapChart', false);
-        toggleChartVisibility('developmentAreasChart', false);
     });
 
     // Fechar o modal clicando fora do conteúdo
@@ -1430,9 +1365,6 @@
                 developmentAreasChartInstance = null;
             }
             independenceIndicatorsContainer.innerHTML = ''; // Limpa os indicadores ao fechar
-            // Garante que os skeletons do modal voltem a aparecer se o modal for reaberto
-            toggleChartVisibility('mentalMapChart', false);
-            toggleChartVisibility('developmentAreasChart', false);
         }
     });
 
