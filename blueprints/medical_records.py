@@ -612,7 +612,7 @@ def register_medical_records_routes(app):
                 flash(f'Erro ao adicionar anamnese: {e}', 'danger')
                 print(f"Erro ao adicionar anamnese: {e}")
             
-        return render_template('anamnese_form.html', paciente_id=paciente_doc_id, paciente_nome=paciente_nome, modelos_anamnese=modelos_anamnese, action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id), page_title=f"Registar Anamnese para {paciente_nome}")
+        return render_template('anamnese_form.html', paciente_id=paciente_doc_id, paciente_nome=paciente_nome, modelos_anamnese=modelos_anamnese, action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id), page_title=f"Registrar Anamnese para {paciente_nome}")
 
     # ROTA RESTAURADA
     @app.route('/prontuarios/<string:paciente_doc_id>/anamnese/editar/<string:anamnese_doc_id>', methods=['GET', 'POST'], endpoint='editar_anamnese')
