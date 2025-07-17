@@ -333,7 +333,8 @@
                 <div class="topbar-left">
                     <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">{{ page_title|default('Registrar Anamnese') }} para {{ paciente_nome }}</h1>
+                    <!-- LINHA CORRIGIDA AQUI: Removido o segundo 'para {{ paciente_nome }}' -->
+                    <h1 class="page-title">{{ page_title|default('Registrar Anamnese') }}</h1>
                 </div>
             </header>
 
@@ -349,7 +350,7 @@
                 {% endwith %}
 
                 <div class="form-card">
-                    <h2 class="form-title">{{ page_title|default('Registrar Anamnese') }}</h2>
+                    <h2 class="form-title" style="display: none;">{{ page_title|default('Registrar Anamnese') }}</h2>
                     
                     <form id="anamneseForm" method="POST" action="{{ action_url|default('') }}">
                         <div class="form-group">
@@ -538,7 +539,13 @@
                     generateBtn.addEventListener('click', async () => {
                         const userPrompt = promptInput.value.trim();
                         if (!userPrompt) {
-                            alert('Por favor, descreva o tipo de anamnese que você deseja gerar.');
+                            // Substituindo alert() por uma mensagem na tela
+                            const flashMessagesDiv = document.querySelector('.flash-messages');
+                            if (flashMessagesDiv) {
+                                flashMessagesDiv.innerHTML = `<div class="flash-message danger">Por favor, descreva o tipo de anamnese que você deseja gerar.</div>`;
+                            } else {
+                                console.error('Elemento .flash-messages não encontrado para exibir a mensagem.');
+                            }
                             return;
                         }
                         
@@ -558,11 +565,14 @@
                             const response = await result.response;
                             const text = response.text();
                             
-                            if (editor.innerHTML.trim() && !confirm('Deseja substituir o conteúdo atual pelo texto gerado pela IA?')) {
-                                generateBtn.disabled = !lgpdConsentText.classList.contains('active');
-                                generateBtn.classList.remove('loading');
-                                generateBtn.querySelector('span').textContent = 'Gerar';
-                                return;
+                            // Substituindo confirm() por uma modal personalizada
+                            if (editor.innerHTML.trim()) {
+                                if (!await showCustomConfirm('Deseja substituir o conteúdo atual pelo texto gerado pela IA?')) {
+                                    generateBtn.disabled = !lgpdConsentText.classList.contains('active');
+                                    generateBtn.classList.remove('loading');
+                                    generateBtn.querySelector('span').textContent = 'Gerar';
+                                    return;
+                                }
                             }
                             
                             editor.innerHTML = text;
@@ -570,7 +580,13 @@
 
                         } catch (error) {
                             console.error('Gemini API Error:', error);
-                            alert('Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.');
+                            // Substituindo alert() por uma mensagem na tela
+                            const flashMessagesDiv = document.querySelector('.flash-messages');
+                            if (flashMessagesDiv) {
+                                flashMessagesDiv.innerHTML = `<div class="flash-message danger">Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.</div>`;
+                            } else {
+                                console.error('Elemento .flash-messages não encontrado para exibir a mensagem.');
+                            }
                         } finally {
                             generateBtn.disabled = !lgpdConsentText.classList.contains('active');
                             generateBtn.classList.remove('loading');
@@ -578,6 +594,34 @@
                         }
                     });
                 }
+            }
+
+            // Função para exibir um modal de confirmação personalizado
+            function showCustomConfirm(message) {
+                return new Promise((resolve) => {
+                    const modalHtml = `
+                        <div id="customConfirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[9999]">
+                            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm mx-auto">
+                                <p class="text-gray-800 text-lg mb-4">${message}</p>
+                                <div class="flex justify-end space-x-4">
+                                    <button id="confirmCancel" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                                    <button id="confirmOk" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    const modal = document.getElementById('customConfirmModal');
+                    
+                    document.getElementById('confirmOk').addEventListener('click', () => {
+                        modal.remove();
+                        resolve(true);
+                    });
+                    document.getElementById('confirmCancel').addEventListener('click', () => {
+                        modal.remove();
+                        resolve(false);
+                    });
+                });
             }
 
             // --- Inicialização ---

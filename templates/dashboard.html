@@ -50,6 +50,26 @@
      --border-color: var(--dark-border-color);
      color-scheme: dark;
    }
+   
+::-webkit-scrollbar {
+  background-color: var(--bg);
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border-top-right-radius: 0.3125rem;
+  border-bottom-right-radius: 0.3125rem;
+  transition: background-color 0.8s ease;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--muted);
+  border-radius: 0.3125rem;
+  transition: background-color 0.8s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  transition: background-color 0.8s ease;
+  background-color: var(--primary);
+}
 
    * { box-sizing: border-box; margin: 0; padding: 0; }
    html, body { height: 100%; overflow-x: hidden; }
@@ -64,129 +84,11 @@
    .layout { display: flex; min-height: 100vh; width: 100%; }
 
     /* ============================================
-      --- SIDEBAR ---
-      ============================================
-    */
-   .sidebar {
-     width: 280px; /* Aumentado de 260px para 280px */
-     background: linear-gradient(180deg, var(--primary), var(--accent));
-     color: white;
-     position: fixed;
-     top: 0; left: 0;
-     height: 100vh;
-     transition: width 0.3s ease, transform 0.3s ease;
-     z-index: 1000;
-     display: flex;
-     flex-direction: column;
-   }
-   .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
-   .sidebar-header {
-     padding: 0 1rem;
-     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-     flex-shrink: 0;
-     height: 70px;
-     display: flex;
-     align-items: center;
-     justify-content: center;
-   }
-   .sidebar-header .logo {
-     font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
-     display: flex; align-items: center; gap: 0.75rem;
-     white-space: nowrap; overflow: hidden;
-   }
-   .sidebar-header .logo i { font-size: 1.8rem; }
-   
-   .sidebar.collapsed { width: 88px; } /* Ajustado de 78px para 88px */
-   .sidebar.collapsed .sidebar-header .logo span { display: none; }
-   .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
-
-   .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
-   .sidebar.collapsed nav { padding: 0 0.5rem; }
-   .sidebar nav ul { list-style: none; padding: 0; }
-   .sidebar nav ul li { margin-bottom: 0.5rem; }
-   .sidebar nav ul li a {
-     color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
-     padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
-     font-weight: 500; white-space: nowrap; overflow: hidden;
-     transition: background 0.2s ease, color 0.2s ease;
-   }
-   .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
-   .sidebar.collapsed nav ul li a span { display: none; }
-   .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
-   .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-   .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
-
-    /* Estilos para Submenu Financeiro */
-    .sidebar nav ul li.has-submenu {
-        position: relative;
-    }
-
-    .sidebar nav ul li.has-submenu .submenu-toggle {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .sidebar nav ul li.has-submenu .submenu-arrow {
-        transition: transform 0.3s ease;
-    }
-
-    .sidebar nav ul li.has-submenu.open .submenu-arrow {
-        transform: rotate(180deg);
-    }
-
-    .sidebar nav ul li.has-submenu .submenu {
-        list-style: none;
-        padding: 0;
-        margin-left: 1.5rem; /* Indent sub-menu items */
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease-out;
-        background: rgba(255, 255, 255, 0.05); /* Slightly different background for sub-menu */
-        border-radius: 8px;
-    }
-
-    .sidebar nav ul li.has-submenu.open .submenu {
-        max-height: 500px; /* Adjust as needed to fit all sub-items */
-        transition: max-height 0.5s ease-in;
-    }
-
-    .sidebar nav ul li.has-submenu .submenu li a {
-        padding: 0.75rem 1rem 0.75rem 2.5rem; /* Adjust padding for sub-items */
-        font-size: 0.9rem;
-        border-radius: 0; /* No rounded corners for individual sub-items */
-    }
-
-    .sidebar nav ul li.has-submenu .submenu li:last-child a {
-        border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8px;
-    }
-
-    /* Ajustar estado colapsado para o submenu */
-    .sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
-    .sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
-    .sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
-
-
-   .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
-   .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
-   .sidebar-footer button, .sidebar-footer a {
-     background: none; border: none; cursor: pointer; color: #e2e8f0;
-     padding: 0.75rem 1rem; border-radius: 8px; width: 100%;
-     display: flex; align-items: center; gap: 1rem;
-     transition: background 0.2s ease, color 0.2s ease;
-     font-family: 'Inter', sans-serif; font-size: 0.95rem; text-decoration: none;
-   }
-   .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-   .sidebar.collapsed .sidebar-footer span { display: none; }
-   .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
-
-    /* ============================================
       --- CONTEÚDO PRINCIPAL & TOPBAR ---
       ============================================
     */
    .main-content {
-     flex: 1; margin-left: 280px; /* Ajustado de 260px para 280px */
+     flex: 1; margin-left: 260px; /* Ajustado de 260px para 280px */
      transition: margin-left 0.3s ease;
      display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado de 260px para 280px */
    }
