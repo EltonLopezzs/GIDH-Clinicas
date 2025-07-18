@@ -59,6 +59,7 @@ def add_protocol():
 def edit_protocol(protocol_id):
     """
     Rota para exibir o formulário de edição de um protocolo existente, utilizando Firestore.
+    Esta rota é para acesso direto, a modal usará a rota `get_protocol_form_content`.
     """
     db = get_db()
     if not db:
@@ -87,6 +88,40 @@ def edit_protocol(protocol_id):
         flash('Erro ao carregar protocolo para edição. Tente novamente mais tarde.', 'danger')
         return redirect(url_for('protocols.list_protocols'))
 
+@protocols_bp.route('/protocols/get_form_content/<protocol_id>', methods=['GET'])
+@login_required
+def get_protocol_form_content(protocol_id):
+    """
+    Rota para retornar o conteúdo HTML do formulário de edição de um protocolo
+    para ser carregado via AJAX em uma modal.
+    """
+    db = get_db()
+    if not db:
+        return jsonify(error='Erro: Banco de dados não inicializado.'), 500
+
+    clinica_id = session.get('clinica_id')
+    if not clinica_id:
+        return jsonify(error='Erro: ID da clínica não encontrado na sessão.'), 403
+
+    protocol = None
+    if protocol_id != 'new': # 'new' indica que é um novo protocolo, não precisa buscar
+        protocol_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id)
+        try:
+            protocol_doc = protocol_ref.get()
+            if protocol_doc.exists:
+                protocol = protocol_doc.to_dict()
+                protocol['id'] = protocol_doc.id
+            else:
+                return jsonify(error='Protocolo não encontrado.'), 404
+        except Exception as e:
+            print(f"Erro ao buscar protocolo para formulário da modal: {e}")
+            return jsonify(error='Erro ao carregar protocolo para edição.'), 500
+
+    # Renderiza o template do formulário e retorna como string
+    # Usamos um template separado ou passamos um flag para ajustar o layout se necessário
+    return render_template('protocolo_form_modal_content.html', protocol=protocol)
+
+
 @protocols_bp.route('/protocols/save', methods=['POST'])
 @login_required
 def save_protocol():
@@ -107,9 +142,16 @@ def save_protocol():
     
     # Campos da aba Geral
     tipo_protocolo = request.form.get('tipo_protocolo')
-    nome = request.form['nome']
+    nome = request.form.get('nome') # Alterado para .get() para evitar KeyError se o campo não vier
     descricao = request.form.get('descricao', '')
-    duracao_estimada = request.form.get('duracao_estimada', type=int)
+    
+    # Converte duracao_estimada para int, com tratamento de erro
+    try:
+        duracao_estimada = int(request.form.get('duracao_estimada')) if request.form.get('duracao_estimada') else None
+    except ValueError:
+        flash('Erro: Duração estimada deve ser um número inteiro.', 'danger')
+        return redirect(url_for('protocols.add_protocol') if not protocol_id else url_for('protocols.edit_protocol', protocol_id=protocol_id))
+
     ativo = 'ativo' in request.form
 
     # Coleta as etapas dinamicamente
@@ -117,6 +159,7 @@ def save_protocol():
     etapas_descricoes = request.form.getlist('etapa_descricao[]')
     etapas = []
     for i in range(len(etapas_nomes)):
+        # Garante que a etapa só é adicionada se o nome não for vazio
         if etapas_nomes[i].strip():
             etapas.append({
                 'nome': etapas_nomes[i].strip(),
@@ -135,10 +178,10 @@ def save_protocol():
                 niveis.append({
                     'ordem': int(niveis_ordem[i].strip()),
                     'nivel': int(niveis_valor[i].strip()),
-                    'faixa_etaria': niveis_faixa_etaria[i].strip() if i < len(niveis_faixa_etaria) else ''
+                    'faixa_etaria': niveis_faix_etaria[i].strip() if i < len(niveis_faixa_etaria) else ''
                 })
             except ValueError:
-                flash('Erro: Ordem ou Nível da etapa inválido.', 'danger')
+                flash('Erro: Ordem ou Nível da etapa inválido. Certifique-se de que são números inteiros.', 'danger')
                 return redirect(url_for('protocols.add_protocol') if not protocol_id else url_for('protocols.edit_protocol', protocol_id=protocol_id))
 
 
@@ -154,7 +197,7 @@ def save_protocol():
                     'nome': habilidades_nome[i].strip()
                 })
             except ValueError:
-                flash('Erro: Ordem da habilidade inválida.', 'danger')
+                flash('Erro: Ordem da habilidade inválida. Certifique-se de que é um número inteiro.', 'danger')
                 return redirect(url_for('protocols.add_protocol') if not protocol_id else url_for('protocols.edit_protocol', protocol_id=protocol_id))
 
     # Coleta as pontuações dinamicamente
@@ -173,7 +216,7 @@ def save_protocol():
                     'valor': float(pontuacao_valor[i].strip())
                 })
             except ValueError:
-                flash('Erro: Ordem, Tipo ou Valor da pontuação inválido.', 'danger')
+                flash('Erro: Ordem, Tipo ou Valor da pontuação inválido. Certifique-se de que Ordem é inteiro e Valor é numérico.', 'danger')
                 return redirect(url_for('protocols.add_protocol') if not protocol_id else url_for('protocols.edit_protocol', protocol_id=protocol_id))
 
     # Coleta as tarefas/testes dinamicamente
@@ -196,7 +239,7 @@ def save_protocol():
                     'marco': tarefa_marco[i].strip() if i < len(tarefa_marco) else ''
                 })
             except ValueError:
-                flash('Erro: Nível, Ordem ou Nome da tarefa inválido.', 'danger')
+                flash('Erro: Nível, Ordem ou Nome da tarefa inválido. Certifique-se de que Nível e Ordem são números inteiros.', 'danger')
                 return redirect(url_for('protocols.add_protocol') if not protocol_id else url_for('protocols.edit_protocol', protocol_id=protocol_id))
 
     observacoes_gerais = request.form.get('observacoes_gerais', '')
@@ -255,4 +298,3 @@ def delete_protocol(protocol_id):
         print(f"Erro ao excluir protocolo do Firestore: {e}")
         flash('Erro ao excluir protocolo. Tente novamente.', 'danger')
         return jsonify(success=False, message='Erro ao excluir protocolo.'), 500
-
