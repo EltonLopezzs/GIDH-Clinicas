@@ -9,6 +9,8 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Define as variáveis de cores para os temas claro e escuro */
@@ -35,7 +37,7 @@
             --dark-muted: #94a3b8; /* Tailwind Slate-400 */
             --dark-border-color: #475569; /* Tailwind Slate-600 */
 
-            color-scheme: light;
+            color-scheme: dark;
         }
 
         /* Aplica as variáveis para o tema escuro quando o atributo data-theme="dark" está presente */
@@ -583,6 +585,11 @@
             max-width: 90vw; /* Even wider for full record */
             max-height: 90vh; /* Taller for full record */
         }
+        /* Specific override for anamnese modal */
+        #modalAnamnese .modal-content {
+            max-width: 950px; /* Slightly smaller than generic, but still large */
+        }
+
 
         @media (min-width: 1024px) { /* Para telas maiores, aumente um pouco */
             .modal-content {
@@ -900,9 +907,10 @@
                         </button>
                         <div class="dropdown-menu absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="addRecordDropdownBtn" tabindex="-1">
                             <div class="py-1" role="none">
-                                <a href="{{ url_for('adicionar_anamnese', paciente_doc_id=paciente.id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addAnamneseLink">
+                                {# ATUALIZADO: Botão para abrir a modal de Anamnese #}
+                                <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addAnamneseBtn">
                                     <i class="fas fa-plus"></i> Adicionar Anamnese
-                                </a>
+                                </button>
                                 <button type="button" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem" tabindex="-1" id="addLaudoBtn" data-record-type="laudo" data-record-title="Adicionar Laudo Médico">
                                     <i class="fas fa-file-medical"></i> Adicionar Laudo
                                 </button>
@@ -961,7 +969,8 @@
                         <button class="btn btn-sm btn-secondary btn-expand-registro"><i class="fas fa-expand-alt"></i></button>
 
                         {% if registro.tipo_registro == 'anamnese' %}
-                        <a href="{{ url_for('editar_anamnese', paciente_doc_id=paciente.id, anamnese_doc_id=registro.id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                        {# ATUALIZADO: Botão para abrir a modal de Anamnese em modo de edição #}
+                        <button type="button" class="btn btn-sm btn-warning btn-edit-registro-anamnese" data-anamnese-id="{{ registro.id }}"><i class="fas fa-edit"></i></button>
                         {% else %}
                         <button type="button" class="btn btn-sm btn-warning btn-edit-registro-generico" data-registro-id="{{ registro.id }}"><i class="fas fa-edit"></i></button>
                         {% endif %}
@@ -1226,6 +1235,73 @@
         </div>
     </div>
 
+    {# NOVA MODAL: Para o formulário de Anamnese #}
+    <div id="modalAnamnese" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalAnamneseTitle">Registrar Anamnese</h3>
+                <button type="button" class="modal-close-btn" data-close-modal="modalAnamnese">&times;</button>
+            </div>
+            <form id="anamneseForm" method="POST" action="">
+                <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
+                <input type="hidden" name="anamnese_id" id="anamnese_id_field"> {# Campo para ID da anamnese em edição #}
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="modelo_base_id">Aplicar Modelo de Anamnese</label>
+                        <select id="modelo_base_id" name="modelo_base_id">
+                            <option value="">Nenhum Modelo (Anamnese em branco)</option>
+                            {% for modelo in modelos_anamnese %}
+                                <option value="{{ modelo.id }}" 
+                                        data-conteudo="{{ modelo.conteudo_modelo | e }}">
+                                    {{ modelo.identificacao }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="gemini-generator">
+                        <div class="form-group">
+                            <label for="gemini-prompt-anamnese">Gerar conteúdo com Inteligência Artificial</label>
+                            <div class="gemini-generator-actions-anamnese" style="display: none;">
+                                <input type="text" id="gemini-prompt-anamnese" placeholder="Ex: Anamnese para paciente com histórico de enxaqueca">
+                                <button type="button" id="generate-anamnesis-btn" class="btn btn-primary" disabled>
+                                    <i class="fas fa-robot"></i>&nbsp;<span>Gerar</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div id="lgpd-consent-text-anamnese" class="consent-text">
+                                Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="conteudo_anamnese_editor">Conteúdo da Anamnese</label>
+                        <div class="editor-container">
+                            <div class="editor-toolbar">
+                                <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><i class="fas fa-bold"></i></button>
+                                <button type="button" data-command="italic" title="Itálico (Ctrl+I)"><i class="fas fa-italic"></i></button>
+                                <button type="button" data-command="underline" title="Sublinhado (Ctrl+U)"><i class="fas fa-underline"></i></button>
+                                <button type="button" data-command="insertUnorderedList" title="Lista não ordenada"><i class="fas fa-list-ul"></i></button>
+                                <button type="button" data-command="insertOrderedList" title="Lista ordenada"><i class="fas fa-list-ol"></i></button>
+                                <button type="button" data-command="undo" title="Desfazer (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                                <button type="button" data-command="redo" title="Refazer (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+                            </div>
+                            <div id="conteudo_anamnese_editor" contenteditable="true" class="editor-content-generic" data-placeholder="Digite o conteúdo da anamnese aqui..."></div>
+                            <textarea id="conteudo_anamnese_hidden" name="conteudo" style="display:none;"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-close-modal="modalAnamnese">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Anamnese</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <div id="confirm-delete-modal" class="modal-overlay">
         <div class="modal-content confirm-modal-content">
@@ -1293,6 +1369,8 @@
         // Importa funções do Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
         import { getAuth, signOut as firebaseSignOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js"; // Corrected .s to .js
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
 
         // Configuração do Firebase. ATENÇÃO: Substitua pelos dados do seu projeto Firebase.
         const firebaseConfig = {
@@ -1322,13 +1400,15 @@
 
         // NOVO: Dados de outros documentos
         const allOtherDocuments = {{ outros_documentos | tojson | safe }};
+        const allModelosAnamnese = {{ modelos_anamnese | default([]) | tojson | safe }}; // Modelos de anamnese
 
         // Passa as variáveis de role do Python para o JavaScript
         const IS_ADMIN = {{ is_admin | tojson }};
         const IS_PROFESSIONAL = {{ is_professional | tojson }};
         const LOGGED_IN_PROFESSIONAL_ID = {{ logged_in_professional_id | tojson }}; // Agora passa o ID do profissional logado
         const ALL_PROFESSIONALS = {{ all_profissionais | tojson | safe }}; // Lista de todos os profissionais
-        const PACIENTE_DOC_ID = "{{ paciente_doc_id }}";
+        // ATUALIZADO: Obtém o ID do paciente diretamente do input oculto
+        const PACIENTE_DOC_ID = document.querySelector('input[name="paciente_id"]').value;
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement; // Elemento HTML raiz para manipular atributos de tema
@@ -1343,6 +1423,7 @@
             console.log('PACIENTE_DOC_ID:', PACIENTE_DOC_ID);
             console.log('-------------------------------------------');
             console.log('Outros Documentos Carregados:', allOtherDocuments); // DEBUG para novos documentos
+            console.log('Modelos de Anamnese Carregados:', allModelosAnamnese); // DEBUG para modelos de anamnese
 
 
             // Função para mostrar o overlay de carregamento
@@ -1554,7 +1635,7 @@
                     modalRegistroGenericoTitle.innerHTML = title;
 
                     // Define a ação padrão para adicionar
-                    formRegistroGenerico.action = `{{ url_for('registrar_registro_generico', paciente_doc_id=paciente.id) }}`;
+                    formRegistroGenerico.action = `/prontuarios/${PACIENTE_DOC_ID}/registrar_registro_generico`;
 
                     if (registroData) { // Modo de Edição
                         registroIdGenericoInput.value = registroData.id;
@@ -1565,7 +1646,7 @@
                             agendamentoIdReferenciaInput.value = registroData.agendamento_id_referencia || '';
                         }
                         // Altera a ação do formulário para o endpoint de edição
-                        formRegistroGenerico.action = `{{ url_for('editar_registro_generico', paciente_doc_id=paciente.id, registro_doc_id='DUMMY_ID') }}`.replace('DUMMY_ID', registroData.id);
+                        formRegistroGenerico.action = `/prontuarios/${PACIENTE_DOC_ID}/editar_registro_generico/${registroData.id}`;
                     } else { // Modo de Adição (garante que IDs de registro não estejam preenchidos)
                         registroIdGenericoInput.value = '';
                         if (agendamentoIdReferenciaInput) {
@@ -1573,9 +1654,11 @@
                         }
                     }
 
-                    // Esconde a modal de upload de documentos se estiver visível
+                    // Esconde a modal de upload de documentos e anamnese se estiver visível
                     const modalUploadDoc = document.getElementById('modalUploadDocumento');
                     if (modalUploadDoc) modalUploadDoc.classList.remove('active');
+                    const modalAnamnese = document.getElementById('modalAnamnese');
+                    if (modalAnamnese) modalAnamnese.classList.remove('active');
 
                     modalRegistroGenerico.classList.add('active'); // Abre o modal
                 }
@@ -1611,9 +1694,11 @@
                     submitUploadDocumentoBtn.disabled = false; // Garante que o botão não esteja desabilitado
                     submitUploadDocumentoBtn.classList.remove('loading'); // Remove o estado de loading
 
-                    // Esconde a modal de registro genérico se estiver visível
+                    // Esconde a modal de registro genérico e anamnese se estiver visível
                     const modalRegGenerico = document.getElementById('modalRegistroGenerico');
                     if (modalRegGenerico) modalRegGenerico.classList.remove('active');
+                    const modalAnamnese = document.getElementById('modalAnamnese');
+                    if (modalAnamnese) modalAnamnese.classList.remove('active');
 
                     modalUploadDocumento.classList.add('active');
                 });
@@ -1685,24 +1770,24 @@
                 });
 
 
-                // *** Lógica do Gerador Gemini (Inteligência Artificial) ***
+                // *** Lógica do Gerador Gemini (Inteligência Artificial) para Registros Genéricos ***
                 const generateGenericBtn = document.getElementById('generate-generic-btn');
                 const genericPromptInput = document.getElementById('gemini-prompt-generico');
                 const lgpdConsentTextGeneric = document.getElementById('lgpd-consent-text-generico');
-                const generatorActions = document.querySelector('#modalRegistroGenerico .gemini-generator-actions');
+                const generatorActionsGeneric = document.querySelector('#modalRegistroGenerico .gemini-generator-actions');
 
-                // Lógica de consentimento LGPD para o gerador Gemini
-                if (lgpdConsentTextGeneric && generateGenericBtn && generatorActions) {
+                // Lógica de consentimento LGPD para o gerador Gemini (genérico)
+                if (lgpdConsentTextGeneric && generateGenericBtn && generatorActionsGeneric) {
                     lgpdConsentTextGeneric.addEventListener('click', () => {
                         lgpdConsentTextGeneric.classList.toggle('active'); // Ativa/desativa a classe 'active'
                         const isActive = lgpdConsentTextGeneric.classList.contains('active');
 
-                        generatorActions.style.display = isActive ? 'flex' : 'none'; // Mostra/oculta o campo de prompt e botão
+                        generatorActionsGeneric.style.display = isActive ? 'flex' : 'none'; // Mostra/oculta o campo de prompt e botão
                         generateGenericBtn.disabled = !isActive; // Habilita/desabilita o botão de gerar
                     });
                 }
 
-                // Lógica de chamada da API Gemini para gerar conteúdo
+                // Lógica de chamada da API Gemini para gerar conteúdo (genérico)
                 if (generateGenericBtn && genericPromptInput && conteudoRegistroGenericoEditor) {
                     generateGenericBtn.addEventListener('click', async () => {
                         const userPrompt = genericPromptInput.value.trim();
@@ -1734,30 +1819,17 @@
                         generateGenericBtn.classList.add('loading'); // Adiciona classe de carregamento
 
                         try {
-                            // Utiliza a API Gemini para gerar conteúdo
                             const apiKey = ""; // A chave API será fornecida pelo ambiente Canvas
+                            const genAI = new GoogleGenerativeAI(apiKey);
+                            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash"});
 
-                            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                            const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
-
-                            const response = await fetch(apiUrl, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload)
-                            });
-                            const result = await response.json();
-
-                            let generatedText = '';
-                            if (result.candidates && result.candidates[0]?.content?.parts?.[0]) {
-                                generatedText = result.candidates[0].content.parts[0].text;
-                            } else {
-                                throw new Error('Estrutura de resposta da IA inesperada ou conteúdo ausente.');
-                            }
-
+                            const result = await model.generateContent(fullPrompt);
+                            const response = await result.response;
+                            const text = response.text();
+                            
                             // Preenche o editor de texto com o conteúdo gerado
-                            conteudoRegistroGenericoEditor.innerHTML = generatedText;
-                            if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = generatedText;
+                            conteudoRegistroGenericoEditor.innerHTML = text;
+                            if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = text;
 
                         } catch (error) {
                             console.error('Erro na API Gemini:', error);
@@ -1771,6 +1843,227 @@
                     });
                 }
 
+                // *** Lógica do Modal de Anamnese (Adicionar/Editar) ***
+                const modalAnamnese = document.getElementById('modalAnamnese');
+                const anamneseForm = document.getElementById('anamneseForm');
+                const modalAnamneseTitle = document.getElementById('modalAnamneseTitle');
+                const anamneseIdField = document.getElementById('anamnese_id_field');
+                const modeloBaseIdSelect = document.getElementById('modelo_base_id');
+                const conteudoAnamneseEditor = document.getElementById('conteudo_anamnese_editor');
+                const conteudoAnamneseHiddenTextarea = document.getElementById('conteudo_anamnese_hidden');
+
+                const generateAnamnesisBtn = document.getElementById('generate-anamnesis-btn');
+                const geminiPromptAnamneseInput = document.getElementById('gemini-prompt-anamnese');
+                const lgpdConsentTextAnamnese = document.getElementById('lgpd-consent-text-anamnese');
+                const geminiGeneratorActionsAnamnese = document.querySelector('.gemini-generator-actions-anamnese');
+
+
+                // Sincroniza o editor de texto da anamnese com o campo oculto
+                if (conteudoAnamneseEditor && conteudoAnamneseHiddenTextarea) {
+                    conteudoAnamneseEditor.addEventListener('input', () => {
+                        conteudoAnamneseHiddenTextarea.value = conteudoAnamneseEditor.innerHTML;
+                    });
+                }
+
+                // Lógica da barra de ferramentas do editor de texto da anamnese
+                document.querySelectorAll('#modalAnamnese .editor-toolbar button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        document.execCommand(e.currentTarget.dataset.command, false, null);
+                        conteudoAnamneseEditor.focus();
+                        if (conteudoAnamneseHiddenTextarea) conteudoAnamneseHiddenTextarea.value = conteudoAnamneseEditor.innerHTML;
+                    });
+                });
+
+                // Lógica de seleção de modelo de anamnese
+                if (modeloBaseIdSelect && conteudoAnamneseEditor && conteudoAnamneseHiddenTextarea) {
+                    modeloBaseIdSelect.addEventListener('change', (e) => {
+                        const selected = e.target.options[e.target.selectedIndex];
+                        const content = selected.dataset.conteudo;
+                        if (content && (!conteudoAnamneseEditor.innerHTML.trim() || confirm('Deseja substituir o conteúdo atual pelo modelo?'))) {
+                            conteudoAnamneseEditor.innerHTML = content;
+                            conteudoAnamneseHiddenTextarea.value = content;
+                        }
+                    });
+                }
+
+                // Lógica de consentimento LGPD para o gerador Gemini (anamnese)
+                if (lgpdConsentTextAnamnese && generateAnamnesisBtn && geminiGeneratorActionsAnamnese) {
+                    lgpdConsentTextAnamnese.addEventListener('click', () => {
+                        lgpdConsentTextAnamnese.classList.toggle('active');
+                        const isActive = lgpdConsentTextAnamnese.classList.contains('active');
+                        geminiGeneratorActionsAnamnese.style.display = isActive ? 'flex' : 'none';
+                        generateAnamnesisBtn.disabled = !isActive;
+                    });
+                }
+
+                // Lógica de geração de IA para anamnese
+                if (generateAnamnesisBtn && geminiPromptAnamneseInput && conteudoAnamneseEditor) {
+                    generateAnamnesisBtn.addEventListener('click', async () => {
+                        const userPrompt = geminiPromptAnamneseInput.value.trim();
+                        if (!userPrompt) {
+                            displayFlashMessage('warning', 'Por favor, descreva o tipo de anamnese que você deseja gerar.');
+                            return;
+                        }
+
+                        const patientName = "{{ paciente.nome if paciente else 'o paciente' }}";
+                        const fullPrompt = `Você é um assistente especialista em criar documentos para a área da saúde. Sua tarefa é criar um modelo de anamnese em HTML, que seja extremamente completo e detalhado, para a seguinte especialidade ou queixa para o paciente ${patientName}: "${userPrompt}". O modelo deve incluir seções essenciais como: 'Identificação do Paciente', 'Queixa Principal (QP)', 'História da Doença Atual (HDA)', 'Histórico Médico Pregresso (HMP)', 'Histórico Familiar', 'Hábitos de Vida e Condições Socioeconômicas', e 'Exame Físico' (com subseções para sinais vitais, inspeção, palpação, etc.). Utilize títulos com a tag <h3> ou <strong>, listas <ul> para itens, e parágrafos <p> para descrições. O resultado deve ser um documento robusto e pronto para ser preenchido por um profissional de saúde, sem placeholders como "[...]" e com conteúdo exemplo.`;
+                        
+                        showLoading();
+                        generateAnamnesisBtn.disabled = true;
+                        generateAnamnesisBtn.classList.add('loading');
+
+                        try {
+                            const apiKey = ""; // A chave API será fornecida pelo ambiente Canvas
+                            const genAI = new GoogleGenerativeAI(apiKey);
+                            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash"});
+
+                            const result = await model.generateContent(fullPrompt);
+                            const response = await result.response;
+                            const text = response.text();
+                            
+                            if (conteudoAnamneseEditor.innerHTML.trim() && !await showCustomConfirm('Deseja substituir o conteúdo atual pelo texto gerado pela IA?')) {
+                                generateAnamnesisBtn.disabled = !lgpdConsentTextAnamnese.classList.contains('active');
+                                generateAnamnesisBtn.classList.remove('loading');
+                                return;
+                            }
+                            
+                            conteudoAnamneseEditor.innerHTML = text;
+                            if (conteudoAnamneseHiddenTextarea) conteudoAnamneseHiddenTextarea.value = text;
+
+                        } catch (error) {
+                            console.error('Gemini API Error:', error);
+                            displayFlashMessage('danger', 'Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.');
+                        } finally {
+                            hideLoading();
+                            generateAnamnesisBtn.disabled = !lgpdConsentTextAnamnese.classList.contains('active');
+                            generateAnamnesisBtn.classList.remove('loading');
+                        }
+                    });
+                }
+
+                // Função para abrir o modal de Anamnese (Adicionar/Editar)
+                function openAnamneseModal(anamneseData = null) {
+                    anamneseForm.reset(); // Limpa o formulário
+                    conteudoAnamneseEditor.innerHTML = ''; // Limpa o editor
+                    conteudoAnamneseHiddenTextarea.value = ''; // Limpa o textarea oculto
+                    modeloBaseIdSelect.value = ''; // Reseta a seleção do modelo
+                    
+                    // Reseta o estado do gerador Gemini
+                    lgpdConsentTextAnamnese.classList.remove('active');
+                    geminiGeneratorActionsAnamnese.style.display = 'none';
+                    generateAnamnesisBtn.disabled = true;
+                    geminiPromptAnamneseInput.value = '';
+
+                    modalAnamneseTitle.textContent = 'Registrar Anamnese';
+                    anamneseForm.action = `/prontuarios/${PACIENTE_DOC_ID}/adicionar_anamnese`;
+                    anamneseIdField.value = ''; // Garante que o campo esteja vazio para adição
+
+                    if (anamneseData) { // Modo de Edição
+                        modalAnamneseTitle.textContent = 'Editar Anamnese';
+                        anamneseIdField.value = anamneseData.id;
+                        conteudoAnamneseEditor.innerHTML = anamneseData.conteudo || '';
+                        conteudoAnamneseHiddenTextarea.value = anamneseData.conteudo || '';
+                        modeloBaseIdSelect.value = anamneseData.modelo_base_id || '';
+                        anamneseForm.action = `/prontuarios/${PACIENTE_DOC_ID}/editar_anamnese/${anamneseData.id}`;
+                    }
+
+                    // Esconde outras modals se estiverem abertas
+                    closeModalById('modalRegistroGenerico');
+                    closeModalById('modalUploadDocumento');
+
+                    modalAnamnese.classList.add('active');
+                    console.log("Anamnese form action set to:", anamneseForm.action); // Log the action URL
+                }
+
+                // Listener para o botão "Adicionar Anamnese" no dropdown
+                document.getElementById('addAnamneseBtn')?.addEventListener('click', () => {
+                    closeAddRecordDropdown();
+                    openAnamneseModal(); // Abre a modal para adicionar nova anamnese
+                });
+
+                // Listener para os botões "Editar Anamnese" nos cards
+                document.querySelectorAll('.btn-edit-registro-anamnese').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const anamneseId = button.dataset.anamneseId;
+                        const anamneseData = allRecordsData.find(r => r.id === anamneseId && r.tipo_registro === 'anamnese');
+                        if (anamneseData) {
+                            openAnamneseModal(anamneseData); // Abre a modal em modo de edição
+                        } else {
+                            console.error('Dados da anamnese não encontrados para edição:', anamneseId);
+                            displayFlashMessage('danger', 'Erro ao carregar dados da anamnese para edição.');
+                        }
+                    });
+                });
+
+                // Lógica de submissão do formulário de anamnese
+                anamneseForm?.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    showLoading();
+                    const submitButton = anamneseForm.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Salvando...';
+                    }
+
+                    // Sincroniza o conteúdo final do editor para o hidden textarea
+                    conteudoAnamneseHiddenTextarea.value = conteudoAnamneseEditor.innerHTML;
+
+                    try {
+                        const formData = new FormData(anamneseForm);
+                        const response = await fetch(anamneseForm.action, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            displayFlashMessage('success', data.message || 'Anamnese salva com sucesso!');
+                            window.location.reload(); // Recarrega a página para mostrar as mudanças
+                        } else {
+                            const errorData = await response.json();
+                            displayFlashMessage('danger', errorData.message || 'Erro ao salvar anamnese.');
+                        }
+                    } catch (error) {
+                        console.error('Erro na submissão da anamnese:', error);
+                        displayFlashMessage('danger', 'Erro de conexão ou servidor. Tente novamente.');
+                    } finally {
+                        hideLoading();
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = '<i class="fas fa-save"></i> Salvar Anamnese';
+                        }
+                    }
+                });
+
+                // Função para exibir um modal de confirmação personalizado
+                function showCustomConfirm(message) {
+                    return new Promise((resolve) => {
+                        const modalHtml = `
+                            <div id="customConfirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[9999]">
+                                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm mx-auto">
+                                    <p class="text-gray-800 text-lg mb-4">${message}</p>
+                                    <div class="flex justify-end space-x-4">
+                                        <button id="confirmCancel" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                                        <button id="confirmOk" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">OK</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        document.body.insertAdjacentHTML('beforeend', modalHtml);
+                        const modal = document.getElementById('customConfirmModal');
+                        
+                        document.getElementById('confirmOk').addEventListener('click', () => {
+                            modal.remove();
+                            resolve(true);
+                        });
+                        document.getElementById('confirmCancel').addEventListener('click', () => {
+                            modal.remove();
+                            resolve(false);
+                        });
+                    });
+                }
 
                 // *** Lógica de Exclusão e Modais (Centralizada) ***
                 const confirmDeleteModal = document.getElementById('confirm-delete-modal');
@@ -2072,47 +2365,6 @@
                     // Salva o PDF com um nome descritivo
                     doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
                 }
-
-                // Function to display custom flash messages (already defined globally, but keeping for context if moved)
-                /*
-                function displayFlashMessage(type, message) {
-                    let flashMessagesContainer = document.querySelector('.flash-messages');
-                    if (!flashMessagesContainer) {
-                        const mainElement = document.querySelector('main');
-                        if (mainElement) {
-                            const newContainer = document.createElement('div');
-                            newContainer.classList.add('flash-messages');
-                            mainElement.prepend(newContainer);
-                            flashMessagesContainer = newContainer;
-                        } else {
-                            console.error('Não foi possível encontrar ou criar o container de flash messages.');
-                            return;
-                        }
-                    }
-
-                    const messageDiv = document.createElement('div');
-                    messageDiv.classList.add('flash-message', type);
-                    let iconClass = '';
-                    if (type === 'success') iconClass = 'fas fa-check-circle';
-                    else if (type === 'danger') iconClass = 'fas fa-times-circle';
-                    else if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
-                    else iconClass = 'fas fa-info-circle';
-
-                    messageDiv.innerHTML = `<i class="${iconClass}"></i> ${message}`;
-
-                    flashMessagesContainer.appendChild(messageDiv);
-
-                    // Remove a mensagem após alguns segundos
-                    setTimeout(() => {
-                        messageDiv.remove();
-                    }, 5000);
-                }
-                */
-
-
-                // --- Initial Renderings --- (PEI rendering removed)
-
-                // Event listeners for Add Target and Add Activity removed
 
                 // --- Initialization ---
                 setupTabs();

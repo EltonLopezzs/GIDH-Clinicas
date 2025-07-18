@@ -57,7 +57,7 @@ def _update_target_status_transaction(transaction, pei_ref, goal_id, target_id, 
             for target in goal.get('targets', []):
                 if target.get('id') == target_id:
                     target['concluido'] = concluido
-                    # Se o alvo for marcado como concluído, todas as ajudas também devem ser.
+                    # Se o alvo for marcado como concluído, todas as ajudas associadas também devem ser.
                     if concluido and 'aids' in target:
                         for aid in target['aids']:
                             aid['status'] = 'finalizada'
@@ -247,7 +247,7 @@ def _update_target_and_aid_data_transaction(transaction, pei_ref, goal_id, targe
                     # Atualiza o status geral do alvo, se fornecido
                     if new_target_status is not None:
                         target['status'] = new_target_status
-                        # Se o alvo for marcado como finalizado, todas as ajudas devem ser finalizadas
+                        # Se o alvo for marcado como concluído, todas as ajudas devem ser finalizadas
                         if new_target_status == 'finalizada' and 'aids' in target:
                             for aid in target['aids']:
                                 aid['status'] = 'finalizada'
@@ -374,8 +374,19 @@ def register_medical_records_routes(app):
             flash(f'Erro ao carregar lista de profissionais: {e}', 'warning')
             print(f"Erro ao carregar profissionais para PEI: {e}")
 
+        # Obter modelos de anamnese para o dropdown na modal de anamnese
+        modelos_anamnese_lista = []
+        try:
+            modelos_docs = db_instance.collection('clinicas').document(clinica_id).collection('modelos_anamnese').order_by('identificacao').stream()
+            for doc in modelos_docs:
+                modelos_anamnese_lista.append(convert_doc_to_dict(doc))
+        except Exception as e:
+            flash('Erro ao carregar modelos de anamnese.', 'warning')
+            print(f"Erro ao carregar modelos de anamnese (ver_prontuario): {e}")
+
         # DEBUG: Imprime a lista de profissionais antes de passar para o template
         print(f"DEBUG: profissionais_lista antes de render_template: {profissionais_lista}")
+        print(f"DEBUG: modelos_anamnese_lista antes de render_template: {modelos_anamnese_lista}")
 
 
         try:
@@ -508,6 +519,7 @@ def register_medical_records_routes(app):
                                is_professional=is_professional, # Passa a flag de profissional para o template
                                logged_in_professional_id=logged_in_professional_id, # Passa o ID do profissional logado
                                all_profissionais=profissionais_lista, # Passa a lista de profissionais
+                               modelos_anamnese=modelos_anamnese_lista, # NOVO: Passa os modelos de anamnese
                                outros_documentos=outros_documentos # NOVO: Passa os outros documentos
                                )
 
@@ -525,18 +537,17 @@ def register_medical_records_routes(app):
             titulo = request.form.get('titulo', '').strip()
             conteudo = request.form.get('conteudo', '').strip()
             if not all([tipo_registro, titulo, conteudo]):
-                flash(f'Por favor, preencha o título e o conteúdo para o registo.', 'danger')
+                return jsonify({'success': False, 'message': 'Por favor, preencha o título e o conteúdo para o registo.'}), 400
             else:
                 db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
                     'data_registro': datetime.datetime.now(SAO_PAULO_TZ), 'tipo_registro': tipo_registro,
                     'titulo': titulo, 'conteudo': conteudo,
                     'profissional_nome': session.get('user_name', 'N/A') # Adiciona o profissional
                 })
-                flash(f'Registo de {tipo_registro} adicionado com sucesso!', 'success')
+                return jsonify({'success': True, 'message': f'Registo de {tipo_registro} adicionado com sucesso!'}), 200
         except Exception as e:
-            flash(f'Erro ao adicionar registo: {e}', 'danger')
             print(f"Erro ao adicionar registro genérico: {e}")
-        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            return jsonify({'success': False, 'message': f'Erro ao adicionar registo: {e}'}), 500
 
     @app.route('/prontuarios/<string:paciente_doc_id>/editar_registro_generico/<string:registro_doc_id>', methods=['POST'], endpoint='editar_registro_generico')
     @login_required
@@ -547,18 +558,17 @@ def register_medical_records_routes(app):
             titulo = request.form.get('titulo', '').strip()
             conteudo = request.form.get('conteudo', '').strip()
             if not all([titulo, conteudo]):
-                flash(f'Por favor, preencha o título e o conteúdo para o registo.', 'danger')
+                return jsonify({'success': False, 'message': 'Por favor, preencha o título e o conteúdo para o registo.'}), 400
             else:
                 registro_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(registro_doc_id)
                 registro_ref.update({
                     'titulo': titulo, 'conteudo': conteudo,
                     'atualizado_em': datetime.datetime.now(SAO_PAULO_TZ)
                 })
-                flash(f'Registo atualizado com sucesso!', 'success')
+                return jsonify({'success': True, 'message': 'Registo atualizado com sucesso!'}), 200
         except Exception as e:
-            flash(f'Erro ao atualizar registo: {e}', 'danger')
             print(f"Erro ao editar registro genérico: {e}")
-        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            return jsonify({'success': False, 'message': f'Erro ao atualizar registo: {e}'}), 500
 
     @app.route('/prontuarios/<string:paciente_doc_id>/apagar_registro_generico', methods=['POST'], endpoint='apagar_registro_generico')
     @login_required
@@ -577,79 +587,63 @@ def register_medical_records_routes(app):
             print(f"Erro ao apagar registro genérico: {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
 
-    @app.route('/prontuarios/<string:paciente_doc_id>/anamnese/novo', methods=['GET', 'POST'], endpoint='adicionar_anamnese')
+    # ATUALIZADO: Rota para adicionar anamnese (agora para modal)
+    @app.route('/prontuarios/<string:paciente_doc_id>/adicionar_anamnese', methods=['POST'], endpoint='adicionar_anamnese')
     @login_required
     def adicionar_anamnese(paciente_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
-        paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
-        paciente_doc = paciente_ref.get()
-        if not paciente_doc.exists:
-            flash('Paciente não encontrado.', 'danger')
-            return redirect(url_for('buscar_prontuario'))
-        
-        paciente_nome = paciente_doc.to_dict().get('nome', 'Paciente Desconhecido')
-        modelos_anamnese = []
         try:
-            modelos_docs = db_instance.collection('clinicas').document(clinica_id).collection('modelos_anamnese').order_by('identificacao').stream()
-            for doc in modelos_docs:
-                modelos_anamnese.append(convert_doc_to_dict(doc))
+            conteudo = request.form.get('conteudo', '').strip()
+            modelo_base_id = request.form.get('modelo_base_id') # Captura o ID do modelo, se houver
+
+            if not conteudo:
+                return jsonify({'success': False, 'message': 'O conteúdo da anamnese é obrigatório.'}), 400
+
+            anamnese_data = {
+                'data_registro': datetime.datetime.now(SAO_PAULO_TZ),
+                'tipo_registro': 'anamnese',
+                'titulo': 'Anamnese',
+                'conteudo': conteudo,
+                'profissional_nome': session.get('user_name', 'N/A')
+            }
+            if modelo_base_id:
+                anamnese_data['modelo_base_id'] = modelo_base_id
+
+            db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add(anamnese_data)
+            return jsonify({'success': True, 'message': 'Anamnese adicionada com sucesso!'}), 200
         except Exception as e:
-            flash('Erro ao carregar modelos de anamnese.', 'warning')
-            print(f"Erro ao carregar modelos de anamnese (adicionar): {e}")
+            print(f"Erro ao adicionar anamnese: {e}")
+            return jsonify({'success': False, 'message': f'Erro ao adicionar anamnese: {e}'}), 500
 
-        if request.method == 'POST':
-            try:
-                conteudo = request.form.get('conteudo', '').strip()
-                db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').add({
-                    'data_registro': datetime.datetime.now(SAO_PAULO_TZ), 'tipo_registro': 'anamnese',
-                    'titulo': 'Anamnese', 'conteudo': conteudo,
-                    'profissional_nome': session.get('user_name', 'N/A') # Adiciona o profissional
-                })
-                flash('Anamnese adicionada com sucesso!', 'success')
-                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
-            except Exception as e:
-                flash(f'Erro ao adicionar anamnese: {e}', 'danger')
-                print(f"Erro ao adicionar anamnese: {e}")
-            
-        return render_template('anamnese_form.html', paciente_id=paciente_doc_id, paciente_nome=paciente_nome, modelos_anamnese=modelos_anamnese, action_url=url_for('adicionar_anamnese', paciente_doc_id=paciente_doc_id), page_title=f"Registrar Anamnese para {paciente_nome}")
-
-    # ROTA RESTAURADA
-    @app.route('/prontuarios/<string:paciente_doc_id>/anamnese/editar/<string:anamnese_doc_id>', methods=['GET', 'POST'], endpoint='editar_anamnese')
+    # ATUALIZADO: Rota para editar anamnese (agora para modal)
+    @app.route('/prontuarios/<string:paciente_doc_id>/editar_anamnese/<string:anamnese_doc_id>', methods=['POST'], endpoint='editar_anamnese')
     @login_required
     def editar_anamnese(paciente_doc_id, anamnese_doc_id):
         db_instance = get_db()
         clinica_id = session['clinica_id']
-        anamnese_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(anamnese_doc_id)
-        
-        if request.method == 'POST':
-            try:
-                conteudo = request.form.get('conteudo', '').strip()
-                anamnese_ref.update({
-                    'conteudo': conteudo, 
-                    'atualizado_em': datetime.datetime.now(SAO_PAULO_TZ)
-                })
-                flash('Anamnese atualizada com sucesso!', 'success')
-                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
-            except Exception as e:
-                flash(f'Erro ao atualizar anamnese: {e}', 'danger')
-                print(f"Erro ao editar anamnese: {e}")
-        
         try:
-            anamnese_doc = anamnese_ref.get()
-            if anamnese_doc.exists:
-                paciente_doc = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).get()
-                paciente_nome = paciente_doc.to_dict().get('nome') if paciente_doc.exists else ''
-                anamnese_data = anamnese_doc.to_dict()
-                anamnese_data['profissional_nome'] = anamnese_data.get('profissional_nome', 'N/A') # Garante que o nome do profissional exista para exibição
-                return render_template('anamnese_form.html', anamnese=anamnese_data, paciente_id=paciente_doc_id, paciente_nome=paciente_nome, action_url=url_for('editar_anamnese', paciente_doc_id=paciente_doc_id, anamnese_doc_id=anamnese_doc_id), page_title=f"Editar Anamnese para {paciente_nome}")
-            else:
-                flash('Anamnese não encontrada.', 'danger')
-                return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            conteudo = request.form.get('conteudo', '').strip()
+            modelo_base_id = request.form.get('modelo_base_id') # Captura o ID do modelo, se houver
+
+            if not conteudo:
+                return jsonify({'success': False, 'message': 'O conteúdo da anamnese é obrigatório.'}), 400
+
+            anamnese_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(anamnese_doc_id)
+            
+            update_data = {
+                'conteudo': conteudo, 
+                'atualizado_em': datetime.datetime.now(SAO_PAULO_TZ)
+            }
+            # Atualiza o modelo_base_id apenas se ele for enviado no formulário
+            # Isso permite que um modelo seja removido (se o valor for vazio) ou alterado
+            update_data['modelo_base_id'] = modelo_base_id if modelo_base_id else firestore.DELETE_FIELD
+
+            anamnese_ref.update(update_data)
+            return jsonify({'success': True, 'message': 'Anamnese atualizada com sucesso!'}), 200
         except Exception as e:
-            flash(f'Erro ao carregar anamnese: {e}', 'danger')
-            print(f"Erro ao carregar anamnese: {e}")
-            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            print(f"Erro ao atualizar anamnese: {e}")
+            return jsonify({'success': False, 'message': f'Erro ao atualizar anamnese: {e}'}), 500
 
     @app.route('/modelos_anamnese', endpoint='listar_modelos_anamnese')
     @login_required
@@ -1316,23 +1310,19 @@ def register_medical_records_routes(app):
         clinica_id = session['clinica_id']
         
         if 'pdf_file' not in request.files:
-            flash('Nenhum arquivo PDF enviado.', 'danger')
-            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            return jsonify({'success': False, 'message': 'Nenhum arquivo PDF enviado.'}), 400
 
         pdf_file = request.files['pdf_file']
         descricao = request.form.get('descricao', '').strip()
 
         if pdf_file.filename == '':
-            flash('Nenhum arquivo PDF selecionado.', 'danger')
-            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            return jsonify({'success': False, 'message': 'Nenhum arquivo PDF selecionado.'}), 400
 
         if not pdf_file.filename.lower().endswith('.pdf'):
-            flash('Apenas arquivos PDF são permitidos.', 'danger')
-            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            return jsonify({'success': False, 'message': 'Apenas arquivos PDF são permitidos.'}), 400
 
         if not descricao:
-            flash('A descrição do documento é obrigatória.', 'danger')
-            return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            return jsonify({'success': False, 'message': 'A descrição do documento é obrigatória.'}), 400
 
         try:
             original_pdf_bytes = pdf_file.read()
@@ -1379,8 +1369,7 @@ def register_medical_records_routes(app):
             # Então, 1MB de dados brutos vira ~1.33MB em Base64.
             # Se o PDF original for grande, mesmo comprimido, pode exceder 1MB no Firestore.
             if len(pdf_base64) > (1024 * 1024): # Verifica se o Base64 é maior que 1MB
-                 flash('O arquivo PDF, mesmo após otimização, é muito grande para ser armazenado. Por favor, use um arquivo menor ou otimize-o externamente.', 'danger')
-                 return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+                 return jsonify({'success': False, 'message': 'O arquivo PDF, mesmo após otimização, é muito grande para ser armazenado. Por favor, use um arquivo menor ou otimize-o externamente.'}), 413 # 413 Payload Too Large
 
 
             paciente_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id)
@@ -1397,13 +1386,11 @@ def register_medical_records_routes(app):
                 'conteudo_base64': pdf_base64
             })
 
-            flash('Documento PDF enviado e otimizado com sucesso!', 'success')
+            return jsonify({'success': True, 'message': 'Documento PDF enviado e otimizado com sucesso!'}), 200
 
         except Exception as e:
-            flash(f'Erro ao fazer upload do documento: {e}', 'danger')
             print(f"Erro upload_documento_pdf: {e}")
-
-        return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
+            return jsonify({'success': False, 'message': f'Erro ao fazer upload do documento: {e}'}), 500
 
     @app.route('/prontuarios/<string:paciente_doc_id>/download_documento_pdf/<string:documento_id>', methods=['GET'], endpoint='download_documento_pdf')
     @login_required
@@ -1456,4 +1443,3 @@ def register_medical_records_routes(app):
             flash(f'Erro ao excluir documento PDF: {e}', 'danger')
             print(f"Erro delete_documento_pdf: {e}")
         return redirect(url_for('ver_prontuario', paciente_doc_id=paciente_doc_id))
-
