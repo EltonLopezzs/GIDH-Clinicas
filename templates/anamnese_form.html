@@ -202,7 +202,10 @@
         .editor-toolbar button:hover { background-color: color-mix(in srgb, var(--primary) 10%, transparent); }
         .editor-toolbar button.is-active { background-color: color-mix(in srgb, var(--primary) 20%, transparent); }
         .editor-content {
-            min-height: 400px; max-height: 600px; overflow-y: auto; padding: 1rem;
+            /* Aumentado o min-height e max-height para dar mais espaço */
+            min-height: 500px; /* Increased from 400px */
+            max-height: 800px; /* Increased from 600px */
+            overflow-y: auto; padding: 1rem;
             border: 1px solid var(--border-color); border-radius: 0 0 8px 8px;
             font-size: 1rem; background-color: var(--card); color: var(--text);
             outline: none; line-height: 1.6; resize: vertical;
@@ -213,10 +216,20 @@
         }
 
         /* --- Gemini Generator & Consent --- */
-        .gemini-generator {
-            margin-bottom: 1.5rem; background-color: color-mix(in srgb, var(--primary) 5%, transparent);
-            padding: 1rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
+        .gemini-generator-container {
+            margin-bottom: 1.5rem;
         }
+
+        .gemini-generator {
+            background-color: color-mix(in srgb, var(--primary) 5%, transparent);
+            padding: 1rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
+            display: none; /* Hidden by default */
+            margin-top: 1rem;
+        }
+        .gemini-generator.active {
+            display: block; /* Shown when active */
+        }
+
         .gemini-generator .form-group { margin-bottom: 0.75rem; }
         .gemini-generator-actions { display: flex; gap: 10px; align-items: center; }
         .gemini-generator-actions input { flex-grow: 1; }
@@ -333,7 +346,6 @@
                 <div class="topbar-left">
                     <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <!-- LINHA CORRIGIDA AQUI: Removido o segundo 'para {{ paciente_nome }}' -->
                     <h1 class="page-title">{{ page_title|default('Registrar Anamnese') }}</h1>
                 </div>
             </header>
@@ -367,19 +379,24 @@
                             </select>
                         </div>
 
-                        <div class="gemini-generator">
-                            <div class="form-group">
-                                <label for="gemini-prompt">Gerar conteúdo com Inteligência Artificial</label>
-                                <div class="gemini-generator-actions">
-                                    <input type="text" id="gemini-prompt" placeholder="Ex: Anamnese para paciente com histórico de enxaqueca">
-                                    <button type="button" id="generate-anamnesis-btn" class="btn btn-primary" disabled>
-                                        <i class="fas fa-robot"></i>&nbsp;<span>Gerar</span>
-                                    </button>
+                        <div class="gemini-generator-container">
+                            <button type="button" id="toggle-gemini-btn" class="btn btn-secondary w-full mb-4">
+                                <i class="fas fa-robot"></i>&nbsp;Gerar Anamnese com IA
+                            </button>
+                            <div id="gemini-section" class="gemini-generator">
+                                <div class="form-group">
+                                    <label for="gemini-prompt">Descreva o tipo de anamnese que você deseja gerar:</label>
+                                    <div class="gemini-generator-actions">
+                                        <input type="text" id="gemini-prompt" placeholder="Ex: Anamnese para paciente com histórico de enxaqueca">
+                                        <button type="button" id="generate-anamnesis-btn" class="btn btn-primary" disabled>
+                                            <i class="fas fa-magic"></i>&nbsp;<span>Gerar</span>
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <div id="lgpd-consent-text" class="consent-text">
-                                    Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
+                                <div class="form-group">
+                                    <div id="lgpd-consent-text" class="consent-text">
+                                        Estou ciente de que o texto gerado pela IA é uma sugestão e deve ser revisado por um profissional. Nenhum dado de paciente será enviado.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -416,7 +433,7 @@
 
         // IMPORTANTE: Cole aqui a configuração do seu projeto Firebase
         const firebaseConfig = {
-            apiKey: "SUA_API_KEY",
+            apiKey: "SUA_API_KEY", // Replace with your actual API Key
             authDomain: "SEU_AUTH_DOMAIN",
             projectId: "SEU_PROJECT_ID",
             storageBucket: "SEU_STORAGE_BUCKET",
@@ -424,14 +441,14 @@
             appId: "SEU_APP_ID"
         };
 
-        // Inicializar Firebase
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement;
             
-            // --- Lógica Geral da Interface (Sidebar, Tema, Logout) ---
+            // --- Common UI Logic (Sidebar, Theme, Logout) ---
             function setupCommonUI() {
                 const sidebar = document.querySelector('.sidebar');
                 const mainContent = document.querySelector('.main-content');
@@ -439,7 +456,7 @@
                 const themeToggle = document.getElementById('theme-toggle');
                 const logoutButton = document.getElementById('logoutButton');
 
-                // 1. Lógica do Tema (Dark/Light Mode)
+                // 1. Theme Logic (Dark/Light Mode)
                 if (themeToggle) {
                     const themeIcon = themeToggle.querySelector('i');
                     const currentTheme = localStorage.getItem('theme') || 'light';
@@ -455,9 +472,9 @@
                     });
                 }
 
-                // 2. Lógica da Sidebar (Expandir/Recolher)
+                // 2. Sidebar Logic (Expand/Collapse)
                 if (sidebar && mainContent && toggleButtons.length > 0) {
-                    // Aplica o estado salvo no desktop
+                    // Apply saved state on desktop
                     if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
                         sidebar.classList.add('collapsed');
                         mainContent.classList.add('collapsed');
@@ -476,22 +493,23 @@
                     });
                 }
                 
-                // 3. Lógica de Logout
+                // 3. Logout Logic
                 if (logoutButton) {
                     logoutButton.addEventListener('click', (e) => {
                         e.preventDefault();
                         firebaseSignOut(auth).then(() => {
-                            // Redireciona para a página de login após o logout
+                            // Redirect to login page after logout
                             window.location.href = '/login'; 
                         }).catch((error) => {
-                            console.error('Erro ao fazer logout:', error);
-                            alert('Não foi possível sair. Tente novamente.');
+                            console.error('Logout error:', error);
+                            // Using custom message box instead of alert
+                            showCustomAlert('Não foi possível sair. Tente novamente.');
                         });
                     });
                 }
             }
             
-            // --- Lógica Específica da Página de Anamnese ---
+            // --- Anamnesis Page Specific Logic ---
             function setupAnamnesisPage() {
                 const editor = document.getElementById('editor-content');
                 const hiddenTextarea = document.getElementById('conteudo');
@@ -499,7 +517,7 @@
 
                 if (editor && hiddenTextarea) {
                     editor.addEventListener('input', () => { hiddenTextarea.value = editor.innerHTML; });
-                    hiddenTextarea.value = editor.innerHTML; // Sincroniza o conteúdo inicial
+                    hiddenTextarea.value = editor.innerHTML; // Synchronize initial content
                 }
                 
                 document.querySelectorAll('.editor-toolbar button').forEach(button => {
@@ -523,11 +541,20 @@
                     });
                 }
                 
-                // --- Lógica do Gerador Gemini ---
+                // --- Gemini Generator Logic ---
+                const toggleGeminiBtn = document.getElementById('toggle-gemini-btn');
+                const geminiSection = document.getElementById('gemini-section');
                 const generateBtn = document.getElementById('generate-anamnesis-btn');
                 const promptInput = document.getElementById('gemini-prompt');
                 const lgpdConsentText = document.getElementById('lgpd-consent-text');
                 
+                // Toggle Gemini section visibility
+                if (toggleGeminiBtn && geminiSection) {
+                    toggleGeminiBtn.addEventListener('click', () => {
+                        geminiSection.classList.toggle('active');
+                    });
+                }
+
                 if (lgpdConsentText && generateBtn) {
                     lgpdConsentText.addEventListener('click', () => {
                         lgpdConsentText.classList.toggle('active');
@@ -539,13 +566,7 @@
                     generateBtn.addEventListener('click', async () => {
                         const userPrompt = promptInput.value.trim();
                         if (!userPrompt) {
-                            // Substituindo alert() por uma mensagem na tela
-                            const flashMessagesDiv = document.querySelector('.flash-messages');
-                            if (flashMessagesDiv) {
-                                flashMessagesDiv.innerHTML = `<div class="flash-message danger">Por favor, descreva o tipo de anamnese que você deseja gerar.</div>`;
-                            } else {
-                                console.error('Elemento .flash-messages não encontrado para exibir a mensagem.');
-                            }
+                            showCustomAlert('Por favor, descreva o tipo de anamnese que você deseja gerar.');
                             return;
                         }
                         
@@ -556,37 +577,41 @@
                         generateBtn.querySelector('span').textContent = 'Gerando...';
 
                         try {
-                            // --- ATENÇÃO: Substitua pela sua chave de API real do Gemini ---
-                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // <<<<<<< IMPORTANTE
-                            const genAI = new GoogleGenerativeAI(apiKey);
-                            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
-
-                            const result = await model.generateContent(fullPrompt);
-                            const response = await result.response;
-                            const text = response.text();
+                            const apiKey = ""; // Canvas will provide this at runtime
+                            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                             
-                            // Substituindo confirm() por uma modal personalizada
+                            let chatHistory = [];
+                            chatHistory.push({ role: "user", parts: [{ text: fullPrompt }] });
+                            const payload = { contents: chatHistory };
+
+                            const response = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            const result = await response.json();
+
+                            let generatedText = '';
+                            if (result.candidates && result.candidates.length > 0 &&
+                                result.candidates[0].content && result.candidates[0].content.parts &&
+                                result.candidates[0].content.parts.length > 0) {
+                                generatedText = result.candidates[0].content.parts[0].text;
+                            } else {
+                                throw new Error('Estrutura de resposta inesperada da API Gemini.');
+                            }
+                            
                             if (editor.innerHTML.trim()) {
                                 if (!await showCustomConfirm('Deseja substituir o conteúdo atual pelo texto gerado pela IA?')) {
-                                    generateBtn.disabled = !lgpdConsentText.classList.contains('active');
-                                    generateBtn.classList.remove('loading');
-                                    generateBtn.querySelector('span').textContent = 'Gerar';
-                                    return;
+                                    return; // User cancelled
                                 }
                             }
                             
-                            editor.innerHTML = text;
-                            if (hiddenTextarea) hiddenTextarea.value = text;
+                            editor.innerHTML = generatedText;
+                            if (hiddenTextarea) hiddenTextarea.value = generatedText;
 
                         } catch (error) {
                             console.error('Gemini API Error:', error);
-                            // Substituindo alert() por uma mensagem na tela
-                            const flashMessagesDiv = document.querySelector('.flash-messages');
-                            if (flashMessagesDiv) {
-                                flashMessagesDiv.innerHTML = `<div class="flash-message danger">Ocorreu um erro ao se comunicar com a IA. Verifique se sua chave de API é válida e consulte o console para mais detalhes.</div>`;
-                            } else {
-                                console.error('Elemento .flash-messages não encontrado para exibir a mensagem.');
-                            }
+                            showCustomAlert('Ocorreu um erro ao se comunicar com a IA. Por favor, tente novamente mais tarde.');
                         } finally {
                             generateBtn.disabled = !lgpdConsentText.classList.contains('active');
                             generateBtn.classList.remove('loading');
@@ -596,7 +621,7 @@
                 }
             }
 
-            // Função para exibir um modal de confirmação personalizado
+            // Function to display a custom confirmation modal
             function showCustomConfirm(message) {
                 return new Promise((resolve) => {
                     const modalHtml = `
@@ -624,7 +649,20 @@
                 });
             }
 
-            // --- Inicialização ---
+            // Function to display a custom alert message
+            function showCustomAlert(message) {
+                const flashMessagesDiv = document.querySelector('.flash-messages');
+                if (flashMessagesDiv) {
+                    flashMessagesDiv.innerHTML = `<div class="flash-message danger">${message}</div>`;
+                    setTimeout(() => {
+                        flashMessagesDiv.innerHTML = ''; // Clear message after some time
+                    }, 5000);
+                } else {
+                    console.error('Elemento .flash-messages não encontrado para exibir a mensagem:', message);
+                }
+            }
+
+            // --- Initialization ---
             setupCommonUI();
             setupAnamnesisPage();
         });
