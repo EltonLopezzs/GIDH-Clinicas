@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Editar' if protocol else 'Novo' }} Protocolo - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+
+    <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Estilos principais do layout (copiados de pacientes.html) */
+        :root {
+            --bg: #f1f5f9;                  /* Gray-100 */
+            --card: #ffffff;                /* White */
+            --text: #0f172a;                /* Gray-900 */
+            --muted: #64748b;               /* Gray-500 */
+            --accent: #9b53b8;              /* Purple-500 */
+            --primary-dark: #115e59;        
+            --primary: #5587c2;             /* Blue-500 */
+            --primary-light: #c8dcf3;       /* Blue-100 */
+            --secondary: #f59e0b;           /* Yellow-500 */
+            --danger: #dc2626;              /* Red-600 */
+            --success: #16a34a;             /* Green-600 */
+            --warning: #f59e0b;             /* Yellow-500 */
+            --info: #0ea5e9;                /* Sky-500 */
+            --border-color: #e2e8f0;        /* Gray-200 */
+
+            --dark-bg: #0f172a;             /* Gray-900 */
+            --dark-card: #1e293b;           /* Gray-800 */
+            --dark-text: #f1f5f9;           /* Gray-100 */
+            --dark-muted: #94a3b8;          /* Gray-400 */
+            --dark-border-color: #334155;   /* Gray-600 */
+
+            color-scheme: light;
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
+            color-scheme: dark;
+        }
+        
+        ::-webkit-scrollbar {
+            background-color: var(--bg);
+            width: 0.5625rem;
+            height: 0.5625rem;
+            border-top-right-radius: 0.3125rem;
+            border-bottom-right-radius: 0.3125rem;
+            transition: background-color 0.8s ease;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--muted);
+            border-radius: .3125rem;
+            transition: background-color 0.8s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            transition: background-color 0.8s ease;
+            background-color: var(--primary);
+        }
+        
+        /* Reset básico e box-sizing */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .layout { display: flex; min-height: 100vh; width: 100%; }
+
+        /* --- Main Content & Topbar --- */
+        .main-content {
+            flex: 1; margin-left: 260px; /* Ajustado para 280px */
+            transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado para 280px */
+            max-width: calc(100% - 280px); /* Ajustado para 280px */
+            box-sizing: border-box;
+        }
+        .main-content.collapsed { 
+            margin-left: 88px; /* Ajustado para 88px */
+            width: calc(100% - 88px); /* Ajustado para 88px */
+            max-width: calc(100% - 88px); /* Ajustado para 88px */
+        }
+        .topbar {
+            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
+            position: sticky; top: 0; z-index: 900;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
+        .toggle-btn {
+            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
+            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
+        .topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
+        .search-form { display: flex; align-items: center; }
+        .search-input {
+            padding: 0.5rem 0.8rem; border: 1px solid var(--border-color); border-radius: 8px 0 0 8px;
+            font-size: 0.9rem; background-color: var(--bg); color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-input:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none; z-index: 1;
+        }
+        .search-button {
+            background-color: var(--primary); color: white; border: none;
+            padding: 0.5rem 1rem; border-radius: 0 8px 8px 0; margin-left: -1px;
+            cursor: pointer; transition: background-color 0.2s ease;
+        }
+        .search-button:hover { background-color: var(--accent); }
+
+        main { 
+            flex-grow: 1; 
+            padding: 1.5rem; 
+            overflow-y: auto; 
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
+            font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
+        }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--accent); }
+        .btn-info { background-color: var(--info); color: white; }
+        .btn-info:hover { background-color: #0369a1; }
+        .btn-warning { background-color: var(--warning); color: #854d0e; }
+        [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
+        .btn-warning:hover { background-color: #fcd34d; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+
+        /* --- Form Styling (adaptado de paciente_form) --- */
+        .form-card {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            align-items: stretch;
+            background: var(--card);
+            border-radius: 18px;
+            box-shadow: 0 10px 32px rgba(0,0,0,0.18);
+            overflow: hidden;
+        }
+        .protocol-steps {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            background: none;
+            border-radius: 18px 18px 0 0;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .protocol-step {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px 0 14px 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--muted);
+            opacity: 0.7;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            background: none;
+            transition: color 0.2s, opacity 0.2s, border-color 0.2s, background 0.2s;
+        }
+        .protocol-step.active {
+            color: var(--primary);
+            opacity: 1;
+            border-bottom: 3px solid var(--primary);
+            background: var(--primary-light);
+        }
+        .protocol-step i {
+            font-size: 1.2rem;
+            margin-right: 0.5rem;
+        }
+        @media (max-width: 600px) {
+            .protocol-steps { flex-direction: column; border-radius: 0; }
+            .protocol-step { border-bottom: none; border-left: 4px solid transparent; justify-content: flex-start; padding: 14px 0 14px 18px; }
+            .protocol-step.active { border-left: 4px solid var(--primary); background: var(--primary-light); }
+        }
+
+        .protocol-card-section {
+            background: var(--card);
+            border-radius: 0px 0px 18px 18px;
+            /* box-shadow: 0 4px 24px 0 rgb(0 0 0 / 0.07); */
+            padding: 2.5rem 2rem 2rem 2rem;
+            position: relative;
+            flex: 1; /* Para ocupar o espaço restante */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: calc(100vh - 70px - 70px); /* Ajuste conforme a altura do topbar e footer */
+        }
+
+        .protocol-card-container-form {
+            /* min-height: 80vh; */
+            /* min-width: 80vw;             */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-grow: 1;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        .section-title i {
+            font-size: 1.2rem;
+        }
+        .protocol-card-fields {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.2rem 2rem;
+        }
+        .protocol-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .protocol-field label {
+            font-size: 1.05rem;
+            color: var(--muted);
+            font-weight: 600;
+            margin-bottom: 0.1rem;
+        }
+        .protocol-field input,
+        .protocol-field select,
+        .protocol-field textarea {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 1.1rem;
+            padding: 0.5rem 0.2rem 0.3rem 0.2rem;
+            color: var(--text);
+            transition: border-color 0.2s;
+            border-radius: 0;
+            outline: none;
+        }
+        .protocol-field input:focus,
+        .protocol-field select:focus,
+        .protocol-field textarea:focus {
+            border-color: var(--primary);
+            background: #f7fafc;
+        }
+        .protocol-field textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .protocol-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .protocol-btn {
+            padding: 8px 16px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 12px 0 rgb(13 148 136 / 0.10);
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .protocol-btn.cancel {
+            background: transparent;
+            color: var(--muted);
+            box-shadow: none;
+        }
+        .protocol-btn:not(.cancel):hover {
+            background: var(--accent);
+        }
+
+        /* --- Estilos para campos obrigatórios --- */
+        .protocol-field.required label::after {
+            content: ' *';
+            color: var(--danger);
+            font-weight: 700;
+            margin-left: 2px;
+        }
+
+        .protocol-field.required input,
+        .protocol-field.required select,
+        .protocol-field.required textarea {
+            border-left: 3px solid var(--danger);
+            padding-left: 8px;
+        }
+
+        .protocol-field.required input:focus,
+        .protocol-field.required select:focus,
+        .protocol-field.required textarea:focus {
+            border-left-color: var(--primary);
+            box-shadow: -3px 0 0 var(--primary);
+        }
+
+        .protocol-field.required input:valid,
+        .protocol-field.required select:valid,
+        .protocol-field.required textarea:valid {
+            border-left-color: var(--success);
+        }
+
+        .protocol-field.required input:invalid,
+        .protocol-field.required select.invalid,
+        .protocol-field.required textarea.invalid {
+            border-left-color: var(--danger);
+        }
+
+        /* Animação sutil para transição de estados */
+        .protocol-field input,
+        .protocol-field select,
+        .protocol-field textarea {
+            transition: all 0.3s ease;
+        }
+
+        /* Animação de shake para campos inválidos no submit */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .protocol-field.required input.invalid.shake,
+        .protocol-field.required select.invalid.shake,
+        .protocol-field.required textarea.invalid.shake {
+            animation: shake 0.5s ease-in-out;
+            border-color: var(--danger) !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2) !important;
+        }
+
+        /* Destaque mais forte para campos inválidos */
+        .protocol-field.required input.invalid,
+        .protocol-field.required select.invalid,
+        .protocol-field.required textarea.invalid {
+            border-bottom-color: var(--danger) !important;
+            border-left-color: var(--danger) !important;
+            background-color: rgba(220, 38, 38, 0.1) !important;
+        }
+
+        /* Indicador visual para step com erro */
+        .protocol-step.has-error {
+            color: var(--danger) !important;
+            border-bottom-color: var(--danger) !important;
+            background: rgba(220, 38, 38, 0.1) !important;
+        }
+
+        .protocol-step.has-error::after {
+            content: '⚠️';
+            margin-left: 5px;
+            font-size: 0.9rem;
+        }
+
+        /* Nova modal para alertas gerais (copiado de pacientes.html) */
+        .alert-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15,23,42,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 4500; /* Maior que outras modals */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .alert-modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .alert-modal {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 400px; /* Tamanho consistente */
+            width: 90vw;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            padding: 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .alert-modal-overlay.show .alert-modal {
+            transform: scale(1);
+        }
+        .alert-modal-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+        .alert-modal-icon.info { background: var(--info); }
+        .alert-modal-icon.success { background: var(--success); }
+        .alert-modal-icon.warning { background: var(--warning); }
+        .alert-modal-icon.danger { background: var(--danger); }
+
+        .alert-modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+        .alert-modal-message {
+            font-size: 1rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .alert-modal-actions {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .alert-modal-actions .btn {
+            min-width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div id="toast-container"></div>
+    <!-- Nova Modal para Alertas Gerais (copiado de pacientes.html) -->
+    <div id="general-alert-modal-overlay" class="alert-modal-overlay">
+        <div class="alert-modal">
+            <div id="alert-modal-icon" class="alert-modal-icon"></div>
+            <h3 id="alert-modal-title" class="alert-modal-title"></h3>
+            <p id="alert-modal-message" class="alert-modal-message"></p>
+            <div class="alert-modal-actions">
+                <button id="alert-modal-close-btn" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout">
+        {% include 'Nav.html' %}
+
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
+                    <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
+                    <h1 class="page-title">{{ 'Editar' if protocol else 'Novo' }} Protocolo</h1>
+                </div>
+                <div class="topbar-actions">
+                    <a href="{{ url_for('protocols.list_protocols') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> <span class="btn-text-desktop">Voltar para Protocolos</span>
+                    </a>
+                </div>
+            </header>
+
+            <main>
+                <form id="protocol-form" class="form-card" action="{{ url_for('protocols.save_protocol') }}" method="POST">
+                    <input type="hidden" name="id" value="{{ protocol.id if protocol else '' }}">
+                    
+                    <div class="protocol-steps">
+                        <div class="protocol-step active" data-step="1"><i class="fa-solid fa-file-alt"></i> Geral</div>
+                        <div class="protocol-step" data-step="2"><i class="fa-solid fa-list-ol"></i> Etapas do Protocolo</div>
+                        <div class="protocol-step" data-step="3"><i class="fa-solid fa-layer-group"></i> Níveis</div>
+                        <div class="protocol-step" data-step="4"><i class="fa-solid fa-brain"></i> Habilidades</div>
+                        <div class="protocol-step" data-step="5"><i class="fa-solid fa-star-half-alt"></i> Pontuação</div>
+                        <div class="protocol-step" data-step="6"><i class="fa-solid fa-tasks"></i> Tarefas/Testes</div>
+                        <div class="protocol-step" data-step="7"><i class="fa-solid fa-comment-dots"></i> Observações</div>
+                    </div>
+
+                    <div class="protocol-step-content" style="flex:1; position:relative;">
+                        <div class="protocol-card-section" data-step-content="1" style="display:block;">
+                            <div class="protocol-card-container-form">
+                                <div class="protocol-card-fields single">
+                                    <div class="protocol-field required">
+                                        <label>Tipo de Protocolo:</label>
+                                        <div class="flex items-center space-x-4 mt-2">
+                                            <label class="inline-flex items-center">
+                                                <input type="radio" class="form-radio h-5 w-5 text-blue-600" name="tipo_protocolo" value="Aquisicao de Habilidades" {% if protocol and protocol.tipo_protocolo == 'Aquisicao de Habilidades' %}checked{% endif %} required>
+                                                <span class="ml-2 text-gray-700">Aquisição de Habilidades</span>
+                                            </label>
+                                            <label class="inline-flex items-center">
+                                                <input type="radio" class="form-radio h-5 w-5 text-blue-600" name="tipo_protocolo" value="Reducao de Comportamentos" {% if protocol and protocol.tipo_protocolo == 'Reducao de Comportamentos' %}checked{% endif %} required>
+                                                <span class="ml-2 text-gray-700">Redução de Comportamentos</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="protocol-field required">
+                                        <label for="nome">Nome do Protocolo:</label>
+                                        <input type="text" id="nome" name="nome" value="{{ protocol.nome if protocol else '' }}" required>
+                                    </div>
+                                    <div class="protocol-field">
+                                        <label for="descricao">Descrição:</label>
+                                        <textarea id="descricao" name="descricao" rows="4">{{ protocol.descricao if protocol else '' }}</textarea>
+                                    </div>
+                                    <div class="protocol-field">
+                                        <label for="duracao_estimada">Duração Estimada (dias):</label>
+                                        <input type="number" id="duracao_estimada" name="duracao_estimada" value="{{ protocol.duracao_estimada if protocol else '' }}">
+                                    </div>
+                                    <div class="protocol-field flex items-center">
+                                        <input type="checkbox" id="ativo" name="ativo" value="1" {% if protocol and protocol.ativo %}checked{% endif %} class="h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                                        <label for="ativo" class="ml-2 text-gray-700">Protocolo Ativo</label>
+                                    </div>
+                                </div>
+                                <div class="protocol-actions" style="justify-content:flex-end;">
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="2" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-list-ol"></i> Etapas do Protocolo</h3>
+                                <div id="etapas-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.etapas %}
+                                        {% for etapa in protocol.etapas %}
+                                            <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                                <div class="flex-grow w-full">
+                                                    <div class="protocol-field required">
+                                                        <label for="etapa_nome_{{ loop.index0 }}">Nome da Etapa:</label>
+                                                        <input type="text" id="etapa_nome_{{ loop.index0 }}" name="etapa_nome[]" value="{{ etapa.nome }}" required>
+                                                    </div>
+                                                    <div class="protocol-field mt-2">
+                                                        <label for="etapa_descricao_{{ loop.index0 }}">Descrição da Etapa:</label>
+                                                        <textarea id="etapa_descricao_{{ loop.index0 }}" name="etapa_descricao[]" rows="2">{{ etapa.descricao }}</textarea>
+                                                    </div>
+                                                </div>
+                                                <button type="button" onclick="removeDynamicField(this, 'etapa')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="addDynamicField('etapa')" class="protocol-btn btn-primary mt-4">Adicionar Etapa</button>
+                                <div class="protocol-actions" style="justify-content:space-between;">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="3" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-layer-group"></i> Níveis</h3>
+                                <div id="niveis-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.niveis %}
+                                        {% for nivel in protocol.niveis %}
+                                            <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                                <div class="flex-grow w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div class="protocol-field required">
+                                                        <label for="nivel_ordem_{{ loop.index0 }}">Ordem:</label>
+                                                        <input type="number" id="nivel_ordem_{{ loop.index0 }}" name="nivel_ordem[]" value="{{ nivel.ordem }}" required>
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label for="nivel_valor_{{ loop.index0 }}">Nível:</label>
+                                                        <input type="number" id="nivel_valor_{{ loop.index0 }}" name="nivel_valor[]" value="{{ nivel.nivel }}" required>
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label for="nivel_faixa_etaria_{{ loop.index0 }}">Faixa Etária:</label>
+                                                        <input type="text" id="nivel_faixa_etaria_{{ loop.index0 }}" name="nivel_faixa_etaria[]" value="{{ nivel.faixa_etaria }}">
+                                                    </div>
+                                                </div>
+                                                <button type="button" onclick="removeDynamicField(this, 'nivel')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="addDynamicField('nivel')" class="protocol-btn btn-primary mt-4">Adicionar Nível</button>
+                                <div class="protocol-actions" style="justify-content:space-between;">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="4" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-brain"></i> Habilidades</h3>
+                                <div id="habilidades-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.habilidades %}
+                                        {% for habilidade in protocol.habilidades %}
+                                            <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                                <div class="flex-grow w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div class="protocol-field required">
+                                                        <label for="habilidade_ordem_{{ loop.index0 }}">Ordem:</label>
+                                                        <input type="number" id="habilidade_ordem_{{ loop.index0 }}" name="habilidade_ordem[]" value="{{ habilidade.ordem }}" required>
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label for="habilidade_nome_{{ loop.index0 }}">Habilidade:</label>
+                                                        <input type="text" id="habilidade_nome_{{ loop.index0 }}" name="habilidade_nome[]" value="{{ habilidade.nome }}" required>
+                                                    </div>
+                                                </div>
+                                                <button type="button" onclick="removeDynamicField(this, 'habilidade')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="addDynamicField('habilidade')" class="protocol-btn btn-primary mt-4">Adicionar Habilidade</button>
+                                <div class="protocol-actions" style="justify-content:space-between;">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="5" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-star-half-alt"></i> Pontuação</h3>
+                                <div id="pontuacao-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.pontuacao %}
+                                        {% for pontuacao_item in protocol.pontuacao %}
+                                            <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                                <div class="flex-grow w-full grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                    <div class="protocol-field required">
+                                                        <label for="pontuacao_ordem_{{ loop.index0 }}">Ordem:</label>
+                                                        <input type="number" id="pontuacao_ordem_{{ loop.index0 }}" name="pontuacao_ordem[]" value="{{ pontuacao_item.ordem }}" required>
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label for="pontuacao_tipo_{{ loop.index0 }}">Tipo:</label>
+                                                        <input type="text" id="pontuacao_tipo_{{ loop.index0 }}" name="pontuacao_tipo[]" value="{{ pontuacao_item.tipo }}" required>
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label for="pontuacao_descricao_{{ loop.index0 }}">Descrição:</label>
+                                                        <input type="text" id="pontuacao_descricao_{{ loop.index0 }}" name="pontuacao_descricao[]" value="{{ pontuacao_item.descricao }}">
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label for="pontuacao_valor_{{ loop.index0 }}">Valor:</label>
+                                                        <input type="number" step="0.1" id="pontuacao_valor_{{ loop.index0 }}" name="pontuacao_valor[]" value="{{ pontuacao_item.valor }}" required>
+                                                    </div>
+                                                </div>
+                                                <button type="button" onclick="removeDynamicField(this, 'pontuacao')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="addDynamicField('pontuacao')" class="protocol-btn btn-primary mt-4">Adicionar Pontuação</button>
+                                <div class="protocol-actions" style="justify-content:space-between;">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="6" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-tasks"></i> Tarefas/Testes</h3>
+                                <div id="tarefas-testes-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.tarefas_testes %}
+                                        {% for tarefa_teste in protocol.tarefas_testes %}
+                                            <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                                <div class="flex-grow w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                                    <div class="protocol-field required">
+                                                        <label for="tarefa_nivel_{{ loop.index0 }}">Nível:</label>
+                                                        <input type="number" id="tarefa_nivel_{{ loop.index0 }}" name="tarefa_nivel[]" value="{{ tarefa_teste.nivel }}" required>
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label for="tarefa_ordem_{{ loop.index0 }}">Ordem:</label>
+                                                        <input type="number" id="tarefa_ordem_{{ loop.index0 }}" name="tarefa_ordem[]" value="{{ tarefa_teste.ordem }}" required>
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label for="tarefa_item_{{ loop.index0 }}">Item:</label>
+                                                        <input type="text" id="tarefa_item_{{ loop.index0 }}" name="tarefa_item[]" value="{{ tarefa_teste.item }}">
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label for="tarefa_nome_{{ loop.index0 }}">Nome da Tarefa:</label>
+                                                        <input type="text" id="tarefa_nome_{{ loop.index0 }}" name="tarefa_nome[]" value="{{ tarefa_teste.nome }}" required>
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label for="tarefa_habilidade_{{ loop.index0 }}">Habilidade:</label>
+                                                        <input type="text" id="tarefa_habilidade_{{ loop.index0 }}" name="tarefa_habilidade[]" value="{{ tarefa_teste.habilidade }}">
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label for="tarefa_marco_{{ loop.index0 }}">Marco:</label>
+                                                        <input type="text" id="tarefa_marco_{{ loop.index0 }}" name="tarefa_marco[]" value="{{ tarefa_teste.marco }}">
+                                                    </div>
+                                                </div>
+                                                <button type="button" onclick="removeDynamicField(this, 'tarefa')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="addDynamicField('tarefa')" class="protocol-btn btn-primary mt-4">Adicionar Tarefa/Teste</button>
+                                <div class="protocol-actions" style="justify-content:space-between;">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="7" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-comment-dots"></i> Observações</h3>
+                                <div class="protocol-card-fields single">
+                                    <div class="protocol-field">
+                                        <label for="observacoes_gerais">Observações Gerais:</label>
+                                        <textarea id="observacoes_gerais" name="observacoes_gerais" rows="6">{{ protocol.observacoes_gerais if protocol else '' }}</textarea>
+                                    </div>
+                                </div>
+                                <div class="protocol-actions" style="justify-content:space-between;">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="submit" class="protocol-btn btn-primary"><i class="fas fa-save"></i> Salvar Protocolo</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        // Variável global para a modal de alerta
+        let showGeneralAlertModalGlobal = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const protocolForm = document.getElementById('protocol-form');
+            const steps = document.querySelectorAll('.protocol-step');
+            const sections = document.querySelectorAll('.protocol-card-section');
+            const nextBtns = document.querySelectorAll('.steps-next');
+            const prevBtns = document.querySelectorAll('.steps-prev');
+
+            let currentStepIndex = 0;
+
+            // --- Lógica para Notificações Toast (copiado de pacientes.html) ---
+            const toastContainer = document.getElementById('toast-container');
+            function showToast(message, category = 'info') {
+                if (!toastContainer) return;
+
+                const toast = document.createElement('div');
+                toast.className = `toast ${category}`;
+                
+                let iconClass = 'fa-solid fa-circle-info';
+                let title = 'Informação';
+                if (category === 'success') {
+                    iconClass = 'fa-solid fa-check-circle';
+                    title = 'Sucesso';
+                }
+                if (category === 'danger') {
+                    iconClass = 'fa-solid fa-times-circle';
+                    title = 'Erro';
+                }
+                if (category === 'warning') {
+                    iconClass = 'fa-solid fa-exclamation-triangle';
+                    title = 'Atenção';
+                }
+
+                toast.innerHTML = `
+                    <div class="toast-icon">
+                        <i class="${iconClass}"></i>
+                    </div>
+                    <div class="toast-content">
+                        <strong class="toast-title">${title}</strong>
+                        <span class="toast-message">${message}</span>
+                    </div>
+                    <button class="toast-close">&times;</button>
+                    <div class="toast-progress"></div>
+                `;
+                
+                toastContainer.appendChild(toast);
+
+                const closeButton = toast.querySelector('.toast-close');
+                closeButton.addEventListener('click', () => {
+                    toast.classList.add('fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
+                });
+
+                setTimeout(() => {
+                    toast.classList.add('fade-out');
+                    toast.addEventListener('animationend', () => toast.remove());
+                }, 5000); // A notificação desaparece após 5 segundos
+            }
+
+            // Processa mensagens flash do backend e as exibe como toasts
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    showToast({{ message|tojson|safe }}, "{{ category }}");
+                {% endfor %}
+            {% endwith %}
+
+            // --- Lógica para Modal de Alerta Geral (copiado de pacientes.html) ---
+            const generalAlertOverlay = document.getElementById('general-alert-modal-overlay');
+            const alertModalIcon = document.getElementById('alert-modal-icon');
+            const alertModalTitle = document.getElementById('alert-modal-title');
+            const alertModalMessage = document.getElementById('alert-modal-message');
+            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+
+            function showGeneralAlertModal(title, message, category = 'info') {
+                alertModalTitle.textContent = title;
+                alertModalMessage.textContent = message;
+                
+                alertModalIcon.className = 'alert-modal-icon'; // Reset class
+                let iconClass = '';
+                switch (category) {
+                    case 'info': iconClass = 'fas fa-info-circle'; break;
+                    case 'success': iconClass = 'fas fa-check-circle'; break;
+                    case 'warning': iconClass = 'fas fa-exclamation-triangle'; break;
+                    case 'danger': iconClass = 'fas fa-times-circle'; break;
+                }
+                alertModalIcon.classList.add(category);
+                alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
+
+                generalAlertOverlay.classList.add('show');
+                document.body.style.overflow = 'hidden'; // Bloquear scroll do body
+            }
+
+            function closeGeneralAlertModal() {
+                generalAlertOverlay.classList.remove('show');
+                document.body.style.overflow = 'auto'; // Restaurar scroll do body
+            }
+            // Conectar a função showGeneralAlertModal com a global
+            showGeneralAlertModalGlobal = showGeneralAlertModal;
+
+            alertModalCloseBtn.addEventListener('click', closeGeneralAlertModal);
+            generalAlertOverlay.addEventListener('click', (e) => {
+                if (e.target === generalAlertOverlay) {
+                    closeGeneralAlertModal();
+                }
+            });
+
+            // Função para exibir o passo atual
+            function showStep(index) {
+                steps.forEach((step, i) => {
+                    step.classList.toggle('active', i === index);
+                });
+                sections.forEach((section, i) => {
+                    section.style.display = i === index ? 'flex' : 'none'; /* Usar flex para layout interno */
+                });
+                currentStepIndex = index;
+            }
+
+            // Navegação por clique nas abas
+            steps.forEach((step, i) => {
+                step.addEventListener('click', () => {
+                    showStep(i);
+                });
+            });
+
+            // Botões Próximo/Anterior
+            nextBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Validar campos do passo atual antes de avançar
+                    if (validateCurrentStep()) {
+                        showStep(Math.min(currentStepIndex + 1, sections.length - 1));
+                    } else {
+                        showGeneralAlertModalGlobal('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios nesta seção.', 'danger');
+                    }
+                });
+            });
+
+            prevBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    showStep(Math.max(currentStepIndex - 1, 0));
+                });
+            });
+
+            // Validação de campos obrigatórios
+            function validateRequiredField(field) {
+                let isValid = field.value.trim() !== '';
+
+                // Validação específica para radio buttons
+                if (field.type === 'radio') {
+                    const radioGroupName = field.name;
+                    const radioGroup = document.querySelectorAll(`input[name="${radioGroupName}"]`);
+                    isValid = Array.from(radioGroup).some(radio => radio.checked);
+                }
+                
+                if (isValid) {
+                    field.classList.remove('invalid', 'shake');
+                    field.classList.add('valid');
+                } else {
+                    field.classList.remove('valid');
+                    field.classList.add('invalid', 'shake');
+                }
+                return isValid;
+            }
+
+            function validateCurrentStep() {
+                let allFieldsValid = true;
+                const currentSection = sections[currentStepIndex];
+                const requiredFields = currentSection.querySelectorAll('.protocol-field.required input:not([type="hidden"]), .protocol-field.required select, .protocol-field.required textarea');
+                
+                // Limpar classes de erro e shake de todos os campos e steps
+                requiredFields.forEach(field => {
+                    field.classList.remove('invalid', 'shake');
+                });
+                steps.forEach(step => step.classList.remove('has-error'));
+
+                requiredFields.forEach(field => {
+                    const isValid = validateRequiredField(field);
+                    if (!isValid) {
+                        allFieldsValid = false;
+                        field.classList.add('invalid', 'shake'); // Adiciona animação de shake
+                        // Marca o step como tendo erro
+                        steps[currentStepIndex].classList.add('has-error');
+                    }
+                });
+                return allFieldsValid;
+            }
+
+            // Adicionar validação no submit final
+            protocolForm.addEventListener('submit', function(event) {
+                let allFormFieldsValid = true;
+                // Itera sobre todos os steps para validar todos os campos obrigatórios
+                sections.forEach((section, index) => {
+                    const requiredFields = section.querySelectorAll('.protocol-field.required input:not([type="hidden"]), .protocol-field.required select, .protocol-field.required textarea');
+                    requiredFields.forEach(field => {
+                        const isValid = validateRequiredField(field);
+                        if (!isValid) {
+                            allFormFieldsValid = false;
+                            // Marca o step com erro se houver campo inválido
+                            steps[index].classList.add('has-error');
+                        }
+                    });
+                });
+
+                if (!allFormFieldsValid) {
+                    event.preventDefault(); // Impede o envio do formulário
+                    // Encontra o primeiro step com erro e o exibe
+                    const firstInvalidStep = Array.from(steps).find(step => step.classList.contains('has-error'));
+                    if (firstInvalidStep) {
+                        const firstInvalidStepIndex = Array.from(steps).indexOf(firstInvalidStep);
+                        showStep(firstInvalidStepIndex);
+                        // Foca no primeiro campo inválido do primeiro step com erro
+                        const firstInvalidFieldInStep = sections[firstInvalidStepIndex].querySelector('.protocol-field.required input.invalid, .protocol-field.required select.invalid, .protocol-field.required textarea.invalid');
+                        if (firstInvalidFieldInStep) {
+                            firstInvalidFieldInStep.focus();
+                        }
+                    }
+                    showGeneralAlertModalGlobal('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios e corrija os erros indicados.', 'danger');
+                }
+            });
+
+            // Lógica para adicionar e remover campos dinamicamente para diferentes seções
+            window.addDynamicField = function(type) {
+                const container = document.getElementById(`${type}s-container`);
+                const index = container.children.length;
+                let newFieldHtml = '';
+
+                if (type === 'etapa') {
+                    newFieldHtml = `
+                        <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <div class="flex-grow w-full">
+                                <div class="protocol-field required">
+                                    <label for="etapa_nome_${index}">Nome da Etapa:</label>
+                                    <input type="text" id="etapa_nome_${index}" name="etapa_nome[]" required>
+                                </div>
+                                <div class="protocol-field mt-2">
+                                    <label for="etapa_descricao_${index}">Descrição da Etapa:</label>
+                                    <textarea id="etapa_descricao_${index}" name="etapa_descricao[]" rows="2"></textarea>
+                                </div>
+                            </div>
+                            <button type="button" onclick="removeDynamicField(this, 'etapa')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                        </div>
+                    `;
+                } else if (type === 'nivel') {
+                    newFieldHtml = `
+                        <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <div class="flex-grow w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="protocol-field required">
+                                    <label for="nivel_ordem_${index}">Ordem:</label>
+                                    <input type="number" id="nivel_ordem_${index}" name="nivel_ordem[]" required>
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="nivel_valor_${index}">Nível:</label>
+                                    <input type="number" id="nivel_valor_${index}" name="nivel_valor[]" required>
+                                </div>
+                                <div class="protocol-field">
+                                    <label for="nivel_faixa_etaria_${index}">Faixa Etária:</label>
+                                    <input type="text" id="nivel_faixa_etaria_${index}" name="nivel_faixa_etaria[]">
+                                </div>
+                            </div>
+                            <button type="button" onclick="removeDynamicField(this, 'nivel')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                        </div>
+                    `;
+                } else if (type === 'habilidade') {
+                    newFieldHtml = `
+                        <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <div class="flex-grow w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="protocol-field required">
+                                    <label for="habilidade_ordem_${index}">Ordem:</label>
+                                    <input type="number" id="habilidade_ordem_${index}" name="habilidade_ordem[]" required>
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="habilidade_nome_${index}">Habilidade:</label>
+                                    <input type="text" id="habilidade_nome_${index}" name="habilidade_nome[]" required>
+                                </div>
+                            </div>
+                            <button type="button" onclick="removeDynamicField(this, 'habilidade')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                        </div>
+                    `;
+                } else if (type === 'pontuacao') {
+                    newFieldHtml = `
+                        <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <div class="flex-grow w-full grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div class="protocol-field required">
+                                    <label for="pontuacao_ordem_${index}">Ordem:</label>
+                                    <input type="number" id="pontuacao_ordem_${index}" name="pontuacao_ordem[]" required>
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="pontuacao_tipo_${index}">Tipo:</label>
+                                    <input type="text" id="pontuacao_tipo_${index}" name="pontuacao_tipo[]" required>
+                                </div>
+                                <div class="protocol-field">
+                                    <label for="pontuacao_descricao_${index}">Descrição:</label>
+                                    <input type="text" id="pontuacao_descricao_${index}" name="pontuacao_descricao[]">
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="pontuacao_valor_${index}">Valor:</label>
+                                    <input type="number" step="0.1" id="pontuacao_valor_${index}" name="pontuacao_valor[]" required>
+                                </div>
+                            </div>
+                            <button type="button" onclick="removeDynamicField(this, 'pontuacao')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                        </div>
+                    `;
+                } else if (type === 'tarefa') {
+                    newFieldHtml = `
+                        <div class="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <div class="flex-grow w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                <div class="protocol-field required">
+                                    <label for="tarefa_nivel_${index}">Nível:</label>
+                                    <input type="number" id="tarefa_nivel_${index}" name="tarefa_nivel[]" required>
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="tarefa_ordem_${index}">Ordem:</label>
+                                    <input type="number" id="tarefa_ordem_${index}" name="tarefa_ordem[]" required>
+                                </div>
+                                <div class="protocol-field">
+                                    <label for="tarefa_item_${index}">Item:</label>
+                                    <input type="text" id="tarefa_item_${index}" name="tarefa_item[]">
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="tarefa_nome_${index}">Nome da Tarefa:</label>
+                                    <input type="text" id="tarefa_nome_${index}" name="tarefa_nome[]" required>
+                                </div>
+                                <div class="protocol-field">
+                                    <label for="tarefa_habilidade_${index}">Habilidade:</label>
+                                    <input type="text" id="tarefa_habilidade_${index}" name="tarefa_habilidade[]">
+                                </div>
+                                <div class="protocol-field">
+                                    <label for="tarefa_marco_${index}">Marco:</label>
+                                    <input type="text" id="tarefa_marco_${index}" name="tarefa_marco[]">
+                                </div>
+                            </div>
+                            <button type="button" onclick="removeDynamicField(this, 'tarefa')" class="protocol-btn btn-danger btn-sm flex-shrink-0">Remover</button>
+                        </div>
+                    `;
+                }
+
+                container.insertAdjacentHTML('beforeend', newFieldHtml);
+                // Re-aplicar validação para os novos campos
+                setupRequiredFieldValidationForNewFields(container.lastElementChild);
+            }
+
+            window.removeDynamicField = function(button, type) {
+                button.closest('.flex.flex-col.md\\:flex-row').remove();
+            }
+
+            function setupRequiredFieldValidationForNewFields(newElement) {
+                const requiredFields = newElement.querySelectorAll('.protocol-field.required input:not([type="hidden"]), .protocol-field.required select, .protocol-field.required textarea');
+                requiredFields.forEach(field => {
+                    field.addEventListener('blur', function() {
+                        validateRequiredField(this);
+                    });
+                    field.addEventListener('input', function() {
+                        if (this.classList.contains('invalid')) {
+                            this.classList.remove('invalid', 'shake');
+                        }
+                    });
+                });
+            }
+
+            // Inicializar a validação para os campos existentes ao carregar a página
+            const initialRequiredFields = document.querySelectorAll('.protocol-field.required input:not([type="hidden"]), .protocol-field.required select, .protocol-field.required textarea, .protocol-field.required input[type="radio"]');
+            initialRequiredFields.forEach(field => {
+                field.addEventListener('blur', function() {
+                    validateRequiredField(this);
+                });
+                field.addEventListener('input', function() {
+                    if (this.classList.contains('invalid')) {
+                        this.classList.remove('invalid', 'shake');
+                    }
+                });
+                // Para radio buttons, validar ao mudar a seleção
+                if (field.type === 'radio') {
+                    field.addEventListener('change', function() {
+                        validateRequiredField(this);
+                    });
+                }
+            });
+
+            // Exibir o primeiro passo ao carregar a página
+            showStep(0);
+        });
+    </script>
+</body>
+</html>

@@ -24,6 +24,7 @@ from blueprints.estoque import register_estoque_routes # Importar o blueprint de
 from blueprints.contas_a_pagar import register_contas_a_pagar_routes # Importar o blueprint de Contas a Pagar
 from blueprints.peis import peis_bp # Importar o blueprint de PEIs
 from blueprints.patrimonio import register_patrimonio_routes # NOVO: Importar o blueprint de Patrimônio
+from blueprints.protocols import protocols_bp # NOVO: Importar o blueprint de Protocolos
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -585,6 +586,7 @@ register_estoque_routes(app)
 register_contas_a_pagar_routes(app)
 app.register_blueprint(peis_bp) 
 register_patrimonio_routes(app) 
+app.register_blueprint(protocols_bp) # NOVO: Registrar o blueprint de protocolos
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
