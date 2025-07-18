@@ -858,7 +858,8 @@ def add_goal(paciente_doc_id):
             sigla = aid_info['sigla']
             if data.get(f'aid_selected_{sigla}') == 'on': # Verifica se o checkbox foi marcado
                 quant_max_str = data.get(f'aid_quant_max_{sigla}')
-                quant_max = int(quant_max_str) if quant_max_str and quant_max_str.isdigit() else None
+                # Corrigido: Se quant_max_str não for válido, define como 1
+                quant_max = int(quant_max_str) if quant_max_str and quant_max_str.isdigit() else 1 
                 
                 selected_aids_data.append({
                     'description': aid_info['description'],
@@ -869,6 +870,10 @@ def add_goal(paciente_doc_id):
                     'status': 'Pendente' # Inicializa como Pendente
                 })
 
+        # Adicionado: Verifica se pelo menos uma ajuda foi selecionada
+        if not selected_aids_data:
+            flash('Pelo menos uma Ajuda deve ser selecionada para a meta.', 'danger')
+            return redirect(url_for('peis.ver_peis_paciente', paciente_doc_id=paciente_doc_id))
 
         if not pei_id or not descricao_goal:
             flash('Dados insuficientes para adicionar meta.', 'danger')

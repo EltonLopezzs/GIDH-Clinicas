@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocolos</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Custom styles for card layout */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem; /* Equivalent to Tailwind's gap-6 */
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* Equivalent to Tailwind's rounded-xl */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Equivalent to Tailwind's shadow-md */
+            padding: 1.5rem; /* Equivalent to Tailwind's p-6 */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-title {
+            font-size: 1.25rem; /* Equivalent to Tailwind's text-xl */
+            font-weight: 600; /* Equivalent to Tailwind's font-semibold */
+            color: #1a202c; /* Equivalent to Tailwind's text-gray-900 */
+            margin-bottom: 0.75rem; /* Equivalent to Tailwind's mb-3 */
+        }
+        .card-body {
+            color: #4a5568; /* Equivalent to Tailwind's text-gray-700 */
+            font-size: 0.875rem; /* Equivalent to Tailwind's text-sm */
+            margin-bottom: 1rem; /* Equivalent to Tailwind's mb-4 */
+        }
+        .card-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem; /* Equivalent to Tailwind's space-x-2 */
+            margin-top: auto; /* Pushes buttons to the bottom */
+        }
+        .btn-edit, .btn-delete {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem; /* Equivalent to Tailwind's rounded-lg */
+            font-weight: 500; /* Equivalent to Tailwind's font-medium */
+            transition: background-color 0.2s ease-in-out;
+        }
+        .btn-edit {
+            background-color: #4299e1; /* Equivalent to Tailwind's bg-blue-500 */
+            color: #ffffff;
+        }
+        .btn-edit:hover {
+            background-color: #3182ce; /* Equivalent to Tailwind's bg-blue-600 */
+        }
+        .btn-delete {
+            background-color: #ef4444; /* Equivalent to Tailwind's bg-red-500 */
+            color: #ffffff;
+        }
+        .btn-delete:hover {
+            background-color: #dc2626; /* Equivalent to Tailwind's bg-red-600 */
+        }
+        .btn-add {
+            background-color: #48bb78; /* Equivalent to Tailwind's bg-green-500 */
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .btn-add:hover {
+            background-color: #38a169; /* Equivalent to Tailwind's bg-green-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+    {% include 'Nav.html' %}
+    <div class="container mx-auto mt-8 px-4">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Gerenciamento de Protocolos</h1>
+            <a href="{{ url_for('protocols.add_protocol') }}" class="btn-add">
+                Adicionar Novo Protocolo
+            </a>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Buscar Protocolos</h2>
+            <form action="{{ url_for('protocols.list_protocols') }}" method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <input type="text" name="search_term" placeholder="Buscar por nome ou descrição..." class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="submit" class="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition duration-200">Buscar</button>
+            </form>
+        </div>
+
+        <div class="card-grid">
+            {% if protocols %}
+                {% for protocol in protocols %}
+                    <div class="card">
+                        <h3 class="card-title">{{ protocol.nome }}</h3>
+                        <p class="card-body"><strong>Descrição:</strong> {{ protocol.descricao }}</p>
+                        <p class="card-body"><strong>Duração Estimada:</strong> {{ protocol.duracao_estimada }} dias</p>
+                        <p class="card-body"><strong>Ativo:</strong> {{ 'Sim' if protocol.ativo else 'Não' }}</p>
+                        <div class="card-footer">
+                            <a href="{{ url_for('protocols.edit_protocol', protocol_id=protocol.id) }}" class="btn-edit">Editar</a>
+                            <button onclick="confirmDelete('{{ protocol.id }}')" class="btn-delete">Excluir</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-gray-600 col-span-full text-center">Nenhum protocolo encontrado.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function confirmDelete(protocolId) {
+            // Implement a custom modal for confirmation instead of alert/confirm
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm mx-auto">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Confirmar Exclusão</h3>
+                    <p class="text-gray-700 mb-6">Tem certeza de que deseja excluir este protocolo? Esta ação não pode ser desfeita.</p>
+                    <div class="flex justify-end space-x-4">
+                        <button id="cancelDelete" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition duration-200">Cancelar</button>
+                        <button id="confirmDelete" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200">Excluir</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('cancelDelete').onclick = () => {
+                document.body.removeChild(modal);
+            };
+
+            document.getElementById('confirmDelete').onclick = () => {
+                document.body.removeChild(modal);
+                // Proceed with deletion
+                fetch('/protocols/delete/' + protocolId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    // You might need to send CSRF token if your Flask app uses it
+                    // body: JSON.stringify({ _csrf_token: '{{ csrf_token() }}' })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload(); // Reload to reflect changes
+                    } else {
+                        // Implement a custom message box for error
+                        const errorModal = document.createElement('div');
+                        errorModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+                        errorModal.innerHTML = `
+                            <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm mx-auto">
+                                <h3 class="text-xl font-semibold text-red-600 mb-4">Erro</h3>
+                                <p class="text-gray-700 mb-6">${data.message || 'Ocorreu um erro ao excluir o protocolo.'}</p>
+                                <div class="flex justify-end">
+                                    <button id="closeErrorModal" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200">Fechar</button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(errorModal);
+                        document.getElementById('closeErrorModal').onclick = () => {
+                            document.body.removeChild(errorModal);
+                        };
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    // Implement a custom message box for network error
+                    const networkErrorModal = document.createElement('div');
+                    networkErrorModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+                    networkErrorModal.innerHTML = `
+                        <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm mx-auto">
+                            <h3 class="text-xl font-semibold text-red-600 mb-4">Erro de Conexão</h3>
+                            <p class="text-gray-700 mb-6">Não foi possível conectar ao servidor. Por favor, tente novamente.</p>
+                            <div class="flex justify-end">
+                                <button id="closeNetworkErrorModal" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200">Fechar</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(networkErrorModal);
+                    document.getElementById('closeNetworkErrorModal').onclick = () => {
+                        document.body.removeChild(networkErrorModal);
+                    };
+                });
+            };
+        }
+    </script>
+</body>
+</html>
