@@ -3,56 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adicionar/Editar Patrimônio - {{ session.clinica_nome_display or 'Clínica On' }}</title>
-    
+    <title>{{ 'Editar' if protocol else 'Novo' }} Protocolo - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script> {# Adicionado Tailwind CSS #}
-
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* Variáveis de tema */
+        /* Estilos principais do layout (copiados de pacientes.html) */
         :root {
-            --primary: #5587c2;
-            --accent: #9b53b8;
-            --primary-light: #c8dcf3;
-            --secondary: #f59e0b;
-            --danger: #dc2626;
-            --primary-dark: #115e59;  
-            --success: #16a34a;
-            --warning: #f59e0b;
-            --info: #0ea5e9;
-            --border-color: #e2e8f0;
-            --bg: #f1f5f9;
-            --card: #ffffff;
-            --text: #0f172a;
-            --muted: #64748b;
-            
+            --bg: #f1f5f9;                  /* Gray-100 */
+            --card: #ffffff;                /* White */
+            --text: #0f172a;                /* Gray-900 */
+            --muted: #64748b;               /* Gray-500 */
+            --accent: #9b53b8;              /* Purple-500 */
+            --primary-dark: #115e59;        
+            --primary: #5587c2;             /* Blue-500 */
+            --primary-light: #c8dcf3;       /* Blue-100 */
+            --secondary: #f59e0b;           /* Yellow-500 */
+            --danger: #dc2626;              /* Red-600 */
+            --success: #16a34a;             /* Green-600 */
+            --warning: #f59e0b;             /* Yellow-500 */
+            --info: #0ea5e9;                /* Sky-500 */
+            --border-color: #e2e8f0;        /* Gray-200 */
+
+            --dark-bg: #0f172a;             /* Gray-900 */
+            --dark-card: #1e293b;           /* Gray-800 */
+            --dark-text: #f1f5f9;           /* Gray-100 */
+            --dark-muted: #94a3b8;          /* Gray-400 */
+            --dark-border-color: #334155;   /* Gray-600 */
+
             color-scheme: light;
         }
 
         [data-theme="dark"] {
-            --primary: #7ba5d6;
-            --accent: #b974c7;
-            --primary-light: #4f7db8;
-            --secondary: #fbbf24;
-            --danger: #f87171;
-            --success: #34d399;
-            --warning: #fbbf24;
-            --info: #38bdf8;
-            --border-color: #374151;
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text: #f1f5f9;
-            --muted: #94a3b8;
-            
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
             color-scheme: dark;
         }
+        
+        ::-webkit-scrollbar {
+            background-color: var(--bg);
+            width: 0.5625rem;
+            height: 0.5625rem;
+            border-top-right-radius: 0.3125rem;
+            border-bottom-right-radius: 0.3125rem;
+            transition: background-color 0.8s ease;
+        }
 
-        /* Estilos globais e layout */
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--muted);
+            border-radius: .3125rem;
+            transition: background-color 0.8s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            transition: background-color 0.8s ease;
+            background-color: var(--primary);
+        }
+        
+        /* Reset básico e box-sizing */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; overflow-x: hidden; }
+        html, body { height: 100%; }
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
@@ -63,82 +79,19 @@
         }
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* --- Sidebar --- */
-        .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, var(--primary), var(--accent));
-            color: white;
-            position: fixed;
-            top: 0; left: 0; height: 100vh;
-            transition: width 0.3s ease, transform 0.3s ease;
-            z-index: 1000; display: flex; flex-direction: column;
-        }
-        .sidebar-inner-content { padding: 0; height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
-        .sidebar-header {
-            padding: 0 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0; height: 70px; display: flex; align-items: center; justify-content: center;
-        }
-        .sidebar-header .logo {
-            font-size: 1.4rem; font-weight: 700; color: white; text-decoration: none;
-            display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; overflow: hidden;
-        }
-        .sidebar-header .logo i { font-size: 1.8rem; }
-        .sidebar.collapsed { width: 78px; }
-        .sidebar.collapsed .sidebar-header .logo span { display: none; }
-        .sidebar.collapsed .sidebar-header .logo i { margin-right: 0; }
-        .sidebar nav { flex-grow: 1; margin-top: 1rem; padding: 0 0.75rem; }
-        .sidebar nav ul { list-style: none; padding: 0; }
-        .sidebar nav ul li { margin-bottom: 0.5rem; }
-        .sidebar nav ul li a {
-            color: #e2e8f0; text-decoration: none; display: flex; align-items: center;
-            padding: 0.75rem 1rem; gap: 1rem; border-radius: 8px; font-size: 0.95rem;
-            font-weight: 500; white-space: nowrap; overflow: hidden; transition: background 0.2s ease, color 0.2s ease;
-        }
-        .sidebar nav ul li a i { width: 24px; text-align: center; font-size: 1.2rem; flex-shrink: 0; }
-        .sidebar.collapsed nav ul li a span { display: none; }
-        .sidebar.collapsed nav ul li a { justify-content: center; padding: 0.75rem; }
-        .sidebar nav ul li a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        .sidebar nav ul li.active a { background: white; color: var(--primary); font-weight: 600; }
-        .sidebar-footer { padding: 1rem 0.75rem; margin-top: auto; flex-shrink: 0; }
-        .sidebar.collapsed .sidebar-footer { padding: 1rem 0.5rem; }
-        .sidebar-footer button, .sidebar-footer a {
-            background: none; border: none; cursor: pointer; color: #e2e8f0; padding: 0.75rem 1rem;
-            border-radius: 8px; width: 100%; display: flex; align-items: center; gap: 1rem;
-            transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif;
-            font-size: 0.95rem; text-decoration: none;
-        }
-        .sidebar-footer button:hover, .sidebar-footer a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-        .sidebar.collapsed .sidebar-footer span { display: none; }
-        .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: center; padding: 0.75rem; }
-
-        /* Estilos para Submenu Financeiro */
-        .sidebar nav ul li.has-submenu .submenu {
-            list-style: none;
-            padding: 0;
-            margin-left: 1.5rem; /* Indent sub-menu items */
-            max-height: 0;
-            overflow: hidden; /* Important for the transition */
-            transition: max-height 0.3s ease-out;
-            background: rgba(255, 255, 255, 0.05); /* Slightly different background for sub-menu */
-            border-radius: 8px;
-        }
-
-        .sidebar nav ul li.has-submenu.open .submenu {
-            max-height: 1000px; /* Increased to a very large value to ensure content fits */
-            overflow-y: auto; /* Add scrollbar if content exceeds max-height */
-            transition: max-height 0.5s ease-in;
-        }
-        /* Ajustar estado colapsado para o submenu */
-        .sidebar.collapsed .has-submenu .submenu-toggle span { display: none; }
-        .sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow { display: none; } /* Esconder seta no estado colapsado */
-        .sidebar.collapsed .has-submenu .submenu { display: none; } /* Esconder submenu completamente quando colapsado */
-        
         /* --- Main Content & Topbar --- */
         .main-content {
-            flex: 1; margin-left: 260px; transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 260px);
+            flex: 1; margin-left: 260px; /* Ajustado para 280px */
+            transition: margin-left 0.3s ease;
+            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado para 280px */
+            max-width: calc(100% - 280px); /* Ajustado para 280px */
+            box-sizing: border-box;
         }
-        .main-content.collapsed { margin-left: 78px; width: calc(100% - 78px); }
+        .main-content.collapsed { 
+            margin-left: 88px; /* Ajustado para 88px */
+            width: calc(100% - 88px); /* Ajustado para 88px */
+            max-width: calc(100% - 88px); /* Ajustado para 88px */
+        }
         .topbar {
             background-color: var(--card); color: var(--text); padding: 0 1.5rem;
             display: flex; align-items: center; justify-content: space-between;
@@ -153,8 +106,32 @@
             transition: background 0.2s ease, color 0.2s ease;
         }
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
-        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
-        
+        .topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
+        .search-form { display: flex; align-items: center; }
+        .search-input {
+            padding: 0.5rem 0.8rem; border: 1px solid var(--border-color); border-radius: 8px 0 0 8px;
+            font-size: 0.9rem; background-color: var(--bg); color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-input:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none; z-index: 1;
+        }
+        .search-button {
+            background-color: var(--primary); color: white; border: none;
+            padding: 0.5rem 1rem; border-radius: 0 8px 8px 0; margin-left: -1px;
+            cursor: pointer; transition: background-color 0.2s ease;
+        }
+        .search-button:hover { background-color: var(--accent); }
+
+        main { 
+            flex-grow: 1; 
+            padding: 1.5rem; 
+            overflow-y: auto; 
+            width: 100%;
+            max-width: 100%;
+        }
+
         /* --- Buttons --- */
         .btn {
             padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
@@ -163,294 +140,206 @@
         }
         .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
         .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: var(--primary-dark); }
-        .btn-secondary { background-color: var(--card); color: var(--text); border-color: var(--border-color); box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
-        .btn-secondary:hover { border-color: #cbd5e1; background-color: #f8fafc; }
-        [data-theme="dark"] .btn-secondary { background-color: var(--dark-card); border-color: var(--dark-border-color); color: var(--dark-text); }
-        [data-theme="dark"] .btn-secondary:hover { background-color: #334155; }
-        .btn-danger { background-color: var(--danger); color: white; }
-        .btn-danger:hover { background-color: #b91c1c; }
+        .btn-primary:hover { background-color: var(--accent); }
+        .btn-info { background-color: var(--info); color: white; }
+        .btn-info:hover { background-color: #0369a1; }
         .btn-warning { background-color: var(--warning); color: #854d0e; }
         [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
         .btn-warning:hover { background-color: #fcd34d; }
-        .btn-info { background-color: var(--info); color: white; }
-        .btn-info:hover { background-color: #0369a1; }
-        .btn-toggle-inactive { background-color: #4b5563; color: white; }
-        .btn-toggle-inactive:hover { background-color: #374151; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
 
-        /* --- Flash Messages (Toast-like) --- */
-        .toast-container {
-            position: fixed;
-            top: 85px;
-            right: 20px;
-            z-index: 9999;
+        /* --- Form Styling (adaptado de paciente_form) --- */
+        .form-card {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            width: 360px;
-        }
-
-        .toast {
-            background-color: var(--card);
-            color: var(--text);
-            padding: 1rem;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1), 0 5px 5px rgba(0,0,0,0.05);
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            border: 1px solid var(--border-color);
-            animation: toast-slide-in 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000);
-            position: relative;
+            width: 100%;
+            height: 100%;
+            align-items: stretch;
+            background: var(--card);
+            border-radius: 18px;
+            box-shadow: 0 10px 32px rgba(0,0,0,0.18);
             overflow: hidden;
         }
-
-        .toast.success { border-left: 5px solid var(--success); }
-        .toast.danger { border-left: 5px solid var(--danger); }
-        .toast.warning { border-left: 5px solid var(--warning); }
-        .toast.info { border-left: 5px solid var(--info); }
-
-        .toast-icon {
-            font-size: 1.5rem;
-            flex-shrink: 0;
-            margin-top: 2px;
+        .protocol-steps {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            background: none;
+            border-radius: 18px 18px 0 0;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border-color);
         }
-        .toast.success .toast-icon { color: var(--success); }
-        .toast.danger .toast-icon { color: var(--danger); }
-        .toast.warning .toast-icon { color: var(--warning); }
-        .toast.info .toast-icon { color: var(--info); }
+        .protocol-step {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px 0 14px 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--muted);
+            opacity: 0.7;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            background: none;
+            transition: color 0.2s, opacity 0.2s, border-color 0.2s, background 0.2s;
+        }
+        .protocol-step.active {
+            color: var(--primary);
+            opacity: 1;
+            border-bottom: 3px solid var(--primary);
+            background: var(--primary-light);
+        }
+        .protocol-step i {
+            font-size: 1.2rem;
+            margin-right: 0.5rem;
+        }
+        @media (max-width: 600px) {
+            .protocol-steps { flex-direction: column; border-radius: 0; }
+            .protocol-step { border-bottom: none; border-left: 4px solid transparent; justify-content: flex-start; padding: 14px 0 14px 18px; }
+            .protocol-step.active { border-left: 4px solid var(--primary); background: var(--primary-light); }
+        }
 
-        .toast-content {
+        .protocol-card-section {
+            background: var(--card);
+            border-radius: 0px 0px 18px 18px;
+            padding: 2.5rem 2rem 2rem 2rem;
+            position: relative;
+            flex: 1; /* Para ocupar o espaço restante */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: calc(100vh - 70px - 70px); /* Ajuste conforme a altura do topbar e footer */
+        }
+
+        .protocol-card-container-form {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             flex-grow: 1;
         }
-        .toast-title {
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.3rem;
             font-weight: 700;
-            font-size: 1rem;
-            color: var(--text);
-            display: block;
-            margin-bottom: 0.25rem;
-        }
-        .toast-message {
-            font-size: 0.9rem;
-            color: var(--muted);
-            line-height: 1.4;
-        }
-
-        .toast-close {
-            background: none;
-            border: none;
-            color: var(--muted);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0;
-            line-height: 1;
-            opacity: 0.7;
-            transition: opacity 0.2s ease, color 0.2s ease;
-            flex-shrink: 0;
-        }
-        .toast-close:hover {
-            opacity: 1;
-            color: var(--text);
-        }
-
-        .toast-progress {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 4px;
-            width: 100%;
-            animation: toast-progress-bar 5s linear forwards;
-        }
-        .toast.success .toast-progress { background-color: var(--success); }
-        .toast.danger .toast-progress { background-color: var(--danger); }
-        .toast.warning .toast-progress { background-color: var(--warning); }
-        .toast.info .toast-progress { background-color: var(--info); }
-
-        @keyframes toast-slide-in {
-            from {
-                opacity: 0;
-                transform: translateX(110%);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes toast-fade-out {
-            from {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-        }
-        .toast.fade-out {
-            animation: toast-fade-out 0.4s ease-in forwards;
-        }
-
-        @keyframes toast-progress-bar {
-            from { width: 100%; }
-            to { width: 0%; }
-        }
-
-        /* Responsive */
-        .toggle-btn-desktop { display: none; }
-        .menu-btn-mobile { display: block; }
-        span.btn-text-desktop { display: none; }
-
-        @media(min-width: 769px) {
-            .toggle-btn-desktop { display: grid; }
-            .menu-btn-mobile { display: none; }
-            span.btn-text-desktop { display: inline; }
-        }
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
-            .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
-            .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
-            .sidebar.collapsed .sidebar-header .logo span { display: inline; }
-            .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
-            main { padding: 1rem; }
-            .topbar { padding: 0 1rem; flex-wrap: wrap; height: auto; row-gap: 1rem; padding-top: 1rem; padding-bottom: 1rem;}
-            .topbar-left { width: 100%; justify-content: space-between; }
-            .topbar-actions { width: 100%; justify-content: flex-end; }
-            .topbar-actions .search-form { flex-grow: 1; }
-        }
-
-        /* --- Form Styles --- */
-        .form-card {
-            background-color: var(--card);
-            border-radius: 12px;
-            padding: 2rem;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            max-width: 800px; /* Limita a largura do formulário */
-            margin: 0 auto; /* Centraliza o formulário */
-        }
-
-        .form-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--text);
+            color: var(--primary);
             margin-bottom: 1.5rem;
-            text-align: center;
         }
-
-        .form-grid {
+        .section-title i {
+            font-size: 1.2rem;
+        }
+        .protocol-card-fields {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: 1fr;
+            gap: 1.2rem 2rem;
         }
-
-        .form-field {
+        .protocol-field {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
         }
-
-        /* Estilo para o checkbox */
-        .form-field.checkbox-field {
-            flex-direction: row; /* Alinha label e input na mesma linha */
-            align-items: center; /* Centraliza verticalmente */
-            gap: 1rem; /* Espaçamento entre o checkbox e o label */
-            margin-top: 1rem; /* Espaçamento superior */
-        }
-
-        .form-field.checkbox-field label {
-            margin-bottom: 0; /* Remove margem inferior padrão */
-            cursor: pointer; /* Indica que é clicável */
-        }
-
-        .form-field.checkbox-field input[type="checkbox"] {
-            width: 20px; /* Tamanho do checkbox */
-            height: 20px;
-            accent-color: var(--primary); /* Cor de destaque do checkbox */
-            cursor: pointer;
-            margin-top: 0; /* Alinha com o texto */
-            flex-shrink: 0; /* Evita que o checkbox encolha */
-        }
-
-
-        .form-field label {
-            font-size: 0.95rem;
+        .protocol-field label {
+            font-size: 1.05rem;
             color: var(--muted);
             font-weight: 600;
+            margin-bottom: 0.1rem;
         }
-
-        .form-field input:not([type="checkbox"]),
-        .form-field select,
-        .form-field textarea {
-            background-color: var(--bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
+        .protocol-field input,
+        .protocol-field select,
+        .protocol-field textarea {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 1.1rem;
+            padding: 0.5rem 0.2rem 0.3rem 0.2rem;
             color: var(--text);
-            transition: all 0.2s ease;
+            transition: border-color 0.2s;
+            border-radius: 0;
             outline: none;
         }
-
-        .form-field input:focus:not([type="checkbox"]),
-        .form-field select:focus,
-        .form-field textarea:focus {
+        .protocol-field input:focus,
+        .protocol-field select:focus,
+        .protocol-field textarea:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(85, 135, 194, 0.2); /* Cor do primary com transparência */
-            background-color: var(--card);
+            background: #f7fafc;
         }
-
-        .form-field textarea {
-            min-height: 100px;
+        .protocol-field textarea {
+            min-height: 60px;
             resize: vertical;
         }
-
-        .form-actions {
+        .protocol-actions {
             display: flex;
             justify-content: flex-end;
             gap: 1rem;
             margin-top: 2rem;
         }
-
-        .form-actions .btn {
-            min-width: 120px;
+        .protocol-btn {
+            padding: 8px 16px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 2px 12px 0 rgb(13 148 136 / 0.10);
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .protocol-btn.cancel {
+            background: transparent;
+            color: var(--muted);
+            box-shadow: none;
+        }
+        .protocol-btn:not(.cancel):hover {
+            background: var(--accent);
         }
 
-        /* Required field indicator */
-        .form-field.required label::after {
+        /* --- Estilos para campos obrigatórios --- */
+        .protocol-field.required label::after {
             content: ' *';
             color: var(--danger);
             font-weight: 700;
             margin-left: 2px;
         }
 
-        /* Validation styles */
-        .form-field input.invalid:not([type="checkbox"]),
-        .form-field select.invalid,
-        .form-field textarea.invalid {
-            border-color: var(--danger);
-            background-color: rgba(220, 38, 38, 0.05); /* Leve fundo vermelho */
+        .protocol-field.required input,
+        .protocol-field.required select,
+        .protocol-field.required textarea {
+            border-left: 3px solid var(--danger);
+            padding-left: 8px;
         }
 
-        .form-field input.invalid:focus:not([type="checkbox"]),
-        .form-field select.invalid:focus,
-        .form-field textarea.invalid:focus {
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+        .protocol-field.required input:focus,
+        .protocol-field.required select:focus,
+        .protocol-field.required textarea:focus {
+            border-left-color: var(--primary);
+            box-shadow: -3px 0 0 var(--primary);
         }
 
-        .form-field input.valid:not([type="checkbox"]),
-        .form-field select.valid,
-        .form-field textarea.valid {
-            border-color: var(--success);
-            background-color: rgba(22, 163, 74, 0.05); /* Leve fundo verde */
+        .protocol-field.required input:valid,
+        .protocol-field.required select:valid,
+        .protocol-field.required textarea:valid {
+            border-left-color: var(--success);
         }
 
-        .form-field input.valid:focus:not([type="checkbox"]),
-        .form-field select.valid:focus,
-        .form-field textarea.valid:focus {
-            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+        .protocol-field.required input:invalid,
+        .protocol-field.required select.invalid,
+        .protocol-field.required textarea.invalid {
+            border-left-color: var(--danger);
+        }
+
+        /* Animação sutil para transição de estados */
+        .protocol-field input,
+        .protocol-field select,
+        .protocol-field textarea {
+            transition: all 0.3s ease;
         }
 
         /* Animação de shake para campos inválidos no submit */
@@ -460,123 +349,522 @@
             75% { transform: translateX(5px); }
         }
 
-        .form-field input.invalid.shake:not([type="checkbox"]),
-        .form-field select.invalid.shake,
-        .form-field textarea.invalid.shake {
+        .protocol-field.required input.invalid.shake,
+        .protocol-field.required select.invalid.shake,
+        .protocol-field.required textarea.invalid.shake {
             animation: shake 0.5s ease-in-out;
+            border-color: var(--danger) !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2) !important;
+        }
+
+        /* Destaque mais forte para campos inválidos */
+        .protocol-field.required input.invalid,
+        .protocol-field.required select.invalid,
+        .protocol-field.required textarea.invalid {
+            border-bottom-color: var(--danger) !important;
+            border-left-color: var(--danger) !important;
+            background-color: rgba(220, 38, 38, 0.1) !important;
+        }
+
+        /* Indicador visual para step com erro */
+        .protocol-step.has-error {
+            color: var(--danger) !important;
+            border-bottom-color: var(--danger) !important;
+            background: rgba(220, 38, 38, 0.1) !important;
+        }
+
+        .protocol-step.has-error::after {
+            content: '⚠️';
+            margin-left: 5px;
+            font-size: 0.9rem;
+        }
+
+        /* Nova modal para alertas gerais (copiado de pacientes.html) */
+        .alert-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15,23,42,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 4500; /* Maior que outras modals */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .alert-modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .alert-modal {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 400px; /* Tamanho consistente */
+            width: 90vw;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            padding: 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .alert-modal-overlay.show .alert-modal {
+            transform: scale(1);
+        }
+        .alert-modal-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+        .alert-modal-icon.info { background: var(--info); }
+        .alert-modal-icon.success { background: var(--success); }
+        .alert-modal-icon.warning { background: var(--warning); }
+        .alert-modal-icon.danger { background: var(--danger); }
+
+        .alert-modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+        .alert-modal-message {
+            font-size: 1rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .alert-modal-actions {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .alert-modal-actions .btn {
+            min-width: 100px;
+        }
+
+        /* Estilos para a nova modal de adição de itens */
+        .add-item-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15,23,42,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 4000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .add-item-modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .add-item-modal {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 600px; /* Ajuste o tamanho conforme necessário */
+            width: 90vw;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .add-item-modal-overlay.show .add-item-modal {
+            transform: scale(1);
+        }
+        .add-item-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .add-item-modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .add-item-modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--muted);
+            cursor: pointer;
+        }
+        .add-item-modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .add-item-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
         }
     </style>
 </head>
 <body>
-    <div id="toast-container"></div> {# Container para mensagens toast #}
+    <div id="toast-container"></div>
+    <!-- Nova Modal para Alertas Gerais (copiado de pacientes.html) -->
+    <div id="general-alert-modal-overlay" class="alert-modal-overlay">
+        <div class="alert-modal">
+            <div id="alert-modal-icon" class="alert-modal-icon"></div>
+            <h3 id="alert-modal-title" class="alert-modal-title"></h3>
+            <p id="alert-modal-message" class="alert-modal-message"></p>
+            <div class="alert-modal-actions">
+                <button id="alert-modal-close-btn" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nova Modal para Adicionar Itens Dinâmicos -->
+    <div id="add-item-modal-overlay" class="add-item-modal-overlay">
+        <div class="add-item-modal">
+            <div class="add-item-modal-header">
+                <h3 id="add-item-modal-title" class="add-item-modal-title">Adicionar Item</h3>
+                <button type="button" id="add-item-modal-close-btn" class="add-item-modal-close-btn">&times;</button>
+            </div>
+            <div id="add-item-modal-body" class="add-item-modal-body">
+                <!-- Campos dinâmicos serão inseridos aqui -->
+            </div>
+            <div class="add-item-modal-actions">
+                <button type="button" id="add-item-modal-cancel-btn" class="btn btn-secondary">Cancelar</button>
+                <button type="button" id="add-item-modal-save-btn" class="btn btn-primary">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="layout">
-        {# Inclui o conteúdo da barra de navegação (sidebar) do Nav.html #}
         {% include 'Nav.html' %}
 
         <div class="main-content">
             <header class="topbar">
-                <div class="topbar-left">
-                    <button class="toggle-btn menu-btn-mobile"><i class="fa-solid fa-bars"></i></button>
+                <div class="topbar-left">                 
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">{% if item %}Editar Patrimônio{% else %}Adicionar Patrimônio{% endif %}</h1>
+                    <h1 class="page-title">{{ 'Editar' if protocol else 'Novo' }} Protocolo</h1>
                 </div>
-                <a href="{{ url_for('patrimonio.listar_patrimonio') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> <span class="btn-text-desktop">Voltar</span>
-                </a>
+                <div class="topbar-actions">
+                    <a href="{{ url_for('protocols.list_protocols') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> <span class="btn-text-desktop">Voltar para Protocolos</span>
+                    </a>
+                </div>
             </header>
 
             <main>
-                {# Mensagens flash serão exibidas como toasts via JS #}
+                <form id="protocol-form" class="form-card" action="{{ url_for('protocols.save_protocol') }}" method="POST">
+                    <input type="hidden" name="id" value="{{ protocol.id if protocol else '' }}">
+                    
+                    <div class="protocol-steps">
+                        <div class="protocol-step active" data-step="1"><i class="fa-solid fa-file-alt"></i> Geral</div>
+                        <div class="protocol-step" data-step="2"><i class="fa-solid fa-list-ol"></i> Etapas do Protocolo</div>
+                        <div class="protocol-step" data-step="3"><i class="fa-solid fa-layer-group"></i> Níveis</div>
+                        <div class="protocol-step" data-step="4"><i class="fa-solid fa-brain"></i> Habilidades</div>
+                        <div class="protocol-step" data-step="5"><i class="fa-solid fa-star-half-alt"></i> Pontuação</div>
+                        <div class="protocol-step" data-step="6"><i class="fa-solid fa-tasks"></i> Tarefas/Testes</div>
+                        <div class="protocol-step" data-step="7"><i class="fa-solid fa-comment-dots"></i> Observações</div>
+                    </div>
 
-                <div class="form-card">
-                    <h2 class="form-title">{% if item %}Editar Item de Patrimônio{% else %}Novo Item de Patrimônio{% endif %}</h2>
-                    <form id="patrimonio-form" method="POST" action="{% if item %}{{ url_for('patrimonio.editar_patrimonio', item_doc_id=item.id) }}{% else %}{{ url_for('patrimonio.adicionar_patrimonio') }}{% endif %}">
-                        <div class="form-grid">
-                            <div class="form-field required">
-                                <label for="nome">Nome do Item</label>
-                                <input type="text" id="nome" name="nome" value="{{ item.nome or '' }}" placeholder="Ex: Cadeira de Rodas" required>
-                            </div>
-                            <div class="form-field">
-                                <label for="codigo">Código/Serial</label>
-                                <input type="text" id="codigo" name="codigo" value="{{ item.codigo or '' }}" placeholder="Ex: CR-001 / SN12345">
-                            </div>
-                            <div class="form-field required">
-                                <label for="tipo">Tipo</label>
-                                <select id="tipo" name="tipo" required>
-                                    <option value="">Selecione o Tipo</option>
-                                    <option value="Móvel" {% if item.tipo == 'Móvel' %}selected{% endif %}>Móvel</option>
-                                    <option value="Equipamento" {% if item.tipo == 'Equipamento' %}selected{% endif %}>Equipamento</option>
-                                    <option value="Material de Consumo" {% if item.tipo == 'Material de Consumo' %}selected{% endif %}>Material de Consumo</option>
-                                    <option value="Veículo" {% if item.tipo == 'Veículo' %}selected{% endif %}>Veículo</option>
-                                    <option value="Imóvel" {% if item.tipo == 'Imóvel' %}selected{% endif %}>Imóvel</option>
-                                    <option value="Instrumento Médico" {% if item.tipo == 'Instrumento Médico' %}selected{% endif %}>Instrumento Médico</option>
-                                    <option value="Software" {% if item.tipo == 'Software' %}selected{% endif %}>Software</option>
-                                    <option value="Licença" {% if item.tipo == 'Licença' %}selected{% endif %}>Licença</option>
-                                    <option value="Documentação" {% if item.tipo == 'Documentação' %}selected{% endif %}>Documentação</option>
-                                    <option value="Protocolo de Avaliação" {% if item.tipo == 'Protocolo de Avaliação' %}selected{% endif %}>Protocolo de Avaliação</option>
-                                    <option value="Computador/Notebook" {% if item.tipo == 'Computador/Notebook' %}selected{% endif %}>Computador/Notebook</option>
-                                    <option value="Impressora" {% if item.tipo == 'Impressora' %}selected{% endif %}>Impressora</option>
-                                    <option value="Telefone/Celular" {% if item.tipo == 'Telefone/Celular' %}selected{% endif %}>Telefone/Celular</option>
-                                    <option value="Câmera" {% if item.tipo == 'Câmera' %}selected{% endif %}>Câmera</option>
-                                    <option value="Projetor" {% if item.tipo == 'Projetor' %}selected{% endif %}>Projetor</option>
-                                    <option value="Ar Condicionado" {% if item.tipo == 'Ar Condicionado' %}selected{% endif %}>Ar Condicionado</option>
-                                    <option value="Mesa" {% if item.tipo == 'Mesa' %}selected{% endif %}>Mesa</option>
-                                    <option value="Cadeira" {% if item.tipo == 'Cadeira' %}selected{% endif %}>Cadeira</option>
-                                    <option value="Armário" {% if item.tipo == 'Armário' %}selected{% endif %}>Armário</option>
-                                    <option value="Estante" {% if item.tipo == 'Estante' %}selected{% endif %}>Estante</option>
-                                    <option value="Arquivo" {% if item.tipo == 'Arquivo' %}selected{% endif %}>Arquivo</option>
-                                    <option value="Utensílio de Cozinha" {% if item.tipo == 'Utensílio de Cozinha' %}selected{% endif %}>Utensílio de Cozinha</option>
-                                    <option value="Eletrodoméstico" {% if item.tipo == 'Eletrodoméstico' %}selected{% endif %}>Eletrodoméstico</option>
-                                    <option value="Ferramenta" {% if item.tipo == 'Ferramenta' %}selected{% endif %}>Ferramenta</option>
-                                    <option value="Material de Limpeza" {% if item.tipo == 'Material de Limpeza' %}selected{% endif %}>Material de Limpeza</option>
-                                    <option value="Material de Escritório" {% if item.tipo == 'Material de Escritório' %}selected{% endif %}>Material de Escritório</option>
-                                    <option value="Outro" {% if item.tipo == 'Outro' %}selected{% endif %}>Outro</option>
-                                </select>
-                            </div>
-                            <div class="form-field required">
-                                <label for="data_aquisicao">Data de Aquisição</label>
-                                <input type="date" id="data_aquisicao" name="data_aquisicao" value="{{ item.data_aquisicao or '' }}" required>
-                            </div>
-                            <div class="form-field">
-                                <label for="local_armazenamento">Local de Armazenamento</label>
-                                <input type="text" id="local_armazenamento" name="local_armazenamento" value="{{ item.local_armazenamento or '' }}" placeholder="Ex: Sala 3 / Almoxarifado">
-                            </div>
-                            <div class="form-field">
-                                <label for="valor">Valor (R$)</label>
-                                <input type="number" id="valor" name="valor" value="{{ item.valor or '' }}" step="0.01" min="0" placeholder="Ex: 1500.00">
-                            </div>
-                            <div class="form-field checkbox-field full-width"> {# Checkbox para Contas a Pagar #}
-                                <input type="checkbox" id="gerar_conta_pagar" name="gerar_conta_pagar" {% if item.gerar_conta_pagar %}checked{% endif %}>
-                                <label for="gerar_conta_pagar">Gerar Conta a Pagar?</label>
-                            </div>
-                            <div class="form-field full-width"> {# Adiciona classe para ocupar largura total em grid #}
-                                <label for="observacao">Observações</label>
-                                <textarea id="observacao" name="observacao" rows="4" placeholder="Detalhes adicionais sobre o item, estado de conservação, histórico, etc.">{{ item.observacao or '' }}</textarea>
+                    <div class="protocol-step-content" style="flex:1; position:relative;">
+                        <div class="protocol-card-section" data-step-content="1" style="display:block;">
+                            <div class="protocol-card-container-form">
+                                <div class="protocol-card-fields grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                    <div class="protocol-field required col-span-full">
+                                        <label>Tipo de Protocolo:</label>
+                                        <div class="flex items-center space-x-4 mt-2">
+                                            <label class="inline-flex items-center text-gray-700">
+                                                <input type="radio" class="form-radio h-5 w-5 text-blue-600 rounded" name="tipo_protocolo" value="Aquisicao de Habilidades" {% if protocol and protocol.tipo_protocolo == 'Aquisicao de Habilidades' %}checked{% endif %} required>
+                                                <span class="ml-2">Aquisição de Habilidades</span>
+                                            </label>
+                                            <label class="inline-flex items-center text-gray-700">
+                                                <input type="radio" class="form-radio h-5 w-5 text-blue-600 rounded" name="tipo_protocolo" value="Reducao de Comportamentos" {% if protocol and protocol.tipo_protocolo == 'Reducao de Comportamentos' %}checked{% endif %} required>
+                                                <span class="ml-2">Redução de Comportamentos</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="protocol-field required">
+                                        <label for="nome">Nome do Protocolo:</label>
+                                        <input type="text" id="nome" name="nome" value="{{ protocol.nome if protocol else '' }}" required>
+                                    </div>
+                                    <div class="protocol-field">
+                                        <label for="duracao_estimada">Duração Estimada (dias):</label>
+                                        <input type="number" id="duracao_estimada" name="duracao_estimada" value="{{ protocol.duracao_estimada if protocol else '' }}">
+                                    </div>
+                                    <div class="protocol-field col-span-full">
+                                        <label for="descricao">Descrição:</label>
+                                        <textarea id="descricao" name="descricao" rows="4">{{ protocol.descricao if protocol else '' }}</textarea>
+                                    </div>
+                                    <div class="protocol-field flex items-center col-span-full">
+                                        <input type="checkbox" id="ativo" name="ativo" value="1" {% if protocol and protocol.ativo %}checked{% endif %} class="h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                                        <label for="ativo" class="ml-2 text-gray-700">Protocolo Ativo</label>
+                                    </div>
+                                </div>
+                                <div class="protocol-actions justify-end">
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
                             </div>
                         </div>
-                        <div class="form-actions">
-                            <a href="{{ url_for('patrimonio.listar_patrimonio') }}" class="btn btn-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary">Salvar Patrimônio</button>
+
+                        <div class="protocol-card-section" data-step-content="2" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-list-ol"></i> Etapas do Protocolo</h3>
+                                <div id="etapas-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.etapas %}
+                                        {% for etapa in protocol.etapas %}
+                                            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                                <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div class="protocol-field required">
+                                                        <label>Nome da Etapa:</label>
+                                                        <input type="text" value="{{ etapa.nome }}" required readonly>
+                                                        <input type="hidden" name="etapa_nome[]" value="{{ etapa.nome }}">
+                                                    </div>
+                                                    <div class="protocol-field col-span-full">
+                                                        <label>Descrição da Etapa:</label>
+                                                        <textarea rows="2" readonly>{{ etapa.descricao }}</textarea>
+                                                        <input type="hidden" name="etapa_descricao[]" value="{{ etapa.descricao }}">
+                                                    </div>
+                                                </div>
+                                                <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                                    <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="openAddItemModal('etapa')" class="protocol-btn btn-primary mt-4">Adicionar Etapa</button>
+                                <div class="protocol-actions justify-between">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
                         </div>
-                    </form>
-                </div>
+
+                        <div class="protocol-card-section" data-step-content="3" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-layer-group"></i> Níveis</h3>
+                                <div id="niveis-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.niveis %}
+                                        {% for nivel in protocol.niveis %}
+                                            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                                <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div class="protocol-field required">
+                                                        <label>Ordem:</label>
+                                                        <input type="number" value="{{ nivel.ordem }}" required readonly>
+                                                        <input type="hidden" name="nivel_ordem[]" value="{{ nivel.ordem }}">
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label>Nível:</label>
+                                                        <input type="number" value="{{ nivel.nivel }}" required readonly>
+                                                        <input type="hidden" name="nivel_valor[]" value="{{ nivel.nivel }}">
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label>Faixa Etária:</label>
+                                                        <input type="text" value="{{ nivel.faixa_etaria }}" readonly>
+                                                        <input type="hidden" name="nivel_faixa_etaria[]" value="{{ nivel.faixa_etaria }}">
+                                                    </div>
+                                                </div>
+                                                <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                                    <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="openAddItemModal('nivel')" class="protocol-btn btn-primary mt-4">Adicionar Nível</button>
+                                <div class="protocol-actions justify-between">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="4" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-brain"></i> Habilidades</h3>
+                                <div id="habilidades-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.habilidades %}
+                                        {% for habilidade in protocol.habilidades %}
+                                            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                                <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div class="protocol-field required">
+                                                        <label>Ordem:</label>
+                                                        <input type="number" value="{{ habilidade.ordem }}" required readonly>
+                                                        <input type="hidden" name="habilidade_ordem[]" value="{{ habilidade.ordem }}">
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label>Habilidade:</label>
+                                                        <input type="text" value="{{ habilidade.nome }}" required readonly>
+                                                        <input type="hidden" name="habilidade_nome[]" value="{{ habilidade.nome }}">
+                                                    </div>
+                                                </div>
+                                                <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                                    <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="openAddItemModal('habilidade')" class="protocol-btn btn-primary mt-4">Adicionar Habilidade</button>
+                                <div class="protocol-actions justify-between">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="5" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-star-half-alt"></i> Pontuação</h3>
+                                <div id="pontuacao-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.pontuacao %}
+                                        {% for pontuacao_item in protocol.pontuacao %}
+                                            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                                <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                    <div class="protocol-field required">
+                                                        <label>Ordem:</label>
+                                                        <input type="number" value="{{ pontuacao_item.ordem }}" required readonly>
+                                                        <input type="hidden" name="pontuacao_ordem[]" value="{{ pontuacao_item.ordem }}">
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label>Tipo:</label>
+                                                        <input type="text" value="{{ pontuacao_item.tipo }}" required readonly>
+                                                        <input type="hidden" name="pontuacao_tipo[]" value="{{ pontuacao_item.tipo }}">
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label>Descrição:</label>
+                                                        <input type="text" value="{{ pontuacao_item.descricao }}" readonly>
+                                                        <input type="hidden" name="pontuacao_descricao[]" value="{{ pontuacao_item.descricao }}">
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label>Valor:</label>
+                                                        <input type="number" step="0.1" value="{{ pontuacao_item.valor }}" required readonly>
+                                                        <input type="hidden" name="pontuacao_valor[]" value="{{ pontuacao_item.valor }}">
+                                                    </div>
+                                                </div>
+                                                <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                                    <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="openAddItemModal('pontuacao')" class="protocol-btn btn-primary mt-4">Adicionar Pontuação</button>
+                                <div class="protocol-actions justify-between">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="6" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-tasks"></i> Tarefas/Testes</h3>
+                                <div id="tarefas-testes-container" class="grid grid-cols-1 gap-4">
+                                    {% if protocol and protocol.tarefas_testes %}
+                                        {% for tarefa_teste in protocol.tarefas_testes %}
+                                            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                                <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                                    <div class="protocol-field required">
+                                                        <label>Nível:</label>
+                                                        <input type="number" value="{{ tarefa_teste.nivel }}" required readonly>
+                                                        <input type="hidden" name="tarefa_nivel[]" value="{{ tarefa_teste.nivel }}">
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label>Ordem:</label>
+                                                        <input type="number" value="{{ tarefa_teste.ordem }}" required readonly>
+                                                        <input type="hidden" name="tarefa_ordem[]" value="{{ tarefa_teste.ordem }}">
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label>Item:</label>
+                                                        <input type="text" value="{{ tarefa_teste.item }}" readonly>
+                                                        <input type="hidden" name="tarefa_item[]" value="{{ tarefa_teste.item }}">
+                                                    </div>
+                                                    <div class="protocol-field required">
+                                                        <label>Nome da Tarefa:</label>
+                                                        <input type="text" value="{{ tarefa_teste.nome }}" required readonly>
+                                                        <input type="hidden" name="tarefa_nome[]" value="{{ tarefa_teste.nome }}">
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label>Habilidade:</label>
+                                                        <input type="text" value="{{ tarefa_teste.habilidade }}" readonly>
+                                                        <input type="hidden" name="tarefa_habilidade[]" value="{{ tarefa_teste.habilidade }}">
+                                                    </div>
+                                                    <div class="protocol-field">
+                                                        <label>Marco:</label>
+                                                        <input type="text" value="{{ tarefa_teste.marco }}" readonly>
+                                                        <input type="hidden" name="tarefa_marco[]" value="{{ tarefa_teste.marco }}">
+                                                    </div>
+                                                </div>
+                                                <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                                    <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" onclick="openAddItemModal('tarefa')" class="protocol-btn btn-primary mt-4">Adicionar Tarefa/Teste</button>
+                                <div class="protocol-actions justify-between">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="button" class="protocol-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="protocol-card-section" data-step-content="7" style="display:none;">
+                            <div class="protocol-card-container-form">
+                                <h3 class="section-title"><i class="fa-solid fa-comment-dots"></i> Observações</h3>
+                                <div class="protocol-card-fields single">
+                                    <div class="protocol-field">
+                                        <label for="observacoes_gerais">Observações Gerais:</label>
+                                        <textarea id="observacoes_gerais" name="observacoes_gerais" rows="6">{{ protocol.observacoes_gerais if protocol else '' }}</textarea>
+                                    </div>
+                                </div>
+                                <div class="protocol-actions justify-between">
+                                    <button type="button" class="protocol-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    <button type="submit" class="protocol-btn btn-primary"><i class="fas fa-save"></i> Salvar Protocolo</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </main>
         </div>
     </div>
-    
-    <script type="module">
-        // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
-        const FAKE_FIREBASE = {
-            initializeApp: () => ({}),
-            getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
-        };
-        const { initializeApp } = FAKE_FIREBASE;
-        const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        let auth = getAuth(initializeApp(firebaseConfig));
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Lógica para Notificações Toast ---
+    <script type="module">
+        // Variável global para a modal de alerta
+        let showGeneralAlertModalGlobal = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const protocolForm = document.getElementById('protocol-form');
+            const steps = document.querySelectorAll('.protocol-step');
+            const sections = document.querySelectorAll('.protocol-card-section');
+            const nextBtns = document.querySelectorAll('.steps-next');
+            const prevBtns = document.querySelectorAll('.steps-prev');
+
+            let currentStepIndex = 0;
+            // dynamicItemCounts is not strictly necessary for submission with hidden inputs,
+            // but can be useful for other client-side logic if needed.
+            let dynamicItemCounts = {
+                etapa: {{ protocol.etapas|length if protocol and protocol.etapas else 0 }},
+                nivel: {{ protocol.niveis|length if protocol and protocol.niveis else 0 }},
+                habilidade: {{ protocol.habilidades|length if protocol and protocol.habilidades else 0 }},
+                pontuacao: {{ protocol.pontuacao|length if protocol and protocol.pontuacao else 0 }},
+                tarefa: {{ protocol.tarefas_testes|length if protocol and protocol.tarefas_testes else 0 }}
+            };
+
+            // --- Lógica para Notificações Toast (copiado de pacientes.html) ---
             const toastContainer = document.getElementById('toast-container');
             function showToast(message, category = 'info') {
                 if (!toastContainer) return;
@@ -622,65 +910,541 @@
                 setTimeout(() => {
                     toast.classList.add('fade-out');
                     toast.addEventListener('animationend', () => toast.remove());
-                }, 5000);
+                }, 5000); // A notificação desaparece após 5 segundos
             }
 
-            // --- Processa mensagens flash do backend e as exibe como toasts ---
-            {# Isso é um bloco Jinja2 que precisa ser processado pelo backend Flask #}
+            // Processa mensagens flash do backend e as exibe como toasts
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% for category, message in messages %}
                     showToast({{ message|tojson|safe }}, "{{ category }}");
                 {% endfor %}
             {% endwith %}
 
-            // --- Lógica de Validação do Formulário ---
-            const patrimonioForm = document.getElementById('patrimonio-form');
-            if (patrimonioForm) {
-                patrimonioForm.addEventListener('submit', function(event) {
-                    let allFieldsValid = true;
-                    // Seleciona todos os campos obrigatórios, exceto checkboxes que não precisam de validação de 'vazio'
-                    const requiredFields = patrimonioForm.querySelectorAll('.form-field.required input:not([type="checkbox"]), .form-field.required select, .form-field.required textarea');
-                    
-                    // Limpar classes de erro e shake de todos os campos
-                    requiredFields.forEach(field => {
+            // --- Lógica para Modal de Alerta Geral (copiado de pacientes.html) ---
+            const generalAlertOverlay = document.getElementById('general-alert-modal-overlay');
+            const alertModalIcon = document.getElementById('alert-modal-icon');
+            const alertModalTitle = document.getElementById('alert-modal-title');
+            const alertModalMessage = document.getElementById('alert-modal-message');
+            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+
+            function showGeneralAlertModal(title, message, category = 'info') {
+                alertModalTitle.textContent = title;
+                alertModalMessage.textContent = message;
+                
+                alertModalIcon.className = 'alert-modal-icon'; // Reset class
+                let iconClass = '';
+                switch (category) {
+                    case 'info': iconClass = 'fas fa-info-circle'; break;
+                    case 'success': iconClass = 'fas fa-check-circle'; break;
+                    case 'warning': iconClass = 'fas fa-exclamation-triangle'; break;
+                    case 'danger': iconClass = 'fas fa-times-circle'; break;
+                }
+                alertModalIcon.classList.add(category);
+                alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
+
+                generalAlertOverlay.classList.add('show');
+                document.body.style.overflow = 'hidden'; // Bloquear scroll do body
+            }
+
+            function closeGeneralAlertModal() {
+                generalAlertOverlay.classList.remove('show');
+                document.body.style.overflow = 'auto'; // Restaurar scroll do body
+            }
+            // Conectar a função showGeneralAlertModal com a global
+            showGeneralAlertModalGlobal = showGeneralAlertModal;
+
+            alertModalCloseBtn.addEventListener('click', closeGeneralAlertModal);
+            generalAlertOverlay.addEventListener('click', (e) => {
+                if (e.target === generalAlertOverlay) {
+                    closeGeneralAlertModal();
+                }
+            });
+
+            // --- Lógica para Modal de Adição de Itens Dinâmicos ---
+            const addItemModalOverlay = document.getElementById('add-item-modal-overlay');
+            const addItemModalTitle = document.getElementById('add-item-modal-title');
+            const addItemModalBody = document.getElementById('add-item-modal-body');
+            const addItemModalCloseBtn = document.getElementById('add-item-modal-close-btn');
+            const addItemModalCancelBtn = document.getElementById('add-item-modal-cancel-btn');
+            const addItemModalSaveBtn = document.getElementById('add-item-modal-save-btn');
+
+            let currentAddItemType = ''; // Para saber qual tipo de item está sendo adicionado
+
+            window.openAddItemModal = function(type) {
+                currentAddItemType = type;
+                addItemModalBody.innerHTML = ''; // Limpa o corpo da modal
+                let fieldsHtml = '';
+                let titleText = '';
+
+                switch (type) {
+                    case 'etapa':
+                        titleText = 'Adicionar Etapa';
+                        fieldsHtml = `
+                            <div class="protocol-field required">
+                                <label for="modal_etapa_nome">Nome da Etapa:</label>
+                                <input type="text" id="modal_etapa_nome" class="w-full" required>
+                            </div>
+                            <div class="protocol-field">
+                                <label for="modal_etapa_descricao">Descrição da Etapa:</label>
+                                <textarea id="modal_etapa_descricao" class="w-full" rows="3"></textarea>
+                            </div>
+                        `;
+                        break;
+                    case 'nivel':
+                        titleText = 'Adicionar Nível';
+                        fieldsHtml = `
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="protocol-field required">
+                                    <label for="modal_nivel_ordem">Ordem:</label>
+                                    <input type="number" id="modal_nivel_ordem" class="w-full" required>
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="modal_nivel_valor">Nível:</label>
+                                    <input type="number" id="modal_nivel_valor" class="w-full" required>
+                                </div>
+                            </div>
+                            <div class="protocol-field">
+                                <label for="modal_nivel_faixa_etaria">Faixa Etária:</label>
+                                <input type="text" id="modal_nivel_faixa_etaria" class="w-full">
+                            </div>
+                        `;
+                        break;
+                    case 'habilidade':
+                        titleText = 'Adicionar Habilidade';
+                        fieldsHtml = `
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="protocol-field required">
+                                    <label for="modal_habilidade_ordem">Ordem:</label>
+                                    <input type="number" id="modal_habilidade_ordem" class="w-full" required>
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="modal_habilidade_nome">Habilidade:</label>
+                                    <input type="text" id="modal_habilidade_nome" class="w-full" required>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    case 'pontuacao':
+                        titleText = 'Adicionar Pontuação';
+                        fieldsHtml = `
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="protocol-field required">
+                                    <label for="modal_pontuacao_ordem">Ordem:</label>
+                                    <input type="number" id="modal_pontuacao_ordem" class="w-full" required>
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="modal_pontuacao_tipo">Tipo:</label>
+                                    <input type="text" id="modal_pontuacao_tipo" class="w-full" required>
+                                </div>
+                            </div>
+                            <div class="protocol-field">
+                                <label for="modal_pontuacao_descricao">Descrição:</label>
+                                <input type="text" id="modal_pontuacao_descricao" class="w-full">
+                            </div>
+                            <div class="protocol-field required">
+                                <label for="modal_pontuacao_valor">Valor:</label>
+                                <input type="number" step="0.1" id="modal_pontuacao_valor" class="w-full" required>
+                            </div>
+                        `;
+                        break;
+                    case 'tarefa':
+                        titleText = 'Adicionar Tarefa/Teste';
+                        fieldsHtml = `
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="protocol-field required">
+                                    <label for="modal_tarefa_nivel">Nível:</label>
+                                    <input type="number" id="modal_tarefa_nivel" class="w-full" required>
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="modal_tarefa_ordem">Ordem:</label>
+                                    <input type="number" id="modal_tarefa_ordem" class="w-full" required>
+                                </div>
+                                <div class="protocol-field">
+                                    <label for="modal_tarefa_item">Item:</label>
+                                    <input type="text" id="modal_tarefa_item" class="w-full">
+                                </div>
+                                <div class="protocol-field required">
+                                    <label for="modal_tarefa_nome">Nome da Tarefa:</label>
+                                    <input type="text" id="modal_tarefa_nome" class="w-full" required>
+                                </div>
+                                <div class="protocol-field">
+                                    <label for="modal_tarefa_habilidade">Habilidade:</label>
+                                    <input type="text" id="modal_tarefa_habilidade" class="w-full">
+                                </div>
+                                <div class="protocol-field">
+                                    <label for="modal_tarefa_marco">Marco:</label>
+                                    <input type="text" id="modal_tarefa_marco" class="w-full">
+                                </div>
+                            </div>
+                        `;
+                        break;
+                }
+
+                addItemModalTitle.textContent = titleText;
+                addItemModalBody.innerHTML = fieldsHtml;
+                addItemModalOverlay.classList.add('show');
+                document.body.style.overflow = 'hidden'; // Bloquear scroll do body
+
+                // Adicionar validação aos campos da modal
+                setupRequiredFieldValidationForNewFields(addItemModalBody);
+            }
+
+            function closeAddItemModal() {
+                addItemModalOverlay.classList.remove('show');
+                document.body.style.overflow = 'auto'; // Restaurar scroll do body
+            }
+
+            addItemModalCloseBtn.addEventListener('click', closeAddItemModal);
+            addItemModalCancelBtn.addEventListener('click', closeAddItemModal);
+            addItemModalOverlay.addEventListener('click', (e) => {
+                if (e.target === addItemModalOverlay) {
+                    closeAddItemModal();
+                }
+            });
+
+            addItemModalSaveBtn.addEventListener('click', function() {
+                if (validateModalFields()) {
+                    saveModalData(currentAddItemType);
+                    closeAddItemModal();
+                } else {
+                    showGeneralAlertModalGlobal('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios na modal.', 'danger');
+                }
+            });
+
+            function validateModalFields() {
+                let allModalFieldsValid = true;
+                const requiredFields = addItemModalBody.querySelectorAll('.protocol-field.required input, .protocol-field.required select, .protocol-field.required textarea');
+                
+                requiredFields.forEach(field => {
+                    const isValid = field.value.trim() !== '';
+                    if (!isValid) {
+                        allModalFieldsValid = false;
+                        field.classList.add('invalid', 'shake');
+                    } else {
                         field.classList.remove('invalid', 'shake');
-                    });
-
-                    requiredFields.forEach(field => {
-                        if (field.value.trim() === '') {
-                            allFieldsValid = false;
-                            field.classList.add('invalid');
-                            field.classList.add('shake'); // Adiciona animação de shake
-                        } else {
-                            field.classList.add('valid');
-                        }
-                    });
-
-                    if (!allFieldsValid) {
-                        event.preventDefault(); // Impede o envio do formulário
-                        showToast('Por favor, preencha todos os campos obrigatórios.', 'danger');
-                        
-                        // Foca no primeiro campo inválido
-                        const firstInvalidField = patrimonioForm.querySelector('.form-field.required input.invalid:not([type="checkbox"]), .form-field.required select.invalid, .form-field.required textarea.invalid');
-                        if (firstInvalidField) {
-                            firstInvalidField.focus();
-                        }
                     }
                 });
+                return allModalFieldsValid;
+            }
 
-                // Adiciona validação em tempo real ao sair do campo (blur)
-                patrimonioForm.querySelectorAll('.form-field.required input:not([type="checkbox"]), .form-field.required select, .form-field.required textarea').forEach(field => {
+            function saveModalData(type) {
+                const container = document.getElementById(`${type}s-container`);
+                let newFieldHtml = '';
+                let values = {};
+
+                // Coleta os valores da modal
+                if (type === 'etapa') {
+                    values.nome = document.getElementById('modal_etapa_nome').value;
+                    values.descricao = document.getElementById('modal_etapa_descricao').value;
+                    newFieldHtml = `
+                        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                            <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="protocol-field required">
+                                    <label>Nome da Etapa:</label>
+                                    <input type="text" value="${values.nome}" required readonly>
+                                    <input type="hidden" name="etapa_nome[]" value="${values.nome}">
+                                </div>
+                                <div class="protocol-field col-span-full">
+                                    <label>Descrição da Etapa:</label>
+                                    <textarea rows="2" readonly>${values.descricao}</textarea>
+                                    <input type="hidden" name="etapa_descricao[]" value="${values.descricao}">
+                                </div>
+                            </div>
+                            <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (type === 'nivel') {
+                    values.ordem = document.getElementById('modal_nivel_ordem').value;
+                    values.nivel = document.getElementById('modal_nivel_valor').value;
+                    values.faixa_etaria = document.getElementById('modal_nivel_faixa_etaria').value;
+                    newFieldHtml = `
+                        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                            <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="protocol-field required">
+                                    <label>Ordem:</label>
+                                    <input type="number" value="${values.ordem}" required readonly>
+                                    <input type="hidden" name="nivel_ordem[]" value="${values.ordem}">
+                                </div>
+                                <div class="protocol-field required">
+                                    <label>Nível:</label>
+                                    <input type="number" value="${values.nivel}" required readonly>
+                                    <input type="hidden" name="nivel_valor[]" value="${values.nivel}">
+                                </div>
+                                <div class="protocol-field">
+                                    <label>Faixa Etária:</label>
+                                    <input type="text" value="${values.faixa_etaria}" readonly>
+                                    <input type="hidden" name="nivel_faixa_etaria[]" value="${values.faixa_etaria}">
+                                </div>
+                            </div>
+                            <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (type === 'habilidade') {
+                    values.ordem = document.getElementById('modal_habilidade_ordem').value;
+                    values.nome = document.getElementById('modal_habilidade_nome').value;
+                    newFieldHtml = `
+                        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                            <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="protocol-field required">
+                                    <label>Ordem:</label>
+                                    <input type="number" value="${values.ordem}" required readonly>
+                                    <input type="hidden" name="habilidade_ordem[]" value="${values.ordem}">
+                                </div>
+                                <div class="protocol-field required">
+                                    <label>Habilidade:</label>
+                                    <input type="text" value="${values.nome}" required readonly>
+                                    <input type="hidden" name="habilidade_nome[]" value="${values.nome}">
+                                </div>
+                            </div>
+                            <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (type === 'pontuacao') {
+                    values.ordem = document.getElementById('modal_pontuacao_ordem').value;
+                    values.tipo = document.getElementById('modal_pontuacao_tipo').value;
+                    values.descricao = document.getElementById('modal_pontuacao_descricao').value;
+                    values.valor = document.getElementById('modal_pontuacao_valor').value;
+                    newFieldHtml = `
+                        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                            <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div class="protocol-field required">
+                                    <label>Ordem:</label>
+                                    <input type="number" value="${values.ordem}" required readonly>
+                                    <input type="hidden" name="pontuacao_ordem[]" value="${values.ordem}">
+                                </div>
+                                <div class="protocol-field required">
+                                    <label>Tipo:</label>
+                                    <input type="text" value="${values.tipo}" required readonly>
+                                    <input type="hidden" name="pontuacao_tipo[]" value="${values.tipo}">
+                                </div>
+                                <div class="protocol-field">
+                                    <label>Descrição:</label>
+                                    <input type="text" value="${values.descricao}" readonly>
+                                    <input type="hidden" name="pontuacao_descricao[]" value="${values.descricao}">
+                                </div>
+                                <div class="protocol-field required">
+                                    <label>Valor:</label>
+                                    <input type="number" step="0.1" value="${values.valor}" required readonly>
+                                    <input type="hidden" name="pontuacao_valor[]" value="${values.valor}">
+                                </div>
+                            </div>
+                            <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (type === 'tarefa') {
+                    values.nivel = document.getElementById('modal_tarefa_nivel').value;
+                    values.ordem = document.getElementById('modal_tarefa_ordem').value;
+                    values.item = document.getElementById('modal_tarefa_item').value;
+                    values.nome = document.getElementById('modal_tarefa_nome').value;
+                    values.habilidade = document.getElementById('modal_tarefa_habilidade').value;
+                    values.marco = document.getElementById('modal_tarefa_marco').value;
+                    newFieldHtml = `
+                        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                            <div class="col-span-full md:col-span-10 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                <div class="protocol-field required">
+                                    <label>Nível:</label>
+                                    <input type="number" value="${values.nivel}" required readonly>
+                                    <input type="hidden" name="tarefa_nivel[]" value="${values.nivel}">
+                                </div>
+                                <div class="protocol-field required">
+                                    <label>Ordem:</label>
+                                    <input type="number" value="${values.ordem}" required readonly>
+                                    <input type="hidden" name="tarefa_ordem[]" value="${values.ordem}">
+                                </div>
+                                <div class="protocol-field">
+                                    <label>Item:</label>
+                                    <input type="text" value="${values.item}" readonly>
+                                    <input type="hidden" name="tarefa_item[]" value="${values.item}">
+                                </div>
+                                <div class="protocol-field required">
+                                    <label>Nome da Tarefa:</label>
+                                    <input type="text" value="${values.nome}" required readonly>
+                                    <input type="hidden" name="tarefa_nome[]" value="${values.nome}">
+                                </div>
+                                <div class="protocol-field">
+                                    <label>Habilidade:</label>
+                                    <input type="text" value="${values.habilidade}" readonly>
+                                    <input type="hidden" name="tarefa_habilidade[]" value="${values.habilidade}">
+                                </div>
+                                <div class="protocol-field">
+                                    <label>Marco:</label>
+                                    <input type="text" value="${values.marco}" readonly>
+                                    <input type="hidden" name="tarefa_marco[]" value="${values.marco}">
+                                </div>
+                            </div>
+                            <div class="col-span-full md:col-span-2 flex justify-end md:justify-start">
+                                <button type="button" onclick="removeDynamicField(this)" class="protocol-btn btn-danger btn-sm">Remover</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                container.insertAdjacentHTML('beforeend', newFieldHtml);
+                dynamicItemCounts[type]++; // Incrementa o contador para o tipo
+            }
+
+            window.removeDynamicField = function(button) {
+                button.closest('.p-4.border.border-gray-200').remove();
+                // Note: Ao remover, não decrementamos o contador pois os índices dos arrays no backend são baseados na ordem de envio, não em IDs sequenciais.
+                // A Flask/Werkzeug irá coletar os campos com o mesmo 'name' como uma lista.
+            }
+
+            // Função para exibir o passo atual
+            function showStep(index) {
+                steps.forEach((step, i) => {
+                    step.classList.toggle('active', i === index);
+                });
+                sections.forEach((section, i) => {
+                    section.style.display = i === index ? 'flex' : 'none'; /* Usar flex para layout interno */
+                });
+                currentStepIndex = index;
+            }
+
+            // Navegação por clique nas abas
+            steps.forEach((step, i) => {
+                step.addEventListener('click', () => {
+                    showStep(i);
+                });
+            });
+
+            // Botões Próximo/Anterior
+            nextBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Validar campos do passo atual antes de avançar
+                    if (validateCurrentStep()) {
+                        showStep(Math.min(currentStepIndex + 1, sections.length - 1));
+                    } else {
+                        showGeneralAlertModalGlobal('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios nesta seção.', 'danger');
+                    }
+                });
+            });
+
+            prevBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    showStep(Math.max(currentStepIndex - 1, 0));
+                });
+            });
+
+            // Validação de campos obrigatórios
+            function validateRequiredField(field) {
+                let isValid = field.value.trim() !== '';
+
+                // Validação específica para radio buttons
+                if (field.type === 'radio') {
+                    const radioGroupName = field.name;
+                    const radioGroup = document.querySelectorAll(`input[name="${radioGroupName}"]`);
+                    isValid = Array.from(radioGroup).some(radio => radio.checked);
+                }
+                
+                if (isValid) {
+                    field.classList.remove('invalid', 'shake');
+                    field.classList.add('valid');
+                } else {
+                    field.classList.remove('valid');
+                    field.classList.add('invalid', 'shake');
+                }
+                return isValid;
+            }
+
+            function validateCurrentStep() {
+                let allFieldsValid = true;
+                const currentSection = sections[currentStepIndex];
+                const requiredFields = currentSection.querySelectorAll('.protocol-field.required input:not([type="hidden"]):not([readonly]), .protocol-field.required select:not([readonly]), .protocol-field.required textarea:not([readonly])');
+                
+                // Limpar classes de erro e shake de todos os campos e steps
+                requiredFields.forEach(field => {
+                    field.classList.remove('invalid', 'shake');
+                });
+                steps.forEach(step => step.classList.remove('has-error'));
+
+                requiredFields.forEach(field => {
+                    const isValid = validateRequiredField(field);
+                    if (!isValid) {
+                        allFieldsValid = false;
+                        field.classList.add('invalid', 'shake'); // Adiciona animação de shake
+                        // Marca o step como tendo erro
+                        steps[currentStepIndex].classList.add('has-error');
+                    }
+                });
+                return allFieldsValid;
+            }
+
+            // Adicionar validação no submit final
+            protocolForm.addEventListener('submit', function(event) {
+                let allFormFieldsValid = true;
+                // Itera sobre todos os steps para validar todos os campos obrigatórios
+                sections.forEach((section, index) => {
+                    const requiredFields = section.querySelectorAll('.protocol-field.required input:not([type="hidden"]):not([readonly]), .protocol-field.required select:not([readonly]), .protocol-field.required textarea:not([readonly])');
+                    requiredFields.forEach(field => {
+                        const isValid = validateRequiredField(field);
+                        if (!isValid) {
+                            allFormFieldsValid = false;
+                            // Marca o step com erro se houver campo inválido
+                            steps[index].classList.add('has-error');
+                        }
+                    });
+                });
+
+                if (!allFormFieldsValid) {
+                    event.preventDefault(); // Impede o envio do formulário
+                    // Encontra o primeiro step com erro e o exibe
+                    const firstInvalidStep = Array.from(steps).find(step => step.classList.contains('has-error'));
+                    if (firstInvalidStep) {
+                        const firstInvalidStepIndex = Array.from(steps).indexOf(firstInvalidStep);
+                        showStep(firstInvalidStepIndex);
+                        // Foca no primeiro campo inválido do primeiro step com erro
+                        const firstInvalidFieldInStep = sections[firstInvalidStepIndex].querySelector('.protocol-field.required input.invalid, .protocol-field.required select.invalid, .protocol-field.required textarea.invalid');
+                        if (firstInvalidFieldInStep) {
+                            firstInvalidFieldInStep.focus();
+                        }
+                    }
+                    showGeneralAlertModalGlobal('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios e corrija os erros indicados.', 'danger');
+                }
+            });
+
+            function setupRequiredFieldValidationForNewFields(containerElement) {
+                const requiredFields = containerElement.querySelectorAll('.protocol-field.required input:not([type="hidden"]):not([readonly]), .protocol-field.required select:not([readonly]), .protocol-field.required textarea:not([readonly])');
+                requiredFields.forEach(field => {
                     field.addEventListener('blur', function() {
-                        if (this.value.trim() === '') {
-                            this.classList.add('invalid');
-                            this.classList.remove('valid');
-                        } else {
-                            this.classList.add('valid');
-                            this.classList.remove('invalid');
+                        validateRequiredField(this);
+                    });
+                    field.addEventListener('input', function() {
+                        if (this.classList.contains('invalid')) {
+                            this.classList.remove('invalid', 'shake');
                         }
                     });
                 });
             }
+
+            // Inicializar a validação para os campos existentes ao carregar a página
+            const initialRequiredFields = document.querySelectorAll('.protocol-field.required input:not([type="hidden"]):not([readonly]), .protocol-field.required select:not([readonly]), .protocol-field.required textarea:not([readonly]), .protocol-field.required input[type="radio"]');
+            initialRequiredFields.forEach(field => {
+                field.addEventListener('blur', function() {
+                    validateRequiredField(this);
+                });
+                field.addEventListener('input', function() {
+                    if (this.classList.contains('invalid')) {
+                        this.classList.remove('invalid', 'shake');
+                    }
+                });
+                // Para radio buttons, validar ao mudar a seleção
+                if (field.type === 'radio') {
+                    field.addEventListener('change', function() {
+                        validateRequiredField(this);
+                    });
+                }
+            });
+
+            // Exibir o primeiro passo ao carregar a página
+            showStep(0);
         });
     </script>
 </body>
