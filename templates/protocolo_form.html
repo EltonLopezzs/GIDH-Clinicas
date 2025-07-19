@@ -205,11 +205,70 @@
         .protocol-field textarea { min-height: 80px; resize: vertical; }
 
         /* Ajuste para alinhamento de radio/checkbox */
+        .protocol-field label.inline-flex {
+            align-items: center; /* Garante alinhamento vertical do input e texto */
+        }
         .protocol-field input[type="radio"],
         .protocol-field input[type="checkbox"] {
-            vertical-align: middle; /* Alinha o input com o texto */
-            margin-top: -0.125rem; /* Pequeno ajuste fino se necessário */
+            /* Oculta o input nativo */
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            position: relative;
+            width: 1.25rem; /* h-5 */
+            height: 1.25rem; /* w-5 */
+            border: 2px solid var(--muted);
+            border-radius: 0.25rem; /* rounded */
+            cursor: pointer;
+            flex-shrink: 0; /* Evita que o input encolha */
+            transition: all 0.2s ease;
         }
+
+        /* Estilo para Radio Buttons */
+        .protocol-field input[type="radio"] {
+            border-radius: 50%; /* Transforma em círculo */
+        }
+        .protocol-field input[type="radio"]:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        .protocol-field input[type="radio"]:checked::before {
+            content: '';
+            display: block;
+            width: 0.6rem; /* Tamanho do ponto central */
+            height: 0.6rem; /* Tamanho do ponto central */
+            background-color: var(--card); /* Cor do ponto central */
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Estilo para Checkboxes */
+        .protocol-field input[type="checkbox"]:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        .protocol-field input[type="checkbox"]:checked::before {
+            content: '\f00c'; /* Unicode para o ícone de check (Font Awesome) */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 0.75rem;
+            color: var(--card);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Estilo de Foco para ambos */
+        .protocol-field input[type="radio"]:focus,
+        .protocol-field input[type="checkbox"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent); /* Anel de foco */
+        }
+
 
         .protocol-actions {
             display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem;
@@ -408,14 +467,23 @@
         .alert-modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); }
         .alert-modal-message { font-size: 1rem; color: var(--muted); line-height: 1.6; }
         /* Add Item Modal */
-        .add-item-modal { max-width: 900px; } /* Increased max-width for modals */
+        .add-item-modal { 
+            max-width: 1000px; /* Increased max-width for modals */
+            max-height: 80vh; /* Diminui a altura máxima do modal */
+        } 
         .add-item-modal-header {
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--border-color); padding: 1.5rem;
         }
         .add-item-modal-title { font-size: 1.5rem; font-weight: 600; color: var(--text); }
         .add-item-modal-close-btn { background: none; border: none; font-size: 1.5rem; color: var(--muted); cursor: pointer; }
-        .add-item-modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+        .add-item-modal-body { 
+            padding: 1.5rem; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 1rem;
+            overflow-y: auto; /* Adiciona rolagem ao corpo do modal se o conteúdo for muito grande */
+        }
         .add-item-modal-actions {
             display: flex; justify-content: flex-end; gap: 1rem;
             padding: 1.5rem; border-top: 1px solid var(--border-color);
@@ -704,8 +772,10 @@
                                             <textarea id="descricao" name="descricao" rows="8">{{ protocol.descricao if protocol else '' }}</textarea> {# Increased rows to 8 #}
                                         </div>
                                         <div class="protocol-field flex items-center col-span-full mt-4"> {# Added margin-top #}
-                                            <input type="checkbox" id="ativo" name="ativo" value="1" {% if protocol and protocol.ativo %}checked{% endif %} class="h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
-                                            <label for="ativo" class="ml-2 !font-normal">Protocolo Ativo</label>
+                                            <label class="inline-flex items-center">
+                                                <input type="checkbox" id="ativo" name="ativo" value="1" {% if protocol and protocol.ativo %}checked{% endif %} class="h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                                                <span class="ml-2 !font-normal">Protocolo Ativo</span>
+                                            </label>
                                         </div>
                                     </div>
                                 </div>
@@ -842,7 +912,7 @@
                                                 {% endfor %}
                                             {% else %}
                                                 <tr class="no-results-row">
-                                                    <td colspan="4">Nenhum nível cadastrado.</td>
+                                                    <td colspan="4">Nenhuma nível cadastrado.</td>
                                                 </tr>
                                             {% endif %}
                                         </tbody>
@@ -1319,9 +1389,9 @@
                     });
 
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                      <div class="protocol-field required col-span-full"><label for="modal_tarefa_nome">Nome da Tarefa:</label><input type="text" id="modal_tarefa_nome" value="${itemData.nome || ''}" required></div>
                                       <div class="protocol-field required"><label for="modal_tarefa_nivel">Nível:</label><select id="modal_tarefa_nivel" required>${niveisOptions}</select></div>
                                       <div class="protocol-field"><label for="modal_tarefa_item">Item:</label><input type="text" id="modal_tarefa_item" value="${itemData.item || ''}"></div>
-                                      <div class="protocol-field required col-span-full"><label for="modal_tarefa_nome">Nome da Tarefa:</label><input type="text" id="modal_tarefa_nome" value="${itemData.nome || ''}" required></div>
                                       <div class="protocol-field col-span-full md:col-span-1"><label for="modal_tarefa_habilidade_marco">Habilidade/Marco:</label><select id="modal_tarefa_habilidade_marco">${habilidadesOptions}</select></div>
                                       <div class="protocol-field col-span-full md:col-span-1"><label for="modal_tarefa_resultado_observacao">Resultado/Observação:</label><textarea rows="3" id="modal_tarefa_resultado_observacao">${itemData.resultado_observacao || ''}</textarea></div>
                                       <div class="protocol-field col-span-full"><label for="modal_tarefa_pergunta">Pergunta:</label><textarea rows="3" id="modal_tarefa_pergunta">${itemData.pergunta || ''}</textarea></div>
