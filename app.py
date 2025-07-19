@@ -626,35 +626,31 @@ def import_protocol_from_ai():
                 - `ativo`: Booleano, sempre `true` para protocolos importados.
 
             2.  **Etapas (seções ou fases do protocolo):**
-                - `nome`: Nome da etapa (ex: "Introdução", "Classificação").
+                - `nome`: Nome da etapa (ex: "Socialização - 0 a 1 ano", "Fase I: Troca Física").
                 - `descricao`: Descrição breve da etapa, se disponível.
-                **Instrução:** Use esta seção para grandes divisões conceituais do documento, não para categorias de habilidades ou faixas etárias.
 
             3.  **Níveis (faixas etárias ou níveis de complexidade):**
-                - `nivel`: O número do nível (inteiro). Se não houver número explícito, use a ordem da faixa etária (ex: 1 para "0 a 1 ano", 2 para "1 a 2 anos").
+                - `nivel`: O número do nível, se aplicável (ex: 1, 2, 3).
                 - `faixa_etaria`: A faixa etária associada a este nível (ex: "0 a 1 ano", "3 a 4 anos").
-                **Instrução:** Procure por padrões como "Área – X a Y anos" ou "Área – X anos" e extraia a faixa etária e o nível numérico correspondente.
 
             4.  **Habilidades (listas de habilidades, marcos de desenvolvimento ou competências):**
                 - `nome`: Nome da habilidade ou do marco (ex: "Observa uma pessoa movimentando-se em seu campo visual.", "Suga e deglute líquidos.").
-                **Instrução:** Procure por itens numerados ou com marcadores dentro das seções de áreas de desenvolvimento (ex: "Socialização", "Linguagem", "Cognição", "Auto Cuidados", "Desenvolvimento Motor"). Cada item numerado/marcado é uma habilidade.
 
             5.  **Pontuação (critérios de avaliação ou escalas):**
-                - `tipo`: Tipo de pontuação (ex: "S-Sim", "N-Não", "AV-Às vezes", "NPV", "NPM", "NmMS").
-                - `descricao`: Descrição do critério ou o que ele representa (ex: "alcançou", "ainda não alcançou", "Parcialmente verdadeiro", "Não verdadeiro", "Problema menor").
+                - `tipo`: Tipo de pontuação (ex: "S-Sim", "N-Não", "AV-Às vezes", "Pontuação ATEC").
+                - `descricao`: Descrição do critério ou o que ele representa (ex: "alcançou", "ainda não alcançou", "Parcialmente verdadeiro").
                 - `valor`: Valor numérico associado, se houver (ex: 2 para "Sim", 1 para "Às vezes", 0 para "Não").
 
             6.  **Tarefas/Testes (itens específicos a serem avaliados ou aplicados):**
-                - `nivel`: O nível ou faixa etária da tarefa (inteiro), se aplicável. Use o mesmo `nivel` da seção de Níveis/Faixas Etárias se a tarefa estiver associada a uma.
+                - `nivel`: O nível ou faixa etária da tarefa (inteiro).
                 - `item`: O número do item ou da questão (string, ex: "01", "15").
                 - `nome`: O texto da tarefa ou da pergunta (ex: "Observa uma pessoa movimentando-se em seu campo visual.", "Seu filho gosta de se balançar, de pular no seu joelho, etc.?").
-                - `habilidade_marco`: A área de desenvolvimento ou habilidade principal a que a tarefa se refere (ex: "Socialização", "Linguagem", "Cognição", "Desenvolvimento Motor", "Auto Cuidados", "Comportamento Disruptivo", "Consciência Cognitiva/Sensorial", "Saúde/Físico/Comportamento").
+                - `habilidade_marco`: A área de desenvolvimento ou habilidade principal a que a tarefa se refere (ex: "Socialização", "Linguagem", "Cognição", "Desenvolvimento Motor", "Auto Cuidados").
                 - `resultado_observacao`: Se houver um campo de resultado ou observação na tabela (ex: "Resultado").
                 - `pergunta`: Se o item for uma pergunta explícita.
                 - `exemplo`: Se houver um exemplo para a tarefa.
                 - `criterio`: Se houver um critério de sucesso para a tarefa.
                 - `objetivo`: Se a tarefa for um objetivo específico.
-                **Instrução:** Extraia cada item de avaliação ou pergunta de questionários/escalas como uma tarefa/teste.
 
             7.  **Observações Gerais:**
                 - `observacoes_gerais`: Quaisquer observações gerais, dicas, ou informações adicionais sobre o protocolo que não se encaixam nas categorias acima.
