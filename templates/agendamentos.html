@@ -1565,8 +1565,8 @@
             // Dados de agendamentos e profissionais passados pelo Jinja2
             const allAppointments = {{ agendamentos | tojson | safe }};
             const allProfessionalsForFilter = {{ profissionais_para_filtro | tojson | safe }};
-            const allPatientsForFilter = {{ pacientes_para_filtro | tojson | safe }}; // Adicionado para o modal
-
+            const allPatientsForFilter = {{ pacientes_para_filtro | tojson | safe }}; // Alterado para pacientes_para_filtro
+            
             let professionalFilterId = "{{ filtros_atuais.profissional_id or '' }}"; // Filtro inicial do backend
 
             // Mapeia o dia da semana de número para nome
@@ -1847,18 +1847,20 @@
                 allProfessionalsItem.dataset.professionalId = ''; // ID vazio para "todos"
                 allProfessionalsItem.addEventListener('click', () => {
                     professionalFilterId = '';
-                    // Ao mudar o filtro de profissional, também recarrega a página para que o backend filtre
                     const baseUrl = window.location.origin + window.location.pathname;
-                    // Ao clicar em 'Todos os Profissionais', queremos resetar o filtro de profissional
-                    // e manter o mês atual do mini-calendário como referência para a busca de 3 meses.
-                    const year = currentMiniCalendarDate.getFullYear();
-                    const month = currentMiniCalendarDate.getMonth();
-                    const startDate = new Date(year, month, 1);
+                    
+                    // Usa currentWeekStart para manter a semana atual
+                    const startDate = new Date(currentWeekStart); 
                     const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
                     
-                    // Calcula a data de fim como 3 meses a partir do primeiro dia do mês atual do mini-calendário
-                    const endDate = new Date(year, month + 3, 0); 
-                    const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                    // Calcula endDate para ser 3 meses a partir do início da semana atual
+                    const endDateForBackend = new Date(currentWeekStart);
+                    endDateForBackend.setMonth(endDateForBackend.getMonth() + 3);
+                    endDateForBackend.setDate(1); // Define para o 1º dia do mês para evitar problemas com meses curtos
+                    endDateForBackend.setMonth(endDateForBackend.getMonth() + 1); // Move para o próximo mês
+                    endDateForBackend.setDate(0); // Define para o último dia do mês anterior (que é o mês alvo)
+
+                    const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
                     
                     const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                     window.location.href = newUrl;
@@ -1873,17 +1875,20 @@
                     professionalItem.dataset.professionalId = professional.id;
                     professionalItem.addEventListener('click', () => {
                         professionalFilterId = professional.id;
-                        // Ao mudar o filtro de profissional, também recarrega a página para que o backend filtre
                         const baseUrl = window.location.origin + window.location.pathname;
-                        // Ao clicar em um profissional, queremos manter o mês atual do mini-calendário como referência para a busca de 3 meses.
-                        const year = currentMiniCalendarDate.getFullYear();
-                        const month = currentMiniCalendarDate.getMonth();
-                        const startDate = new Date(year, month, 1);
+                        
+                        // Usa currentWeekStart para manter a semana atual
+                        const startDate = new Date(currentWeekStart);
                         const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
                         
-                        // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
-                        const endDate = new Date(year, month + 3, 0); 
-                        const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                        // Calcula endDate para ser 3 meses a partir do início da semana atual
+                        const endDateForBackend = new Date(currentWeekStart);
+                        endDateForBackend.setMonth(endDateForBackend.getMonth() + 3);
+                        endDateForBackend.setDate(1); // Define para o 1º dia do mês para evitar problemas com meses curtos
+                        endDateForBackend.setMonth(endDateForBackend.getMonth() + 1); // Move para o próximo mês
+                        endDateForBackend.setDate(0); // Define para o último dia do mês anterior (que é o mês alvo)
+
+                        const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
                         
                         const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
                         window.location.href = newUrl; 
