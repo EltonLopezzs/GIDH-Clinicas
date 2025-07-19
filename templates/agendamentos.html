@@ -1404,13 +1404,17 @@
         document.addEventListener('DOMContentLoaded', () => {
             // As referências a elementos da sidebar e do tema são declaradas aqui
             // para serem usadas pelas funções setupSidebar, setupTheme e setupLogout.
+            // NOTA: As funções setupSidebar, setupTheme e setupLogout são definidas e chamadas
+            // no Nav.html. Não as duplique aqui.
             const htmlEl = document.documentElement;
+            // Obtenha as referências para os elementos da sidebar que são usados neste script
             const sidebar = document.querySelector('.sidebar');
             const mainContent = document.querySelector('.main-content');
             const menuBtnMobile = document.querySelector('.menu-btn-mobile');
             const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
             const themeToggle = document.getElementById('theme-toggle');
             const logoutButton = document.getElementById('logoutButton');
+
 
             // --- Lógica para Notificações Toast (mantida, mas não usada para flash messages) ---
             const toastContainer = document.getElementById('toast-container');
@@ -1512,76 +1516,12 @@
             {% endwith %}
 
 
-            // --- Sidebar Logic (reused) ---
-            function setupSidebar() {
-                if (!sidebar || !mainContent) return;
-                const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i'); /* Corrigido: toggleBtnBtnDesktop para toggleBtnDesktop */
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
-                };
-                const applyInitialState = () => {
-                    if (window.innerWidth > 768) {
-                        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                            sidebar.classList.add('collapsed');
-                            mainContent.classList.add('collapsed');
-                        }
-                    } else {
-                        sidebar.classList.remove('open', 'collapsed');
-                        mainContent.classList.remove('collapsed');
-                    }
-                    updateDesktopToggleIcon();
-                };
-                if (toggleBtnDesktop) {
-                    toggleBtnDesktop.addEventListener('click', () => {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                        updateDesktopToggleIcon();
-                    });
-                }
-                if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => { /* Corrigido: de menu_btn_mobile para menuBtnMobile */
-                        e.stopPropagation();
-                        sidebar.classList.toggle('open');
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-                        sidebar.classList.remove('open');
-                    }
-                });
-                applyInitialState();
-                window.addEventListener('resize', applyInitialState);
-            }
+            // --- Sidebar Logic (reused from Nav.html) ---
+            // As funções setupSidebar, setupTheme e setupLogout são definidas e chamadas
+            // no Nav.html. Não as duplique aqui.
+            // No entanto, se precisar de referências a elementos da sidebar para outras lógicas
+            // neste script, pode declará-las aqui (como já está feito acima).
 
-            // --- Theme Logic (reused) ---
-            function setupTheme() {
-                if (!themeToggle) return;
-                const updateThemeUI = (theme) => {
-                    htmlEl.setAttribute('data-theme', theme);
-                    const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-                };
-                const currentTheme = localStorage.getItem('theme') || 'light';
-                updateThemeUI(currentTheme);
-                themeToggle.addEventListener('click', () => {
-                    const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
-                });
-            }
-
-            // --- Logout Logic (reused) ---
-            function setupLogout() {
-                if (!logoutButton) return;
-                logoutButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
-                });
-            }
 
             // Function to parse URL parameters
             function getUrlParameter(name) {
@@ -2505,9 +2445,8 @@
 
 
             // --- Inicialização ---
-            setupSidebar();
-            setupTheme();
-            setupLogout();
+            // As funções setupSidebar, setupTheme e setupLogout são chamadas
+            // no Nav.html, que é incluído. Não as chame novamente aqui.
             setupCalendarInteractions(); // Configura as interações do calendário principal
             setupMiniCalendarInteractions(); // Configura as interações do mini-calendário
             renderProfessionalFilterList(); // Renderiza a nova lista de profissionais
