@@ -12,25 +12,17 @@
     <style>
         /* Estilos copiados e adaptados de um layout funcional como o de pacientes.html */
         :root {
-            --bg: #f1f5f9;
-            --card: #ffffff;
-            --text: #0f172a;
-            --muted: #64748b;
-            --accent: #9b53b8;
-            --primary: #5587c2;
-            --danger: #dc2626;
-            --success: #16a34a;
-            --border-color: #e2e8f0;
-            --sidebar-width: 260px;
-            --sidebar-width-collapsed: 88px;
-        }
-
-        [data-theme="dark"] {
             --bg: #0f172a;
             --card: #1e293b;
             --text: #f1f5f9;
             --muted: #94a3b8;
+            --accent: #9b53b8;
+            --primary: #5587c2;
+            --danger: #dc2626;
+            --success: #16a34a;
             --border-color: #334155;
+            --sidebar-width: 260px;
+            --sidebar-width-collapsed: 88px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,21 +32,22 @@
             background-color: var(--bg);
             color: var(--text);
             transition: background-color 0.3s, color 0.3s;
-            overflow-x: hidden; /* Prevenir scroll horizontal */
+            overflow-x: hidden;
         }
 
         .layout {
             display: flex;
             min-height: 100vh;
+            width: 100%;
         }
 
         .main-content {
             flex-grow: 1;
-            margin-left: var(--sidebar-width);
+            margin-left: var(--sidebar-width); /* Margem para sidebar */
             transition: margin-left 0.3s ease-in-out;
             display: flex;
             flex-direction: column;
-            min-width: 0; /* Previne problemas de overflow com flexbox */
+            min-width: 0;
         }
 
         .main-content.collapsed {
@@ -118,11 +111,12 @@
         .card-list-container {
             display: grid;
             gap: 1.5rem;
-            /* ALTERAÇÃO: Força 3 colunas em telas de desktop */
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(3, 1fr); /* Força 3 colunas */
+            padding: 0; /* Remove padding interno para eliminar espaço */
+            width: 100%; /* Garante que ocupe toda a largura disponível */
+            margin-left: -1.5rem; /* Compensar o padding do main */
         }
 
-        /* ALTERAÇÃO: Media query para ajustar o número de colunas em telas menores */
         @media (max-width: 1366px) {
             .card-list-container {
                 grid-template-columns: repeat(2, 1fr);
