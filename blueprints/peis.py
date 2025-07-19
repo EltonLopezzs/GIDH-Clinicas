@@ -361,7 +361,7 @@ def _finalize_pei_transaction(transaction, pei_ref, db_instance):
 
     for meta_doc in metas_docs:
         meta_data = meta_doc.to_dict()
-        if meta_data.get('status') == 'ativo':
+        if meta_data.get('status') == 'Ativo':
             try:
                 print(f"DEBUG: Atualizando meta {meta_doc.id} para 'finalizado' dentro do PEI {pei_ref.id}.")
                 transaction.update(meta_doc.reference, {'status': 'finalizado'})
@@ -521,7 +521,7 @@ def _update_target_and_aid_data_transaction(transaction, target_ref, aid_id=None
 @firestore.transactional
 def _activate_goal_transaction(transaction, goal_ref, db_instance):
     """
-    Ativa uma meta específica, marcando-a como 'ativo'
+    Ativa uma meta específica, marcando-a como 'Ativo'
     e todos os seus alvos e ajudas como Pendentes.
     Args:
         transaction: Objeto de transação do Firestore.
@@ -536,9 +536,9 @@ def _activate_goal_transaction(transaction, goal_ref, db_instance):
         print(f"ERROR: Em _activate_goal_transaction: Meta {goal_ref.id} não encontrada.")
         raise Exception("Meta não encontrada para ativar.")
 
-    updated_goal_data = {'status': 'ativo'}
+    updated_goal_data = {'status': 'Ativo'}
     transaction.update(goal_ref, updated_goal_data)
-    print(f"DEBUG: Meta {goal_ref.id} atualizada para status 'ativo'.")
+    print(f"DEBUG: Meta {goal_ref.id} atualizada para status 'Ativo'.")
 
     # Atualizar alvos na subcoleção
     alvos_ref = goal_ref.collection('alvos')
@@ -698,7 +698,7 @@ def add_pei(paciente_doc_id):
             'paciente_id': paciente_doc_id,
             'titulo': titulo,
             'data_criacao': data_criacao_obj,
-            'status': 'ativo',
+            'status': 'Ativo',
             'criado_em': datetime.datetime.now(SAO_PAULO_TZ),
             'profissional_criador_nome': session.get('user_name', 'N/A'),
             'profissionais_ids': profissionais_ids_selecionados,
@@ -884,7 +884,7 @@ def add_goal(paciente_doc_id):
 
         new_goal_data = {
             'descricao': descricao_goal.strip(),
-            'status': 'ativo',
+            'status': 'Ativo',
             'pei_id': pei_id
         }
 
