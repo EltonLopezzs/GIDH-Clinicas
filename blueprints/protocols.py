@@ -142,7 +142,7 @@ def save_protocol():
     
     # Campos da aba Geral
     tipo_protocolo = request.form.get('tipo_protocolo')
-    nome = request.form.get('nome') # Alterado para .get() para evitar KeyError se o campo não vier
+    nome = request.form.get('nome') 
     descricao = request.form.get('descricao', '')
     
     # Converte duracao_estimada para int, com tratamento de erro
@@ -178,7 +178,7 @@ def save_protocol():
                 niveis.append({
                     'ordem': int(niveis_ordem[i].strip()),
                     'nivel': int(niveis_valor[i].strip()),
-                    'faixa_etaria': niveis_faix_etaria[i].strip() if i < len(niveis_faixa_etaria) else ''
+                    'faixa_etaria': niveis_faixa_etaria[i].strip() if i < len(niveis_faixa_etaria) else ''
                 })
             except ValueError:
                 flash('Erro: Ordem ou Nível da etapa inválido. Certifique-se de que são números inteiros.', 'danger')
@@ -224,8 +224,13 @@ def save_protocol():
     tarefa_ordem = request.form.getlist('tarefa_ordem[]')
     tarefa_item = request.form.getlist('tarefa_item[]')
     tarefa_nome = request.form.getlist('tarefa_nome[]')
-    tarefa_habilidade = request.form.getlist('tarefa_habilidade[]')
-    tarefa_marco = request.form.getlist('tarefa_marco[]')
+    tarefa_habilidade_marco = request.form.getlist('tarefa_habilidade_marco[]') # Campo único para Habilidade/Marco
+    tarefa_resultado_observacao = request.form.getlist('tarefa_resultado_observacao[]')
+    tarefa_pergunta = request.form.getlist('tarefa_pergunta[]') # Novo campo
+    tarefa_exemplo = request.form.getlist('tarefa_exemplo[]')   # Novo campo
+    tarefa_criterio = request.form.getlist('tarefa_criterio[]') # Novo campo
+    tarefa_objetivo = request.form.getlist('tarefa_objetivo[]') # Novo campo
+
     tarefas_testes = []
     for i in range(len(tarefa_nivel)):
         if tarefa_nivel[i].strip() and tarefa_ordem[i].strip() and tarefa_nome[i].strip():
@@ -235,8 +240,12 @@ def save_protocol():
                     'ordem': int(tarefa_ordem[i].strip()),
                     'item': tarefa_item[i].strip() if i < len(tarefa_item) else '',
                     'nome': tarefa_nome[i].strip(),
-                    'habilidade': tarefa_habilidade[i].strip() if i < len(tarefa_habilidade) else '',
-                    'marco': tarefa_marco[i].strip() if i < len(tarefa_marco) else ''
+                    'habilidade_marco': tarefa_habilidade_marco[i].strip() if i < len(tarefa_habilidade_marco) else '',
+                    'resultado_observacao': tarefa_resultado_observacao[i].strip() if i < len(tarefa_resultado_observacao) else '',
+                    'pergunta': tarefa_pergunta[i].strip() if i < len(tarefa_pergunta) else '', # Salva novo campo
+                    'exemplo': tarefa_exemplo[i].strip() if i < len(tarefa_exemplo) else '',     # Salva novo campo
+                    'criterio': tarefa_criterio[i].strip() if i < len(tarefa_criterio) else '',   # Salva novo campo
+                    'objetivo': tarefa_objetivo[i].strip() if i < len(tarefa_objetivo) else ''    # Salva novo campo
                 })
             except ValueError:
                 flash('Erro: Nível, Ordem ou Nome da tarefa inválido. Certifique-se de que Nível e Ordem são números inteiros.', 'danger')

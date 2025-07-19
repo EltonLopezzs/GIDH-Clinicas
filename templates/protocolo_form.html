@@ -16,31 +16,31 @@
     <style>
         /* Estilos Globais e Variáveis de Tema */
         :root {
-            --bg: #f1f5f9;              /* Gray-100 */
-            --card: #ffffff;            /* White */
-            --text: #0f172a;            /* Gray-900 */
-            --muted: #64748b;           /* Gray-500 */
-            --accent: #9b53b8;          /* Custom Purple */
+            --bg: #f1f5f9;       /* Gray-100 */
+            --card: #ffffff;     /* White */
+            --text: #0f172a;     /* Gray-900 */
+            --muted: #64748b;    /* Gray-500 */
+            --accent: #9b53b8;   /* Custom Purple */
             --primary-dark: #115e59;
-            --primary: #5587c2;         /* Custom Blue */
-            --primary-light: #e0eaf7;   /* Lighter Blue */
-            --secondary: #f59e0b;       /* Yellow-500 */
-            --danger: #dc2626;          /* Red-600 */
-            --success: #16a34a;         /* Green-600 */
-            --warning: #f59e0b;         /* Yellow-500 */
-            --info: #0ea5e9;            /* Sky-500 */
-            --border-color: #e2e8f0;    /* Gray-200 */
+            --primary: #5587c2;  /* Custom Blue */
+            --primary-light: #e0eaf7; /* Lighter Blue */
+            --secondary: #f59e0b; /* Yellow-500 */
+            --danger: #dc2626;   /* Red-600 */
+            --success: #16a34a;  /* Green-600 */
+            --warning: #f59e0b;  /* Yellow-500 */
+            --info: #0ea5e9;     /* Sky-500 */
+            --border-color: #e2e8f0; /* Gray-200 */
             color-scheme: light;
         }
 
         [data-theme="dark"] {
-            --bg: #0f172a;              /* Gray-900 */
-            --card: #1e293b;            /* Gray-800 */
-            --text: #f1f5f9;            /* Gray-100 */
-            --muted: #94a3b8;           /* Gray-400 */
-            --border-color: #334155;    /* Gray-600 */
-            --primary: #60a5fa;         /* Blue-400 */
-            --primary-light: #1e293b;   /* Gray-800 */
+            --bg: #0f172a;       /* Gray-900 */
+            --card: #1e293b;     /* Gray-800 */
+            --text: #f1f5f9;     /* Gray-100 */
+            --muted: #94a3b8;    /* Gray-400 */
+            --border-color: #334155; /* Gray-600 */
+            --primary: #60a5fa;  /* Blue-400 */
+            --primary-light: #1e293b; /* Gray-800 */
             color-scheme: dark;
         }
 
@@ -64,7 +64,6 @@
         .layout { display: flex; min-height: 100vh; width: 100%; }
 
         /* --- Conteúdo Principal & Topbar --- */
-        /* Estilos para .sidebar, .nav-link, etc., virão do seu style.css e Nav.html */
         .main-content {
             flex: 1; margin-left: 260px;
             transition: margin-left 0.3s ease, width 0.3s ease;
@@ -160,6 +159,18 @@
             font-size: 1.3rem; font-weight: 700; color: var(--primary);
             margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;
         }
+        /* New style to align title and button */
+        .section-header-with-button {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .section-header-with-button .section-title {
+            margin-bottom: 0; /* Remove margin from title when in header */
+        }
+
+
         .protocol-card-fields {
             display: grid;
             gap: 1.2rem 2rem;
@@ -212,28 +223,86 @@
         }
         .protocol-step.has-error::after { content: '⚠️'; margin-left: 5px; font-size: 0.9rem; }
 
-        /* --- Itens Dinâmicos (Etapas, Níveis, etc.) --- */
-        .dynamic-field-item {
+        /* --- Estilos da Tabela para Itens Dinâmicos --- */
+        .table-container {
+            width: 100%;
+            overflow-x: auto; /* Permite rolagem horizontal em telas pequenas */
+            background: var(--card);
+            border-radius: 12px;
             padding: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .table-container table {
+            width: 100%;
+            border-collapse: separate; /* Permite border-radius nas células */
+            border-spacing: 0;
+            color: var(--text);
+            min-width: 600px; /* Garante que a tabela não fique muito pequena em desktop */
+        }
+
+        .table-container th,
+        .table-container td {
+            padding: 0.9rem 1rem;
+            font-size: 0.9rem;
+            text-align: left;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table-container thead th {
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-size: 0.8rem;
             background-color: var(--bg);
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+            border-bottom-width: 2px;
         }
-        @media (min-width: 768px) {
-            .dynamic-field-item { flex-direction: row; align-items: center; }
+
+        /* Arredondar cantos da thead */
+        .table-container thead th:first-child { border-top-left-radius: 8px; }
+        .table-container thead th:last-child { border-top-right-radius: 8px; }
+
+        /* Estilo para as linhas do corpo da tabela */
+        .table-container tbody tr:hover {
+            background-color: color-mix(in srgb, var(--primary) 8%, transparent);
         }
-        /* This is the key change: apply grid directly to content */
-        .dynamic-field-item-content { flex-grow: 1; display: grid; gap: 1rem; }
-        .dynamic-field-item-actions { flex-shrink: 0; }
-        .dynamic-field-item .protocol-field { background: transparent; }
-        .dynamic-field-item .protocol-field input, .dynamic-field-item .protocol-field textarea {
-            background-color: color-mix(in srgb, var(--border-color) 40%, transparent);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.5rem;
+        .table-container tbody tr:last-child td {
+            border-bottom: none; /* Remove a borda inferior da última linha */
+        }
+        /* Arredondar cantos da tbody (última linha) */
+        .table-container tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+        .table-container tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+
+        /* Estilos para inputs e textareas dentro das células da tabela */
+        .table-container td input[type="text"],
+        .table-container td input[type="number"],
+        .table-container td textarea,
+        .table-container td select { /* Adicionado select aqui */
+            background-color: transparent; /* Fundo transparente */
+            border: none; /* Sem borda */
+            padding: 0; /* Sem padding */
+            color: var(--text);
+            width: 100%;
+            font-size: 0.9rem;
+            outline: none; /* Remove outline no focus */
+            resize: none; /* Desabilita redimensionamento para textareas */
+        }
+
+        /* Estilo para o botão de remover dentro da tabela */
+        .table-container .dynamic-field-item-actions {
+            text-align: right; /* Alinha o botão à direita na célula */
+            white-space: nowrap; /* Evita quebra de linha */
+        }
+        .table-container .dynamic-field-item-actions .btn-sm {
+            margin-left: auto; /* Empurra o botão para a direita */
+        }
+
+        /* Estilo para a mensagem de "Nenhum item encontrado" na tabela */
+        .table-container .no-results-row td {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
         }
 
         /* --- Modals --- */
@@ -316,6 +385,65 @@
         /* Responsividade */
         @media (max-width: 768px) {
             .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
+            /* Adaptação da tabela para telas pequenas */
+            .table-container table {
+                min-width: unset; /* Remove min-width para permitir encolhimento */
+            }
+            .table-container thead {
+                display: none; /* Esconde o cabeçalho da tabela em telas pequenas */
+            }
+            .table-container, .table-container tbody, .table-container tr, .table-container td {
+                display: block; /* Faz com que a tabela se comporte como blocos */
+                width: 100%;
+            }
+            .table-container tr {
+                margin-bottom: 1rem;
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                background-color: var(--card);
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+                padding: 1rem;
+            }
+            .table-container td {
+                border-bottom: none;
+                padding: 0.5rem 0;
+                text-align: right; /* Alinha o valor à direita */
+                position: relative;
+                padding-left: 50%; /* Espaço para o label */
+            }
+            .table-container td::before {
+                content: attr(data-label); /* Usa o atributo data-label para exibir o cabeçalho */
+                position: absolute;
+                left: 0;
+                width: 45%;
+                padding-left: 1rem;
+                font-weight: 600;
+                color: var(--muted);
+                text-align: left;
+            }
+            .table-container .dynamic-field-item-actions {
+                text-align: left; /* Alinha as ações à esquerda em mobile */
+                padding-top: 1rem;
+                border-top: 1px solid var(--border-color);
+                margin-top: 0.5rem;
+                display: flex; /* Para centralizar os botões se houver mais de um */
+                justify-content: center; /* Centraliza os botões */
+                gap: 0.5rem;
+            }
+            .table-container .dynamic-field-item-actions .btn {
+                width: auto; /* Permite que os botões se ajustem ao conteúdo */
+                flex-grow: 1; /* Faz com que os botões ocupem o espaço disponível */
+            }
+            /* Garante que os inputs e textareas dentro das células sejam visíveis e não ocupem toda a largura */
+            .table-container td input,
+            .table-container td textarea,
+            .table-container td select { /* Adicionado select aqui */
+                display: inline-block; /* Garante que o valor seja visível */
+                width: auto; /* Ajusta a largura para o conteúdo */
+                background-color: transparent;
+                border: none;
+                padding: 0;
+            }
         }
 
     </style>
@@ -430,32 +558,45 @@
                         <!-- Step 2: Etapas -->
                         <div class="protocol-card-section" data-step-content="2" style="display:none;">
                             <div class="protocol-card-container-form">
-                                <div class="section-content">
+                                <div class="section-header-with-button">
                                     <h3 class="section-title"><i class="fa-solid fa-list-ol"></i> Etapas do Protocolo</h3>
-                                    <div id="etapas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {% if protocol and protocol.etapas %}
-                                            {% for etapa in protocol.etapas %}
-                                            <div class="dynamic-field-item">
-                                                <div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div class="protocol-field required">
-                                                        <label>Nome da Etapa:</label>
+                                    <button type="button" onclick="openAddItemModal('etapa')" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus"></i> Adicionar Etapa
+                                    </button>
+                                </div>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Nome da Etapa</th>
+                                                <th>Descrição</th>
+                                                <th style="width: 100px;">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="etapas-container">
+                                            {% if protocol and protocol.etapas %}
+                                                {% for etapa in protocol.etapas %}
+                                                <tr class="dynamic-field-item">
+                                                    <td data-label="Nome da Etapa">
                                                         <input type="text" value="{{ etapa.nome }}" readonly>
                                                         <input type="hidden" name="etapa_nome[]" value="{{ etapa.nome }}">
-                                                    </div>
-                                                    <div class="protocol-field">
-                                                        <label>Descrição da Etapa:</label>
+                                                    </td>
+                                                    <td data-label="Descrição">
                                                         <textarea rows="1" readonly>{{ etapa.descricao }}</textarea>
                                                         <input type="hidden" name="etapa_descricao[]" value="{{ etapa.descricao }}">
-                                                    </div>
-                                                </div>
-                                                <div class="dynamic-field-item-actions">
-                                                    <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
-                                                </div>
-                                            </div>
-                                            {% endfor %}
-                                        {% endif %}
-                                    </div>
-                                    <button type="button" onclick="openAddItemModal('etapa')" class="btn btn-primary mt-4">Adicionar Etapa</button>
+                                                    </td>
+                                                    <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr class="no-results-row">
+                                                    <td colspan="3">Nenhuma etapa cadastrada.</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
                                 </div>
                                 <div class="protocol-actions">
                                     <button type="button" class="btn btn-secondary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
@@ -467,23 +608,50 @@
                         <!-- Step 3: Níveis -->
                         <div class="protocol-card-section" data-step-content="3" style="display:none;">
                             <div class="protocol-card-container-form">
-                                <div class="section-content">
+                                <div class="section-header-with-button">
                                     <h3 class="section-title"><i class="fa-solid fa-layer-group"></i> Níveis</h3>
-                                    <div id="niveis-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {% if protocol and protocol.niveis %}
-                                            {% for nivel in protocol.niveis %}
-                                            <div class="dynamic-field-item">
-                                                <div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                    <div class="protocol-field required"><label>Ordem:</label><input type="number" value="{{ nivel.ordem }}" readonly><input type="hidden" name="nivel_ordem[]" value="{{ nivel.ordem }}"></div>
-                                                    <div class="protocol-field required"><label>Nível:</label><input type="number" value="{{ nivel.nivel }}" readonly><input type="hidden" name="nivel_valor[]" value="{{ nivel.nivel }}"></div>
-                                                    <div class="protocol-field"><label>Faixa Etária:</label><input type="text" value="{{ nivel.faixa_etaria }}" readonly><input type="hidden" name="nivel_faixa_etaria[]" value="{{ nivel.faixa_etaria }}"></div>
-                                                </div>
-                                                <div class="dynamic-field-item-actions"><button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button></div>
-                                            </div>
-                                            {% endfor %}
-                                        {% endif %}
-                                    </div>
-                                    <button type="button" onclick="openAddItemModal('nivel')" class="btn btn-primary mt-4">Adicionar Nível</button>
+                                    <button type="button" onclick="openAddItemModal('nivel')" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus"></i> Adicionar Nível
+                                    </button>
+                                </div>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Ordem</th>
+                                                <th>Nível</th>
+                                                <th>Faixa Etária</th>
+                                                <th style="width: 100px;">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="niveis-container">
+                                            {% if protocol and protocol.niveis %}
+                                                {% for nivel in protocol.niveis %}
+                                                <tr class="dynamic-field-item">
+                                                    <td data-label="Ordem">
+                                                        <input type="number" value="{{ nivel.ordem }}" readonly>
+                                                        <input type="hidden" name="nivel_ordem[]" value="{{ nivel.ordem }}">
+                                                    </td>
+                                                    <td data-label="Nível">
+                                                        <input type="number" value="{{ nivel.nivel }}" readonly>
+                                                        <input type="hidden" name="nivel_valor[]" value="{{ nivel.nivel }}">
+                                                    </td>
+                                                    <td data-label="Faixa Etária">
+                                                        <input type="text" value="{{ nivel.faixa_etaria }}" readonly>
+                                                        <input type="hidden" name="nivel_faixa_etaria[]" value="{{ nivel.faixa_etaria }}">
+                                                    </td>
+                                                    <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr class="no-results-row">
+                                                    <td colspan="4">Nenhum nível cadastrado.</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
                                 </div>
                                 <div class="protocol-actions">
                                     <button type="button" class="btn btn-secondary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
@@ -495,22 +663,45 @@
                         <!-- Step 4: Habilidades -->
                         <div class="protocol-card-section" data-step-content="4" style="display:none;">
                            <div class="protocol-card-container-form">
-                                <div class="section-content">
+                                <div class="section-header-with-button">
                                     <h3 class="section-title"><i class="fa-solid fa-brain"></i> Habilidades</h3>
-                                    <div id="habilidades-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {% if protocol and protocol.habilidades %}
-                                            {% for habilidade in protocol.habilidades %}
-                                            <div class="dynamic-field-item">
-                                                <div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div class="protocol-field required"><label>Ordem:</label><input type="number" value="{{ habilidade.ordem }}" readonly><input type="hidden" name="habilidade_ordem[]" value="{{ habilidade.ordem }}"></div>
-                                                    <div class="protocol-field required"><label>Habilidade:</label><input type="text" value="{{ habilidade.nome }}" readonly><input type="hidden" name="habilidade_nome[]" value="{{ habilidade.nome }}"></div>
-                                                </div>
-                                                <div class="dynamic-field-item-actions"><button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button></div>
-                                            </div>
-                                            {% endfor %}
-                                        {% endif %}
-                                    </div>
-                                    <button type="button" onclick="openAddItemModal('habilidade')" class="btn btn-primary mt-4">Adicionar Habilidade</button>
+                                    <button type="button" onclick="openAddItemModal('habilidade')" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus"></i> Adicionar Habilidade
+                                    </button>
+                                </div>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Ordem</th>
+                                                <th>Habilidade</th>
+                                                <th style="width: 100px;">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="habilidades-container">
+                                            {% if protocol and protocol.habilidades %}
+                                                {% for habilidade in protocol.habilidades %}
+                                                <tr class="dynamic-field-item">
+                                                    <td data-label="Ordem">
+                                                        <input type="number" value="{{ habilidade.ordem }}" readonly>
+                                                        <input type="hidden" name="habilidade_ordem[]" value="{{ habilidade.ordem }}">
+                                                    </td>
+                                                    <td data-label="Habilidade">
+                                                        <input type="text" value="{{ habilidade.nome }}" readonly>
+                                                        <input type="hidden" name="habilidade_nome[]" value="{{ habilidade.nome }}">
+                                                    </td>
+                                                    <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr class="no-results-row">
+                                                    <td colspan="3">Nenhuma habilidade cadastrada.</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
                                 </div>
                                 <div class="protocol-actions">
                                     <button type="button" class="btn btn-secondary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
@@ -522,24 +713,55 @@
                         <!-- Step 5: Pontuação -->
                         <div class="protocol-card-section" data-step-content="5" style="display:none;">
                             <div class="protocol-card-container-form">
-                                <div class="section-content">
+                                <div class="section-header-with-button">
                                     <h3 class="section-title"><i class="fa-solid fa-star-half-alt"></i> Pontuação</h3>
-                                    <div id="pontuacao-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {% if protocol and protocol.pontuacao %}
-                                            {% for item in protocol.pontuacao %}
-                                            <div class="dynamic-field-item">
-                                                <div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                    <div class="protocol-field required"><label>Ordem:</label><input type="number" value="{{ item.ordem }}" readonly><input type="hidden" name="pontuacao_ordem[]" value="{{ item.ordem }}"></div>
-                                                    <div class="protocol-field required"><label>Tipo:</label><input type="text" value="{{ item.tipo }}" readonly><input type="hidden" name="pontuacao_tipo[]" value="{{ item.tipo }}"></div>
-                                                    <div class="protocol-field"><label>Descrição:</label><input type="text" value="{{ item.descricao }}" readonly><input type="hidden" name="pontuacao_descricao[]" value="{{ item.descricao }}"></div>
-                                                    <div class="protocol-field required"><label>Valor:</label><input type="number" step="0.1" value="{{ item.valor }}" readonly><input type="hidden" name="pontuacao_valor[]" value="{{ item.valor }}"></div>
-                                                </div>
-                                                <div class="dynamic-field-item-actions"><button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button></div>
-                                            </div>
-                                            {% endfor %}
-                                        {% endif %}
-                                    </div>
-                                    <button type="button" onclick="openAddItemModal('pontuacao')" class="btn btn-primary mt-4">Adicionar Pontuação</button>
+                                    <button type="button" onclick="openAddItemModal('pontuacao')" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus"></i> Adicionar Pontuação
+                                    </button>
+                                </div>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Ordem</th>
+                                                <th>Tipo</th>
+                                                <th>Descrição</th>
+                                                <th>Valor</th>
+                                                <th style="width: 100px;">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pontuacoes-container">
+                                            {% if protocol and protocol.pontuacao %}
+                                                {% for item in protocol.pontuacao %}
+                                                <tr class="dynamic-field-item">
+                                                    <td data-label="Ordem">
+                                                        <input type="number" value="{{ item.ordem }}" readonly>
+                                                        <input type="hidden" name="pontuacao_ordem[]" value="{{ item.ordem }}">
+                                                    </td>
+                                                    <td data-label="Tipo">
+                                                        <input type="text" value="{{ item.tipo }}" readonly>
+                                                        <input type="hidden" name="pontuacao_tipo[]" value="{{ item.tipo }}">
+                                                    </td>
+                                                    <td data-label="Descrição">
+                                                        <input type="text" value="{{ item.descricao }}" readonly>
+                                                        <input type="hidden" name="pontuacao_descricao[]" value="{{ item.descricao }}">
+                                                    </td>
+                                                    <td data-label="Valor">
+                                                        <input type="number" step="0.1" value="{{ item.valor }}" readonly>
+                                                        <input type="hidden" name="pontuacao_valor[]" value="{{ item.valor }}">
+                                                    </td>
+                                                    <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr class="no-results-row">
+                                                    <td colspan="5">Nenhuma pontuação cadastrada.</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
                                 </div>
                                 <div class="protocol-actions">
                                     <button type="button" class="btn btn-secondary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
@@ -551,27 +773,85 @@
                         <!-- Step 6: Tarefas -->
                         <div class="protocol-card-section" data-step-content="6" style="display:none;">
                             <div class="protocol-card-container-form">
-                                <div class="section-content">
+                                <div class="section-header-with-button">
                                     <h3 class="section-title"><i class="fa-solid fa-tasks"></i> Tarefas/Testes</h3>
-                                    <div id="tarefas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {% if protocol and protocol.tarefas_testes %}
-                                            {% for tarefa in protocol.tarefas_testes %}
-                                            <div class="dynamic-field-item">
-                                                <div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                                    <div class="protocol-field required"><label>Nível:</label><input type="number" value="{{ tarefa.nivel }}" readonly><input type="hidden" name="tarefa_nivel[]" value="{{ tarefa.nivel }}"></div>
-                                                    <div class="protocol-field required"><label>Ordem:</label><input type="number" value="{{ tarefa.ordem }}" readonly><input type="hidden" name="tarefa_ordem[]" value="{{ tarefa.ordem }}"></div>
-                                                    <div class="protocol-field"><label>Item:</label><input type="text" value="{{ tarefa.item }}" readonly><input type="hidden" name="tarefa_item[]" value="{{ tarefa.item }}"></div>
-                                                    <div class="protocol-field required"><label>Nome:</label><input type="text" value="{{ tarefa.nome }}" readonly><input type="hidden" name="tarefa_nome[]" value="{{ tarefa.nome }}"></div>
-                                                    <div class="protocol-field"><label>Habilidade:</label><input type="text" value="{{ tarefa.habilidade }}" readonly><input type="hidden" name="tarefa_habilidade[]" value="{{ tarefa.habilidade }}"></div>
-                                                    <div class="protocol-field"><label>Marco:</label><input type="text" value="{{ tarefa.marco }}" readonly><input type="hidden" name="tarefa_marco[]" value="{{ tarefa.marco }}"></div>
-                                                    <div class="protocol-field"><label>Prazo:</label><input type="date" value="{{ tarefa.prazo }}" readonly><input type="hidden" name="tarefa_prazo[]" value="{{ tarefa.prazo }}"></div>
-                                                </div>
-                                                <div class="dynamic-field-item-actions"><button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button></div>
-                                            </div>
-                                            {% endfor %}
-                                        {% endif %}
-                                    </div>
-                                    <button type="button" onclick="openAddItemModal('tarefa')" class="btn btn-primary mt-4">Adicionar Tarefa/Teste</button>
+                                    <button type="button" onclick="openAddItemModal('tarefa')" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus"></i> Adicionar Tarefa/Teste
+                                    </button>
+                                </div>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Nível</th>
+                                                <th>Ordem</th>
+                                                <th>Item</th>
+                                                <th>Nome</th>
+                                                <th>Habilidade/Marco</th>
+                                                <th>Resultado/Observação</th>
+                                                <th>Pergunta</th>
+                                                <th>Exemplo</th>
+                                                <th>Critério</th>
+                                                <th>Objetivo</th>
+                                                <th style="width: 100px;">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tarefas-container">
+                                            {% if protocol and protocol.tarefas_testes %}
+                                                {% for tarefa in protocol.tarefas_testes %}
+                                                <tr class="dynamic-field-item">
+                                                    <td data-label="Nível">
+                                                        <input type="number" value="{{ tarefa.nivel }}" readonly>
+                                                        <input type="hidden" name="tarefa_nivel[]" value="{{ tarefa.nivel }}">
+                                                    </td>
+                                                    <td data-label="Ordem">
+                                                        <input type="number" value="{{ tarefa.ordem }}" readonly>
+                                                        <input type="hidden" name="tarefa_ordem[]" value="{{ tarefa.ordem }}">
+                                                    </td>
+                                                    <td data-label="Item">
+                                                        <input type="text" value="{{ tarefa.item }}" readonly>
+                                                        <input type="hidden" name="tarefa_item[]" value="{{ tarefa.item }}">
+                                                    </td>
+                                                    <td data-label="Nome">
+                                                        <input type="text" value="{{ tarefa.nome }}" readonly>
+                                                        <input type="hidden" name="tarefa_nome[]" value="{{ tarefa.nome }}">
+                                                    </td>
+                                                    <td data-label="Habilidade/Marco">
+                                                        <input type="text" value="{{ tarefa.habilidade_marco }}" readonly>
+                                                        <input type="hidden" name="tarefa_habilidade_marco[]" value="{{ tarefa.habilidade_marco }}">
+                                                    </td>
+                                                    <td data-label="Resultado/Observação">
+                                                        <textarea rows="1" readonly>{{ tarefa.resultado_observacao }}</textarea>
+                                                        <input type="hidden" name="tarefa_resultado_observacao[]" value="{{ tarefa.resultado_observacao }}">
+                                                    </td>
+                                                    <td data-label="Pergunta">
+                                                        <textarea rows="1" readonly>{{ tarefa.pergunta if tarefa.pergunta else '' }}</textarea>
+                                                        <input type="hidden" name="tarefa_pergunta[]" value="{{ tarefa.pergunta if tarefa.pergunta else '' }}">
+                                                    </td>
+                                                    <td data-label="Exemplo">
+                                                        <textarea rows="1" readonly>{{ tarefa.exemplo if tarefa.exemplo else '' }}</textarea>
+                                                        <input type="hidden" name="tarefa_exemplo[]" value="{{ tarefa.exemplo if tarefa.exemplo else '' }}">
+                                                    </td>
+                                                    <td data-label="Critério">
+                                                        <textarea rows="1" readonly>{{ tarefa.criterio if tarefa.criterio else '' }}</textarea>
+                                                        <input type="hidden" name="tarefa_criterio[]" value="{{ tarefa.criterio if tarefa.criterio else '' }}">
+                                                    </td>
+                                                    <td data-label="Objetivo">
+                                                        <textarea rows="1" readonly>{{ tarefa.objetivo if tarefa.objetivo else '' }}</textarea>
+                                                        <input type="hidden" name="tarefa_objetivo[]" value="{{ tarefa.objetivo if tarefa.objetivo else '' }}">
+                                                    </td>
+                                                    <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr class="no-results-row">
+                                                    <td colspan="11">Nenhuma tarefa/teste cadastrado.</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
                                 </div>
                                 <div class="protocol-actions">
                                     <button type="button" class="btn btn-secondary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
@@ -661,13 +941,15 @@
                 case 'danger': iconClass = 'fas fa-times-circle'; break;
             }
             alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
-            generalAlertOverlay.classList.add('show');
+            if(generalAlertOverlay) generalAlertOverlay.classList.add('show');
         }
         function closeGeneralAlertModal() {
-            generalAlertOverlay.classList.remove('show');
+            if(generalAlertOverlay) generalAlertOverlay.classList.remove('show');
         }
-        document.getElementById('alert-modal-close-btn').addEventListener('click', closeGeneralAlertModal);
-        generalAlertOverlay.addEventListener('click', (e) => {
+        const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+        if(alertModalCloseBtn) alertModalCloseBtn.addEventListener('click', closeGeneralAlertModal);
+        
+        if(generalAlertOverlay) generalAlertOverlay.addEventListener('click', (e) => {
             if (e.target === generalAlertOverlay) closeGeneralAlertModal();
         });
 
@@ -687,124 +969,276 @@
                 case 'etapa':
                     titleText = 'Adicionar Etapa';
                     fieldsHtml = `<div class="protocol-field required"><label for="modal_etapa_nome">Nome da Etapa:</label><input type="text" id="modal_etapa_nome" required></div>
-                                    <div class="protocol-field"><label for="modal_etapa_descricao">Descrição:</label><textarea id="modal_etapa_descricao" rows="3"></textarea></div>`;
+                                  <div class="protocol-field"><label for="modal_etapa_descricao">Descrição:</label><textarea id="modal_etapa_descricao" rows="3"></textarea></div>`;
                     break;
                 case 'nivel':
                     titleText = 'Adicionar Nível';
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div class="protocol-field required"><label for="modal_nivel_ordem">Ordem:</label><input type="number" id="modal_nivel_ordem" required></div>
-                                        <div class="protocol-field required"><label for="modal_nivel_valor">Nível:</label><input type="number" id="modal_nivel_valor" required></div>
-                                    </div>
-                                    <div class="protocol-field"><label for="modal_nivel_faixa_etaria">Faixa Etária:</label><input type="text" id="modal_nivel_faixa_etaria"></div>`;
+                                      <div class="protocol-field required"><label for="modal_nivel_ordem">Ordem:</label><input type="number" id="modal_nivel_ordem" required></div>
+                                      <div class="protocol-field required"><label for="modal_nivel_valor">Nível:</label><input type="number" id="modal_nivel_valor" required></div>
+                                  </div>
+                                  <div class="protocol-field"><label for="modal_nivel_faixa_etaria">Faixa Etária:</label><input type="text" id="modal_nivel_faixa_etaria"></div>`;
                     break;
                 case 'habilidade':
                     titleText = 'Adicionar Habilidade';
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div class="protocol-field required"><label for="modal_habilidade_ordem">Ordem:</label><input type="number" id="modal_habilidade_ordem" required></div>
-                                            <div class="protocol-field required"><label for="modal_habilidade_nome">Habilidade:</label><input type="text" id="modal_habilidade_nome" required></div>
-                                        </div>`;
+                                      <div class="protocol-field required"><label for="modal_habilidade_ordem">Ordem:</label><input type="number" id="modal_habilidade_ordem" required></div>
+                                      <div class="protocol-field required"><label for="modal_habilidade_nome">Habilidade:</label><input type="text" id="modal_habilidade_nome" required></div>
+                                  </div>`;
                     break;
                 case 'pontuacao':
                     titleText = 'Adicionar Pontuação';
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div class="protocol-field required"><label for="modal_pontuacao_ordem">Ordem:</label><input type="number" id="modal_pontuacao_ordem" required></div>
-                                            <div class="protocol-field required"><label for="modal_pontuacao_tipo">Tipo:</label><input type="text" id="modal_pontuacao_tipo" required></div>
-                                        </div>
-                                        <div class="protocol-field"><label for="modal_pontuacao_descricao">Descrição:</label><input type="text" id="modal_pontuacao_descricao"></div>
-                                        <div class="protocol-field required"><label for="modal_pontuacao_valor">Valor:</label><input type="number" step="0.1" id="modal_pontuacao_valor" required></div>`;
+                                      <div class="protocol-field required"><label for="modal_pontuacao_ordem">Ordem:</label><input type="number" id="modal_pontuacao_ordem" required></div>
+                                      <div class="protocol-field required"><label for="modal_pontuacao_tipo">Tipo:</label><input type="text" id="modal_pontuacao_tipo" required></div>
+                                  </div>
+                                  <div class="protocol-field"><label for="modal_pontuacao_descricao">Descrição:</label><input type="text" id="modal_pontuacao_descricao"></div>
+                                  <div class="protocol-field required"><label for="modal_pontuacao_valor">Valor:</label><input type="number" step="0.1" id="modal_pontuacao_valor" required></div>`;
                     break;
                 case 'tarefa':
                     titleText = 'Adicionar Tarefa/Teste';
+                    // Get existing habilidades and niveis from the current form
+                    const existingHabilidades = Array.from(document.querySelectorAll('#habilidades-container input[name="habilidade_nome[]"]')).map(input => input.value);
+                    const existingNiveis = Array.from(document.querySelectorAll('#niveis-container input[name="nivel_valor[]"]')).map(input => input.value);
+
+                    let habilidadesOptions = '<option value="">Selecione uma Habilidade</option>';
+                    existingHabilidades.forEach(h => {
+                        habilidadesOptions += `<option value="${h}">${h}</option>`;
+                    });
+
+                    let niveisOptions = '<option value="">Selecione um Nível</option>';
+                    existingNiveis.forEach(n => {
+                        niveisOptions += `<option value="${n}">${n}</option>`;
+                    });
+
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            <div class="protocol-field required"><label for="modal_tarefa_nivel">Nível:</label><input type="number" id="modal_tarefa_nivel" required></div>
-                                            <div class="protocol-field required"><label for="modal_tarefa_ordem">Ordem:</label><input type="number" id="modal_tarefa_ordem" required></div>
-                                            <div class="protocol-field"><label for="modal_tarefa_item">Item:</label><input type="text" id="modal_tarefa_item"></div>
-                                            <div class="protocol-field required col-span-full"><label for="modal_tarefa_nome">Nome da Tarefa:</label><input type="text" id="modal_tarefa_nome" required></div>
-                                            <div class="protocol-field"><label for="modal_tarefa_habilidade">Habilidade:</label><input type="text" id="modal_tarefa_habilidade"></div>
-                                            <div class="protocol-field"><label for="modal_tarefa_marco">Marco:</label><input type="text" id="modal_tarefa_marco"></div>
-                                            <div class="protocol-field"><label for="modal_tarefa_prazo">Prazo:</label><input type="date" id="modal_tarefa_prazo"></div>
-                                        </div>`;
+                                      <div class="protocol-field required"><label for="modal_tarefa_nivel">Nível:</label><select id="modal_tarefa_nivel" required>${niveisOptions}</select></div>
+                                      <div class="protocol-field required"><label for="modal_tarefa_ordem">Ordem:</label><input type="number" id="modal_tarefa_ordem" required></div>
+                                      <div class="protocol-field"><label for="modal_tarefa_item">Item:</label><input type="text" id="modal_tarefa_item"></div>
+                                      <div class="protocol-field required col-span-full"><label for="modal_tarefa_nome">Nome da Tarefa:</label><input type="text" id="modal_tarefa_nome" required></div>
+                                      <div class="protocol-field col-span-full md:col-span-1"><label for="modal_tarefa_habilidade_marco">Habilidade/Marco:</label><select id="modal_tarefa_habilidade_marco">${habilidadesOptions}</select></div>
+                                      <div class="protocol-field col-span-full md:col-span-1"><label for="modal_tarefa_resultado_observacao">Resultado/Observação:</label><textarea rows="3" id="modal_tarefa_resultado_observacao"></textarea></div>
+                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_pergunta">Pergunta:</label><textarea rows="3" id="modal_tarefa_pergunta"></textarea></div>
+                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_exemplo">Exemplo:</label><textarea rows="3" id="modal_tarefa_exemplo"></textarea></div>
+                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_criterio">Critério:</label><textarea rows="3" id="modal_tarefa_criterio"></textarea></div>
+                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_objetivo">Objetivo:</label><textarea rows="3" id="modal_tarefa_objetivo"></textarea></div>
+                                  </div>`;
                     break;
             }
 
             addItemModalTitle.textContent = titleText;
             addItemModalBody.innerHTML = fieldsHtml;
             addItemModalOverlay.classList.add('show');
-
-            // Initialize flatpickr for the date input in the modal if it's a 'tarefa'
-            if (type === 'tarefa') {
-                flatpickr("#modal_tarefa_prazo", {
-                    dateFormat: "Y-m-d",
-                });
-            }
         }
+        
+        const addItemModalSaveBtn = document.getElementById('add-item-modal-save-btn');
+        if (addItemModalSaveBtn) {
+            addItemModalSaveBtn.addEventListener('click', function() {
+                const requiredFields = addItemModalBody.querySelectorAll('[required]');
+                let allValid = true;
+                requiredFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        allValid = false;
+                        field.classList.add('invalid');
+                    } else {
+                        field.classList.remove('invalid');
+                    }
+                });
 
-        document.getElementById('add-item-modal-save-btn').addEventListener('click', function() {
-            const requiredFields = addItemModalBody.querySelectorAll('[required]');
-            let allValid = true;
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    allValid = false;
-                    field.classList.add('invalid');
+                if (allValid) {
+                    saveModalData(currentAddItemType);
+                    addItemModalOverlay.classList.remove('show');
                 } else {
-                    field.classList.remove('invalid');
+                    showToast('Preencha todos os campos obrigatórios.', 'danger');
                 }
             });
-
-            if (allValid) {
-                saveModalData(currentAddItemType);
-                addItemModalOverlay.classList.remove('show');
-            } else {
-                showToast('Preencha todos os campos obrigatórios.', 'danger');
-            }
-        });
+        }
         
         function saveModalData(type) {
-            const container = document.getElementById(`${type}s-container`);
-            if (!container) return;
+            let container = document.getElementById(`${type}s-container`); // Changed from const to let
+            if (!container) {
+                // Compatibility for 'pontuacao' -> 'pontuacoes'
+                if (type === 'pontuacao') {
+                    const altContainer = document.getElementById('pontuacoes-container');
+                    if(altContainer) container = altContainer;
+                    else return;
+                } else {
+                    return;
+                }
+            }
             
             let newFieldHtml = '';
             let values = {};
             
+            // Lógica para obter valores do modal e construir a nova linha da tabela
             if (type === 'etapa') {
                 values.nome = document.getElementById('modal_etapa_nome').value;
                 values.descricao = document.getElementById('modal_etapa_descricao').value;
-                newFieldHtml = `<div class="dynamic-field-item"><div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 gap-4"><div class="protocol-field required"><label>Nome da Etapa:</label><input type="text" value="${values.nome}" readonly><input type="hidden" name="etapa_nome[]" value="${values.nome}"></div><div class="protocol-field"><label>Descrição da Etapa:</label><textarea rows="1" readonly>${values.descricao}</textarea><input type="hidden" name="etapa_descricao[]" value="${values.descricao}"></div></div><div class="dynamic-field-item-actions"><button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button></div></div>`;
+                newFieldHtml = `
+                    <tr class="dynamic-field-item">
+                        <td data-label="Nome da Etapa">
+                            <input type="text" value="${values.nome}" readonly>
+                            <input type="hidden" name="etapa_nome[]" value="${values.nome}">
+                        </td>
+                        <td data-label="Descrição">
+                            <textarea rows="1" readonly>${values.descricao}</textarea>
+                            <input type="hidden" name="etapa_descricao[]" value="${values.descricao}">
+                        </td>
+                        <td class="dynamic-field-item-actions">
+                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                        </td>
+                    </tr>`;
             } else if (type === 'nivel') {
                 values.ordem = document.getElementById('modal_nivel_ordem').value;
                 values.nivel = document.getElementById('modal_nivel_valor').value;
                 values.faixa_etaria = document.getElementById('modal_nivel_faixa_etaria').value;
-                newFieldHtml = `<div class="dynamic-field-item"><div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"><div class="protocol-field required"><label>Ordem:</label><input type="number" value="${values.ordem}" readonly><input type="hidden" name="nivel_ordem[]" value="${values.ordem}"></div><div class="protocol-field required"><label>Nível:</label><input type="number" value="${values.nivel}" readonly><input type="hidden" name="nivel_valor[]" value="${values.nivel}"></div><div class="protocol-field"><label>Faixa Etária:</label><input type="text" value="${values.faixa_etaria}" readonly><input type="hidden" name="nivel_faixa_etaria[]" value="${values.faixa_etaria}"></div></div><div class="dynamic-field-item-actions"><button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button></div></div>`;
+                newFieldHtml = `
+                    <tr class="dynamic-field-item">
+                        <td data-label="Ordem">
+                            <input type="number" value="${values.ordem}" readonly>
+                            <input type="hidden" name="nivel_ordem[]" value="${values.ordem}">
+                        </td>
+                        <td data-label="Nível">
+                            <input type="number" value="${values.nivel}" readonly>
+                            <input type="hidden" name="nivel_valor[]" value="${values.nivel}">
+                        </td>
+                        <td data-label="Faixa Etária">
+                            <input type="text" value="${values.faixa_etaria}" readonly>
+                            <input type="hidden" name="nivel_faixa_etaria[]" value="${values.faixa_etaria}">
+                        </td>
+                        <td class="dynamic-field-item-actions">
+                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                        </td>
+                    </tr>`;
             } else if (type === 'habilidade') {
                 values.ordem = document.getElementById('modal_habilidade_ordem').value;
                 values.nome = document.getElementById('modal_habilidade_nome').value;
-                newFieldHtml = `<div class="dynamic-field-item"><div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 gap-4"><div class="protocol-field required"><label>Ordem:</label><input type="number" value="${values.ordem}" readonly><input type="hidden" name="habilidade_ordem[]" value="${values.ordem}"></div><div class="protocol-field required"><label>Habilidade:</label><input type="text" value="${values.nome}" readonly><input type="hidden" name="habilidade_nome[]" value="${values.nome}"></div></div><div class="dynamic-field-item-actions"><button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button></div></div>`;
+                newFieldHtml = `
+                    <tr class="dynamic-field-item">
+                        <td data-label="Ordem">
+                            <input type="number" value="${values.ordem}" readonly>
+                            <input type="hidden" name="habilidade_ordem[]" value="${values.ordem}">
+                        </td>
+                        <td data-label="Habilidade">
+                            <input type="text" value="${values.nome}" readonly>
+                            <input type="hidden" name="habilidade_nome[]" value="${values.nome}">
+                        </td>
+                        <td class="dynamic-field-item-actions">
+                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                        </td>
+                    </tr>`;
             } else if (type === 'pontuacao') {
                 values.ordem = document.getElementById('modal_pontuacao_ordem').value;
                 values.tipo = document.getElementById('modal_pontuacao_tipo').value;
                 values.descricao = document.getElementById('modal_pontuacao_descricao').value;
                 values.valor = document.getElementById('modal_pontuacao_valor').value;
-                newFieldHtml = `<div class="dynamic-field-item"><div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"><div class="protocol-field required"><label>Ordem:</label><input type="number" value="${values.ordem}" readonly><input type="hidden" name="pontuacao_ordem[]" value="${values.ordem}"></div><div class="protocol-field required"><label>Tipo:</label><input type="text" value="${values.tipo}" readonly><input type="hidden" name="pontuacao_tipo[]" value="${values.tipo}"></div><div class="protocol-field"><label>Descrição:</label><input type="text" value="${values.descricao}" readonly><input type="hidden" name="pontuacao_descricao[]" value="${values.descricao}"></div><div class="protocol-field required"><label>Valor:</label><input type="number" step="0.1" value="${values.valor}" readonly><input type="hidden" name="pontuacao_valor[]" value="${values.valor}"></div></div><div class="dynamic-field-item-actions"><button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button></div></div>`;
+                newFieldHtml = `
+                    <tr class="dynamic-field-item">
+                        <td data-label="Ordem">
+                            <input type="number" value="${values.ordem}" readonly>
+                            <input type="hidden" name="pontuacao_ordem[]" value="${values.ordem}">
+                        </td>
+                        <td data-label="Tipo">
+                            <input type="text" value="${values.tipo}" readonly>
+                            <input type="hidden" name="pontuacao_tipo[]" value="${values.tipo}">
+                        </td>
+                        <td data-label="Descrição">
+                            <input type="text" value="${values.descricao}" readonly>
+                            <input type="hidden" name="pontuacao_descricao[]" value="${values.descricao}">
+                        </td>
+                        <td data-label="Valor">
+                            <input type="number" step="0.1" value="${values.valor}" readonly>
+                            <input type="hidden" name="pontuacao_valor[]" value="${values.valor}">
+                        </td>
+                        <td class="dynamic-field-item-actions">
+                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                        </td>
+                    </tr>`;
             } else if (type === 'tarefa') {
                 values.nivel = document.getElementById('modal_tarefa_nivel').value;
                 values.ordem = document.getElementById('modal_tarefa_ordem').value;
                 values.item = document.getElementById('modal_tarefa_item').value;
                 values.nome = document.getElementById('modal_tarefa_nome').value;
-                values.habilidade = document.getElementById('modal_tarefa_habilidade').value;
-                values.marco = document.getElementById('modal_tarefa_marco').value;
-                values.prazo = document.getElementById('modal_tarefa_prazo').value; // Get the date value
-                newFieldHtml = `<div class="dynamic-field-item"><div class="dynamic-field-item-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"><div class="protocol-field required"><label>Nível:</label><input type="number" value="${values.nivel}" readonly><input type="hidden" name="tarefa_nivel[]" value="${values.nivel}"></div><div class="protocol-field required"><label>Ordem:</label><input type="number" value="${values.ordem}" readonly><input type="hidden" name="tarefa_ordem[]" value="${values.ordem}"></div><div class="protocol-field"><label>Item:</label><input type="text" value="${values.item}" readonly><input type="hidden" name="tarefa_item[]" value="${values.item}"></div><div class="protocol-field required"><label>Nome:</label><input type="text" value="${values.nome}" readonly><input type="hidden" name="tarefa_nome[]" value="${values.nome}"></div><div class="protocol-field"><label>Habilidade:</label><input type="text" value="${values.habilidade}" readonly><input type="hidden" name="tarefa_habilidade[]" value="${values.habilidade}"></div><div class="protocol-field"><label>Marco:</label><input type="text" value="${values.marco}" readonly><input type="hidden" name="tarefa_marco[]" value="${values.marco}"></div><div class="protocol-field"><label>Prazo:</label><input type="date" value="${values.prazo}" readonly><input type="hidden" name="tarefa_prazo[]" value="${values.prazo}"></div></div><div class="dynamic-field-item-actions"><button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button></div></div>`;
+                values.habilidade_marco = document.getElementById('modal_tarefa_habilidade_marco').value; 
+                values.resultado_observacao = document.getElementById('modal_tarefa_resultado_observacao').value;
+                values.pergunta = document.getElementById('modal_tarefa_pergunta').value;
+                values.exemplo = document.getElementById('modal_tarefa_exemplo').value;
+                values.criterio = document.getElementById('modal_tarefa_criterio').value;
+                values.objetivo = document.getElementById('modal_tarefa_objetivo').value;
+                
+                newFieldHtml = `
+                    <tr class="dynamic-field-item">
+                        <td data-label="Nível">
+                            <input type="number" value="${values.nivel}" readonly>
+                            <input type="hidden" name="tarefa_nivel[]" value="${values.nivel}">
+                        </td>
+                        <td data-label="Ordem">
+                            <input type="number" value="${values.ordem}" readonly>
+                            <input type="hidden" name="tarefa_ordem[]" value="${values.ordem}">
+                        </td>
+                        <td data-label="Item">
+                            <input type="text" value="${values.item}" readonly>
+                            <input type="hidden" name="tarefa_item[]" value="${values.item}">
+                        </td>
+                        <td data-label="Nome">
+                            <input type="text" value="${values.nome}" readonly>
+                            <input type="hidden" name="tarefa_nome[]" value="${values.nome}">
+                        </td>
+                        <td data-label="Habilidade/Marco">
+                            <input type="text" value="${values.habilidade_marco}" readonly>
+                            <input type="hidden" name="tarefa_habilidade_marco[]" value="${values.habilidade_marco}">
+                        </td>
+                        <td data-label="Resultado/Observação">
+                            <textarea rows="1" readonly>${values.resultado_observacao}</textarea>
+                            <input type="hidden" name="tarefa_resultado_observacao[]" value="${values.resultado_observacao}">
+                        </td>
+                        <td data-label="Pergunta">
+                            <textarea rows="1" readonly>${values.pergunta}</textarea>
+                            <input type="hidden" name="tarefa_pergunta[]" value="${values.pergunta}">
+                        </td>
+                        <td data-label="Exemplo">
+                            <textarea rows="1" readonly>${values.exemplo}</textarea>
+                            <input type="hidden" name="tarefa_exemplo[]" value="${values.exemplo}">
+                        </td>
+                        <td data-label="Critério">
+                            <textarea rows="1" readonly>${values.criterio}</textarea>
+                            <input type="hidden" name="tarefa_criterio[]" value="${values.criterio}">
+                        </td>
+                        <td data-label="Objetivo">
+                            <textarea rows="1" readonly>${values.objetivo}</textarea>
+                            <input type="hidden" name="tarefa_objetivo[]" value="${values.objetivo}">
+                        </td>
+                        <td class="dynamic-field-item-actions">
+                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                        </td>
+                    </tr>`;
             }
 
+            // Remove a linha "Nenhum item encontrado" se ela existir
+            const noResultsRow = container.querySelector('.no-results-row');
+            if (noResultsRow) {
+                noResultsRow.remove();
+            }
             container.insertAdjacentHTML('beforeend', newFieldHtml);
         }
         
         window.removeDynamicField = function(button) {
-            button.closest('.dynamic-field-item').remove();
+            const rowToRemove = button.closest('.dynamic-field-item');
+            const container = rowToRemove.closest('tbody');
+            rowToRemove.remove();
+
+            // Se não houver mais linhas, adiciona a mensagem "Nenhum item encontrado"
+            if (container && container.children.length === 0) {
+                const colspan = container.closest('table').querySelector('thead tr').children.length;
+                container.insertAdjacentHTML('beforeend', `<tr class="no-results-row"><td colspan="${colspan}">Nenhum item cadastrado.</td></tr>`);
+            }
         }
 
-        document.getElementById('add-item-modal-close-btn').addEventListener('click', () => addItemModalOverlay.classList.remove('show'));
-        document.getElementById('add-item-modal-cancel-btn').addEventListener('click', () => addItemModalOverlay.classList.remove('show'));
+        const addItemModalCloseBtn = document.getElementById('add-item-modal-close-btn');
+        if(addItemModalCloseBtn) addItemModalCloseBtn.addEventListener('click', () => addItemModalOverlay.classList.remove('show'));
+        
+        const addItemModalCancelBtn = document.getElementById('add-item-modal-cancel-btn');
+        if(addItemModalCancelBtn) addItemModalCancelBtn.addEventListener('click', () => addItemModalOverlay.classList.remove('show'));
 
         // --- Lógica de Navegação por Steps ---
         function showStep(index) {
