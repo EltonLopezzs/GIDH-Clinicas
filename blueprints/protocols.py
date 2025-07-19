@@ -140,6 +140,9 @@ def save_protocol():
 
     protocol_id = request.form.get('id')
     
+    # Debug: Print all form data
+    print(f"Dados do formulário recebidos: {request.form}")
+
     # Campos da aba Geral
     tipo_protocolo = request.form.get('tipo_protocolo')
     nome = request.form.get('nome') 
@@ -184,6 +187,8 @@ def save_protocol():
                 flash('Erro: Ordem ou Nível da etapa inválido. Certifique-se de que são números inteiros.', 'danger')
                 return redirect(url_for('protocols.add_protocol') if not protocol_id else url_for('protocols.edit_protocol', protocol_id=protocol_id))
 
+    # Debug: Print collected levels
+    print(f"Niveis coletados: {niveis}")
 
     # Coleta as habilidades dinamicamente
     habilidades_ordem = request.form.getlist('habilidade_ordem[]')

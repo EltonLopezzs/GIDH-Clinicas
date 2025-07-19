@@ -1060,23 +1060,23 @@
         }
         
         function saveModalData(type) {
-            let container = document.getElementById(`${type}s-container`); // Changed from const to let
+            let containerId;
+            if (type === 'nivel') {
+                containerId = 'niveis-container'; // Correção para o ID do container de níveis
+            } else if (type === 'pontuacao') {
+                containerId = 'pontuacoes-container';
+            } else {
+                containerId = `${type}s-container`;
+            }
+            
+            let container = document.getElementById(containerId);
             console.log(`saveModalData acionada para o tipo: ${type}`); // Debug
-            console.log('Container alvo:', container); // Debug
+            console.log('Container alvo (ID):', containerId); // Debug
+            console.log('Container alvo (Elemento):', container); // Debug
 
             if (!container) {
-                // Compatibility for 'pontuacao' -> 'pontuacoes'
-                if (type === 'pontuacao') {
-                    const altContainer = document.getElementById('pontuacoes-container');
-                    if(altContainer) container = altContainer;
-                    else {
-                        console.error('Container não encontrado para o tipo pontuacao.'); // Debug
-                        return;
-                    }
-                } else {
-                    console.error(`Container não encontrado para o tipo: ${type}.`); // Debug
-                    return;
-                }
+                console.error(`Container não encontrado para o tipo: ${type}. ID esperado: ${containerId}`); // Debug
+                return;
             }
             
             let newFieldHtml = '';
