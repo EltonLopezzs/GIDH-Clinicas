@@ -86,7 +86,13 @@
         .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
         .topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
         
-        main { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+        main { 
+            flex-grow: 1; 
+            padding: 1.5rem; 
+            overflow-y: auto; 
+            max-width: 100%; /* Removido o max-width fixo para ser auto-ajustável */
+            margin: 0 auto; /* Centraliza o conteúdo principal */
+        }
 
         /* --- Botões --- */
         .btn {
@@ -110,7 +116,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            min-height: calc(100vh - 70px - 3rem); /* Altura do Topbar - padding */
+            /* Removido min-height para evitar espaço em branco excessivo */
         }
         .protocol-steps {
             display: flex;
@@ -180,22 +186,30 @@
         .protocol-field label {
             font-size: 1rem; color: var(--muted); font-weight: 600;
         }
+        /* Estilos para inputs, selects e textareas com borda quadrada */
         .protocol-field input, .protocol-field select, .protocol-field textarea {
             background: transparent;
-            border: none;
-            border-bottom: 2px solid var(--border-color);
+            border: 1px solid var(--border-color); /* Borda sólida */
+            border-radius: 8px; /* Cantos arredondados */
             font-size: 1rem;
-            padding: 0.5rem 0.2rem;
+            padding: 0.75rem 1rem; /* Aumenta o padding para melhor visual */
             color: var(--text);
             transition: all 0.2s;
-            border-radius: 0;
             outline: none;
             width: 100%;
         }
         .protocol-field input:focus, .protocol-field select:focus, .protocol-field textarea:focus {
             border-color: var(--primary);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent); /* Adiciona um brilho ao focar */
         }
         .protocol-field textarea { min-height: 80px; resize: vertical; }
+
+        /* Ajuste para alinhamento de radio/checkbox */
+        .protocol-field input[type="radio"],
+        .protocol-field input[type="checkbox"] {
+            vertical-align: middle; /* Alinha o input com o texto */
+            margin-top: -0.125rem; /* Pequeno ajuste fino se necessário */
+        }
 
         .protocol-actions {
             display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem;
@@ -206,7 +220,7 @@
         /* --- Validação de Campos --- */
         .protocol-field.required label::after { content: ' *'; color: var(--danger); }
         .protocol-field input.invalid, .protocol-field select.invalid, .protocol-field textarea.invalid {
-            border-bottom-color: var(--danger) !important;
+            border-color: var(--danger) !important; /* Muda a cor da borda */
             background-color: color-mix(in srgb, var(--danger) 10%, transparent);
         }
         @keyframes shake {
@@ -387,6 +401,10 @@
         /* Responsividade */
         @media (max-width: 768px) {
             .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
+            main {
+                padding: 1rem; /* Ajusta o padding em telas menores */
+                max-width: 100%; /* Permite que o main ocupe 100% da largura em mobile */
+            }
             /* Adaptação da tabela para telas pequenas */
             .table-container table {
                 min-width: unset; /* Remove min-width para permitir encolhimento */
@@ -489,14 +507,18 @@
         <div class="main-content">
             <header class="topbar">
                 <div class="topbar-left">
-                    <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <button class="toggle-btn toggle-btn-mobile"><i class="fa-solid fa-bars"></i></button>
+                    <button class="toggle-btn"><i class="fa-solid fa-bars-staggered"></i></button> {# Simplified to one toggle button #}
                     <h1 class="page-title">{{ 'Editar' if protocol else 'Novo' }} Protocolo</h1>
                 </div>
                 <div class="topbar-actions">
                     <a href="{{ url_for('protocols.list_protocols') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Voltar</span>
                     </a>
+                    {% if protocol %} {# Show save button in topbar only when editing #}
+                    <button type="submit" form="protocol-form" class="btn btn-primary">
+                        <i class="fas fa-save"></i> <span class="hidden sm:inline">Salvar Protocolo</span>
+                    </button>
+                    {% endif %}
                 </div>
             </header>
 
@@ -522,7 +544,7 @@
                                     <div class="protocol-card-fields grid-2-cols">
                                         <div class="protocol-field required col-span-full">
                                             <label>Tipo de Protocolo:</label>
-                                            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2">
+                                            <div class="flex items-center gap-x-8 gap-y-3 mt-3"> {# Adjusted gap and margin-top #}
                                                 <label class="inline-flex items-center">
                                                     <input type="radio" class="form-radio h-5 w-5 text-blue-600" name="tipo_protocolo" value="Aquisicao de Habilidades" {% if not protocol or protocol.tipo_protocolo == 'Aquisicao de Habilidades' %}checked{% endif %} required>
                                                     <span class="ml-2">Aquisição de Habilidades</span>
@@ -543,9 +565,9 @@
                                         </div>
                                         <div class="protocol-field col-span-full">
                                             <label for="descricao">Descrição:</label>
-                                            <textarea id="descricao" name="descricao" rows="4">{{ protocol.descricao if protocol else '' }}</textarea>
+                                            <textarea id="descricao" name="descricao" rows="8">{{ protocol.descricao if protocol else '' }}</textarea> {# Increased rows to 8 #}
                                         </div>
-                                        <div class="protocol-field flex items-center col-span-full">
+                                        <div class="protocol-field flex items-center col-span-full mt-4"> {# Added margin-top #}
                                             <input type="checkbox" id="ativo" name="ativo" value="1" {% if protocol and protocol.ativo %}checked{% endif %} class="h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
                                             <label for="ativo" class="ml-2 !font-normal">Protocolo Ativo</label>
                                         </div>
@@ -566,10 +588,14 @@
                                         <i class="fas fa-plus"></i> Adicionar Etapa
                                     </button>
                                 </div>
+                                <div class="mb-4"> {# Added margin-bottom for spacing #}
+                                    <input type="text" id="filter-etapas" onkeyup="filterTable('etapas-container', this.value)" placeholder="Filtrar etapas..." class="protocol-field-filter">
+                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
+                                                <th>ID</th> {# Changed from Ordem to ID #}
                                                 <th>Nome da Etapa</th>
                                                 <th>Descrição</th>
                                                 <th style="width: 100px;">Ações</th>
@@ -579,6 +605,11 @@
                                             {% if protocol and protocol.etapas %}
                                                 {% for etapa in protocol.etapas %}
                                                 <tr class="dynamic-field-item">
+                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                        <span class="display-id">#{{ etapa.id[:5] if etapa.id else loop.index }}</span>
+                                                        <input type="hidden" name="etapa_id[]" value="{{ etapa.id if etapa.id else '' }}">
+                                                        <input type="hidden" name="etapa_ordem[]" value="{{ loop.index }}"> {# Keep original order #}
+                                                    </td>
                                                     <td data-label="Nome da Etapa">
                                                         <input type="text" value="{{ etapa.nome }}" readonly>
                                                         <input type="hidden" name="etapa_nome[]" value="{{ etapa.nome }}">
@@ -588,13 +619,14 @@
                                                         <input type="hidden" name="etapa_descricao[]" value="{{ etapa.descricao }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="editDynamicField(this, 'etapa')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
                                                         <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
                                             {% else %}
                                                 <tr class="no-results-row">
-                                                    <td colspan="3">Nenhuma etapa cadastrada.</td>
+                                                    <td colspan="4">Nenhuma etapa cadastrada.</td>
                                                 </tr>
                                             {% endif %}
                                         </tbody>
@@ -616,11 +648,14 @@
                                         <i class="fas fa-plus"></i> Adicionar Nível
                                     </button>
                                 </div>
+                                <div class="mb-4"> {# Added margin-bottom for spacing #}
+                                    <input type="text" id="filter-niveis" onkeyup="filterTable('niveis-container', this.value)" placeholder="Filtrar níveis..." class="protocol-field-filter">
+                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>Ordem</th>
+                                                <th>ID</th> {# Changed from Ordem to ID #}
                                                 <th>Nível</th>
                                                 <th>Faixa Etária</th>
                                                 <th style="width: 100px;">Ações</th>
@@ -630,8 +665,9 @@
                                             {% if protocol and protocol.niveis %}
                                                 {% for nivel in protocol.niveis %}
                                                 <tr class="dynamic-field-item">
-                                                    <td data-label="Ordem">
-                                                        <input type="number" value="{{ nivel.ordem }}" readonly>
+                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                        <span class="display-id">#{{ nivel.id[:5] if nivel.id else nivel.ordem }}</span>
+                                                        <input type="hidden" name="nivel_id[]" value="{{ nivel.id if nivel.id else '' }}">
                                                         <input type="hidden" name="nivel_ordem[]" value="{{ nivel.ordem }}">
                                                     </td>
                                                     <td data-label="Nível">
@@ -643,6 +679,7 @@
                                                         <input type="hidden" name="nivel_faixa_etaria[]" value="{{ nivel.faixa_etaria }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="editDynamicField(this, 'nivel')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
                                                         <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
                                                     </td>
                                                 </tr>
@@ -671,11 +708,14 @@
                                         <i class="fas fa-plus"></i> Adicionar Habilidade
                                     </button>
                                 </div>
+                                <div class="mb-4"> {# Added margin-bottom for spacing #}
+                                    <input type="text" id="filter-habilidades" onkeyup="filterTable('habilidades-container', this.value)" placeholder="Filtrar habilidades..." class="protocol-field-filter">
+                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>Ordem</th>
+                                                <th>ID</th> {# Changed from Ordem to ID #}
                                                 <th>Habilidade</th>
                                                 <th style="width: 100px;">Ações</th>
                                             </tr>
@@ -684,8 +724,9 @@
                                             {% if protocol and protocol.habilidades %}
                                                 {% for habilidade in protocol.habilidades %}
                                                 <tr class="dynamic-field-item">
-                                                    <td data-label="Ordem">
-                                                        <input type="number" value="{{ habilidade.ordem }}" readonly>
+                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                        <span class="display-id">#{{ habilidade.id[:5] if habilidade.id else habilidade.ordem }}</span>
+                                                        <input type="hidden" name="habilidade_id[]" value="{{ habilidade.id if habilidade.id else '' }}">
                                                         <input type="hidden" name="habilidade_ordem[]" value="{{ habilidade.ordem }}">
                                                     </td>
                                                     <td data-label="Habilidade">
@@ -693,6 +734,7 @@
                                                         <input type="hidden" name="habilidade_nome[]" value="{{ habilidade.nome }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="editDynamicField(this, 'habilidade')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
                                                         <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
                                                     </td>
                                                 </tr>
@@ -721,11 +763,14 @@
                                         <i class="fas fa-plus"></i> Adicionar Pontuação
                                     </button>
                                 </div>
+                                <div class="mb-4"> {# Added margin-bottom for spacing #}
+                                    <input type="text" id="filter-pontuacoes" onkeyup="filterTable('pontuacoes-container', this.value)" placeholder="Filtrar pontuações..." class="protocol-field-filter">
+                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>Ordem</th>
+                                                <th>ID</th> {# Changed from Ordem to ID #}
                                                 <th>Tipo</th>
                                                 <th>Descrição</th>
                                                 <th>Valor</th>
@@ -736,8 +781,9 @@
                                             {% if protocol and protocol.pontuacao %}
                                                 {% for item in protocol.pontuacao %}
                                                 <tr class="dynamic-field-item">
-                                                    <td data-label="Ordem">
-                                                        <input type="number" value="{{ item.ordem }}" readonly>
+                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                        <span class="display-id">#{{ item.id[:5] if item.id else item.ordem }}</span>
+                                                        <input type="hidden" name="pontuacao_id[]" value="{{ item.id if item.id else '' }}">
                                                         <input type="hidden" name="pontuacao_ordem[]" value="{{ item.ordem }}">
                                                     </td>
                                                     <td data-label="Tipo">
@@ -753,6 +799,7 @@
                                                         <input type="hidden" name="pontuacao_valor[]" value="{{ item.valor }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="editDynamicField(this, 'pontuacao')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
                                                         <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
                                                     </td>
                                                 </tr>
@@ -781,12 +828,15 @@
                                         <i class="fas fa-plus"></i> Adicionar Tarefa/Teste
                                     </button>
                                 </div>
+                                <div class="mb-4"> {# Added margin-bottom for spacing #}
+                                    <input type="text" id="filter-tarefas" onkeyup="filterTable('tarefas-container', this.value)" placeholder="Filtrar tarefas..." class="protocol-field-filter">
+                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
+                                                <th>ID</th> {# Changed from Ordem to ID #}
                                                 <th>Nível</th>
-                                                <th>Ordem</th>
                                                 <th>Item</th>
                                                 <th>Nome</th>
                                                 <th>Habilidade/Marco</th>
@@ -802,13 +852,14 @@
                                             {% if protocol and protocol.tarefas_testes %}
                                                 {% for tarefa in protocol.tarefas_testes %}
                                                 <tr class="dynamic-field-item">
+                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                        <span class="display-id">#{{ tarefa.id[:5] if tarefa.id else tarefa.ordem }}</span>
+                                                        <input type="hidden" name="tarefa_id[]" value="{{ tarefa.id if tarefa.id else '' }}">
+                                                        <input type="hidden" name="tarefa_ordem[]" value="{{ tarefa.ordem }}">
+                                                    </td>
                                                     <td data-label="Nível">
                                                         <input type="number" value="{{ tarefa.nivel }}" readonly>
                                                         <input type="hidden" name="tarefa_nivel[]" value="{{ tarefa.nivel }}">
-                                                    </td>
-                                                    <td data-label="Ordem">
-                                                        <input type="number" value="{{ tarefa.ordem }}" readonly>
-                                                        <input type="hidden" name="tarefa_ordem[]" value="{{ tarefa.ordem }}">
                                                     </td>
                                                     <td data-label="Item">
                                                         <input type="text" value="{{ tarefa.item }}" readonly>
@@ -843,6 +894,7 @@
                                                         <input type="hidden" name="tarefa_objetivo[]" value="{{ tarefa.objetivo if tarefa.objetivo else '' }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
+                                                        <button type="button" onclick="editDynamicField(this, 'tarefa')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
                                                         <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
                                                     </td>
                                                 </tr>
@@ -867,16 +919,19 @@
                             <div class="protocol-card-container-form">
                                 <div class="section-content">
                                     <h3 class="section-title"><i class="fa-solid fa-comment-dots"></i> Observações</h3>
+                                    <p class="text-sm text-gray-500 mb-4">Adicione quaisquer observações gerais relevantes para este protocolo.</p>
                                     <div class="protocol-card-fields">
                                         <div class="protocol-field">
                                             <label for="observacoes_gerais">Observações Gerais:</label>
-                                            <textarea id="observacoes_gerais" name="observacoes_gerais" rows="8">{{ protocol.observacoes_gerais if protocol else '' }}</textarea>
+                                            <textarea id="observacoes_gerais" name="observacoes_gerais" rows="10" placeholder="Ex: Este protocolo deve ser aplicado em ambiente tranquilo, com reforçadores de alta preferência.">{{ protocol.observacoes_gerais if protocol else '' }}</textarea>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="protocol-actions">
                                     <button type="button" class="btn btn-secondary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
+                                    {% if not protocol %} {# Show save button at bottom only when adding new protocol #}
                                     <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Protocolo</button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -887,6 +942,14 @@
     </div>
 
     <script>
+    // Função para gerar UUID
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const protocolForm = document.getElementById('protocol-form');
         const steps = document.querySelectorAll('.protocol-step');
@@ -895,6 +958,8 @@
         const prevBtns = document.querySelectorAll('.steps-prev');
 
         let currentStepIndex = 0;
+        let editingRowElement = null; // Guarda a referência da linha sendo editada
+        let editingItemId = null; // Guarda o ID do item sendo editado
 
         // --- Lógica para Notificações Toast ---
         const toastContainer = document.getElementById('toast-container');
@@ -955,75 +1020,99 @@
             if (e.target === generalAlertOverlay) closeGeneralAlertModal();
         });
 
-        // --- Lógica para Modal de Adição de Itens ---
+        // --- Lógica para Modal de Adição/Edição de Itens ---
         const addItemModalOverlay = document.getElementById('add-item-modal-overlay');
         const addItemModalTitle = document.getElementById('add-item-modal-title');
         const addItemModalBody = document.getElementById('add-item-modal-body');
+        const addItemModalSaveBtn = document.getElementById('add-item-modal-save-btn');
         let currentAddItemType = '';
 
-        window.openAddItemModal = function(type) {
+        window.openAddItemModal = function(type, isEditing = false, rowElement = null) {
             currentAddItemType = type;
             addItemModalBody.innerHTML = '';
             let fieldsHtml = '';
             let titleText = '';
+            
+            editingRowElement = rowElement; // Armazena a referência da linha
+            editingItemId = isEditing ? rowElement.querySelector(`input[name="${type}_id[]"]`).value : null;
+
+            if (isEditing) {
+                titleText = `Editar ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+                addItemModalSaveBtn.textContent = 'Salvar Alterações';
+            } else {
+                titleText = `Adicionar ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+                addItemModalSaveBtn.textContent = 'Adicionar';
+            }
+
+            let itemData = {};
+            if (isEditing && rowElement) {
+                // Coleta os dados da linha para preencher o modal
+                const hiddenInputs = rowElement.querySelectorAll('input[type="hidden"]');
+                hiddenInputs.forEach(input => {
+                    const name = input.name.replace(`${type}_`, '').replace('[]', '');
+                    itemData[name] = input.value;
+                });
+                // Para textareas que não são hidden
+                const textareas = rowElement.querySelectorAll('textarea');
+                textareas.forEach(textarea => {
+                    const name = textarea.closest('td').dataset.label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                    itemData[name] = textarea.value;
+                });
+            }
 
             switch (type) {
                 case 'etapa':
-                    titleText = 'Adicionar Etapa';
-                    fieldsHtml = `<div class="protocol-field required"><label for="modal_etapa_nome">Nome da Etapa:</label><input type="text" id="modal_etapa_nome" required></div>
-                                  <div class="protocol-field"><label for="modal_etapa_descricao">Descrição:</label><textarea id="modal_etapa_descricao" rows="3"></textarea></div>`;
+                    fieldsHtml = `<div class="protocol-field required"><label for="modal_etapa_nome">Nome da Etapa:</label><input type="text" id="modal_etapa_nome" value="${itemData.nome || ''}" required></div>
+                                  <div class="protocol-field"><label for="modal_etapa_descricao">Descrição:</label><textarea id="modal_etapa_descricao" rows="3">${itemData.descricao || ''}</textarea></div>`;
                     break;
                 case 'nivel':
-                    titleText = 'Adicionar Nível';
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div class="protocol-field required"><label for="modal_nivel_ordem">Ordem:</label><input type="number" id="modal_nivel_ordem" required></div>
-                                      <div class="protocol-field required"><label for="modal_nivel_valor">Nível:</label><input type="number" id="modal_nivel_valor" required></div>
+                                      <div class="protocol-field required"><label for="modal_nivel_valor">Nível:</label><input type="number" id="modal_nivel_valor" value="${itemData.valor || ''}" required></div>
                                   </div>
-                                  <div class="protocol-field"><label for="modal_nivel_faixa_etaria">Faixa Etária:</label><input type="text" id="modal_nivel_faixa_etaria"></div>`;
+                                  <div class="protocol-field"><label for="modal_nivel_faixa_etaria">Faixa Etária:</label><input type="text" id="modal_nivel_faixa_etaria" value="${itemData.faixa_etaria || ''}"></div>`;
                     break;
                 case 'habilidade':
-                    titleText = 'Adicionar Habilidade';
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div class="protocol-field required"><label for="modal_habilidade_ordem">Ordem:</label><input type="number" id="modal_habilidade_ordem" required></div>
-                                      <div class="protocol-field required"><label for="modal_habilidade_nome">Habilidade:</label><input type="text" id="modal_habilidade_nome" required></div>
+                                      <div class="protocol-field required"><label for="modal_habilidade_nome">Habilidade:</label><input type="text" id="modal_habilidade_nome" value="${itemData.nome || ''}" required></div>
                                   </div>`;
                     break;
                 case 'pontuacao':
-                    titleText = 'Adicionar Pontuação';
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div class="protocol-field required"><label for="modal_pontuacao_ordem">Ordem:</label><input type="number" id="modal_pontuacao_ordem" required></div>
-                                      <div class="protocol-field required"><label for="modal_pontuacao_tipo">Tipo:</label><input type="text" id="modal_pontuacao_tipo" required></div>
+                                      <div class="protocol-field required"><label for="modal_pontuacao_tipo">Tipo:</label><input type="text" id="modal_pontuacao_tipo" value="${itemData.tipo || ''}" required></div>
                                   </div>
-                                  <div class="protocol-field"><label for="modal_pontuacao_descricao">Descrição:</label><input type="text" id="modal_pontuacao_descricao"></div>
-                                  <div class="protocol-field required"><label for="modal_pontuacao_valor">Valor:</label><input type="number" step="0.1" id="modal_pontuacao_valor" required></div>`;
+                                  <div class="protocol-field"><label for="modal_pontuacao_descricao">Descrição:</label><input type="text" id="modal_pontuacao_descricao" value="${itemData.descricao || ''}"></div>
+                                  <div class="protocol-field required"><label for="modal_pontuacao_valor">Valor:</label><input type="number" step="0.1" id="modal_pontuacao_valor" value="${itemData.valor || ''}" required></div>`;
                     break;
                 case 'tarefa':
-                    titleText = 'Adicionar Tarefa/Teste';
-                    // Get existing habilidades and niveis from the current form
                     const existingHabilidades = Array.from(document.querySelectorAll('#habilidades-container input[name="habilidade_nome[]"]')).map(input => input.value);
-                    const existingNiveis = Array.from(document.querySelectorAll('#niveis-container input[name="nivel_valor[]"]')).map(input => input.value);
+                    const existingNiveis = Array.from(document.querySelectorAll('#niveis-container input[name="nivel_valor[]"]')).map(input => ({
+                        nivel: input.value,
+                        faixa_etaria: input.closest('tr').querySelector('[name="nivel_faixa_etaria[]"]').value
+                    }));
 
                     let habilidadesOptions = '<option value="">Selecione uma Habilidade</option>';
                     existingHabilidades.forEach(h => {
-                        habilidadesOptions += `<option value="${h}">${h}</option>`;
+                        const selected = (h === itemData.habilidade_marco) ? 'selected' : '';
+                        habilidadesOptions += `<option value="${h}" ${selected}>${h}</option>`;
                     });
 
                     let niveisOptions = '<option value="">Selecione um Nível</option>';
                     existingNiveis.forEach(n => {
-                        niveisOptions += `<option value="${n}">${n}</option>`;
+                        const displayText = n.faixa_etaria ? `${n.nivel} - ${n.faixa_etaria}` : n.nivel;
+                        const selected = (n.nivel == itemData.nivel) ? 'selected' : ''; // Comparar número
+                        niveisOptions += `<option value="${n.nivel}" ${selected}>${displayText}</option>`;
                     });
 
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                       <div class="protocol-field required"><label for="modal_tarefa_nivel">Nível:</label><select id="modal_tarefa_nivel" required>${niveisOptions}</select></div>
-                                      <div class="protocol-field required"><label for="modal_tarefa_ordem">Ordem:</label><input type="number" id="modal_tarefa_ordem" required></div>
-                                      <div class="protocol-field"><label for="modal_tarefa_item">Item:</label><input type="text" id="modal_tarefa_item"></div>
-                                      <div class="protocol-field required col-span-full"><label for="modal_tarefa_nome">Nome da Tarefa:</label><input type="text" id="modal_tarefa_nome" required></div>
+                                      <div class="protocol-field"><label for="modal_tarefa_item">Item:</label><input type="text" id="modal_tarefa_item" value="${itemData.item || ''}"></div>
+                                      <div class="protocol-field required col-span-full"><label for="modal_tarefa_nome">Nome da Tarefa:</label><input type="text" id="modal_tarefa_nome" value="${itemData.nome || ''}" required></div>
                                       <div class="protocol-field col-span-full md:col-span-1"><label for="modal_tarefa_habilidade_marco">Habilidade/Marco:</label><select id="modal_tarefa_habilidade_marco">${habilidadesOptions}</select></div>
-                                      <div class="protocol-field col-span-full md:col-span-1"><label for="modal_tarefa_resultado_observacao">Resultado/Observação:</label><textarea rows="3" id="modal_tarefa_resultado_observacao"></textarea></div>
-                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_pergunta">Pergunta:</label><textarea rows="3" id="modal_tarefa_pergunta"></textarea></div>
-                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_exemplo">Exemplo:</label><textarea rows="3" id="modal_tarefa_exemplo"></textarea></div>
-                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_criterio">Critério:</label><textarea rows="3" id="modal_tarefa_criterio"></textarea></div>
-                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_objetivo">Objetivo:</label><textarea rows="3" id="modal_tarefa_objetivo"></textarea></div>
+                                      <div class="protocol-field col-span-full md:col-span-1"><label for="modal_tarefa_resultado_observacao">Resultado/Observação:</label><textarea rows="3" id="modal_tarefa_resultado_observacao">${itemData.resultado_observacao || ''}</textarea></div>
+                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_pergunta">Pergunta:</label><textarea rows="3" id="modal_tarefa_pergunta">${itemData.pergunta || ''}</textarea></div>
+                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_exemplo">Exemplo:</label><textarea rows="3" id="modal_tarefa_exemplo">${itemData.exemplo || ''}</textarea></div>
+                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_criterio">Critério:</label><textarea rows="3" id="modal_tarefa_criterio">${itemData.criterio || ''}</textarea></div>
+                                      <div class="protocol-field col-span-full"><label for="modal_tarefa_objetivo">Objetivo:</label><textarea rows="3" id="modal_tarefa_objetivo">${itemData.objetivo || ''}</textarea></div>
                                   </div>`;
                     break;
             }
@@ -1033,10 +1122,9 @@
             addItemModalOverlay.classList.add('show');
         }
         
-        const addItemModalSaveBtn = document.getElementById('add-item-modal-save-btn');
         if (addItemModalSaveBtn) {
             addItemModalSaveBtn.addEventListener('click', function() {
-                console.log('Botão Adicionar clicado no modal.'); // Debug
+                console.log('Botão Adicionar/Salvar Alterações clicado no modal.'); // Debug
                 const requiredFields = addItemModalBody.querySelectorAll('[required]');
                 let allValid = true;
                 requiredFields.forEach(field => {
@@ -1062,7 +1150,7 @@
         function saveModalData(type) {
             let containerId;
             if (type === 'nivel') {
-                containerId = 'niveis-container'; // Correção para o ID do container de níveis
+                containerId = 'niveis-container';
             } else if (type === 'pontuacao') {
                 containerId = 'pontuacoes-container';
             } else {
@@ -1079,96 +1167,22 @@
                 return;
             }
             
-            let newFieldHtml = '';
             let values = {};
-            
-            // Lógica para obter valores do modal e construir a nova linha da tabela
+            // Coleta os valores do modal
             if (type === 'etapa') {
                 values.nome = document.getElementById('modal_etapa_nome').value;
                 values.descricao = document.getElementById('modal_etapa_descricao').value;
-                newFieldHtml = `
-                    <tr class="dynamic-field-item">
-                        <td data-label="Nome da Etapa">
-                            <input type="text" value="${values.nome}" readonly>
-                            <input type="hidden" name="etapa_nome[]" value="${values.nome}">
-                        </td>
-                        <td data-label="Descrição">
-                            <textarea rows="1" readonly>${values.descricao}</textarea>
-                            <input type="hidden" name="etapa_descricao[]" value="${values.descricao}">
-                        </td>
-                        <td class="dynamic-field-item-actions">
-                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
-                        </td>
-                    </tr>`;
             } else if (type === 'nivel') {
-                values.ordem = document.getElementById('modal_nivel_ordem').value;
                 values.nivel = document.getElementById('modal_nivel_valor').value;
                 values.faixa_etaria = document.getElementById('modal_nivel_faixa_etaria').value;
-                newFieldHtml = `
-                    <tr class="dynamic-field-item">
-                        <td data-label="Ordem">
-                            <input type="number" value="${values.ordem}" readonly>
-                            <input type="hidden" name="nivel_ordem[]" value="${values.ordem}">
-                        </td>
-                        <td data-label="Nível">
-                            <input type="number" value="${values.nivel}" readonly>
-                            <input type="hidden" name="nivel_valor[]" value="${values.nivel}">
-                        </td>
-                        <td data-label="Faixa Etária">
-                            <input type="text" value="${values.faixa_etaria}" readonly>
-                            <input type="hidden" name="nivel_faixa_etaria[]" value="${values.faixa_etaria}">
-                        </td>
-                        <td class="dynamic-field-item-actions">
-                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
-                        </td>
-                    </tr>`;
             } else if (type === 'habilidade') {
-                values.ordem = document.getElementById('modal_habilidade_ordem').value;
                 values.nome = document.getElementById('modal_habilidade_nome').value;
-                newFieldHtml = `
-                    <tr class="dynamic-field-item">
-                        <td data-label="Ordem">
-                            <input type="number" value="${values.ordem}" readonly>
-                            <input type="hidden" name="habilidade_ordem[]" value="${values.ordem}">
-                        </td>
-                        <td data-label="Habilidade">
-                            <input type="text" value="${values.nome}" readonly>
-                            <input type="hidden" name="habilidade_nome[]" value="${values.nome}">
-                        </td>
-                        <td class="dynamic-field-item-actions">
-                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
-                        </td>
-                    </tr>`;
             } else if (type === 'pontuacao') {
-                values.ordem = document.getElementById('modal_pontuacao_ordem').value;
                 values.tipo = document.getElementById('modal_pontuacao_tipo').value;
                 values.descricao = document.getElementById('modal_pontuacao_descricao').value;
                 values.valor = document.getElementById('modal_pontuacao_valor').value;
-                newFieldHtml = `
-                    <tr class="dynamic-field-item">
-                        <td data-label="Ordem">
-                            <input type="number" value="${values.ordem}" readonly>
-                            <input type="hidden" name="pontuacao_ordem[]" value="${values.ordem}">
-                        </td>
-                        <td data-label="Tipo">
-                            <input type="text" value="${values.tipo}" readonly>
-                            <input type="hidden" name="pontuacao_tipo[]" value="${values.tipo}">
-                        </td>
-                        <td data-label="Descrição">
-                            <input type="text" value="${values.descricao}" readonly>
-                            <input type="hidden" name="pontuacao_descricao[]" value="${values.descricao}">
-                        </td>
-                        <td data-label="Valor">
-                            <input type="number" step="0.1" value="${values.valor}" readonly>
-                            <input type="hidden" name="pontuacao_valor[]" value="${values.valor}">
-                        </td>
-                        <td class="dynamic-field-item-actions">
-                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
-                        </td>
-                    </tr>`;
             } else if (type === 'tarefa') {
                 values.nivel = document.getElementById('modal_tarefa_nivel').value;
-                values.ordem = document.getElementById('modal_tarefa_ordem').value;
                 values.item = document.getElementById('modal_tarefa_item').value;
                 values.nome = document.getElementById('modal_tarefa_nome').value;
                 values.habilidade_marco = document.getElementById('modal_tarefa_habilidade_marco').value; 
@@ -1177,66 +1191,214 @@
                 values.exemplo = document.getElementById('modal_tarefa_exemplo').value;
                 values.criterio = document.getElementById('modal_tarefa_criterio').value;
                 values.objetivo = document.getElementById('modal_tarefa_objetivo').value;
+            }
+
+            if (editingRowElement) {
+                // Modo Edição: Atualiza a linha existente
+                console.log('Modo Edição: Atualizando linha existente.'); // Debug
+                const currentIdInput = editingRowElement.querySelector(`input[name="${type}_id[]"]`);
+                const currentOrdemInput = editingRowElement.querySelector(`input[name="${type}_ordem[]"]`);
                 
-                newFieldHtml = `
-                    <tr class="dynamic-field-item">
-                        <td data-label="Nível">
-                            <input type="number" value="${values.nivel}" readonly>
-                            <input type="hidden" name="tarefa_nivel[]" value="${values.nivel}">
-                        </td>
-                        <td data-label="Ordem">
-                            <input type="number" value="${values.ordem}" readonly>
-                            <input type="hidden" name="tarefa_ordem[]" value="${values.ordem}">
-                        </td>
-                        <td data-label="Item">
-                            <input type="text" value="${values.item}" readonly>
-                            <input type="hidden" name="tarefa_item[]" value="${values.item}">
-                        </td>
-                        <td data-label="Nome">
-                            <input type="text" value="${values.nome}" readonly>
-                            <input type="hidden" name="tarefa_nome[]" value="${values.nome}">
-                        </td>
-                        <td data-label="Habilidade/Marco">
-                            <input type="text" value="${values.habilidade_marco}" readonly>
-                            <input type="hidden" name="tarefa_habilidade_marco[]" value="${values.habilidade_marco}">
-                        </td>
-                        <td data-label="Resultado/Observação">
-                            <textarea rows="1" readonly>${values.resultado_observacao}</textarea>
-                            <input type="hidden" name="tarefa_resultado_observacao[]" value="${values.resultado_observacao}">
-                        </td>
-                        <td data-label="Pergunta">
-                            <textarea rows="1" readonly>${values.pergunta}</textarea>
-                            <input type="hidden" name="tarefa_pergunta[]" value="${values.pergunta}">
-                        </td>
-                        <td data-label="Exemplo">
-                            <textarea rows="1" readonly>${values.exemplo}</textarea>
-                            <input type="hidden" name="tarefa_exemplo[]" value="${values.exemplo}">
-                        </td>
-                        <td data-label="Critério">
-                            <textarea rows="1" readonly>${values.criterio}</textarea>
-                            <input type="hidden" name="tarefa_criterio[]" value="${values.criterio}">
-                        </td>
-                        <td data-label="Objetivo">
-                            <textarea rows="1" readonly>${values.objetivo}</textarea>
-                            <input type="hidden" name="tarefa_objetivo[]" value="${values.objetivo}">
-                        </td>
-                        <td class="dynamic-field-item-actions">
-                            <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
-                        </td>
-                    </tr>`;
-            }
+                // Atualiza os campos ocultos
+                currentIdInput.value = editingItemId; // Mantém o ID original
+                currentOrdemInput.value = currentOrdemInput.value; // Mantém a ordem original
 
-            console.log('Valores capturados:', values); // Debug
-            console.log('HTML da nova linha:', newFieldHtml); // Debug
+                // Atualiza os campos visíveis na tabela
+                if (type === 'etapa') {
+                    editingRowElement.querySelector('td[data-label="Nome da Etapa"] input').value = values.nome;
+                    editingRowElement.querySelector('td[data-label="Descrição"] textarea').value = values.descricao;
+                    editingRowElement.querySelector(`input[name="etapa_nome[]"]`).value = values.nome;
+                    editingRowElement.querySelector(`input[name="etapa_descricao[]"]`).value = values.descricao;
+                } else if (type === 'nivel') {
+                    editingRowElement.querySelector('td[data-label="Nível"] input').value = values.nivel;
+                    editingRowElement.querySelector('td[data-label="Faixa Etária"] input').value = values.faixa_etaria;
+                    editingRowElement.querySelector(`input[name="nivel_valor[]"]`).value = values.nivel;
+                    editingRowElement.querySelector(`input[name="nivel_faixa_etaria[]"]`).value = values.faixa_etaria;
+                } else if (type === 'habilidade') {
+                    editingRowElement.querySelector('td[data-label="Habilidade"] input').value = values.nome;
+                    editingRowElement.querySelector(`input[name="habilidade_nome[]"]`).value = values.nome;
+                } else if (type === 'pontuacao') {
+                    editingRowElement.querySelector('td[data-label="Tipo"] input').value = values.tipo;
+                    editingRowElement.querySelector('td[data-label="Descrição"] input').value = values.descricao;
+                    editingRowElement.querySelector('td[data-label="Valor"] input').value = values.valor;
+                    editingRowElement.querySelector(`input[name="pontuacao_tipo[]"]`).value = values.tipo;
+                    editingRowElement.querySelector(`input[name="pontuacao_descricao[]"]`).value = values.descricao;
+                    editingRowElement.querySelector(`input[name="pontuacao_valor[]"]`).value = values.valor;
+                } else if (type === 'tarefa') {
+                    editingRowElement.querySelector('td[data-label="Nível"] input').value = values.nivel;
+                    editingRowElement.querySelector('td[data-label="Item"] input').value = values.item;
+                    editingRowElement.querySelector('td[data-label="Nome"] input').value = values.nome;
+                    editingRowElement.querySelector('td[data-label="Habilidade/Marco"] input').value = values.habilidade_marco;
+                    editingRowElement.querySelector('td[data-label="Resultado/Observação"] textarea').value = values.resultado_observacao;
+                    editingRowElement.querySelector('td[data-label="Pergunta"] textarea').value = values.pergunta;
+                    editingRowElement.querySelector('td[data-label="Exemplo"] textarea').value = values.exemplo;
+                    editingRowElement.querySelector('td[data-label="Critério"] textarea').value = values.criterio;
+                    editingRowElement.querySelector('td[data-label="Objetivo"] textarea').value = values.objetivo;
 
-            // Remove a linha "Nenhum item encontrado" se ela existir
-            const noResultsRow = container.querySelector('.no-results-row');
-            if (noResultsRow) {
-                console.log('Removendo linha "Nenhum item cadastrado."'); // Debug
-                noResultsRow.remove();
+                    editingRowElement.querySelector(`input[name="tarefa_nivel[]"]`).value = values.nivel;
+                    editingRowElement.querySelector(`input[name="tarefa_item[]"]`).value = values.item;
+                    editingRowElement.querySelector(`input[name="tarefa_nome[]"]`).value = values.nome;
+                    editingRowElement.querySelector(`input[name="tarefa_habilidade_marco[]"]`).value = values.habilidade_marco;
+                    editingRowElement.querySelector(`input[name="tarefa_resultado_observacao[]"]`).value = values.resultado_observacao;
+                    editingRowElement.querySelector(`input[name="tarefa_pergunta[]"]`).value = values.pergunta;
+                    editingRowElement.querySelector(`input[name="tarefa_exemplo[]"]`).value = values.exemplo;
+                    editingRowElement.querySelector(`input[name="tarefa_criterio[]"]`).value = values.criterio;
+                    editingRowElement.querySelector(`input[name="tarefa_objetivo[]"]`).value = values.objetivo;
+                }
+
+                editingRowElement = null; // Reseta a referência
+                editingItemId = null; // Reseta o ID
+            } else {
+                // Modo Adição: Adiciona uma nova linha
+                console.log('Modo Adição: Adicionando nova linha.'); // Debug
+                const newId = generateUUID();
+                const newOrdem = container.children.length + 1; // Ordem automática
+
+                let newFieldHtml = '';
+                if (type === 'etapa') {
+                    newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="etapa_id[]" value="${newId}">
+                                <input type="hidden" name="etapa_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Nome da Etapa">
+                                <input type="text" value="${values.nome}" readonly>
+                                <input type="hidden" name="etapa_nome[]" value="${values.nome}">
+                            </td>
+                            <td data-label="Descrição">
+                                <textarea rows="1" readonly>${values.descricao}</textarea>
+                                <input type="hidden" name="etapa_descricao[]" value="${values.descricao}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" onclick="editDynamicField(this, 'etapa')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
+                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                            </td>
+                        </tr>`;
+                } else if (type === 'nivel') {
+                    newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="nivel_id[]" value="${newId}">
+                                <input type="hidden" name="nivel_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Nível">
+                                <input type="number" value="${values.nivel}" readonly>
+                                <input type="hidden" name="nivel_valor[]" value="${values.nivel}">
+                            </td>
+                            <td data-label="Faixa Etária">
+                                <input type="text" value="${values.faixa_etaria}" readonly>
+                                <input type="hidden" name="nivel_faixa_etaria[]" value="${values.faixa_etaria}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" onclick="editDynamicField(this, 'nivel')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
+                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                            </td>
+                        </tr>`;
+                } else if (type === 'habilidade') {
+                    newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="habilidade_id[]" value="${newId}">
+                                <input type="hidden" name="habilidade_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Habilidade">
+                                <input type="text" value="${values.nome}" readonly>
+                                <input type="hidden" name="habilidade_nome[]" value="${values.nome}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" onclick="editDynamicField(this, 'habilidade')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
+                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                            </td>
+                        </tr>`;
+                } else if (type === 'pontuacao') {
+                    newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="pontuacao_id[]" value="${newId}">
+                                <input type="hidden" name="pontuacao_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Tipo">
+                                <input type="text" value="${values.tipo}" readonly>
+                                <input type="hidden" name="pontuacao_tipo[]" value="${values.tipo}">
+                            </td>
+                            <td data-label="Descrição">
+                                <input type="text" value="${values.descricao}" readonly>
+                                <input type="hidden" name="pontuacao_descricao[]" value="${values.descricao}">
+                            </td>
+                            <td data-label="Valor">
+                                <input type="number" step="0.1" value="${values.valor}" readonly>
+                                <input type="hidden" name="pontuacao_valor[]" value="${values.valor}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" onclick="editDynamicField(this, 'pontuacao')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
+                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                            </td>
+                        </tr>`;
+                } else if (type === 'tarefa') {
+                    newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="tarefa_id[]" value="${newId}">
+                                <input type="hidden" name="tarefa_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Nível">
+                                <input type="number" value="${values.nivel}" readonly>
+                                <input type="hidden" name="tarefa_nivel[]" value="${values.nivel}">
+                            </td>
+                            <td data-label="Item">
+                                <input type="text" value="${values.item}" readonly>
+                                <input type="hidden" name="tarefa_item[]" value="${values.item}">
+                            </td>
+                            <td data-label="Nome">
+                                <input type="text" value="${values.nome}" readonly>
+                                <input type="hidden" name="tarefa_nome[]" value="${values.nome}">
+                            </td>
+                            <td data-label="Habilidade/Marco">
+                                <input type="text" value="${values.habilidade_marco}" readonly>
+                                <input type="hidden" name="tarefa_habilidade_marco[]" value="${values.habilidade_marco}">
+                            </td>
+                            <td data-label="Resultado/Observação">
+                                <textarea rows="1" readonly>${values.resultado_observacao}</textarea>
+                                <input type="hidden" name="tarefa_resultado_observacao[]" value="${values.resultado_observacao}">
+                            </td>
+                            <td data-label="Pergunta">
+                                <textarea rows="1" readonly>${values.pergunta}</textarea>
+                                <input type="hidden" name="tarefa_pergunta[]" value="${values.pergunta}">
+                            </td>
+                            <td data-label="Exemplo">
+                                <textarea rows="1" readonly>${values.exemplo}</textarea>
+                                <input type="hidden" name="tarefa_exemplo[]" value="${values.exemplo}">
+                            </td>
+                            <td data-label="Critério">
+                                <textarea rows="1" readonly>${values.criterio}</textarea>
+                                <input type="hidden" name="tarefa_criterio[]" value="${values.criterio}">
+                            </td>
+                            <td data-label="Objetivo">
+                                <textarea rows="1" readonly>${values.objetivo}</textarea>
+                                <input type="hidden" name="tarefa_objetivo[]" value="${values.objetivo}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" onclick="editDynamicField(this, 'tarefa')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
+                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                            </td>
+                        </tr>`;
+                }
+
+                // Remove a linha "Nenhum item encontrado" se ela existir
+                const noResultsRow = container.querySelector('.no-results-row');
+                if (noResultsRow) {
+                    console.log('Removendo linha "Nenhum item cadastrado."'); // Debug
+                    noResultsRow.remove();
+                }
+                container.insertAdjacentHTML('beforeend', newFieldHtml);
+                console.log('Nova linha adicionada ao container.'); // Debug
             }
-            container.insertAdjacentHTML('beforeend', newFieldHtml);
-            console.log('Nova linha adicionada ao container.'); // Debug
         }
         
         window.removeDynamicField = function(button) {
@@ -1337,6 +1499,50 @@
                 }
             }
         });
+
+        // --- Lógica de Filtro de Tabela ---
+        window.filterTable = function(containerId, searchText) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const rows = container.querySelectorAll('.dynamic-field-item');
+            const lowerCaseSearchText = searchText.toLowerCase();
+            let hasVisibleRows = false;
+
+            rows.forEach(row => {
+                let rowMatches = false;
+                // Busca em todos os campos de texto visíveis e hidden da linha
+                const inputs = row.querySelectorAll('input[type="text"], input[type="number"], textarea, span.display-id, input[type="hidden"]');
+                inputs.forEach(input => {
+                    let value = '';
+                    if (input.tagName === 'SPAN') {
+                        value = input.textContent;
+                    } else {
+                        value = input.value;
+                    }
+                    if (value.toLowerCase().includes(lowerCaseSearchText)) {
+                        rowMatches = true;
+                    }
+                });
+
+                if (rowMatches) {
+                    row.style.display = '';
+                    hasVisibleRows = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Gerencia a mensagem "Nenhum item cadastrado."
+            const noResultsRow = container.querySelector('.no-results-row');
+            if (noResultsRow) {
+                if (hasVisibleRows) {
+                    noResultsRow.style.display = 'none';
+                } else {
+                    noResultsRow.style.display = '';
+                }
+            }
+        };
         
         // Inicializa a página
         showStep(0);
