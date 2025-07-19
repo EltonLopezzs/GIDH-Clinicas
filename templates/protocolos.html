@@ -12,21 +12,27 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         /* Variáveis de tema */
-        :root {
-            --bg: #f1f5f9;       /* Gray-100 */
-            --card: #ffffff;     /* White */
-            --text: #0f172a;     /* Gray-900 */
-            --muted: #64748b;    /* Gray-500 */
-            --accent: #9b53b8;   /* Purple-500 */
-            --primary-dark: #115e59;
-            --primary: #5587c2;   /* Blue-500 */
-            --primary-light: #c8dcf3; /* Blue-100 */
-            --secondary: #f59e0b; /* Yellow-500 */
-            --danger: #dc2626;   /* Red-600 */
-            --success: #16a34a;  /* Green-600 */
-            --warning: #f59e0b;  /* Yellow-500 */
-            --info: #0ea5e9;     /* Sky-500 */
-            --border-color: #e2e8f0; /* Gray-200 */
+  :root {
+            --bg: #f1f5f9;                  /* Gray-100 */
+            --card: #ffffff;                /* White */
+            --text: #0f172a;                /* Gray-900 */
+            --muted: #64748b;               /* Gray-500 */
+            --accent: #9b53b8;              /* Purple-500 */
+            --primary-dark: #115e59;        
+            --primary: #5587c2;             /* Blue-500 */
+            --primary-light: #c8dcf3;       /* Blue-100 */
+            --secondary: #f59e0b;           /* Yellow-500 */
+            --danger: #dc2626;              /* Red-600 */
+            --success: #16a34a;             /* Green-600 */
+            --warning: #f59e0b;             /* Yellow-500 */
+            --info: #0ea5e9;                /* Sky-500 */
+            --border-color: #e2e8f0;        /* Gray-200 */
+
+            --dark-bg: #0f172a;             /* Gray-900 */
+            --dark-card: #1e293b;           /* Gray-800 */
+            --dark-text: #f1f5f9;           /* Gray-100 */
+            --dark-muted: #94a3b8;          /* Gray-400 */
+            --dark-border-color: #334155;   /* Gray-600 */
 
             color-scheme: light;
         }
@@ -66,8 +72,8 @@
         html, body { height: 100%; }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
+            background-color: var(--bg); /* Usa a variável CSS para o fundo */
+            color: var(--text); /* Usa a variável CSS para a cor do texto */
             min-height: 100vh;
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
@@ -281,7 +287,7 @@
         }
 
         [data-theme="dark"] .dropdown-section-label {
-            color: var(--dark-muted);
+            color: var(--dark-muted); /* Assuming dark-muted is defined, otherwise fallback to muted */
             opacity: 0.6;
         }
 
@@ -950,7 +956,7 @@
             color: white;
         }
         
-        .delete-modal .modal-footer .btn-danger:hover:not(:disabled) {
+  <delete-tag>      .delete-modal .modal-footer .btn-danger:hover:not(:disabled) {
             background: #b91c1c;
         }
 
@@ -1025,7 +1031,7 @@
         }
     </style>
 </head>
-<body class="font-inter bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
+<body class="font-inter transition-colors duration-300"> {# Removed explicit Tailwind dark mode classes #}
     <div id="toast-container"></div>
     <!-- Nova Modal para Alertas Gerais -->
     <div id="general-alert-modal-overlay" class="alert-modal-overlay">
@@ -1043,14 +1049,14 @@
         {% include 'Nav.html' %}
 
         <div id="main-content" class="flex-1 ml-64 transition-all duration-300 flex flex-col w-full max-w-full"> {# Added Tailwind classes and ID #}
-            <header class="bg-white dark:bg-gray-800 p-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 h-16 sticky top-0 z-50"> {# Added Tailwind classes #}
+            <header class="topbar p-6 flex items-center justify-between border-b sticky top-0 z-50"> {# Replaced Tailwind bg/border classes with 'topbar' class #}
                 <div class="flex items-center gap-4"> {# Added Tailwind classes #}
                     <button class="text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 dark:hover:text-white w-10 h-10 rounded-full flex items-center justify-center text-xl cursor-pointer transition-colors duration-200" id="sidebar-toggle-btn"><i class="fa-solid fa-bars-staggered"></i></button> {# Added Tailwind classes #}
-                    <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Gerenciar Protocolos</h1> {# Added Tailwind classes #}
+                    <h1 class="page-title">Gerenciar Protocolos</h1> {# Replaced Tailwind text classes with 'page-title' class #}
                 </div>
                 <div class="flex items-center gap-3"> {# Added Tailwind classes #}
                     <form id="searchForm" class="flex items-center" action="{{ url_for('protocols.list_protocols') }}" method="GET"> {# Added Tailwind classes #}
-                        <input type="text" id="searchInput" name="search_term" placeholder="Buscar protocolo..." class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg text-base bg-gray-50 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" value="{{ search_term or '' }}"> {# Added Tailwind classes #}
+                        <input type="text" id="searchInput" name="search_term" placeholder="Buscar protocolo..." class="px-4 py-2 border rounded-l-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" style="background-color: var(--bg); border-color: var(--border-color); color: var(--text);"> {# Replaced Tailwind dark mode classes with CSS variables #}
                         <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r-lg -ml-px cursor-pointer transition-colors duration-200"><i class="fas fa-search"></i></button> {# Added Tailwind classes #}
                     </form>
                     <a href="{{ url_for('protocols.add_protocol') }}" id="add-protocol-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors duration-200"> {# Added Tailwind classes #}
@@ -1063,7 +1069,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full justify-items-center"> {# Added Tailwind classes #}
                     {% if protocols %}
                         {% for protocol in protocols %}
-                            <div class="protocol-card modern-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full w-full transition-all duration-300 hover:scale-105 hover:shadow-xl" id="protocol-card-{{ protocol.id }}" style="--animation-delay: {{ loop.index0 * 0.1 }}s;"> {# Added Tailwind classes #}
+                            <div class="protocol-card modern-card rounded-2xl shadow-lg border overflow-hidden flex flex-col h-full w-full transition-all duration-300 hover:scale-105 hover:shadow-xl" id="protocol-card-{{ protocol.id }}" style="--animation-delay: {{ loop.index0 * 0.1 }}s; background: var(--card); border-color: var(--border-color);"> {# Replaced Tailwind bg/border classes with CSS variables #}
                                 <div class="protocol-card-modern">
                                     <div class="protocol-header flex items-center p-6 bg-gradient-to-br from-blue-500 to-purple-600 text-white relative"> {# Added Tailwind classes #}
                                         <div class="protocol-icon-wrapper relative w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-3xl mr-4 flex-shrink-0">
@@ -1077,11 +1083,11 @@
                                             <button class="dropdown-toggle bg-white bg-opacity-20 border-none w-9 h-9 rounded-full text-white cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-opacity-30 hover:scale-110" onclick="toggleProtocolActions('{{ protocol.id }}')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
-                                            <div class="dropdown-menu absolute top-full right-0 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl min-w-[180px] opacity-0 invisible transform -translate-y-2 transition-all duration-200 z-50 mt-2" id="actions-{{ protocol.id }}">
-                                                <div class="dropdown-section-label flex items-center gap-1 px-4 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider opacity-70 mt-1">
+                                            <div class="dropdown-menu absolute top-full right-0 rounded-lg shadow-xl min-w-[180px] opacity-0 invisible transform -translate-y-2 transition-all duration-200 z-50 mt-2" style="background: var(--card); border-color: var(--border-color);"> {# Replaced Tailwind bg/border classes with CSS variables #}
+                                                <div class="dropdown-section-label flex items-center gap-1 px-4 py-1 text-xs font-medium uppercase tracking-wider opacity-70 mt-1"> {# Removed text-gray-500 #}
                                                     <i class="fas fa-cog"></i> Ações
                                                 </div>
-                                                <a href="{{ url_for('protocols.edit_protocol', protocol_id=protocol.id) }}" class="dropdown-item flex items-center gap-3 px-4 py-3 text-gray-800 dark:text-gray-200 no-underline text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150">
+                                                <a href="{{ url_for('protocols.edit_protocol', protocol_id=protocol.id) }}" class="dropdown-item flex items-center gap-3 px-4 py-3 no-underline text-sm hover:bg-gray-100 transition-colors duration-150" style="color: var(--text); background: var(--card);"> {# Replaced Tailwind text/hover bg classes with CSS variables #}
                                                     <i class="fas fa-edit w-4 text-center"></i>
                                                     Editar Dados
                                                 </a>
@@ -1089,11 +1095,11 @@
                                                     <i class="fas fa-trash w-4 text-center"></i>
                                                     Excluir Protocolo
                                                 </button>
-                                                <div class="dropdown-divider h-px bg-gray-200 dark:bg-gray-600 my-2"></div>
-                                                <div class="dropdown-section-label flex items-center gap-1 px-4 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider opacity-70">
+                                                <div class="dropdown-divider h-px my-2" style="background: var(--border-color);"></div> {# Replaced Tailwind bg class with CSS variable #}
+                                                <div class="dropdown-section-label flex items-center gap-1 px-4 py-1 text-xs font-medium uppercase tracking-wider opacity-70"> {# Removed text-gray-500 #}
                                                     <i class="fas fa-info-circle"></i> Detalhes
                                                 </div>
-                                                <button type="button" class="dropdown-item flex items-center gap-3 px-4 py-3 text-gray-800 dark:text-gray-200 no-underline text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150" onclick="viewProtocolDetails('{{ protocol.id }}')">
+                                                <button type="button" class="dropdown-item flex items-center gap-3 px-4 py-3 no-underline text-sm hover:bg-gray-100 transition-colors duration-150" style="color: var(--text); background: var(--card);"> {# Replaced Tailwind text/hover bg classes with CSS variables #}
                                                     <i class="fas fa-eye w-4 text-center"></i>
                                                     Ver Detalhes
                                                 </button>
@@ -1104,21 +1110,21 @@
                                     <div class="protocol-details p-6 flex-1">
                                         <div class="detail-grid grid gap-4 grid-cols-1">
                                             <div class="detail-item flex items-center gap-4 p-3 rounded-lg transition-all duration-200">
-                                                <div class="detail-icon w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 flex-shrink-0">
+                                                <div class="detail-icon"> {# Removed bg-gray-100 dark:bg-gray-700 #}
                                                     <i class="fas fa-check-circle"></i>
                                                 </div>
                                                 <div class="detail-content flex-1 min-w-0">
-                                                    <span class="detail-label block text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Status</span>
-                                                    <span class="detail-value block text-base font-medium text-gray-900 dark:text-gray-100 truncate">{{ 'Ativo' if protocol.ativo else 'Inativo' }}</span>
+                                                    <span class="detail-label">Status</span> {# Removed text-gray-500 #}
+                                                    <span class="detail-value">{{ 'Ativo' if protocol.ativo else 'Inativo' }}</span> {# Removed text-gray-900 dark:text-gray-100 #}
                                                 </div>
                                             </div>
                                             <div class="detail-item flex items-center gap-4 p-3 rounded-lg transition-all duration-200">
-                                                <div class="detail-icon w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 flex-shrink-0">
+                                                <div class="detail-icon"> {# Removed bg-gray-100 dark:bg-gray-700 #}
                                                     <i class="fas fa-list-ol"></i>
                                                 </div>
                                                 <div class="detail-content flex-1 min-w-0">
-                                                    <span class="detail-label block text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Etapas</span>
-                                                    <span class="detail-value block text-base font-medium text-gray-900 dark:text-gray-100 truncate">
+                                                    <span class="detail-label">Etapas</span> {# Removed text-gray-500 #}
+                                                    <span class="detail-value"> {# Removed text-gray-900 dark:text-gray-100 #}
                                                         {% if protocol.etapas %}
                                                             {{ protocol.etapas | length }} etapa(s)
                                                         {% else %}
@@ -1130,9 +1136,9 @@
                                         </div>
                                     </div>
                                     
-                                    <div class="protocol-footer flex items-center p-4 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 mt-auto w-full">
+                                    <div class="protocol-footer flex items-center p-4 border-t mt-auto w-full" style="background: var(--bg); border-color: var(--border-color);"> {# Replaced Tailwind bg/border classes with CSS variables #}
                                         <div class="protocol-stats flex items-center gap-4 flex-1">
-                                            <div class="stat-item flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                                            <div class="stat-item flex items-center gap-1 text-sm" style="color: var(--muted);"> {# Removed text-gray-600 dark:text-gray-400 #}
                                                 <i class="fas fa-calendar-alt text-xs"></i>
                                                 <span id="created-date-{{ protocol.id }}"></span>
                                             </div>
@@ -1142,7 +1148,7 @@
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="empty-state col-span-full flex flex-col items-center justify-center p-16 text-center bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+                        <div class="empty-state col-span-full flex flex-col items-center justify-center p-16 text-center rounded-2xl border-2 border-dashed" style="background: var(--card); border-color: var(--border-color);"> {# Replaced Tailwind bg/border classes with CSS variables #}
                             <div class="empty-state-animation relative mb-8">
                                 <div class="empty-state-icon w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-3xl text-white animate-float-icon shadow-lg">
                                     <i class="fas fa-clipboard-list"></i>
@@ -1153,14 +1159,14 @@
                                     <div class="particle absolute w-1 h-1 bg-blue-500 rounded-full animate-float-particle" style="bottom: 30%; left: 60%; animation-delay: 3s;"></div>
                                 </div>
                             </div>
-                            <h3 class="empty-state-title text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                            <h3 class="empty-state-title text-2xl font-bold mb-2" style="color: var(--text);"> {# Replaced Tailwind text classes with CSS variables #}
                                 {% if search_term %}
                                     Nenhum protocolo encontrado
                                 {% else %}
                                     Nenhum protocolo cadastrado
                                 {% endif %}
                             </h3>
-                            <p class="empty-state-description text-base text-gray-600 dark:text-gray-400 mb-8 leading-relaxed max-w-lg">
+                            <p class="empty-state-description text-base mb-8 leading-relaxed max-w-lg" style="color: var(--muted);"> {# Replaced Tailwind text classes with CSS variables #}
                                 {% if search_term %}
                                     Tente ajustar os filtros de busca ou verifique se o nome ou descrição estão corretos.
                                 {% else %}
@@ -1397,14 +1403,20 @@
             }
 
             // Chamar formatDate para cada protocol's creation date after the DOM is loaded
-            if (typeof protocols !== 'undefined') {
-                protocols.forEach(protocol => {
-                    const dateElement = document.getElementById(`created-date-${protocol.id}`);
-                    if (dateElement) {
-                        dateElement.textContent = `Criado em: ${formatDate(protocol.data_inclusao)}`;
-                    }
-                });
+            // Adicionado um bloco try-catch para lidar com 'protocols' não definido caso não haja protocolos
+            try {
+                if (typeof protocols !== 'undefined') {
+                    protocols.forEach(protocol => {
+                        const dateElement = document.getElementById(`created-date-${protocol.id}`);
+                        if (dateElement) {
+                            dateElement.textContent = `Criado em: ${formatDate(protocol.data_inclusao)}`;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.warn("Variable 'protocols' not defined or accessible in this context. This is expected if no protocols are passed from backend.", error);
             }
+
 
             // Animar entrada dos cards
             function animateCardsEntrance() {
