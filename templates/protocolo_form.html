@@ -317,7 +317,9 @@
         .modal {
             background: var(--card); border-radius: 16px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            width: 90vw; transform: scale(0.95);
+            width: 90vw; /* Default width */
+            max-width: 1200px !important; /* Increased max-width for modals */
+            transform: scale(0.95);
             transition: transform 0.3s ease;
             display: flex; flex-direction: column;
         }
@@ -335,7 +337,7 @@
         .alert-modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); }
         .alert-modal-message { font-size: 1rem; color: var(--muted); line-height: 1.6; }
         /* Add Item Modal */
-        .add-item-modal { max-width: 600px; }
+        .add-item-modal { max-width: 800px; } /* Ensure this overrides the general .modal max-width if needed */
         .add-item-modal-header {
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--border-color); padding: 1.5rem;
@@ -1034,6 +1036,7 @@
         const addItemModalSaveBtn = document.getElementById('add-item-modal-save-btn');
         if (addItemModalSaveBtn) {
             addItemModalSaveBtn.addEventListener('click', function() {
+                console.log('Botão Adicionar clicado no modal.'); // Debug
                 const requiredFields = addItemModalBody.querySelectorAll('[required]');
                 let allValid = true;
                 requiredFields.forEach(field => {
@@ -1046,9 +1049,11 @@
                 });
 
                 if (allValid) {
+                    console.log('Todos os campos obrigatórios do modal preenchidos. Salvando dados...'); // Debug
                     saveModalData(currentAddItemType);
                     addItemModalOverlay.classList.remove('show');
                 } else {
+                    console.log('Campos obrigatórios do modal faltando.'); // Debug
                     showToast('Preencha todos os campos obrigatórios.', 'danger');
                 }
             });
@@ -1056,13 +1061,20 @@
         
         function saveModalData(type) {
             let container = document.getElementById(`${type}s-container`); // Changed from const to let
+            console.log(`saveModalData acionada para o tipo: ${type}`); // Debug
+            console.log('Container alvo:', container); // Debug
+
             if (!container) {
                 // Compatibility for 'pontuacao' -> 'pontuacoes'
                 if (type === 'pontuacao') {
                     const altContainer = document.getElementById('pontuacoes-container');
                     if(altContainer) container = altContainer;
-                    else return;
+                    else {
+                        console.error('Container não encontrado para o tipo pontuacao.'); // Debug
+                        return;
+                    }
                 } else {
+                    console.error(`Container não encontrado para o tipo: ${type}.`); // Debug
                     return;
                 }
             }
@@ -1214,12 +1226,17 @@
                     </tr>`;
             }
 
+            console.log('Valores capturados:', values); // Debug
+            console.log('HTML da nova linha:', newFieldHtml); // Debug
+
             // Remove a linha "Nenhum item encontrado" se ela existir
             const noResultsRow = container.querySelector('.no-results-row');
             if (noResultsRow) {
+                console.log('Removendo linha "Nenhum item cadastrado."'); // Debug
                 noResultsRow.remove();
             }
             container.insertAdjacentHTML('beforeend', newFieldHtml);
+            console.log('Nova linha adicionada ao container.'); // Debug
         }
         
         window.removeDynamicField = function(button) {
