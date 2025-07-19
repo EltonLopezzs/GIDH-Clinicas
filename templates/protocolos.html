@@ -45,7 +45,7 @@
             --border-color: #334155; /* Gray-600 */
             color-scheme: dark;
         }
-        
+           .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
         /* Estilos de barra de rolagem */
         ::-webkit-scrollbar {
             background-color: var(--bg);
@@ -956,7 +956,7 @@
             color: white;
         }
         
-  <delete-tag>      .delete-modal .modal-footer .btn-danger:hover:not(:disabled) {
+        .delete-modal .modal-footer .btn-danger:hover:not(:disabled) {
             background: #b91c1c;
         }
 
@@ -1080,10 +1080,10 @@
                                             <div class="protocol-description-short text-sm opacity-90 truncate">{{ protocol.descricao | truncate(50, True) }}</div>
                                         </div>
                                         <div class="protocol-actions-dropdown relative">
-                                            <button class="dropdown-toggle bg-white bg-opacity-20 border-none w-9 h-9 rounded-full text-white cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-opacity-30 hover:scale-110" onclick="toggleProtocolActions('{{ protocol.id }}')">
+                                            <button class="dropdown-toggle bg-white bg-opacity-20 border-none w-9 h-9 rounded-full text-white cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-opacity-30 hover:scale-110" onclick="toggleProtocolActions(event, '{{ protocol.id }}')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
-                                            <div class="dropdown-menu absolute top-full right-0 rounded-lg shadow-xl min-w-[180px] opacity-0 invisible transform -translate-y-2 transition-all duration-200 z-50 mt-2" style="background: var(--card); border-color: var(--border-color);"> {# Replaced Tailwind bg/border classes with CSS variables #}
+                                            <div id="actions-{{ protocol.id }}" class="dropdown-menu absolute top-full right-0 rounded-lg shadow-xl min-w-[180px] opacity-0 invisible transform -translate-y-2 transition-all duration-200 z-50 mt-2" style="background: var(--card); border-color: var(--border-color);"> {# Added ID for dropdown menu #}
                                                 <div class="dropdown-section-label flex items-center gap-1 px-4 py-1 text-xs font-medium uppercase tracking-wider opacity-70 mt-1"> {# Removed text-gray-500 #}
                                                     <i class="fas fa-cog"></i> Ações
                                                 </div>
@@ -1196,29 +1196,49 @@
     <div id="modal-placeholder"></div>
 
     <script>
-        // Função para exibir toasts (copiada de protocolo_form.html para consistência)
-        const toastContainer = document.getElementById('toast-container');
-        function showToast(message, category = 'info') {
-            if (!toastContainer) return;
-            const toast = document.createElement('div');
-            toast.className = `toast ${category}`;
+        // Função para exibir o modal de alerta geral
+        function showAlertModal(title, message, type = 'info') {
+            const overlay = document.getElementById('general-alert-modal-overlay');
+            const iconElement = document.getElementById('alert-modal-icon');
+            const titleElement = document.getElementById('alert-modal-title');
+            const messageElement = document.getElementById('alert-modal-message');
+            const closeButton = document.getElementById('alert-modal-close-btn');
+
+            if (!overlay || !iconElement || !titleElement || !messageElement || !closeButton) {
+                console.error("Elementos do modal de alerta não encontrados.");
+                return;
+            }
+
+            // Define o ícone e a cor com base no tipo
             let iconClass = 'fa-solid fa-circle-info';
+            iconElement.className = `alert-modal-icon ${type}`; // Reset classes and add type class
+            if (type === 'success') { iconClass = 'fa-solid fa-check-circle'; }
+            if (type === 'danger') { iconClass = 'fa-solid fa-times-circle'; }
+            if (type === 'warning') { iconClass = 'fa-solid fa-exclamation-triangle'; }
+            iconElement.innerHTML = `<i class="${iconClass}"></i>`;
+
+            titleElement.textContent = title;
+            messageElement.textContent = message;
+
+            // Mostra o modal
+            overlay.classList.add('show');
+
+            // Adiciona listener para fechar o modal
+            closeButton.onclick = () => overlay.classList.remove('show');
+            overlay.onclick = (e) => { // Fecha ao clicar fora do modal
+                if (e.target === overlay) {
+                    overlay.classList.remove('show');
+                }
+            };
+        }
+
+        // Função showToast agora chama showAlertModal
+        function showToast(message, category = 'info') {
             let title = 'Informação';
-            if (category === 'success') { iconClass = 'fa-solid fa-check-circle'; title = 'Sucesso'; }
-            if (category === 'danger') { iconClass = 'fa-solid fa-times-circle'; title = 'Erro'; }
-            if (category === 'warning') { iconClass = 'fa-solid fa-exclamation-triangle'; title = 'Atenção'; }
-            toast.innerHTML = `
-                <div class="toast-icon"><i class="${iconClass}"></i></div>
-                <div class="toast-content">
-                    <strong class="toast-title">${title}</strong>
-                    <span class="toast-message">${message}</span>
-                </div>
-                <button class="toast-close">&times;</button>`;
-            toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
-            toastContainer.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 5000);
+            if (category === 'success') { title = 'Sucesso'; }
+            if (category === 'danger') { title = 'Erro'; }
+            if (category === 'warning') { title = 'Atenção'; }
+            showAlertModal(title, message, category);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1254,11 +1274,12 @@
             }
 
             // --- Lógica para Dropdown de Ações ---
-            window.toggleActions = (event, id) => {
-                event.stopPropagation();
+            // Renamed to avoid conflict and ensure event is passed
+            window.toggleProtocolActions = (event, id) => {
+                event.stopPropagation(); // Prevent click from propagating to document and closing immediately
                 const targetMenu = document.getElementById(`actions-${id}`);
                 
-                // Fecha outros menus que possam estar abertos
+                // Close other menus that might be open
                 document.querySelectorAll('.dropdown-menu').forEach(menu => {
                     if (menu !== targetMenu) {
                         menu.classList.remove('show');
@@ -1270,6 +1291,7 @@
 
             // Fechar dropdowns ao clicar fora
             document.addEventListener('click', function(event) {
+                // Check if the click was outside any dropdown toggle or menu
                 if (!event.target.closest('.protocol-actions-dropdown')) {
                     document.querySelectorAll('.dropdown-menu').forEach(menu => {
                         menu.classList.remove('show');
@@ -1286,13 +1308,22 @@
                 if (!modalPlaceholder) return;
 
                 const modalHTML = `
-                    <div class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal()">
-                        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" onclick="event.stopPropagation()">
-                            <h3 class="text-lg font-bold text-gray-900">Confirmar Exclusão</h3>
-                            <p class="mt-2 text-sm text-gray-600">
-                                Tem certeza que deseja excluir o protocolo <strong>${name}</strong>? Esta ação não pode ser desfeita.
-                            </p>
-                            <div class="mt-4 flex justify-end gap-3">
+                    <div class="modal-overlay show" onclick="closeModal()">
+                        <div class="delete-modal" onclick="event.stopPropagation()">
+                            <div class="modal-header">
+                                <div class="modal-icon-danger">
+                                    <i class="fas fa-trash-alt"></i>
+                                </div>
+                                <h3>Confirmar Exclusão</h3>
+                            </div>
+                            <div class="modal-body">
+                                <p>Tem certeza que deseja excluir o protocolo <strong>${name}</strong>? Esta ação não pode ser desfeita.</p>
+                                <div class="warning-text">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Esta ação removerá permanentemente o protocolo e todos os dados associados.</span>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                                 <button type="button" class="btn btn-danger" onclick="confirmDelete('${id}')">Sim, Excluir</button>
                             </div>
@@ -1320,7 +1351,7 @@
                     console.log(`[confirmDelete] Conteúdo da resposta JSON:`, result);
 
                     if (response.ok && result.success) {
-                        showToast('Protocolo excluído com sucesso!', 'success');
+                        showToast('Protocolo excluído com sucesso!', 'success'); // This will now trigger showAlertModal
                         console.log(`[confirmDelete] Protocolo ${id} excluído com sucesso.`);
                         // Remove o card do protocolo da interface
                         const protocolCard = document.getElementById(`protocol-card-${id}`);
@@ -1329,25 +1360,19 @@
                             // Verifica se não há mais protocolos e exibe a mensagem de estado vazio
                             const cardListContainer = document.querySelector('.grid'); /* Alterado para .grid */
                             if (cardListContainer && cardListContainer.children.length === 0) {
-                                cardListContainer.innerHTML = `
-                                    <div class="col-span-full empty-state">
-                                        <div class="empty-state-icon"><i class="fas fa-folder-open"></i></div>
-                                        <h3 class="empty-state-title">Nenhum protocolo encontrado</h3>
-                                        <p class="empty-state-description">
-                                            Comece adicionando um novo protocolo para organizar seus procedimentos.
-                                        </p>
-                                        <a href="{{ url_for('protocols.add_protocol') }}" class="btn btn-primary">Adicionar Protocolo</a>
-                                    </div>
-                                `;
+                                // Reload the page to show the empty state, or dynamically inject it
+                                // For simplicity and to ensure all Flask context (like search_term) is re-evaluated,
+                                // a page reload is often the easiest for full empty state display.
+                                window.location.reload(); 
                             }
                         }
                     } else {
                         console.error(`[confirmDelete] Erro ao excluir protocolo ${id}:`, result.message);
-                        showToast(`Erro ao excluir protocolo: ${result.message || 'Ocorreu um erro desconhecido.'}`, 'danger');
+                        showToast(`Erro ao excluir protocolo: ${result.message || 'Ocorreu um erro desconhecido.'}`, 'danger'); // This will now trigger showAlertModal
                     }
                 } catch (error) {
                     console.error('[confirmDelete] Erro na requisição de exclusão (network ou parsing):', error);
-                    showToast('Erro de conexão ao tentar excluir o protocolo.', 'danger');
+                    showToast('Erro de conexão ao tentar excluir o protocolo.', 'danger'); // This will now trigger showAlertModal
                 }
             };
 
@@ -1357,25 +1382,6 @@
                     modalPlaceholder.innerHTML = '';
                 }
             };
-
-            // Funções de interação dos cards (adaptado do seu código fornecido)
-            window.toggleProtocolActions = function(protocolId) {
-                const dropdown = document.getElementById(`actions-${protocolId}`);
-                const allDropdowns = document.querySelectorAll('.dropdown-menu');
-                
-                // Fechar outros dropdowns
-                allDropdowns.forEach(menu => {
-                    if (menu !== dropdown) {
-                        menu.classList.remove('show');
-                    }
-                });
-                
-                dropdown.classList.toggle('show');
-            }
-
-            window.viewProtocolDetails = function(protocolId) {
-                showToast(`Funcionalidade para ver detalhes do protocolo ${protocolId} será implementada aqui.`, 'info');
-            }
 
             // Função para limpar a busca
             window.clearSearch = function() {
@@ -1405,7 +1411,8 @@
             // Chamar formatDate para cada protocol's creation date after the DOM is loaded
             // Adicionado um bloco try-catch para lidar com 'protocols' não definido caso não haja protocolos
             try {
-                if (typeof protocols !== 'undefined') {
+                // Check if protocols variable exists and is iterable
+                if (typeof protocols !== 'undefined' && Array.isArray(protocols)) {
                     protocols.forEach(protocol => {
                         const dateElement = document.getElementById(`created-date-${protocol.id}`);
                         if (dateElement) {
