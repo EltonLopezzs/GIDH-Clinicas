@@ -2,6 +2,7 @@ import uuid
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from google.cloud.firestore_v1.base_query import FieldFilter
 from utils import get_db, login_required # Importar get_db e login_required
+from datetime import datetime # Importar datetime para a data de inclusão
 
 protocols_bp = Blueprint('protocols', __name__, template_folder='../templates')
 
@@ -63,6 +64,14 @@ def list_protocols():
                 tarefa_data = sub_doc.to_dict()
                 tarefa_data['id'] = sub_doc.id # Adiciona o ID do subdocumento
                 protocol_data['tarefas_testes'].append(tarefa_data)
+
+            # Adiciona a data de inclusão, se existir
+            # Firestore Timestamp objects need to be converted to Python datetime objects for display
+            if 'data_inclusao' in protocol_data and protocol_data['data_inclusao']:
+                # Convert Firestore Timestamp to Python datetime object
+                protocol_data['data_inclusao'] = protocol_data['data_inclusao'].strftime('%d/%m/%Y %H:%M:%S')
+            else:
+                protocol_data['data_inclusao'] = 'N/A'
 
 
             # Filtragem em memória se houver termo de busca
@@ -145,6 +154,13 @@ def edit_protocol(protocol_id):
             tarefa_data = sub_doc.to_dict()
             tarefa_data['id'] = sub_doc.id # Adiciona o ID do subdocumento
             protocol['tarefas_testes'].append(tarefa_data)
+
+        # Adiciona a data de inclusão, se existir
+        if 'data_inclusao' in protocol and protocol['data_inclusao']:
+            # Convert Firestore Timestamp to Python datetime object
+            protocol['data_inclusao'] = protocol['data_inclusao'].strftime('%d/%m/%Y %H:%M:%S')
+        else:
+            protocol['data_inclusao'] = 'N/A'
 
         return render_template('protocolo_form.html', protocol=protocol)
     except Exception as e:
@@ -250,13 +266,6 @@ def save_protocol():
     nome = request.form.get('nome') 
     descricao = request.form.get('descricao', '')
     
-    # Converte duracao_estimada para int, com tratamento de erro
-    try:
-        duracao_estimada = int(request.form.get('duracao_estimada')) if request.form.get('duracao_estimada') else None
-    except ValueError:
-        flash('Erro: Duração estimada deve ser um número inteiro.', 'danger')
-        return redirect(url_for('protocols.add_protocol') if not protocol_id else url_for('protocols.edit_protocol', protocol_id=protocol_id))
-
     ativo = 'ativo' in request.form
 
     # Dados principais do protocolo (sem as listas dinâmicas)
@@ -264,7 +273,6 @@ def save_protocol():
         'tipo_protocolo': tipo_protocolo,
         'nome': nome,
         'descricao': descricao,
-        'duracao_estimada': duracao_estimada,
         'ativo': ativo,
         'observacoes_gerais': request.form.get('observacoes_gerais', '')
     }
@@ -286,6 +294,7 @@ def save_protocol():
         else:
             # Adicionar novo protocolo e obter o ID gerado
             protocol_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document()
+            main_protocol_data['data_inclusao'] = datetime.now() # Adiciona a data de inclusão para novos protocolos
             protocol_ref.set(main_protocol_data)
             protocol_id = protocol_ref.id # Armazena o ID do novo protocolo
             flash('Protocolo adicionado com sucesso!', 'success')
@@ -403,28 +412,41 @@ def delete_protocol(protocol_id):
     """
     Rota para excluir um protocolo do Firestore.
     """
+    print(f"DEBUG: Tentando excluir protocolo com ID: {protocol_id}") # Log de depuração
+
     db = get_db()
     if not db:
+        print("DEBUG: Erro: Banco de dados não inicializado.")
         return jsonify(success=False, message='Erro: Banco de dados não inicializado.'), 500
 
     clinica_id = session.get('clinica_id')
     if not clinica_id:
+        print("DEBUG: Erro: ID da clínica não encontrado na sessão.")
         return jsonify(success=False, message='Erro: ID da clínica não encontrado na sessão.'), 403
 
     protocol_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id)
     
     try:
+        # Verifica se o protocolo existe antes de tentar deletar
+        if not protocol_ref.get().exists:
+            print(f"DEBUG: Protocolo com ID {protocol_id} não encontrado.")
+            # Não use flash para requisições AJAX que esperam JSON.
+            return jsonify(success=False, message='Protocolo não encontrado.'), 404
+
+        print(f"DEBUG: Deletando subcoleções para o protocolo ID: {protocol_id}")
         # Deleta todas as subcoleções antes de deletar o documento principal
         delete_subcollection_docs(protocol_ref, 'etapas')
         delete_subcollection_docs(protocol_ref, 'niveis')
         delete_subcollection_docs(protocol_ref, 'habilidades')
         delete_subcollection_docs(protocol_ref, 'pontuacao')
         delete_subcollection_docs(protocol_ref, 'tarefas_testes')
+        print(f"DEBUG: Subcoleções deletadas para o protocolo ID: {protocol_id}")
 
         protocol_ref.delete()
-        flash('Protocolo excluído com sucesso!', 'success')
-        return jsonify(success=True)
+        print(f"DEBUG: Protocolo principal deletado: {protocol_id}")
+        # Não use flash para requisições AJAX que esperam JSON.
+        return jsonify(success=True, message='Protocolo excluído com sucesso!')
     except Exception as e:
-        print(f"Erro ao excluir protocolo do Firestore: {e}")
-        flash('Erro ao excluir protocolo. Tente novamente.', 'danger')
-        return jsonify(success=False, message='Erro ao excluir protocolo.'), 500
+        print(f"DEBUG: Erro ao excluir protocolo do Firestore: {e}")
+        # Não use flash para requisições AJAX que esperam JSON.
+        return jsonify(success=False, message=f'Erro ao excluir protocolo: {str(e)}.'), 500
