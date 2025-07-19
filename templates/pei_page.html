@@ -3742,7 +3742,7 @@
                     let hasFinalizedPeis = false;
                     sortedPeis.forEach(pei => {
                         const peiHtml = renderPeiCardHtml(pei); 
-                        if (pei.status === 'ativo') {
+                        if (pei.status === 'Ativo') {
                             activePeisList.insertAdjacentHTML('beforeend', peiHtml);
                             hasActivePeis = true;
                         } else {
@@ -3763,8 +3763,8 @@
                     const formattedDateCard = dataCriacao && !isNaN(dataCriacao) ? dataCriacao.toLocaleDateString('pt-BR', {
                         day: '2-digit', month: '2-digit', year: 'numeric'
                     }) : 'Data Inválida';
-                    const activeGoals = pei.goals ? pei.goals.filter(goal => goal.status === 'ativo') : [];
-                    const finalizedGoals = pei.goals ? pei.goals.filter(goal => goal.status === 'finalizado') : [];
+                    const activeGoals = pei.goals ? pei.goals.filter(goal => goal.status === 'Ativo') : [];
+                    const finalizedGoals = pei.goals ? pei.goals.filter(goal => goal.status === 'Finalizado') : [];
                     const activeGoalsCount = activeGoals.length;
                     const totalGoalsCount = pei.goals ? pei.goals.length : 0;
                     const progressPercentage = totalGoalsCount > 0 ? Math.round((finalizedGoals.length / totalGoalsCount) * 100) : 0;
@@ -3802,8 +3802,8 @@
                             </div>
                         `;
                     }
-                    const statusClass = pei.status === 'ativo' ? 'active' : 'completed';
-                    const statusIcon = pei.status === 'ativo' ? 'fas fa-clock' : 'fas fa-check-circle';
+                    const statusClass = pei.status === 'Ativo' ? 'active' : 'completed';
+                    const statusIcon = pei.status === 'Ativo' ? 'fas fa-clock' : 'fas fa-check-circle';
                     return `
                     <div class="pei-card-modern" data-pei-id="${pei.id}">
                         <div class="pei-header">
@@ -3949,10 +3949,10 @@
                         if (professionalsToggleButton) professionalsToggleButton.style.display = 'none';
                     }
                     const goals = pei.goals || [];
-                    const activeGoals = goals.filter(goal => goal.status === 'ativo');
-                    const finalizedGoals = goals.filter(goal => goal.status === 'finalizado');
+                    const activeGoals = goals.filter(goal => goal.status === 'Ativo');
+                    const finalizedGoals = goals.filter(goal => goal.status === 'Finalizado');
                     const canModifyPeiContent = IS_ADMIN || (IS_PROFESSIONAL && pei.profissionais_ids && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID));
-                    const isPeiFinalized = pei.status === 'finalizado';
+                    const isPeiFinalized = pei.status === 'Finalizado';
                     const activeGoalsCounterEl = document.getElementById('active-goals-counter');
                     const finalizedGoalsCounterEl = document.getElementById('finalized-goals-counter');
                     if (activeGoalsCounterEl) activeGoalsCounterEl.textContent = activeGoals.length;
@@ -4016,7 +4016,7 @@
                     console.log('✅ openPeiDetailsModal completed');
                 }
                 function createGoalCard(pei, goal, canModifyPeiContent, isPeiFinalizado) { 
-                    const isGoalFinalizado = goal.status === 'finalizado';
+                    const isGoalFinalizado = goal.status === 'Finalizado';
                     const goalActionsDisabled = isPeiFinalizado || isGoalFinalizado || !canModifyPeiContent ? 'disabled' : '';
                     const targetCount = goal.targets ? goal.targets.length : 0;
                     
