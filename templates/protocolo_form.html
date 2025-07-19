@@ -271,7 +271,64 @@
             font-size: 0.8rem;
             background-color: var(--bg);
             border-bottom-width: 2px;
+            position: relative; /* Para posicionar o input de filtro */
         }
+
+        /* Estilo para a linha de filtros */
+        .table-container .filter-row td {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: none; /* Remove a borda inferior para os campos de filtro */
+        }
+
+        .table-container .filter-row input[type="text"] {
+            width: 100%;
+            padding: 0.4rem 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            background-color: var(--bg);
+            color: var(--text);
+        }
+        .table-container .filter-row input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
+        }
+
+        /* Estilo para o input de filtro dentro do cabeçalho da coluna */
+        .column-filter-input {
+            width: calc(100% - 20px); /* Ajusta a largura para caber no TH */
+            padding: 0.2rem 0.4rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            background-color: var(--bg);
+            color: var(--text);
+            position: absolute;
+            top: 100%; /* Posiciona abaixo do TH */
+            left: 0;
+            z-index: 100; /* Garante que fique acima de outros elementos */
+            display: none; /* Oculto por padrão */
+            margin-top: 2px; /* Pequeno espaçamento */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .column-filter-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
+        }
+        .filter-icon {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            color: var(--muted);
+            transition: color 0.2s ease;
+        }
+        .filter-icon:hover {
+            color: var(--primary);
+        }
+        .filter-icon.active { /* Estilo para o ícone de filtro ativo */
+            color: var(--primary);
+        }
+
 
         /* Arredondar cantos da thead */
         .table-container thead th:first-child { border-top-left-radius: 8px; }
@@ -351,7 +408,7 @@
         .alert-modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); }
         .alert-modal-message { font-size: 1rem; color: var(--muted); line-height: 1.6; }
         /* Add Item Modal */
-        .add-item-modal { max-width: 800px; } /* Ensure this overrides the general .modal max-width if needed */
+        .add-item-modal { max-width: 900px; } /* Increased max-width for modals */
         .add-item-modal-header {
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--border-color); padding: 1.5rem;
@@ -364,6 +421,79 @@
             padding: 1.5rem; border-top: 1px solid var(--border-color);
             background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
         }
+        /* Estilos para campos de formulário dentro do modal */
+        .add-item-modal .protocol-field input, 
+        .add-item-modal .protocol-field select, 
+        .add-item-modal .protocol-field textarea {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            color: var(--text);
+            transition: all 0.2s;
+            outline: none;
+        }
+        .add-item-modal .protocol-field input:focus, 
+        .add-item-modal .protocol-field select:focus, 
+        .add-item-modal .protocol-field textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent);
+        }
+
+        /* Estilos para o botão de três pontos e o dropdown de ações */
+        .action-dots-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            border-radius: 50%;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .action-dots-btn:hover {
+            background-color: var(--bg);
+            color: var(--primary);
+        }
+        .action-dropdown {
+            position: absolute;
+            background: var(--card);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 120px;
+            padding: 0.5rem 0;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+        }
+        .action-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .action-dropdown button {
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            color: var(--text);
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .action-dropdown button:hover {
+            background-color: var(--primary-light);
+            color: var(--primary);
+        }
+        .action-dropdown button.danger-option:hover {
+            background-color: color-mix(in srgb, var(--danger) 15%, transparent);
+            color: var(--danger);
+        }
+
 
         /* --- Toast Notifications --- */
         #toast-container {
@@ -500,6 +630,12 @@
         </div>
     </div>
 
+    <!-- Dropdown de Ações para Tabelas Dinâmicas -->
+    <div id="action-dropdown" class="action-dropdown">
+        <button id="action-dropdown-edit-btn"><i class="fas fa-edit mr-2"></i> Editar</button>
+        <button id="action-dropdown-remove-btn" class="danger-option"><i class="fas fa-trash-alt mr-2"></i> Excluir</button>
+    </div>
+
     <div class="layout">
         
         {% include 'Nav.html' %}
@@ -588,27 +724,36 @@
                                         <i class="fas fa-plus"></i> Adicionar Etapa
                                     </button>
                                 </div>
-                                <div class="mb-4"> {# Added margin-bottom for spacing #}
-                                    <input type="text" id="filter-etapas" onkeyup="filterTable('etapas-container', this.value)" placeholder="Filtrar etapas..." class="protocol-field-filter">
-                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>ID</th> {# Changed from Ordem to ID #}
-                                                <th>Nome da Etapa</th>
-                                                <th>Descrição</th>
-                                                <th style="width: 100px;">Ações</th>
+                                                <th onclick="toggleColumnFilter(this, 'etapas-container', 0)">
+                                                    <span>ID</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar ID" class="column-filter-input" data-column-index="0" onkeyup="filterTable('etapas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'etapas-container', 1)">
+                                                    <span>Nome da Etapa</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Nome" class="column-filter-input" data-column-index="1" onkeyup="filterTable('etapas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'etapas-container', 2)">
+                                                    <span>Descrição</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Descrição" class="column-filter-input" data-column-index="2" onkeyup="filterTable('etapas-container')">
+                                                </th>
+                                                <th>Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody id="etapas-container">
                                             {% if protocol and protocol.etapas %}
                                                 {% for etapa in protocol.etapas %}
                                                 <tr class="dynamic-field-item">
-                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                    <td data-label="ID">
                                                         <span class="display-id">#{{ etapa.id[:5] if etapa.id else loop.index }}</span>
                                                         <input type="hidden" name="etapa_id[]" value="{{ etapa.id if etapa.id else '' }}">
-                                                        <input type="hidden" name="etapa_ordem[]" value="{{ loop.index }}"> {# Keep original order #}
+                                                        <input type="hidden" name="etapa_ordem[]" value="{{ loop.index }}">
                                                     </td>
                                                     <td data-label="Nome da Etapa">
                                                         <input type="text" value="{{ etapa.nome }}" readonly>
@@ -619,8 +764,9 @@
                                                         <input type="hidden" name="etapa_descricao[]" value="{{ etapa.descricao }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
-                                                        <button type="button" onclick="editDynamicField(this, 'etapa')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                        <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'etapa')">
+                                                            <i class="fas fa-ellipsis-v"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
@@ -648,24 +794,33 @@
                                         <i class="fas fa-plus"></i> Adicionar Nível
                                     </button>
                                 </div>
-                                <div class="mb-4"> {# Added margin-bottom for spacing #}
-                                    <input type="text" id="filter-niveis" onkeyup="filterTable('niveis-container', this.value)" placeholder="Filtrar níveis..." class="protocol-field-filter">
-                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>ID</th> {# Changed from Ordem to ID #}
-                                                <th>Nível</th>
-                                                <th>Faixa Etária</th>
-                                                <th style="width: 100px;">Ações</th>
+                                                <th onclick="toggleColumnFilter(this, 'niveis-container', 0)">
+                                                    <span>ID</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar ID" class="column-filter-input" data-column-index="0" onkeyup="filterTable('niveis-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'niveis-container', 1)">
+                                                    <span>Nível</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Nível" class="column-filter-input" data-column-index="1" onkeyup="filterTable('niveis-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'niveis-container', 2)">
+                                                    <span>Faixa Etária</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Faixa Etária" class="column-filter-input" data-column-index="2" onkeyup="filterTable('niveis-container')">
+                                                </th>
+                                                <th>Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody id="niveis-container">
                                             {% if protocol and protocol.niveis %}
                                                 {% for nivel in protocol.niveis %}
                                                 <tr class="dynamic-field-item">
-                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                    <td data-label="ID">
                                                         <span class="display-id">#{{ nivel.id[:5] if nivel.id else nivel.ordem }}</span>
                                                         <input type="hidden" name="nivel_id[]" value="{{ nivel.id if nivel.id else '' }}">
                                                         <input type="hidden" name="nivel_ordem[]" value="{{ nivel.ordem }}">
@@ -679,8 +834,9 @@
                                                         <input type="hidden" name="nivel_faixa_etaria[]" value="{{ nivel.faixa_etaria }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
-                                                        <button type="button" onclick="editDynamicField(this, 'nivel')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                        <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'nivel')">
+                                                            <i class="fas fa-ellipsis-v"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
@@ -701,30 +857,35 @@
 
                         <!-- Step 4: Habilidades -->
                         <div class="protocol-card-section" data-step-content="4" style="display:none;">
-                           <div class="protocol-card-container-form">
+                            <div class="protocol-card-container-form">
                                 <div class="section-header-with-button">
                                     <h3 class="section-title"><i class="fa-solid fa-brain"></i> Habilidades</h3>
                                     <button type="button" onclick="openAddItemModal('habilidade')" class="btn btn-primary btn-sm">
                                         <i class="fas fa-plus"></i> Adicionar Habilidade
                                     </button>
                                 </div>
-                                <div class="mb-4"> {# Added margin-bottom for spacing #}
-                                    <input type="text" id="filter-habilidades" onkeyup="filterTable('habilidades-container', this.value)" placeholder="Filtrar habilidades..." class="protocol-field-filter">
-                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>ID</th> {# Changed from Ordem to ID #}
-                                                <th>Habilidade</th>
-                                                <th style="width: 100px;">Ações</th>
+                                                <th onclick="toggleColumnFilter(this, 'habilidades-container', 0)">
+                                                    <span>ID</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar ID" class="column-filter-input" data-column-index="0" onkeyup="filterTable('habilidades-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'habilidades-container', 1)">
+                                                    <span>Habilidade</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Habilidade" class="column-filter-input" data-column-index="1" onkeyup="filterTable('habilidades-container')">
+                                                </th>
+                                                <th>Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody id="habilidades-container">
                                             {% if protocol and protocol.habilidades %}
                                                 {% for habilidade in protocol.habilidades %}
                                                 <tr class="dynamic-field-item">
-                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                    <td data-label="ID">
                                                         <span class="display-id">#{{ habilidade.id[:5] if habilidade.id else habilidade.ordem }}</span>
                                                         <input type="hidden" name="habilidade_id[]" value="{{ habilidade.id if habilidade.id else '' }}">
                                                         <input type="hidden" name="habilidade_ordem[]" value="{{ habilidade.ordem }}">
@@ -734,8 +895,9 @@
                                                         <input type="hidden" name="habilidade_nome[]" value="{{ habilidade.nome }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
-                                                        <button type="button" onclick="editDynamicField(this, 'habilidade')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                        <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'habilidade')">
+                                                            <i class="fas fa-ellipsis-v"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
@@ -763,25 +925,38 @@
                                         <i class="fas fa-plus"></i> Adicionar Pontuação
                                     </button>
                                 </div>
-                                <div class="mb-4"> {# Added margin-bottom for spacing #}
-                                    <input type="text" id="filter-pontuacoes" onkeyup="filterTable('pontuacoes-container', this.value)" placeholder="Filtrar pontuações..." class="protocol-field-filter">
-                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>ID</th> {# Changed from Ordem to ID #}
-                                                <th>Tipo</th>
-                                                <th>Descrição</th>
-                                                <th>Valor</th>
-                                                <th style="width: 100px;">Ações</th>
+                                                <th onclick="toggleColumnFilter(this, 'pontuacoes-container', 0)">
+                                                    <span>ID</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar ID" class="column-filter-input" data-column-index="0" onkeyup="filterTable('pontuacoes-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'pontuacoes-container', 1)">
+                                                    <span>Tipo</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Tipo" class="column-filter-input" data-column-index="1" onkeyup="filterTable('pontuacoes-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'pontuacoes-container', 2)">
+                                                    <span>Descrição</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Descrição" class="column-filter-input" data-column-index="2" onkeyup="filterTable('pontuacoes-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'pontuacoes-container', 3)">
+                                                    <span>Valor</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Valor" class="column-filter-input" data-column-index="3" onkeyup="filterTable('pontuacoes-container')">
+                                                </th>
+                                                <th>Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody id="pontuacoes-container">
                                             {% if protocol and protocol.pontuacao %}
                                                 {% for item in protocol.pontuacao %}
                                                 <tr class="dynamic-field-item">
-                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                    <td data-label="ID">
                                                         <span class="display-id">#{{ item.id[:5] if item.id else item.ordem }}</span>
                                                         <input type="hidden" name="pontuacao_id[]" value="{{ item.id if item.id else '' }}">
                                                         <input type="hidden" name="pontuacao_ordem[]" value="{{ item.ordem }}">
@@ -799,8 +974,9 @@
                                                         <input type="hidden" name="pontuacao_valor[]" value="{{ item.valor }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
-                                                        <button type="button" onclick="editDynamicField(this, 'pontuacao')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                        <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'pontuacao')">
+                                                            <i class="fas fa-ellipsis-v"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
@@ -828,31 +1004,68 @@
                                         <i class="fas fa-plus"></i> Adicionar Tarefa/Teste
                                     </button>
                                 </div>
-                                <div class="mb-4"> {# Added margin-bottom for spacing #}
-                                    <input type="text" id="filter-tarefas" onkeyup="filterTable('tarefas-container', this.value)" placeholder="Filtrar tarefas..." class="protocol-field-filter">
-                                </div>
                                 <div class="table-container">
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>ID</th> {# Changed from Ordem to ID #}
-                                                <th>Nível</th>
-                                                <th>Item</th>
-                                                <th>Nome</th>
-                                                <th>Habilidade/Marco</th>
-                                                <th>Resultado/Observação</th>
-                                                <th>Pergunta</th>
-                                                <th>Exemplo</th>
-                                                <th>Critério</th>
-                                                <th>Objetivo</th>
-                                                <th style="width: 100px;">Ações</th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 0)">
+                                                    <span>ID</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar ID" class="column-filter-input" data-column-index="0" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 1)">
+                                                    <span>Nível</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Nível" class="column-filter-input" data-column-index="1" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 2)">
+                                                    <span>Item</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Item" class="column-filter-input" data-column-index="2" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 3)">
+                                                    <span>Nome</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Nome" class="column-filter-input" data-column-index="3" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 4)">
+                                                    <span>Habilidade/Marco</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Habilidade/Marco" class="column-filter-input" data-column-index="4" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 5)">
+                                                    <span>Resultado/Observação</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Resultado/Observação" class="column-filter-input" data-column-index="5" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 6)">
+                                                    <span>Pergunta</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Pergunta" class="column-filter-input" data-column-index="6" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 7)">
+                                                    <span>Exemplo</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Exemplo" class="column-filter-input" data-column-index="7" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 8)">
+                                                    <span>Critério</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Critério" class="column-filter-input" data-column-index="8" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th onclick="toggleColumnFilter(this, 'tarefas-container', 9)">
+                                                    <span>Objetivo</span>
+                                                    <i class="fas fa-filter filter-icon"></i>
+                                                    <input type="text" placeholder="Filtrar Objetivo" class="column-filter-input" data-column-index="9" onkeyup="filterTable('tarefas-container')">
+                                                </th>
+                                                <th>Ações</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tarefas-container">
                                             {% if protocol and protocol.tarefas_testes %}
                                                 {% for tarefa in protocol.tarefas_testes %}
                                                 <tr class="dynamic-field-item">
-                                                    <td data-label="ID"> {# Changed from Ordem to ID #}
+                                                    <td data-label="ID">
                                                         <span class="display-id">#{{ tarefa.id[:5] if tarefa.id else tarefa.ordem }}</span>
                                                         <input type="hidden" name="tarefa_id[]" value="{{ tarefa.id if tarefa.id else '' }}">
                                                         <input type="hidden" name="tarefa_ordem[]" value="{{ tarefa.ordem }}">
@@ -894,8 +1107,9 @@
                                                         <input type="hidden" name="tarefa_objetivo[]" value="{{ tarefa.objetivo if tarefa.objetivo else '' }}">
                                                     </td>
                                                     <td class="dynamic-field-item-actions">
-                                                        <button type="button" onclick="editDynamicField(this, 'tarefa')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                                        <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                                        <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'tarefa')">
+                                                            <i class="fas fa-ellipsis-v"></i>
+                                                        </button>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
@@ -960,6 +1174,7 @@
         let currentStepIndex = 0;
         let editingRowElement = null; // Guarda a referência da linha sendo editada
         let editingItemId = null; // Guarda o ID do item sendo editado
+        let currentActionDropdown = null; // Guarda a referência do dropdown de ações aberto
 
         // --- Lógica para Notificações Toast ---
         const toastContainer = document.getElementById('toast-container');
@@ -1067,7 +1282,7 @@
                     break;
                 case 'nivel':
                     fieldsHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div class="protocol-field required"><label for="modal_nivel_valor">Nível:</label><input type="number" id="modal_nivel_valor" value="${itemData.valor || ''}" required></div>
+                                      <div class="protocol-field required"><label for="modal_nivel_valor">Nível:</label><input type="number" id="modal_nivel_valor" value="${itemData.nivel || ''}" required></div>
                                   </div>
                                   <div class="protocol-field"><label for="modal_nivel_faixa_etaria">Faixa Etária:</label><input type="text" id="modal_nivel_faixa_etaria" value="${itemData.faixa_etaria || ''}"></div>`;
                     break;
@@ -1272,8 +1487,9 @@
                                 <input type="hidden" name="etapa_descricao[]" value="${values.descricao}">
                             </td>
                             <td class="dynamic-field-item-actions">
-                                <button type="button" onclick="editDynamicField(this, 'etapa')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'etapa')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
                             </td>
                         </tr>`;
                 } else if (type === 'nivel') {
@@ -1293,8 +1509,9 @@
                                 <input type="hidden" name="nivel_faixa_etaria[]" value="${values.faixa_etaria}">
                             </td>
                             <td class="dynamic-field-item-actions">
-                                <button type="button" onclick="editDynamicField(this, 'nivel')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'nivel')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
                             </td>
                         </tr>`;
                 } else if (type === 'habilidade') {
@@ -1310,8 +1527,9 @@
                                 <input type="hidden" name="habilidade_nome[]" value="${values.nome}">
                             </td>
                             <td class="dynamic-field-item-actions">
-                                <button type="button" onclick="editDynamicField(this, 'habilidade')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'habilidade')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
                             </td>
                         </tr>`;
                 } else if (type === 'pontuacao') {
@@ -1335,8 +1553,9 @@
                                 <input type="hidden" name="pontuacao_valor[]" value="${values.valor}">
                             </td>
                             <td class="dynamic-field-item-actions">
-                                <button type="button" onclick="editDynamicField(this, 'pontuacao')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'pontuacao')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
                             </td>
                         </tr>`;
                 } else if (type === 'tarefa') {
@@ -1384,8 +1603,9 @@
                                 <input type="hidden" name="tarefa_objetivo[]" value="${values.objetivo}">
                             </td>
                             <td class="dynamic-field-item-actions">
-                                <button type="button" onclick="editDynamicField(this, 'tarefa')" class="btn btn-primary btn-sm mr-2"><i class="fas fa-edit"></i></button>
-                                <button type="button" onclick="removeDynamicField(this)" class="btn btn-danger btn-sm">Remover</button>
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'tarefa')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
                             </td>
                         </tr>`;
                 }
@@ -1399,8 +1619,16 @@
                 container.insertAdjacentHTML('beforeend', newFieldHtml);
                 console.log('Nova linha adicionada ao container.'); // Debug
             }
+            // Após adicionar ou editar, re-aplicar filtros caso algum esteja ativo
+            filterTable(containerId);
         }
         
+        window.editDynamicField = function(button, type) {
+            const rowToEdit = button.closest('.dynamic-field-item');
+            openAddItemModal(type, true, rowToEdit);
+            closeActionDropdown(); // Fecha o dropdown após clicar em editar
+        };
+
         window.removeDynamicField = function(button) {
             const rowToRemove = button.closest('.dynamic-field-item');
             const container = rowToRemove.closest('tbody');
@@ -1411,6 +1639,9 @@
                 const colspan = container.closest('table').querySelector('thead tr').children.length;
                 container.insertAdjacentHTML('beforeend', `<tr class="no-results-row"><td colspan="${colspan}">Nenhum item cadastrado.</td></tr>`);
             }
+            // Após remover, re-aplicar filtros caso algum esteja ativo
+            filterTable(container.id);
+            closeActionDropdown(); // Fecha o dropdown após clicar em remover
         }
 
         const addItemModalCloseBtn = document.getElementById('add-item-modal-close-btn');
@@ -1424,6 +1655,12 @@
             steps.forEach((step, i) => step.classList.toggle('active', i === index));
             sections.forEach((section, i) => section.style.display = i === index ? 'flex' : 'none');
             currentStepIndex = index;
+            // Ao mudar de aba, re-aplicar filtros para garantir que a tabela esteja correta
+            const currentContainerId = sections[currentStepIndex].querySelector('.table-container tbody')?.id;
+            if (currentContainerId) {
+                filterTable(currentContainerId);
+            }
+            closeActionDropdown(); // Fecha qualquer dropdown de ação aberto ao mudar de aba
         }
 
         steps.forEach((step, i) => {
@@ -1501,29 +1738,66 @@
         });
 
         // --- Lógica de Filtro de Tabela ---
-        window.filterTable = function(containerId, searchText) {
+        window.filterTable = function(containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
+            const table = container.closest('table');
+            const filterInputs = table.querySelectorAll('.column-filter-input');
+            const filters = {}; // { columnIndex: filterText }
+
+            filterInputs.forEach(input => {
+                const columnIndex = parseInt(input.dataset.columnIndex);
+                filters[columnIndex] = input.value.toLowerCase();
+                // Atualiza a classe 'active' do ícone de filtro
+                const icon = input.closest('th').querySelector('.filter-icon');
+                if (icon) {
+                    if (input.value.trim() !== '') {
+                        icon.classList.add('active');
+                    } else {
+                        icon.classList.remove('active');
+                    }
+                }
+            });
+
             const rows = container.querySelectorAll('.dynamic-field-item');
-            const lowerCaseSearchText = searchText.toLowerCase();
             let hasVisibleRows = false;
 
             rows.forEach(row => {
-                let rowMatches = false;
-                // Busca em todos os campos de texto visíveis e hidden da linha
-                const inputs = row.querySelectorAll('input[type="text"], input[type="number"], textarea, span.display-id, input[type="hidden"]');
-                inputs.forEach(input => {
-                    let value = '';
-                    if (input.tagName === 'SPAN') {
-                        value = input.textContent;
-                    } else {
-                        value = input.value;
+                let rowMatches = true;
+                const cells = row.querySelectorAll('td');
+
+                for (const columnIndex in filters) {
+                    const filterText = filters[columnIndex];
+                    if (filterText === '') continue; // Pula se não houver filtro para esta coluna
+
+                    const cell = cells[columnIndex];
+                    if (!cell) {
+                        rowMatches = false;
+                        break;
                     }
-                    if (value.toLowerCase().includes(lowerCaseSearchText)) {
-                        rowMatches = true;
+
+                    // Coleta o conteúdo da célula, incluindo spans e inputs ocultos
+                    let cellContent = '';
+                    const displaySpan = cell.querySelector('.display-id');
+                    const visibleInput = cell.querySelector('input[type="text"], input[type="number"], textarea, select');
+                    const hiddenInputs = cell.querySelectorAll('input[type="hidden"]');
+
+                    if (displaySpan) {
+                        cellContent += displaySpan.textContent;
                     }
-                });
+                    if (visibleInput) {
+                        cellContent += ' ' + visibleInput.value;
+                    }
+                    hiddenInputs.forEach(input => {
+                        cellContent += ' ' + input.value;
+                    });
+                    
+                    if (!cellContent.toLowerCase().includes(filterText)) {
+                        rowMatches = false;
+                        break;
+                    }
+                }
 
                 if (rowMatches) {
                     row.style.display = '';
@@ -1543,6 +1817,115 @@
                 }
             }
         };
+
+        // Função para alternar a visibilidade do input de filtro da coluna
+        window.toggleColumnFilter = function(headerElement, tableId, columnIndex) {
+            const input = headerElement.querySelector('.column-filter-input');
+            const icon = headerElement.querySelector('.filter-icon');
+            if (!input || !icon) return;
+
+            // Fecha outros filtros abertos na mesma tabela
+            const currentTable = document.getElementById(tableId);
+            currentTable.querySelectorAll('.column-filter-input').forEach(otherInput => {
+                if (otherInput !== input && otherInput.style.display !== 'none') {
+                    otherInput.style.display = 'none';
+                    // Remove a classe 'active' do ícone de outros filtros fechados
+                    const otherIcon = otherInput.closest('th').querySelector('.filter-icon');
+                    if (otherIcon && otherInput.value === '') {
+                        otherIcon.classList.remove('active');
+                    }
+                }
+            });
+
+            if (input.style.display === 'block') {
+                input.style.display = 'none';
+                if (input.value === '') { // Limpa e esconde se estiver vazio
+                    icon.classList.remove('active');
+                    filterTable(tableId);
+                } else {
+                    icon.classList.add('active'); // Mantém ativo se tiver valor
+                }
+            } else {
+                input.style.display = 'block';
+                input.focus();
+                icon.classList.add('active'); // Ativa o ícone ao abrir
+            }
+        };
+
+        // Adiciona um listener global para fechar filtros ao clicar fora
+        document.addEventListener('click', function(event) {
+            document.querySelectorAll('.column-filter-input').forEach(input => {
+                const header = input.closest('th');
+                const icon = header.querySelector('.filter-icon');
+                if (input.style.display === 'block' && !header.contains(event.target)) {
+                    if (input.value === '') {
+                        input.style.display = 'none';
+                        if (icon) icon.classList.remove('active');
+                    } else {
+                        if (icon) icon.classList.add('active');
+                    }
+                }
+            });
+        });
+
+        // --- Lógica para o Dropdown de Ações (três pontos) ---
+        const actionDropdown = document.getElementById('action-dropdown');
+        const actionDropdownEditBtn = document.getElementById('action-dropdown-edit-btn');
+        const actionDropdownRemoveBtn = document.getElementById('action-dropdown-remove-btn');
+        let currentDropdownRow = null; // Armazena a linha associada ao dropdown aberto
+        let currentDropdownType = null; // Armazena o tipo de item associado ao dropdown aberto
+
+        window.toggleActionDropdown = function(buttonElement, type) {
+            const rowElement = buttonElement.closest('.dynamic-field-item');
+            
+            // Se o dropdown já estiver aberto e for o mesmo botão, fecha
+            if (currentActionDropdown && currentActionDropdown.classList.contains('show') && currentDropdownRow === rowElement) {
+                closeActionDropdown();
+                return;
+            }
+
+            // Fecha qualquer dropdown de ação que esteja aberto
+            closeActionDropdown();
+
+            // Posiciona o dropdown
+            const rect = buttonElement.getBoundingClientRect();
+            // Ajuste para alinhar a direita do dropdown com a direita do botão
+            actionDropdown.style.top = `${rect.bottom + window.scrollY + 5}px`;
+            actionDropdown.style.left = `${rect.right + window.scrollX - actionDropdown.offsetWidth}px`;
+            
+            // Garante que o dropdown não saia da tela à esquerda
+            if (parseFloat(actionDropdown.style.left) < 0) {
+                 actionDropdown.style.left = `0px`;
+            }
+
+
+            currentDropdownRow = rowElement;
+            currentDropdownType = type;
+
+            // Atribui as ações aos botões do dropdown
+            actionDropdownEditBtn.onclick = () => window.editDynamicField(buttonElement, type);
+            actionDropdownRemoveBtn.onclick = () => window.removeDynamicField(buttonElement);
+
+            actionDropdown.classList.add('show');
+            currentActionDropdown = actionDropdown; // Define o dropdown atual como o aberto
+        };
+
+        function closeActionDropdown() {
+            if (currentActionDropdown) {
+                currentActionDropdown.classList.remove('show');
+                currentDropdownRow = null;
+                currentDropdownType = null;
+                currentActionDropdown = null; // Limpa a referência
+            }
+        }
+
+        // Fecha o dropdown ao clicar fora
+        document.addEventListener('click', function(event) {
+            // Verifica se o clique não foi no botão de três pontos e não foi dentro do dropdown
+            if (currentActionDropdown && !actionDropdown.contains(event.target) && !event.target.closest('.action-dots-btn')) {
+                closeActionDropdown();
+            }
+        });
         
         // Inicializa a página
         showStep(0);
