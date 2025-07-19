@@ -571,33 +571,40 @@
             color: var(--text);
             border-radius: 12px;
             box-shadow: 0 15px 30px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05);
-            width: 95vw; /* Aumentado para 95% da largura da viewport */
-            max-width: 1100px; /* Aumentado para 1100px */
-            max-height: 95vh; /* Keeps modal within viewport */
+            width: 99vw; /* Aumentado para 99% da largura da viewport */
+            max-width: 1400px; /* Aumentado para 1400px */
+            max-height: 99vh; /* Aumentado para 99vh */
             transform: translateY(-20px); 
             transition: transform 0.3s ease, opacity 0.3s ease;
             display: flex;
             flex-direction: column;
             overflow: hidden; /* Ensures content doesn't spill out rounded corners */
+            z-index: 2001; /* Ensure content is above overlay */
         }
         /* Specific override for the full record modal */
         #registro-completo-modal .modal-content {
-            max-width: 90vw; /* Even wider for full record */
-            max-height: 90vh; /* Taller for full record */
+            max-width: 98vw; /* Aumentado para 98vw */
+            max-height: 98vh; /* Aumentado para 98vh */
         }
-        /* Specific override for anamnese modal */
-        #modalAnamnese .modal-content {
-            max-width: 950px; /* Slightly smaller than generic, but still large */
-        }
+        /* REMOVIDO: Specific override for anamnese modal */
+        /* #modalAnamnese .modal-content {
+            max-width: 1300px;
+            max-height: 95vh;
+        } */
 
 
         @media (min-width: 1024px) { /* Para telas maiores, aumente um pouco */
             .modal-content {
-                max-width: 1300px; /* Aumentado para 1300px em telas maiores */
+                max-width: 1800px; /* Aumentado para 1800px em telas maiores */
             }
             #registro-completo-modal .modal-content {
-                max-width: 1400px; /* Even wider for full record on large screens */
+                max-width: 1900px; /* Aumentado para 1900px em telas maiores */
             }
+            /* REMOVIDO: Specific override for anamnese modal on larger screens */
+            /* #modalAnamnese .modal-content {
+                max-width: 1500px;
+                max-height: 98vh;
+            } */
         }
         [data-theme="dark"] .modal-content {
             box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.15);
@@ -1247,6 +1254,12 @@
                 <input type="hidden" name="anamnese_id" id="anamnese_id_field"> {# Campo para ID da anamnese em edição #}
 
                 <div class="modal-body">
+                    {# NOVO: Campo de Título para a Anamnese #}
+                    <div class="form-group">
+                        <label for="titulo_anamnese">Título da Anamnese</label>
+                        <input type="text" id="titulo_anamnese" name="titulo" required placeholder="Ex: Anamnese Inicial, Anamnese de Retorno">
+                    </div>
+
                     <div class="form-group">
                         <label for="modelo_base_id">Aplicar Modelo de Anamnese</label>
                         <select id="modelo_base_id" name="modelo_base_id">
@@ -1660,7 +1673,7 @@
                     const modalAnamnese = document.getElementById('modalAnamnese');
                     if (modalAnamnese) modalAnamnese.classList.remove('active');
 
-                    modalRegistroGenerico.classList.add('active'); // Abre o modal
+                    openAnyModal(modalRegistroGenerico); // Usa a função auxiliar para abrir
                 }
 
                 // Listeners para os botões de Adicionar (Laudo, Orientação, etc.)
@@ -1700,7 +1713,7 @@
                     const modalAnamnese = document.getElementById('modalAnamnese');
                     if (modalAnamnese) modalAnamnese.classList.remove('active');
 
-                    modalUploadDocumento.classList.add('active');
+                    openAnyModal(modalUploadDocumento); // Usa a função auxiliar para abrir
                 });
 
                 // NOVO: Lógica para o formulário de upload de documentos
@@ -1819,7 +1832,7 @@
                         generateGenericBtn.classList.add('loading'); // Adiciona classe de carregamento
 
                         try {
-                            const apiKey = ""; // A chave API será fornecida pelo ambiente Canvas
+                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // A chave API será fornecida pelo ambiente Canvas
                             const genAI = new GoogleGenerativeAI(apiKey);
                             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash"});
 
@@ -1829,7 +1842,7 @@
                             
                             // Preenche o editor de texto com o conteúdo gerado
                             conteudoRegistroGenericoEditor.innerHTML = text;
-                            if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = text;
+                            if (conteudoGenericoHiddenTextarea) conteudoGenericoGenericoHiddenTextarea.value = text;
 
                         } catch (error) {
                             console.error('Erro na API Gemini:', error);
@@ -1848,6 +1861,7 @@
                 const anamneseForm = document.getElementById('anamneseForm');
                 const modalAnamneseTitle = document.getElementById('modalAnamneseTitle');
                 const anamneseIdField = document.getElementById('anamnese_id_field');
+                const tituloAnamneseInput = document.getElementById('titulo_anamnese'); // NOVO: Campo de título da anamnese
                 const modeloBaseIdSelect = document.getElementById('modelo_base_id');
                 const conteudoAnamneseEditor = document.getElementById('conteudo_anamnese_editor');
                 const conteudoAnamneseHiddenTextarea = document.getElementById('conteudo_anamnese_hidden');
@@ -1877,10 +1891,11 @@
 
                 // Lógica de seleção de modelo de anamnese
                 if (modeloBaseIdSelect && conteudoAnamneseEditor && conteudoAnamneseHiddenTextarea) {
-                    modeloBaseIdSelect.addEventListener('change', (e) => {
+                    modeloBaseIdSelect.addEventListener('change', async (e) => { // Tornar a função assíncrona
                         const selected = e.target.options[e.target.selectedIndex];
                         const content = selected.dataset.conteudo;
-                        if (content && (!conteudoAnamneseEditor.innerHTML.trim() || confirm('Deseja substituir o conteúdo atual pelo modelo?'))) {
+                        // Usar showCustomConfirm para substituir o confirm nativo
+                        if (content && (!conteudoAnamneseEditor.innerHTML.trim() || await showCustomConfirm('Deseja substituir o conteúdo atual pelo modelo?'))) {
                             conteudoAnamneseEditor.innerHTML = content;
                             conteudoAnamneseHiddenTextarea.value = content;
                         }
@@ -1914,7 +1929,7 @@
                         generateAnamnesisBtn.classList.add('loading');
 
                         try {
-                            const apiKey = ""; // A chave API será fornecida pelo ambiente Canvas
+                            const apiKey = "AIzaSyAgTROF7A03Y6gV6DoDd12SAkRVvaJbhMQ"; // A chave API será fornecida pelo ambiente Canvas
                             const genAI = new GoogleGenerativeAI(apiKey);
                             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash"});
 
@@ -1922,6 +1937,7 @@
                             const response = await result.response;
                             const text = response.text();
                             
+                            // Replace `confirm` with `showCustomConfirm`
                             if (conteudoAnamneseEditor.innerHTML.trim() && !await showCustomConfirm('Deseja substituir o conteúdo atual pelo texto gerado pela IA?')) {
                                 generateAnamnesisBtn.disabled = !lgpdConsentTextAnamnese.classList.contains('active');
                                 generateAnamnesisBtn.classList.remove('loading');
@@ -1958,10 +1974,12 @@
                     modalAnamneseTitle.textContent = 'Registrar Anamnese';
                     anamneseForm.action = `/prontuarios/${PACIENTE_DOC_ID}/adicionar_anamnese`;
                     anamneseIdField.value = ''; // Garante que o campo esteja vazio para adição
+                    tituloAnamneseInput.value = ''; // NOVO: Limpa o campo de título
 
                     if (anamneseData) { // Modo de Edição
                         modalAnamneseTitle.textContent = 'Editar Anamnese';
                         anamneseIdField.value = anamneseData.id;
+                        tituloAnamneseInput.value = anamneseData.titulo || ''; // NOVO: Preenche o campo de título
                         conteudoAnamneseEditor.innerHTML = anamneseData.conteudo || '';
                         conteudoAnamneseHiddenTextarea.value = anamneseData.conteudo || '';
                         modeloBaseIdSelect.value = anamneseData.modelo_base_id || '';
@@ -1972,7 +1990,7 @@
                     closeModalById('modalRegistroGenerico');
                     closeModalById('modalUploadDocumento');
 
-                    modalAnamnese.classList.add('active');
+                    openAnyModal(modalAnamnese); // Usa a função auxiliar para abrir
                     console.log("Anamnese form action set to:", anamneseForm.action); // Log the action URL
                 }
 
@@ -2010,8 +2028,14 @@
                     // Sincroniza o conteúdo final do editor para o hidden textarea
                     conteudoAnamneseHiddenTextarea.value = conteudoAnamneseEditor.innerHTML;
 
+                    // Log the FormData contents for debugging
+                    console.log('Dados do formulário de Anamnese sendo enviados:');
+                    const formData = new FormData(anamneseForm);
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`${key}: ${value}`);
+                    }
+
                     try {
-                        const formData = new FormData(anamneseForm);
                         const response = await fetch(anamneseForm.action, {
                             method: 'POST',
                             body: formData
@@ -2080,7 +2104,13 @@
                 // Função genérica para fechar modais pelo ID
                 function closeModalById(modalId) {
                     const modal = document.getElementById(modalId);
-                    if (modal) modal.classList.remove('active');
+                    if (modal) {
+                        modal.classList.remove('active');
+                        document.body.classList.remove('modal-open'); // Remove a classe do body ao fechar
+                        console.log(`Modal com ID ${modalId} fechada.`); // Log de depuração
+                    } else {
+                        console.log(`Tentativa de fechar modal com ID ${modalId}, mas elemento não encontrado.`); // Log de depuração
+                    }
                 }
 
                 // Função para abrir o modal de confirmação genérico
@@ -2095,7 +2125,7 @@
 
                     currentDeleteAction = action; // Define a ação atual (e.g., 'delete_record')
                     currentDeleteData = data; // Define os dados relevantes para a ação
-                    confirmDeleteModal.classList.add('active'); // Abre o modal de confirmação
+                    openAnyModal(confirmDeleteModal); // Usa a função auxiliar para abrir
                 }
 
                 // *** Lógica do Dropdown de Adicionar Registro ***
@@ -2134,26 +2164,44 @@
                     });
                 }
 
+                // Função auxiliar para abrir qualquer modal e gerenciar o body overflow
+                function openAnyModal(modalElement) {
+                    modalElement.classList.add('active');
+                    document.body.classList.add('modal-open'); // Adiciona a classe ao body
+                }
+
 
                 // Event listener unificado para cliques no corpo do documento
                 document.body.addEventListener('click', async function(e) {
                     const target = e.target;
 
-                    // Lógica para fechar modais (botões com data-close-modal ou clicando no overlay)
+                    // Lógica para fechar modais (botões com data-close-modal)
                     const closeBtn = target.closest('.modal-close-btn');
                     if (closeBtn) {
+                        console.log('Botão de fechar clicado:', closeBtn); // Log de depuração
                         const modalId = closeBtn.dataset.closeModal || closeBtn.closest('.modal-overlay')?.id;
-                        if(modalId) closeModalById(modalId);
+                        if(modalId) {
+                            closeModalById(modalId);
+                        } else {
+                            console.log('ID da modal não encontrado para o botão de fechar.'); // Log de depuração
+                        }
                         return;
-                    }
-                    if(target.matches('.modal-overlay')) {
-                            closeModalById(target.id);
-                            return;
                     }
                     if(target.closest('[data-close-modal]')) {
-                        closeModalById(target.closest('[data-close-modal]').dataset.closeModal);
+                        console.log('Elemento com data-close-modal clicado:', target.closest('[data-close-modal]')); // Log de depuração
+                        const modalId = target.closest('[data-close-modal]').dataset.closeModal;
+                        if(modalId) {
+                            closeModalById(modalId);
+                        } else {
+                            console.log('ID da modal não encontrado para o elemento data-close-modal.'); // Log de depuração
+                        }
                         return;
                     }
+
+                    // REMOVIDO: Lógica para fechar a modal ao clicar no overlay
+                    // A modal não deve fechar ao clicar fora, apenas nos botões específicos.
+                    // A `stopPropagation` nos conteúdos das modais foi removida,
+                    // permitindo que os cliques nos botões de fechar cheguem aqui.
 
                     // Botão EXPANDIR registro
                     const expandButton = target.closest('.btn-expand-registro');
@@ -2172,7 +2220,7 @@
                             if (modal && modalTitle && modalContent) {
                                 modalTitle.textContent = `${fullRecord.tipo_registro.charAt(0).toUpperCase() + fullRecord.tipo_registro.slice(1)} - ${fullRecord.titulo || ''}`;
                                 modalContent.innerHTML = fullRecord.conteudo || ''; // Use the full content from data
-                                modal.classList.add('active');
+                                openAnyModal(modal); // Usa a função auxiliar para abrir
                             }
                         } else {
                             console.error('Full record data not found for ID:', recordId);
@@ -2266,6 +2314,10 @@
                         return;
                     }
                 });
+
+                // REMOVIDO: A lógica de stopPropagation nos conteúdos das modais.
+                // Isso permite que os cliques nos botões de fechar dentro da modal
+                // cheguem ao event listener do document.body.
 
                 // --- Funções AJAX para PEI/Metas/Alvos --- (REMOVIDAS)
 
