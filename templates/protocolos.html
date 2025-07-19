@@ -8,44 +8,39 @@
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* Estilos principais do layout (copiados de pacientes.html) */
+        /* Variáveis de tema */
         :root {
-            --bg: #f1f5f9;                  /* Gray-100 */
-            --card: #ffffff;                /* White */
-            --text: #0f172a;                /* Gray-900 */
-            --muted: #64748b;               /* Gray-500 */
-            --accent: #9b53b8;              /* Purple-500 */
-            --primary-dark: #115e59;        
-            --primary: #5587c2;             /* Blue-500 */
-            --primary-light: #c8dcf3;       /* Blue-100 */
-            --secondary: #f59e0b;           /* Yellow-500 */
-            --danger: #dc2626;              /* Red-600 */
-            --success: #16a34a;             /* Green-600 */
-            --warning: #f59e0b;             /* Yellow-500 */
-            --info: #0ea5e9;                /* Sky-500 */
-            --border-color: #e2e8f0;        /* Gray-200 */
-
-            --dark-bg: #0f172a;             /* Gray-900 */
-            --dark-card: #1e293b;           /* Gray-800 */
-            --dark-text: #f1f5f9;           /* Gray-100 */
-            --dark-muted: #94a3b8;          /* Gray-400 */
-            --dark-border-color: #334155;   /* Gray-600 */
+            --bg: #f1f5f9;       /* Gray-100 */
+            --card: #ffffff;     /* White */
+            --text: #0f172a;     /* Gray-900 */
+            --muted: #64748b;    /* Gray-500 */
+            --accent: #9b53b8;   /* Purple-500 */
+            --primary-dark: #115e59;
+            --primary: #5587c2;   /* Blue-500 */
+            --primary-light: #c8dcf3; /* Blue-100 */
+            --secondary: #f59e0b; /* Yellow-500 */
+            --danger: #dc2626;   /* Red-600 */
+            --success: #16a34a;  /* Green-600 */
+            --warning: #f59e0b;  /* Yellow-500 */
+            --info: #0ea5e9;     /* Sky-500 */
+            --border-color: #e2e8f0; /* Gray-200 */
 
             color-scheme: light;
         }
 
         [data-theme="dark"] {
-            --bg: var(--dark-bg);
-            --text: var(--dark-text);
-            --card: var(--dark-card);
-            --muted: var(--dark-muted);
-            --border-color: var(--dark-border-color);
+            --bg: #0f172a;    /* Gray-900 */
+            --card: #1e293b;  /* Gray-800 */
+            --text: #f1f5f9;  /* Gray-100 */
+            --muted: #94a3b8; /* Gray-400 */
+            --border-color: #334155; /* Gray-600 */
             color-scheme: dark;
         }
         
+        /* Estilos de barra de rolagem */
         ::-webkit-scrollbar {
             background-color: var(--bg);
             width: 0.5625rem;
@@ -77,99 +72,8 @@
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
-        .layout { display: flex; min-height: 100vh; width: 100%; }
 
-        /* --- Main Content & Topbar --- */
-        .main-content {
-            flex: 1; margin-left: 260px; /* Ajustado para 280px */
-            transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado para 280px */
-            max-width: calc(100% - 280px); /* Ajustado para 280px */
-            box-sizing: border-box;
-        }
-        .main-content.collapsed { 
-            margin-left: 88px; /* Ajustado para 88px */
-            width: calc(100% - 88px); /* Ajustado para 88px */
-            max-width: calc(100% - 88px); /* Ajustado para 88px */
-        }
-        .topbar {
-            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
-            position: sticky; top: 0; z-index: 900;
-        }
-        .topbar-left { display: flex; align-items: center; gap: 1rem; }
-        .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
-        .toggle-btn {
-            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
-            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-        .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
-        .topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
-        .search-form { display: flex; align-items: center; }
-        .search-input {
-            padding: 0.5rem 0.8rem; border: 1px solid var(--border-color); border-radius: 8px 0 0 8px;
-            font-size: 0.9rem; background-color: var(--bg); color: var(--text);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .search-input:focus {
-            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none; z-index: 1;
-        }
-        .search-button {
-            background-color: var(--primary); color: white; border: none;
-            padding: 0.5rem 1rem; border-radius: 0 8px 8px 0; margin-left: -1px;
-            cursor: pointer; transition: background-color 0.2s ease;
-        }
-        .search-button:hover { background-color: var(--accent); }
-
-        main { 
-            flex-grow: 1; 
-            padding: 1.5rem; 
-            overflow-y: auto; 
-            width: 100%;
-            max-width: 100%;
-        }
-
-        /* --- Buttons --- */
-        .btn {
-            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
-            font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
-            gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
-        }
-        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
-        .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: var(--accent); }
-        .btn-info { background-color: var(--info); color: white; }
-        .btn-info:hover { background-color: #0369a1; }
-        .btn-warning { background-color: var(--warning); color: #854d0e; }
-        [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
-        .btn-warning:hover { background-color: #fcd34d; }
-        .btn-danger { background-color: var(--danger); color: white; }
-        .btn-danger:hover { background-color: #b91c1c; }
-
-        /* --- Card Layout for Protocols (adaptado de patients.html) --- */
-        .card-list-container {
-            display: grid;
-            /* Use auto-fit to create as many columns as fit, each at least 300px wide */
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            width: 100%; /* Ensure it takes full width of its parent */
-            animation: fadeIn 0.5s ease-in-out;
-            justify-content: center; /* Centers the grid items within the container if there are not enough to fill all columns */
-        }
-
-        /* Keep this media query to force a single column on very small screens */
-        @media (max-width: 767px) {
-            .card-list-container {
-                grid-template-columns: 1fr; /* Force single column on very small screens */
-                gap: 1rem;
-                padding: 0 0.5rem;
-            }
-        }
-
-        /* Card moderno para protocolos (adaptado de patient-card-modern) */
+        /* Card moderno para protocolos */
         .protocol-card-modern {
             background: var(--card);
             border-radius: 16px;
@@ -258,7 +162,7 @@
             white-space: nowrap;
         }
 
-        /* Dropdown de ações (adaptado) */
+        /* Dropdown de ações */
         .protocol-actions-dropdown {
             position: relative;
         }
@@ -503,7 +407,7 @@
             font-size: 0.75rem;
         }
 
-        /* Estado vazio (copiado de pacientes.html) */
+        /* Estado vazio */
         .empty-state {
             display: flex;
             flex-direction: column;
@@ -643,7 +547,7 @@
             transform: translateY(-2px);
         }
 
-        /* Skeleton loading (copiado de pacientes.html) */
+        /* Skeleton loading */
         .protocol-card-skeleton {
             background: var(--card);
             border-radius: 16px;
@@ -714,7 +618,7 @@
             background: rgba(55, 65, 81, 0.6);
         }
 
-        /* Responsividade (copiado de pacientes.html) */
+        /* Responsividade */
         @media (max-width: 767px) {
             .card-list-container {
                 grid-template-columns: 1fr;
@@ -759,7 +663,7 @@
             }
             
             .detail-grid {
-                grid-template-columns: repeat(1, 1fr); /* Mantém 1 coluna para mobile */
+                grid-template-columns: repeat(1, 1fr);
                 gap: 0.75rem;
             }
             
@@ -780,7 +684,7 @@
             }
             
             .detail-grid {
-                grid-template-columns: repeat(1, 1fr); /* Mantém 1 coluna para tablet */
+                grid-template-columns: repeat(1, 1fr);
                 gap: 1rem;
             }
         }
@@ -798,12 +702,12 @@
             }
             
             .detail-grid {
-                grid-template-columns: repeat(1, 1fr); /* Mantém 1 coluna para desktop */
+                grid-template-columns: repeat(1, 1fr);
                 gap: 1rem;
             }
         }
 
-        /* --- Flash Messages (Toast-like) (copiado de pacientes.html) --- */
+        /* --- Flash Messages (Toast-like) --- */
         .toast-container {
             position: fixed;
             top: 85px; /* Abaixo do topbar */
@@ -905,7 +809,6 @@
         @keyframes toast-fade-out {
             from {
                 opacity: 1;
-                transform: translateY(0);
             }
             to {
                 opacity: 0;
@@ -921,7 +824,7 @@
             to { width: 0%; }
         }
 
-        /* --- Modal de Confirmação de Exclusão (copiado de pacientes.html) --- */
+        /* --- Modal de Confirmação de Exclusão --- */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -980,7 +883,7 @@
             color: var(--text);
         }
         
-  .delete-modal .modal-body {
+        .delete-modal .modal-body {
             padding: 2rem;
         }
         
@@ -1051,7 +954,7 @@
             background: #b91c1c;
         }
 
-        /* Nova modal para alertas gerais (copiado de pacientes.html) */
+        /* Nova modal para alertas gerais */
         .alert-modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -1122,9 +1025,9 @@
         }
     </style>
 </head>
-<body>
+<body class="font-inter bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
     <div id="toast-container"></div>
-    <!-- Nova Modal para Alertas Gerais (copiado de pacientes.html) -->
+    <!-- Nova Modal para Alertas Gerais -->
     <div id="general-alert-modal-overlay" class="alert-modal-overlay">
         <div class="alert-modal">
             <div id="alert-modal-icon" class="alert-modal-icon"></div>
@@ -1136,95 +1039,86 @@
         </div>
     </div>
 
-    <div class="layout">
+    <div class="layout flex min-h-screen w-full"> {# Added Tailwind classes #}
         {% include 'Nav.html' %}
 
-        <div class="main-content">
-            <header class="topbar">
-                <div class="topbar-left">                  
-                    <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
-                    <h1 class="page-title">Gerenciar Protocolos</h1>
+        <div id="main-content" class="flex-1 ml-64 transition-all duration-300 flex flex-col w-full max-w-full"> {# Added Tailwind classes and ID #}
+            <header class="bg-white dark:bg-gray-800 p-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 h-16 sticky top-0 z-50"> {# Added Tailwind classes #}
+                <div class="flex items-center gap-4"> {# Added Tailwind classes #}
+                    <button class="text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 dark:hover:text-white w-10 h-10 rounded-full flex items-center justify-center text-xl cursor-pointer transition-colors duration-200" id="sidebar-toggle-btn"><i class="fa-solid fa-bars-staggered"></i></button> {# Added Tailwind classes #}
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Gerenciar Protocolos</h1> {# Added Tailwind classes #}
                 </div>
-                <div class="topbar-actions">
-                    <form id="searchForm" class="search-form" action="{{ url_for('protocols.list_protocols') }}" method="GET">
-                        <input type="text" id="searchInput" name="search_term" placeholder="Buscar protocolo..." class="search-input" value="{{ search_term or '' }}">
-                        <button type="submit" class="search-button"><i class="fas fa-search"></i></button>
+                <div class="flex items-center gap-3"> {# Added Tailwind classes #}
+                    <form id="searchForm" class="flex items-center" action="{{ url_for('protocols.list_protocols') }}" method="GET"> {# Added Tailwind classes #}
+                        <input type="text" id="searchInput" name="search_term" placeholder="Buscar protocolo..." class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg text-base bg-gray-50 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" value="{{ search_term or '' }}"> {# Added Tailwind classes #}
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-r-lg -ml-px cursor-pointer transition-colors duration-200"><i class="fas fa-search"></i></button> {# Added Tailwind classes #}
                     </form>
-                    <a href="{{ url_for('protocols.add_protocol') }}" id="add-protocol-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Protocolo</span>
+                    <a href="{{ url_for('protocols.add_protocol') }}" id="add-protocol-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors duration-200"> {# Added Tailwind classes #}
+                        <i class="fas fa-plus"></i> <span class="hidden md:inline">Adicionar Protocolo</span> {# Added Tailwind classes #}
                     </a>
                 </div>
             </header>
 
-            <main>
-                <div class="card-list-container">
+            <main class="p-6 flex-grow overflow-y-auto w-full max-w-full mx-auto"> {# Added Tailwind classes #}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full justify-items-center"> {# Added Tailwind classes #}
                     {% if protocols %}
                         {% for protocol in protocols %}
-                            <div class="protocol-card modern-card" style="--animation-delay: {{ loop.index0 * 0.1 }}s;">
+                            <div class="protocol-card modern-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full w-full transition-all duration-300 hover:scale-105 hover:shadow-xl" id="protocol-card-{{ protocol.id }}" style="--animation-delay: {{ loop.index0 * 0.1 }}s;"> {# Added Tailwind classes #}
                                 <div class="protocol-card-modern">
-                                    <div class="protocol-header">
-                                        <div class="protocol-icon-wrapper">
+                                    <div class="protocol-header flex items-center p-6 bg-gradient-to-br from-blue-500 to-purple-600 text-white relative"> {# Added Tailwind classes #}
+                                        <div class="protocol-icon-wrapper relative w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-3xl mr-4 flex-shrink-0">
                                             <i class="fas fa-clipboard-list"></i> {# Ícone genérico para protocolo #}
                                         </div>
-                                        <div class="protocol-info">
-                                            <h3 class="protocol-name">{{ protocol.nome }}</h3>
-                                            <div class="protocol-description-short">{{ protocol.descricao | truncate(50, True) }}</div>
+                                        <div class="protocol-info flex-1 min-w-0">
+                                            <h3 class="protocol-name text-2xl font-bold text-white truncate">{{ protocol.nome }}</h3>
+                                            <div class="protocol-description-short text-sm opacity-90 truncate">{{ protocol.descricao | truncate(50, True) }}</div>
                                         </div>
-                                        <div class="protocol-actions-dropdown">
-                                            <button class="dropdown-toggle" onclick="toggleProtocolActions('{{ protocol.id }}')">
+                                        <div class="protocol-actions-dropdown relative">
+                                            <button class="dropdown-toggle bg-white bg-opacity-20 border-none w-9 h-9 rounded-full text-white cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-opacity-30 hover:scale-110" onclick="toggleProtocolActions('{{ protocol.id }}')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
-                                            <div class="dropdown-menu" id="actions-{{ protocol.id }}">
-                                                <div class="dropdown-section-label">
+                                            <div class="dropdown-menu absolute top-full right-0 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl min-w-[180px] opacity-0 invisible transform -translate-y-2 transition-all duration-200 z-50 mt-2" id="actions-{{ protocol.id }}">
+                                                <div class="dropdown-section-label flex items-center gap-1 px-4 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider opacity-70 mt-1">
                                                     <i class="fas fa-cog"></i> Ações
                                                 </div>
-                                                <a href="{{ url_for('protocols.edit_protocol', protocol_id=protocol.id) }}" class="dropdown-item">
-                                                    <i class="fas fa-edit"></i>
+                                                <a href="{{ url_for('protocols.edit_protocol', protocol_id=protocol.id) }}" class="dropdown-item flex items-center gap-3 px-4 py-3 text-gray-800 dark:text-gray-200 no-underline text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150">
+                                                    <i class="fas fa-edit w-4 text-center"></i>
                                                     Editar Dados
                                                 </a>
-                                                <button type="button" class="dropdown-item dropdown-item-danger" onclick="deleteProtocol('{{ protocol.id }}', '{{ protocol.nome }}')">
-                                                    <i class="fas fa-trash"></i>
+                                                <button type="button" class="dropdown-item dropdown-item-danger flex items-center gap-3 px-4 py-3 text-red-600 no-underline text-sm hover:bg-red-50 dark:hover:bg-red-900 transition-colors duration-150" onclick="showDeleteModal(event, '{{ protocol.id }}', '{{ protocol.nome }}')">
+                                                    <i class="fas fa-trash w-4 text-center"></i>
                                                     Excluir Protocolo
                                                 </button>
-                                                <div class="dropdown-divider"></div>
-                                                <div class="dropdown-section-label">
+                                                <div class="dropdown-divider h-px bg-gray-200 dark:bg-gray-600 my-2"></div>
+                                                <div class="dropdown-section-label flex items-center gap-1 px-4 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider opacity-70">
                                                     <i class="fas fa-info-circle"></i> Detalhes
                                                 </div>
-                                                <button type="button" class="dropdown-item" onclick="viewProtocolDetails('{{ protocol.id }}')">
-                                                    <i class="fas fa-eye"></i>
+                                                <button type="button" class="dropdown-item flex items-center gap-3 px-4 py-3 text-gray-800 dark:text-gray-200 no-underline text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150" onclick="viewProtocolDetails('{{ protocol.id }}')">
+                                                    <i class="fas fa-eye w-4 text-center"></i>
                                                     Ver Detalhes
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    <div class="protocol-details">
-                                        <div class="detail-grid">
-                                            <div class="detail-item">
-                                                <div class="detail-icon">
-                                                    <i class="fas fa-clock"></i>
-                                                </div>
-                                                <div class="detail-content">
-                                                    <span class="detail-label">Duração Estimada</span>
-                                                    <span class="detail-value">{{ protocol.duracao_estimada }} dias</span>
-                                                </div>
-                                            </div>
-                                            <div class="detail-item">
-                                                <div class="detail-icon">
+                                    <div class="protocol-details p-6 flex-1">
+                                        <div class="detail-grid grid gap-4 grid-cols-1">
+                                            <div class="detail-item flex items-center gap-4 p-3 rounded-lg transition-all duration-200">
+                                                <div class="detail-icon w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 flex-shrink-0">
                                                     <i class="fas fa-check-circle"></i>
                                                 </div>
-                                                <div class="detail-content">
-                                                    <span class="detail-label">Status</span>
-                                                    <span class="detail-value">{{ 'Ativo' if protocol.ativo else 'Inativo' }}</span>
+                                                <div class="detail-content flex-1 min-w-0">
+                                                    <span class="detail-label block text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Status</span>
+                                                    <span class="detail-value block text-base font-medium text-gray-900 dark:text-gray-100 truncate">{{ 'Ativo' if protocol.ativo else 'Inativo' }}</span>
                                                 </div>
                                             </div>
-                                            <div class="detail-item">
-                                                <div class="detail-icon">
+                                            <div class="detail-item flex items-center gap-4 p-3 rounded-lg transition-all duration-200">
+                                                <div class="detail-icon w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 flex-shrink-0">
                                                     <i class="fas fa-list-ol"></i>
                                                 </div>
-                                                <div class="detail-content">
-                                                    <span class="detail-label">Etapas</span>
-                                                    <span class="detail-value">
+                                                <div class="detail-content flex-1 min-w-0">
+                                                    <span class="detail-label block text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Etapas</span>
+                                                    <span class="detail-value block text-base font-medium text-gray-900 dark:text-gray-100 truncate">
                                                         {% if protocol.etapas %}
                                                             {{ protocol.etapas | length }} etapa(s)
                                                         {% else %}
@@ -1236,10 +1130,10 @@
                                         </div>
                                     </div>
                                     
-                                    <div class="protocol-footer">
-                                        <div class="protocol-stats">
-                                            <div class="stat-item">
-                                                <i class="fas fa-calendar-alt"></i>
+                                    <div class="protocol-footer flex items-center p-4 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 mt-auto w-full">
+                                        <div class="protocol-stats flex items-center gap-4 flex-1">
+                                            <div class="stat-item flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                                                <i class="fas fa-calendar-alt text-xs"></i>
                                                 <span id="created-date-{{ protocol.id }}"></span>
                                             </div>
                                         </div>
@@ -1248,38 +1142,38 @@
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="empty-state">
-                            <div class="empty-state-animation">
-                                <div class="empty-state-icon">
+                        <div class="empty-state col-span-full flex flex-col items-center justify-center p-16 text-center bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+                            <div class="empty-state-animation relative mb-8">
+                                <div class="empty-state-icon w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-3xl text-white animate-float-icon shadow-lg">
                                     <i class="fas fa-clipboard-list"></i>
                                 </div>
-                                <div class="empty-state-particles">
-                                    <div class="particle"></div>
-                                    <div class="particle"></div>
-                                    <div class="particle"></div>
+                                <div class="empty-state-particles absolute inset-0 pointer-events-none">
+                                    <div class="particle absolute w-1 h-1 bg-blue-500 rounded-full animate-float-particle" style="top: 20%; left: 20%; animation-delay: 0s;"></div>
+                                    <div class="particle absolute w-1 h-1 bg-blue-500 rounded-full animate-float-particle" style="top: 60%; right: 30%; animation-delay: 1.5s;"></div>
+                                    <div class="particle absolute w-1 h-1 bg-blue-500 rounded-full animate-float-particle" style="bottom: 30%; left: 60%; animation-delay: 3s;"></div>
                                 </div>
                             </div>
-                            <h3 class="empty-state-title">
+                            <h3 class="empty-state-title text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                                 {% if search_term %}
                                     Nenhum protocolo encontrado
                                 {% else %}
                                     Nenhum protocolo cadastrado
                                 {% endif %}
                             </h3>
-                            <p class="empty-state-description">
+                            <p class="empty-state-description text-base text-gray-600 dark:text-gray-400 mb-8 leading-relaxed max-w-lg">
                                 {% if search_term %}
                                     Tente ajustar os filtros de busca ou verifique se o nome ou descrição estão corretos.
                                 {% else %}
                                     Comece criando seu primeiro protocolo para organizar seus procedimentos.
                                 {% endif %}
                             </p>
-                            <div class="empty-state-actions">
-                                <a href="{{ url_for('protocols.add_protocol') }}" class="btn btn-primary empty-state-btn">
+                            <div class="empty-state-actions flex flex-wrap justify-center gap-4">
+                                <a href="{{ url_for('protocols.add_protocol') }}" class="btn btn-primary empty-state-btn bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-xl text-lg transition-all duration-300 relative overflow-hidden">
                                     <i class="fas fa-plus"></i>
                                     Adicionar Protocolo
                                 </a>
                                 {% if search_term %}
-                                    <button class="btn btn-secondary empty-state-btn" onclick="clearSearch()">
+                                    <button class="btn btn-secondary empty-state-btn bg-gray-500 hover:bg-gray-600 text-white px-8 py-4 rounded-xl text-lg transition-all duration-300 relative overflow-hidden" onclick="clearSearch()">
                                         <i class="fas fa-times"></i>
                                         Limpar Busca
                                     </button>
@@ -1292,122 +1186,173 @@
         </div>
     </div>
 
-    <script type="module">
-        // Variáveis globais para as funções de exclusão e alerta
-        let showToastGlobal = null;
-        let showGeneralAlertModalGlobal = null;
+    <!-- Modal de Exclusão (será preenchido via JS) -->
+    <div id="modal-placeholder"></div>
+
+    <script>
+        // Função para exibir toasts (copiada de protocolo_form.html para consistência)
+        const toastContainer = document.getElementById('toast-container');
+        function showToast(message, category = 'info') {
+            if (!toastContainer) return;
+            const toast = document.createElement('div');
+            toast.className = `toast ${category}`;
+            let iconClass = 'fa-solid fa-circle-info';
+            let title = 'Informação';
+            if (category === 'success') { iconClass = 'fa-solid fa-check-circle'; title = 'Sucesso'; }
+            if (category === 'danger') { iconClass = 'fa-solid fa-times-circle'; title = 'Erro'; }
+            if (category === 'warning') { iconClass = 'fa-solid fa-exclamation-triangle'; title = 'Atenção'; }
+            toast.innerHTML = `
+                <div class="toast-icon"><i class="${iconClass}"></i></div>
+                <div class="toast-content">
+                    <strong class="toast-title">${title}</strong>
+                    <span class="toast-message">${message}</span>
+                </div>
+                <button class="toast-close">&times;</button>`;
+            toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Lógica para o Menu Lateral ---
             const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
-            const menuBtnMobile = document.querySelector('.menu-btn-mobile');
-            const toggleBtnDesktop = document.querySelector('.toggle-btn-desktop');
-            const themeToggle = document.querySelector('#theme-toggle');
-            const logoutButton = document.getElementById('logoutButton');
-            const searchInput = document.getElementById('searchInput');
-            const searchForm = document.getElementById('searchForm');
-            const cardListContainer = document.querySelector('.card-list-container');
+            const mainContent = document.getElementById('main-content'); // Use ID for main-content
+            const toggleBtn = document.getElementById('sidebar-toggle-btn');
 
-            // --- Lógica para Notificações Toast (copiado de pacientes.html) ---
-            const toastContainer = document.getElementById('toast-container');
-            function showToast(message, category = 'info') {
-                if (!toastContainer) return;
-
-                const toast = document.createElement('div');
-                toast.className = `toast ${category}`;
-                
-                let iconClass = 'fa-solid fa-circle-info';
-                let title = 'Informação';
-                if (category === 'success') {
-                    iconClass = 'fa-solid fa-check-circle';
-                    title = 'Sucesso';
-                }
-                if (category === 'danger') {
-                    iconClass = 'fa-solid fa-times-circle';
-                    title = 'Erro';
-                }
-                if (category === 'warning') {
-                    iconClass = 'fa-solid fa-exclamation-triangle';
-                    title = 'Atenção';
-                }
-
-                toast.innerHTML = `
-                    <div class="toast-icon">
-                        <i class="${iconClass}"></i>
-                    </div>
-                    <div class="toast-content">
-                        <strong class="toast-title">${title}</strong>
-                        <span class="toast-message">${message}</span>
-                    </div>
-                    <button class="toast-close">&times;</button>
-                    <div class="toast-progress"></div>
-                `;
-                
-                toastContainer.appendChild(toast);
-
-                const closeButton = toast.querySelector('.toast-close');
-                closeButton.addEventListener('click', () => {
-                    toast.classList.add('fade-out');
-                    toast.addEventListener('animationend', () => toast.remove());
+            if (sidebar && mainContent && toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    // Toggle 'collapsed' class on sidebar for visual effect
+                    sidebar.classList.toggle('collapsed'); 
+                    // Toggle Tailwind classes on mainContent for margin adjustment
+                    mainContent.classList.toggle('ml-64'); // Original margin
+                    mainContent.classList.toggle('ml-20'); // Collapsed margin (approx. 80px)
                 });
 
-                setTimeout(() => {
-                    toast.classList.add('fade-out');
-                    toast.addEventListener('animationend', () => toast.remove());
-                }, 5000); // A notificação desaparece após 5 segundos
-            }
-
-            // Conectar a função showToast com a global
-            showToastGlobal = showToast;
-
-            // --- Lógica para Modal de Alerta Geral (copiado de pacientes.html) ---
-            const generalAlertOverlay = document.getElementById('general-alert-modal-overlay');
-            const alertModalIcon = document.getElementById('alert-modal-icon');
-            const alertModalTitle = document.getElementById('alert-modal-title');
-            const alertModalMessage = document.getElementById('alert-modal-message');
-            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
-
-            function showGeneralAlertModal(title, message, category = 'info') {
-                alertModalTitle.textContent = title;
-                alertModalMessage.textContent = message;
-                
-                alertModalIcon.className = 'alert-modal-icon'; // Reset class
-                let iconClass = '';
-                switch (category) {
-                    case 'info': iconClass = 'fas fa-info-circle'; break;
-                    case 'success': iconClass = 'fas fa-check-circle'; break;
-                    case 'warning': iconClass = 'fas fa-exclamation-triangle'; break;
-                    case 'danger': iconClass = 'fas fa-times-circle'; break;
+                // Adjust layout on initial load and resize for responsiveness
+                function adjustLayout() {
+                    if (window.innerWidth >= 768) { // Tailwind's 'md' breakpoint
+                        sidebar.classList.remove('collapsed'); // Ensure sidebar is open on desktop
+                        mainContent.classList.remove('ml-20', 'ml-0'); /* Remove mobile/collapsed margin */
+                        mainContent.classList.add('ml-64'); /* Add desktop margin */
+                    } else {
+                        sidebar.classList.add('collapsed'); // Collapse sidebar on mobile
+                        mainContent.classList.remove('ml-64', 'ml-20'); /* Remove desktop/collapsed margin */
+                        mainContent.classList.add('ml-0'); /* No margin on mobile */
+                    }
                 }
-                alertModalIcon.classList.add(category);
-                alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
 
-                generalAlertOverlay.classList.add('show');
-                document.body.style.overflow = 'hidden'; // Bloquear scroll do body
+                adjustLayout(); // Call on load
+                window.addEventListener('resize', adjustLayout); // Call on resize
             }
 
-            function closeGeneralAlertModal() {
-                generalAlertOverlay.classList.remove('show');
-                document.body.style.overflow = 'auto'; // Restaurar scroll do body
-            }
-            // Conectar a função showGeneralAlertModal com a global
-            showGeneralAlertModalGlobal = showGeneralAlertModal;
+            // --- Lógica para Dropdown de Ações ---
+            window.toggleActions = (event, id) => {
+                event.stopPropagation();
+                const targetMenu = document.getElementById(`actions-${id}`);
+                
+                // Fecha outros menus que possam estar abertos
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    if (menu !== targetMenu) {
+                        menu.classList.remove('show');
+                    }
+                });
+                
+                targetMenu.classList.toggle('show');
+            };
 
-            alertModalCloseBtn.addEventListener('click', closeGeneralAlertModal);
-            generalAlertOverlay.addEventListener('click', (e) => {
-                if (e.target === generalAlertOverlay) {
-                    closeGeneralAlertModal();
+            // Fechar dropdowns ao clicar fora
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.protocol-actions-dropdown')) {
+                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                        menu.classList.remove('show');
+                    });
                 }
             });
 
-            // Processa mensagens flash do backend e as exibe como toasts
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% for category, message in messages %}
-                    showToast({{ message|tojson|safe }}, "{{ category }}");
-                {% endfor %}
-            {% endwith %}
+            // --- Lógica para Modal de Exclusão ---
+            window.showDeleteModal = (event, id, name) => {
+                event.preventDefault(); // Previne o comportamento padrão do link
+                console.log(`Abrindo modal de exclusão para o protocolo ID: ${id}, Nome: ${name}`); // Log de depuração
 
-            // --- Funções de interação dos cards (adaptado de pacientes.html) ---
+                const modalPlaceholder = document.getElementById('modal-placeholder');
+                if (!modalPlaceholder) return;
+
+                const modalHTML = `
+                    <div class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal()">
+                        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" onclick="event.stopPropagation()">
+                            <h3 class="text-lg font-bold text-gray-900">Confirmar Exclusão</h3>
+                            <p class="mt-2 text-sm text-gray-600">
+                                Tem certeza que deseja excluir o protocolo <strong>${name}</strong>? Esta ação não pode ser desfeita.
+                            </p>
+                            <div class="mt-4 flex justify-end gap-3">
+                                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                                <button type="button" class="btn btn-danger" onclick="confirmDelete('${id}')">Sim, Excluir</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                modalPlaceholder.innerHTML = modalHTML;
+            };
+
+            window.confirmDelete = async (id) => {
+                console.log(`[confirmDelete] Iniciando exclusão para o protocolo ID: ${id}`);
+                closeModal(); // Fecha o modal imediatamente
+
+                try {
+                    console.log(`[confirmDelete] Enviando requisição POST para /protocols/delete/${id}`);
+                    const response = await fetch(`/protocols/delete/${id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    console.log(`[confirmDelete] Resposta recebida. Status: ${response.status}`);
+                    const result = await response.json();
+                    console.log(`[confirmDelete] Conteúdo da resposta JSON:`, result);
+
+                    if (response.ok && result.success) {
+                        showToast('Protocolo excluído com sucesso!', 'success');
+                        console.log(`[confirmDelete] Protocolo ${id} excluído com sucesso.`);
+                        // Remove o card do protocolo da interface
+                        const protocolCard = document.getElementById(`protocol-card-${id}`);
+                        if (protocolCard) {
+                            protocolCard.remove();
+                            // Verifica se não há mais protocolos e exibe a mensagem de estado vazio
+                            const cardListContainer = document.querySelector('.grid'); /* Alterado para .grid */
+                            if (cardListContainer && cardListContainer.children.length === 0) {
+                                cardListContainer.innerHTML = `
+                                    <div class="col-span-full empty-state">
+                                        <div class="empty-state-icon"><i class="fas fa-folder-open"></i></div>
+                                        <h3 class="empty-state-title">Nenhum protocolo encontrado</h3>
+                                        <p class="empty-state-description">
+                                            Comece adicionando um novo protocolo para organizar seus procedimentos.
+                                        </p>
+                                        <a href="{{ url_for('protocols.add_protocol') }}" class="btn btn-primary">Adicionar Protocolo</a>
+                                    </div>
+                                `;
+                            }
+                        }
+                    } else {
+                        console.error(`[confirmDelete] Erro ao excluir protocolo ${id}:`, result.message);
+                        showToast(`Erro ao excluir protocolo: ${result.message || 'Ocorreu um erro desconhecido.'}`, 'danger');
+                    }
+                } catch (error) {
+                    console.error('[confirmDelete] Erro na requisição de exclusão (network ou parsing):', error);
+                    showToast('Erro de conexão ao tentar excluir o protocolo.', 'danger');
+                }
+            };
+
+            window.closeModal = () => {
+                const modalPlaceholder = document.getElementById('modal-placeholder');
+                if (modalPlaceholder) {
+                    modalPlaceholder.innerHTML = '';
+                }
+            };
+
+            // Funções de interação dos cards (adaptado do seu código fornecido)
             window.toggleProtocolActions = function(protocolId) {
                 const dropdown = document.getElementById(`actions-${protocolId}`);
                 const allDropdowns = document.querySelectorAll('.dropdown-menu');
@@ -1422,144 +1367,50 @@
                 dropdown.classList.toggle('show');
             }
 
-            window.deleteProtocol = function(protocolId, protocolName) {
-                // Fechar o dropdown
-                document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                    menu.classList.remove('show');
-                });
-
-                // Criar modal de confirmação personalizado
-                const modal = document.createElement('div');
-                modal.className = 'modal-overlay delete-modal-overlay';
-                modal.innerHTML = `
-                    <div class="modal-content delete-modal">
-                        <div class="modal-header">
-                            <div class="modal-icon-danger">
-                                <i class="fas fa-exclamation-triangle"></i>
-                            </div>
-                            <h3>Confirmar Exclusão</h3>
-                        </div>
-                        <div class="modal-body">
-                            <p>Tem certeza que deseja excluir o protocolo <strong>${protocolName}</strong>?</p>
-                            <p class="warning-text">
-                                <i class="fas fa-warning"></i>
-                                Esta ação não pode ser desfeita. Todos os dados associados a este protocolo serão permanentemente removidos.
-                            </p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
-                                <i class="fas fa-times"></i>
-                                Cancelar
-                            </button>
-                            <button type="button" class="btn btn-danger" onclick="confirmDeleteProtocol('${protocolId}')">
-                                <i class="fas fa-trash"></i>
-                                Sim, Excluir
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                document.body.appendChild(modal);
-                
-                // Animação de entrada
-                requestAnimationFrame(() => {
-                    modal.classList.add('show');
-                });
-            }
-
-            function closeDeleteModal() {
-                const modal = document.querySelector('.delete-modal-overlay');
-                if (modal) {
-                    modal.classList.remove('show');
-                    const handleTransitionEnd = () => {
-                        if (modal.parentNode) {
-                            modal.parentNode.removeChild(modal);
-                        }
-                        modal.removeEventListener('transitionend', handleTransitionEnd);
-                    };
-                    modal.addEventListener('transitionend', handleTransitionEnd);
-                    setTimeout(() => {
-                        if (modal.parentNode) {
-                            modal.parentNode.removeChild(modal);
-                        }
-                        modal.removeEventListener('transitionend', handleTransitionEnd);
-                    }, 350);
-                }
-            }
-
-            function forceCloseDeleteModal() {
-                const modal = document.querySelector('.delete-modal-overlay');
-                if (modal) {
-                    modal.remove();
-                }
-            }
-
-            window.confirmDeleteProtocol = function(protocolId) {
-                const confirmBtn = document.querySelector('.modal-footer .btn-danger');
-                const originalText = confirmBtn.innerHTML;
-                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
-                confirmBtn.disabled = true;
-
-                fetch(`/protocols/delete/${protocolId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    } else {
-                        throw new Error('Erro ao excluir protocolo');
-                    }
-                })
-                .then(data => {
-                    forceCloseDeleteModal();
-                    if (data.success) {
-                        if (showToastGlobal) {
-                            showToastGlobal('Protocolo excluído com sucesso!', 'success');
-                        }
-                        // Recarregar a página para refletir a exclusão
-                        window.location.reload(); 
-                    } else {
-                        if (showToastGlobal) {
-                            showToastGlobal(data.message || 'Erro ao excluir protocolo. Tente novamente.', 'danger');
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro ao excluir protocolo:', error);
-                    confirmBtn.innerHTML = originalText;
-                    confirmBtn.disabled = false;
-                    if (showToastGlobal) {
-                        showToastGlobal('Erro de conexão ao excluir protocolo. Tente novamente.', 'danger');
-                    }
-                });
-            }
-
             window.viewProtocolDetails = function(protocolId) {
-                // Implementar lógica para exibir detalhes do protocolo, talvez em uma modal ou redirecionar
-                showGeneralAlertModalGlobal('Detalhes do Protocolo', `Funcionalidade para ver detalhes do protocolo ${protocolId} será implementada aqui.`, 'info');
+                showToast(`Funcionalidade para ver detalhes do protocolo ${protocolId} será implementada aqui.`, 'info');
             }
-
-            // Fechar dropdowns ao clicar fora
-            document.addEventListener('click', function(event) {
-                if (!event.target.closest('.protocol-actions-dropdown')) {
-                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                        menu.classList.remove('show');
-                    });
-                }
-            });
 
             // Função para limpar a busca
             window.clearSearch = function() {
-                searchInput.value = '';
-                searchForm.submit(); // Envia o formulário para recarregar a lista sem o termo de busca
+                const searchInput = document.getElementById('searchInput');
+                const searchForm = document.getElementById('searchForm');
+                if (searchInput && searchForm) {
+                    searchInput.value = '';
+                    searchForm.submit(); // Envia o formulário para recarregar a lista sem o termo de busca
+                }
+            }
+
+            // Função para formatar data (copiada de pacientes.html)
+            function formatDate(dateStr) {
+                if (!dateStr) return 'N/A';
+                try {
+                    const date = new Date(dateStr);
+                    if (isNaN(date.getTime())) {
+                        return 'Data Inválida';
+                    }
+                    return date.toLocaleDateString('pt-BR');
+                } catch (e) {
+                    console.error("Error formatting date:", e);
+                    return 'N/A';
+                }
+            }
+
+            // Chamar formatDate para cada protocol's creation date after the DOM is loaded
+            if (typeof protocols !== 'undefined') {
+                protocols.forEach(protocol => {
+                    const dateElement = document.getElementById(`created-date-${protocol.id}`);
+                    if (dateElement) {
+                        dateElement.textContent = `Criado em: ${formatDate(protocol.data_inclusao)}`;
+                    }
+                });
             }
 
             // Animar entrada dos cards
             function animateCardsEntrance() {
+                const cardListContainer = document.querySelector('.grid'); /* Alterado para .grid */
+                if (!cardListContainer) return;
+
                 const cards = cardListContainer.querySelectorAll('.protocol-card');
                 
                 const observer = new IntersectionObserver((entries) => {
@@ -1591,32 +1442,6 @@
                     observer.observe(card);
                 });
             }
-
-            // Function to format date (copied from pacientes.html)
-            function formatDate(dateStr) {
-                if (!dateStr) return 'N/A';
-                try {
-                    const date = new Date(dateStr);
-                    // Check if the date is valid before formatting
-                    if (isNaN(date.getTime())) {
-                        return 'Data Inválida';
-                    }
-                    return date.toLocaleDateString('pt-BR');
-                } catch (e) {
-                    console.error("Error formatting date:", e);
-                    return 'N/A';
-                }
-            }
-
-            // Call formatDate for each protocol's creation date after the DOM is loaded
-            // This ensures the date is formatted on the client-side.
-            const protocols = {{ protocols | tojson | safe }}; // Assuming protocols are passed from Flask
-            protocols.forEach(protocol => {
-                const dateElement = document.getElementById(`created-date-${protocol.id}`);
-                if (dateElement) {
-                    dateElement.textContent = `Criado em: ${formatDate(protocol.data_cadastro)}`;
-                }
-            });
 
             // Chamar animação ao carregar a página
             animateCardsEntrance();
