@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Agendamentos - {{ session.clinica_nome_display or 'Clínica On' }}</title>
+    <title>Gerenciar Agendamentos - Clínica On</title>
     
     <link rel="icon" type="image/png" href="https://placehold.co/40x40/0d9488/ffffff?text=C">
     
@@ -1121,11 +1121,260 @@
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
             outline: none;
         }
+
+        /* CSS from Nav.html */
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary), var(--accent));
+            color: white;
+            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 1000;
+            position: fixed;
+            width: 16.25rem;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-inner-content {
+            padding: 0rem;
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 0 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            height: 4.375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header .logo {
+            color: white;
+            font-weight: 700;
+            font-size: 1.4rem;
+            text-decoration: none;
+            white-space: nowrap;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-header .logo i {
+            font-size: 1.8rem;
+        }
+
+        .sidebar.collapsed {
+            width: 4.875rem;
+        }
+
+        .sidebar.collapsed .sidebar-header .logo span {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-header .logo i {
+            margin-right: 0;
+        }
+
+        .sidebar nav {
+            flex-grow: 1;
+            margin-top: 1rem;
+            padding: 0 0.75rem;
+        }
+
+        .sidebar nav ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar nav ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar nav ul li a {
+            color: #e2e8f0;
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: background 0.2s ease, color 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            /* gap: 1rem; */
+        }
+
+        .submenu-toggle-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar nav ul li a i {
+            width: 1.5rem;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            text-align: center;
+        }
+
+        .sidebar.collapsed nav ul li a span {
+            display: none;
+        }
+
+        .sidebar.collapsed nav ul li a {
+            justify-content: center;
+            padding: 0.75rem;
+        }
+
+        .sidebar nav ul li a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .sidebar nav ul li.active a {
+            background: white;
+            color: var(--primary);
+            border-radius: 0.5rem;
+            font-weight: 600;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 1rem 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar.collapsed .sidebar-footer {
+            padding: 1rem 0.5rem;
+        }
+
+        .sidebar-footer button,
+        .sidebar-footer a {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: background 0.2s ease, color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-footer button:hover,
+        .sidebar-footer a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;;
+        }
+
+        .sidebar.collapsed .sidebar-footer span {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-footer button,
+        .sidebar.collapsed .sidebar-footer a {
+            justify-content: center;
+            padding: 0.75rem;
+        }
+
+        /* Estilos para Submenu (Dropdown) */
+        .sidebar nav ul li.has-submenu .submenu {
+            padding: 0rem;
+            max-height: 0rem;
+            list-style: none;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 0rem 0rem 0.5rem 0.5rem;
+        }
+
+        .sidebar nav ul li ul.submenu li.active a {
+            border-radius: 0rem;
+        }
+
+        .sidebar nav ul li.has-submenu.open .submenu {
+            overflow-y: hidden;
+            transition: max-height 0.5s ease-in;
+            max-height: 62.5rem;
+        }
+
+        .sidebar nav ul li.has-submenu.open .submenu-toggle {
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 0.5rem 0.5rem 0rem 0rem;
+        }
+
+        .sidebar nav ul li.has-submenu.open ul.submenu li a:hover {
+            border-radius: 0rem;
+        }
+
+        .sidebar nav ul.submenu li {
+            margin-bottom: 0rem;
+        }
+
+        /* Ajustar estado colapsado para o submenu */
+        .sidebar.collapsed .has-submenu .submenu-toggle span {
+            display: none;
+        }
+
+        .sidebar.collapsed .has-submenu .submenu-toggle .submenu-arrow {
+            display: none;
+        }
+
+        .sidebar.collapsed .has-submenu .submenu {
+            display: none;
+        }
+
+        /* Responsivo para a sidebar */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 0.25rem 0 0.9375rem rgba(0, 0, 0, 0.1);
+            }
+
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+                width: 16.25rem;
+            }
+
+            .sidebar.collapsed nav ul li a,
+            .sidebar.collapsed .sidebar-footer button,
+            .sidebar.collapsed .sidebar-footer a {
+                justify-content: flex-start;
+            }
+
+            .sidebar.collapsed nav ul li a span,
+            .sidebar.collapsed .sidebar-footer span {
+                display: inline;
+            }
+
+            .sidebar.collapsed .sidebar-header .logo span {
+                display: inline;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="toast-container"></div>
-    <!-- Nova Modal para Alertas Gerais (copiada de pacientes.html) -->
+    <!-- Nova Modal para Alertas Gerais -->
     <div id="general-alert-modal-overlay" class="alert-modal-overlay">
         <div class="alert-modal">
             <div id="alert-modal-icon" class="alert-modal-icon"></div>
@@ -1138,7 +1387,129 @@
     </div>
 
     <div class="layout">
-        {% include 'Nav.html' %}
+        <!-- Sidebar (Conteúdo de Nav.html) -->
+        <aside class="sidebar">
+            <div class="sidebar-inner-content">
+                <div class="sidebar-header">
+                    <a href="#" class="logo" title="ClínicaOn">
+                        <i class="fa-solid fa-staff-snake"></i> <span>ClínicaOn</span>
+                    </a>
+                </div>
+                <nav>
+                    <ul>
+                        <li class="active">
+                            <a href="#" title="Dashboard">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-solid fa-house-chimney"></i>
+                                    <span>Dashboard</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="has-submenu">
+                            <a href="#" class="submenu-toggle" title="Gerir Pacientes">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-solid fa-hospital-user"></i>
+                                    <span>Gerir Pacientes</span>
+                                </div>
+                                <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li><a href="#" title="Pacientes"><span>Pacientes</span></a></li>
+                                <li><a href="#" title="Prontuários"><span>Prontuários</span></a></li>
+                                <li><a href="#" title="PEI's"><span>PEI's</span></a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#" title="Agendamentos">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-regular fa-calendar-check"></i>
+                                    <span>Agendamentos</span>
+                                </div>
+                            </a>
+                        </li>
+                        <!-- Assuming user_role is 'admin' for demonstration -->
+                        <li>
+                            <a href="#" title="Profissionais">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-solid fa-user-doctor"></i>
+                                    <span>Profissionais</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" title="Serviços/Procedimentos">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-solid fa-syringe"></i>
+                                    <span>Serviços/Proc.</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" title="Convênios">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-solid fa-handshake"></i>
+                                    <span>Convênios</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" title="Horários">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-regular fa-clock"></i>
+                                    <span>Horários</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" title="Protocolos">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-solid fa-clipboard-list"></i>
+                                    <span>Protocolos</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="has-submenu">
+                            <a href="#" class="submenu-toggle" title="Financeiro">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-solid fa-money-bill-wave"></i>
+                                    <span>Financeiro</span>
+                                </div>
+                                <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li><a href="#" title="Contas a Pagar"><span>Contas a Pagar</span></a></li>
+                                <li><a href="#" title="Estoque"><span>Estoque</span></a></li>
+                                <li><a href="#" title="Patrimônio"><span>Patrimônio</span></a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#" title="Utilizadores">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-solid fa-users-gear"></i>
+                                    <span>Utilizadores</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" title="Modelos Anamnese">
+                                <div class="submenu-toggle-content">
+                                    <i class="fa-regular fa-file-lines"></i>
+                                    <span>Modelos Anamnese</span>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="theme-toggle" aria-label="Alternar tema" title="Alternar Tema">
+                        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
+                    </button>
+                    <a href="#" id="logoutButton" title="Sair">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
 
         <div class="main-content">
             <header class="topbar">
@@ -1226,7 +1597,7 @@
     <!-- Modal de Registro/Edição Manual de Agendamento -->
     <div class="modal-overlay" id="modalRegistroManual">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('registrar_atendimento_manual') }}" id="formRegistroManual">
+            <form method="POST" action="#" id="formRegistroManual">
                 <input type="hidden" name="agendamento_id" id="agendamento_id_manual">
                 <div class="modal-header">
                     <h3 id="modalRegistroManualTitle"><i class="fa-solid fa-calendar-plus"></i> Registrar Atendimento</h3>
@@ -1238,9 +1609,7 @@
                         <label for="paciente_id_manual">Paciente Existente</label>
                         <select id="paciente_id_manual" name="paciente_id" class="form-input">
                             <option value="">-- Selecione ou cadastre um novo abaixo --</option>
-                            {% for paciente in pacientes_para_filtro %}
-                                <option value="{{ paciente.id }}" data-telefone="{{ paciente.contato_telefone or '' }}">{{ paciente.nome }}</option>
-                            {% endfor %}
+                            <!-- Pacientes serão preenchidos via JS -->
                         </select>
                     </div>
                     <div class="form-row">
@@ -1259,18 +1628,14 @@
                         <label for="profissional_id_manual">Profissional</label>
                         <select id="profissional_id_manual" name="barbeiro_id_manual" required class="form-input">
                         <option value="">Selecione o profissional</option>
-                            {% for professional in profissionais_para_filtro %} 
-                            <option value="{{ professional.id }}">{{ professional.nome }}</option>
-                            {% endfor %}
+                            <!-- Profissionais serão preenchidos via JS -->
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="servico_id_manual">Serviço/Procedimento</label>
                         <select id="servico_id_manual" name="servico_id_manual" required class="form-input">
                             <option value="">Selecione o serviço/procedimento</option>
-                            {% for servico_proc in servicos_ativos %} 
-                            <option value="{{ servico_proc.id }}" data-preco="{{ servico_proc.preco|float }}">{{ servico_proc.nome }}</option> {# REMOVED PRICE FROM DISPLAY #}
-                            {% endfor %}
+                            <!-- Serviços serão preenchidos via JS -->
                         </select>
                     </div>
                     <div class="form-row">
@@ -1354,7 +1719,7 @@
     </div>
 
     <!-- Formulário para Apagar Agendamento (escondido) -->
-    <form id="formApagarAgendamento" method="POST" action="{{ url_for('apagar_agendamento') }}" style="display: none;">
+    <form id="formApagarAgendamento" method="POST" action="#" style="display: none;">
         <input type="hidden" name="agendamento_id" id="agendamento_id_apagar">
     </form>
 
@@ -1374,7 +1739,7 @@
         </div>
     </div>
 
-    <!-- The Notification Modal (copiada de pacientes.html) -->
+    <!-- The Notification Modal -->
     <div id="notificationModal" class="alert-modal-overlay">
         <!-- Modal content -->
         <div class="alert-modal">
@@ -1397,6 +1762,7 @@
         };
         const { initializeApp } = FAKE_FIREBASE;
         const { getAuth, signOut: firebaseSignOut } = FAKE_FIREBASE;
+        // Use an empty object for firebaseConfig if __firebase_config is not defined
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         let auth = getAuth(initializeApp(firebaseConfig));
 
@@ -1500,68 +1866,130 @@
             });
 
             // --- Processa mensagens flash do backend e as exibe na MODAL ---
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% for category, message in messages %}
-                    // Use a nova função openNotificationModal para as mensagens flash
-                    showGeneralAlertModal(
-                        "{{ 'Sucesso!' if category == 'success' else ('Erro!' if category == 'error' else ('Atenção!' if category == 'warning' else 'Informação')) }}",
-                        {{ message|tojson|safe }},
-                        "{{ category }}"
-                    );
-                {% endfor %}
-            {% endwith %}
+            // {% with messages = get_flashed_messages(with_categories=true) %}
+            //     {% for category, message in messages %}
+            //         // Use a nova função openNotificationModal para as mensagens flash
+            //         showGeneralAlertModal(
+            //             "{{ 'Sucesso!' if category == 'success' else ('Erro!' if category == 'error' else ('Atenção!' if category == 'warning' else 'Informação')) }}",
+            //             {{ message|tojson|safe }},
+            //             "{{ category }}"
+            //         );
+            //     {% endfor %}
+            // {% endwith %}
 
 
             // --- Sidebar Logic (reused) ---
             function setupSidebar() {
-                if (!sidebar || !mainContent) return;
+                if (!sidebar || !mainContent) {
+                    console.log('Sidebar or mainContent not found. Skipping sidebar setup.');
+                    return;
+                }
+                console.log('setupSidebar function called.');
+
                 const updateDesktopToggleIcon = () => {
-                    if (!toggleBtnDesktop) return;
-                    const icon = toggleBtnDesktop.querySelector('i'); /* Corrigido: toggleBtnBtnDesktop para toggleBtnDesktop */
-                    icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
+                    if (!toggleBtnDesktop) {
+                        console.log('toggleBtnDesktop not found for icon update.');
+                        return;
+                    }
+                    const icon = toggleBtnDesktop.querySelector('i');
+                    if (icon) {
+                        icon.className = sidebar.classList.contains('collapsed') ? 'fa-solid fa-bars' : 'fa-solid fa-bars-staggered';
+                        console.log('Desktop toggle icon updated to:', icon.className);
+                    }
                 };
+
                 const applyInitialState = () => {
+                    console.log('applyInitialState called. Window width:', window.innerWidth);
                     if (window.innerWidth > 768) {
                         if (localStorage.getItem('sidebarCollapsed') === 'true') {
                             sidebar.classList.add('collapsed');
                             mainContent.classList.add('collapsed');
+                            console.log('Sidebar initialized as collapsed (desktop).');
+                        } else {
+                            sidebar.classList.remove('collapsed');
+                            mainContent.classList.remove('collapsed');
+                            console.log('Sidebar initialized as expanded (desktop).');
                         }
                     } else {
                         sidebar.classList.remove('open', 'collapsed');
                         mainContent.classList.remove('collapsed');
+                        console.log('Sidebar initialized for mobile (expanded).');
                     }
                     updateDesktopToggleIcon();
                 };
+
                 if (toggleBtnDesktop) {
                     toggleBtnDesktop.addEventListener('click', () => {
+                        console.log('Desktop toggle button clicked.');
                         sidebar.classList.toggle('collapsed');
                         mainContent.classList.toggle('collapsed');
                         localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
                         updateDesktopToggleIcon();
+                        console.log('Sidebar collapsed state:', sidebar.classList.contains('collapsed'));
                     });
+                } else {
+                    console.log('Desktop toggle button (toggle-btn-desktop) not found.');
                 }
+
                 if (menuBtnMobile) {
-                    menuBtnMobile.addEventListener('click', (e) => { /* Corrigido: de menu_btn_mobile para menuBtnMobile */
+                    menuBtnMobile.addEventListener('click', (e) => {
+                        console.log('Mobile menu button clicked.');
                         e.stopPropagation();
                         sidebar.classList.toggle('open');
+                        const icon = menuBtnMobile.querySelector('i');
+                        if (icon) {
+                            icon.classList.toggle('fa-times', sidebar.classList.contains('open'));
+                            icon.classList.toggle('fa-bars', !sidebar.classList.contains('open'));
+                            console.log('Mobile menu icon updated to:', icon.className);
+                        }
+                        console.log('Sidebar open state (mobile):', sidebar.classList.contains('open'));
                     });
+                } else {
+                    console.log('Mobile menu button (menu-btn-mobile) not found.');
                 }
+
                 document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
+                    if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && menuBtnMobile && !menuBtnMobile.contains(e.target)) {
+                        console.log('Clicked outside mobile sidebar, closing it.');
                         sidebar.classList.remove('open');
+                        const icon = menuBtnMobile.querySelector('i');
+                        if (icon) {
+                            icon.classList.remove('fa-times');
+                            icon.classList.add('fa-bars');
+                        }
                     }
                 });
+
                 applyInitialState();
                 window.addEventListener('resize', applyInitialState);
+
+                // Submenu functionality (from Nav.html)
+                document.querySelectorAll('.has-submenu').forEach(item => {
+                    const toggle = item.querySelector('.submenu-toggle');
+                    if (toggle) {
+                        toggle.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            item.classList.toggle('open');
+                            console.log('Submenu toggled for:', item.querySelector('span').textContent);
+                        });
+                    }
+                });
             }
 
             // --- Theme Logic (reused) ---
             function setupTheme() {
-                if (!themeToggle) return;
+                if (!themeToggle) {
+                    console.log('Theme toggle button not found. Skipping theme setup.');
+                    return;
+                }
+                console.log('setupTheme function called.');
                 const updateThemeUI = (theme) => {
                     htmlEl.setAttribute('data-theme', theme);
                     const icon = themeToggle.querySelector('i');
-                    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                    if (icon) {
+                        icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                        console.log('Theme icon updated to:', icon.className);
+                    }
                 };
                 const currentTheme = localStorage.getItem('theme') || 'light';
                 updateThemeUI(currentTheme);
@@ -1569,26 +1997,29 @@
                     const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
                     localStorage.setItem('theme', newTheme);
                     updateThemeUI(newTheme);
+                    console.log('Theme changed to:', newTheme);
                 });
             }
 
             // --- Logout Logic (reused) ---
             function setupLogout() {
-                if (!logoutButton) return;
+                if (!logoutButton) {
+                    console.log('Logout button not found. Skipping logout setup.');
+                    return;
+                }
+                console.log('setupLogout function called.');
                 logoutButton.addEventListener('click', async (event) => {
                     event.preventDefault();
-                    fetch("{{ url_for('logout') }}", { method: 'POST' })
-                        .then(() => window.location.href = "{{ url_for('login_page') }}")
-                        .catch(() => window.location.href = "{{ url_for('login_page') }}");
+                    console.log('Logout button clicked. Simulating logout.');
+                    // In a real application, you would make a fetch call to your backend logout endpoint.
+                    // For this static HTML, we'll just redirect.
+                    window.location.href = "#"; // Redirect to a placeholder or login page
                 });
             }
 
-            // Function to parse URL parameters
+            // Function to parse URL parameters (mocked for static HTML)
             function getUrlParameter(name) {
-                name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-                var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-                var results = regex.exec(location.search);
-                return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+                return ''; // Always return empty for static HTML
             };
 
             // Initialize dates based on URL parameters or current date
@@ -1596,38 +2027,44 @@
             let initialDate;
 
             if (initialDataInicio) {
-                // Parse the date from the URL parameter (e.g., "2023-10-01")
-                // Add 'T00:00:00' to ensure it's parsed as local time to avoid timezone issues
                 initialDate = new Date(initialDataInicio + 'T00:00:00');
             } else {
                 initialDate = new Date(); // Default to current date if no parameter
             }
 
-            // Variáveis globais para o calendário e agendamentos
-            let currentWeekStart = getMonday(initialDate); // Começa na semana da data inicial
-            let currentMiniCalendarDate = new Date(initialDate.getFullYear(), initialDate.getMonth(), 1); // Primeiro dia do mês da data inicial
-            // currentFilterMonth will now always be the month of currentWeekStart to ensure consistency
-            let currentFilterMonth = new Date(currentWeekStart.getFullYear(), currentWeekStart.getMonth(), 1); 
+            // Variáveis globais para o calendário e agendamentos (mocked data for static HTML)
+            const allAppointments = [
+                // Example appointments
+                { id: '1', paciente_nome: 'João Silva', profissional_id: 'prof1', servico_procedimento_id: 'serv1', data_agendamento: '2025-07-14', hora_agendamento: '09:00', status: 'confirmado', profissional_nome: 'Dr. Elton Lopez', servico_procedimento_nome: 'Consulta Geral', paciente_numero: '11987654321' },
+                { id: '2', paciente_nome: 'Maria Souza', profissional_id: 'prof2', servico_procedimento_id: 'serv2', data_agendamento: '2025-07-15', hora_agendamento: '10:30', status: 'pendente', profissional_nome: 'Dr. Guilherme', servico_procedimento_nome: 'Exame de Rotina', paciente_numero: '11987654322' },
+                { id: '3', paciente_nome: 'Carlos Pereira', profissional_id: 'prof1', servico_procedimento_id: 'serv1', data_agendamento: '2025-07-19', hora_agendamento: '09:00', status: 'concluido', profissional_nome: 'Dr. Elton Lopez', servico_procedimento_nome: 'Consulta de Acompanhamento', paciente_numero: '11987654323' },
+                { id: '4', paciente_nome: 'Ana Costa', profissional_id: 'prof1', servico_procedimento_id: 'serv3', data_agendamento: '2025-07-19', hora_agendamento: '09:00', status: 'confirmado', profissional_nome: 'Dr. Elton Lopez', servico_procedimento_nome: 'Limpeza Dental', paciente_numero: '11987654324' },
+                { id: '5', paciente_nome: 'Pedro Santos', profissional_id: 'prof1', servico_procedimento_id: 'serv4', data_agendamento: '2025-07-19', hora_agendamento: '09:00', status: 'cancelado', profissional_nome: 'Dr. Elton Lopez', servico_procedimento_nome: 'Fisioterapia', paciente_numero: '11987654325' },
+                { id: '6', paciente_nome: 'Mariana Lima', profissional_id: 'prof1', servico_procedimento_id: 'serv5', data_agendamento: '2025-07-19', hora_agendamento: '09:00', status: 'confirmado', profissional_nome: 'Dr. Elton Lopez', servico_procedimento_nome: 'Psicoterapia', paciente_numero: '11987654326' },
+            ];
+            const allProfessionalsForFilter = [
+                { id: 'prof1', nome: 'Dr. Elton Lopez' },
+                { id: 'prof2', nome: 'Dr. Guilherme' },
+                { id: 'prof3', nome: 'Dr. Luiz Maciel' },
+                { id: 'prof4', nome: 'Dr. Rafael Cafe' },
+                { id: 'prof5', nome: 'Dr. Ruan Cavalcanti' },
+                { id: 'prof6', nome: 'Fisio. Danilo Valença' },
+                { id: 'prof7', nome: 'Psico. Danilo Valença' }
+            ];
+            const allPatientsForFilter = [
+                { id: 'pat1', nome: 'João Silva', contato_telefone: '11987654321' },
+                { id: 'pat2', nome: 'Maria Souza', contato_telefone: '11987654322' },
+                { id: 'pat3', nome: 'Carlos Pereira', contato_telefone: '11987654323' }
+            ];
+            const servicos_ativos = [
+                { id: 'serv1', nome: 'Consulta Geral', preco: 150.00 },
+                { id: 'serv2', nome: 'Exame de Rotina', preco: 100.00 },
+                { id: 'serv3', nome: 'Limpeza Dental', preco: 200.00 },
+                { id: 'serv4', nome: 'Fisioterapia', preco: 120.00 },
+                { id: 'serv5', nome: 'Psicoterapia', preco: 180.00 },
+            ];
 
-
-            // CORREÇÃO: Função para obter a segunda-feira da semana de uma data, tratando corretamente o fuso horário.
-            function getMonday(d) {
-                d = new Date(d);
-                d.setHours(12, 0, 0, 0); // Define a hora para o meio-dia para evitar problemas de fuso horário perto da meia-noite.
-                const day = d.getDay();
-                const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajusta para o domingo ser o último dia da semana.
-                const monday = new Date(d.setDate(diff));
-                monday.setHours(0, 0, 0, 0); // Reseta a hora para o início do dia.
-                return monday;
-            }
-            // currentWeekStart é inicializado acima com base em initialDate
-
-            // Dados de agendamentos e profissionais passados pelo Jinja2
-            const allAppointments = {{ agendamentos | tojson | safe }};
-            const allProfessionalsForFilter = {{ profissionais_para_filtro | tojson | safe }};
-            const allPatientsForFilter = {{ pacientes_para_filtro | tojson | safe }}; // Adicionado para o modal
-
-            let professionalFilterId = "{{ filtros_atuais.profissional_id or '' }}"; // Filtro inicial do backend
+            let professionalFilterId = ''; // No initial filter for static HTML
 
             // Mapeia o dia da semana de número para nome
             const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -1682,7 +2119,7 @@
                 calendarGridWeek.innerHTML = ''; // Limpa a grade existente
 
                 console.log('renderWeeklyGrid called for week starting:', weekStartDate.toISOString().split('T')[0]);
-                console.log('Current filter month for weekly grid (from mini-calendar):', currentFilterMonth.toISOString().split('T')[0]);
+                // console.log('Current filter month for weekly grid (from mini-calendar):', currentFilterMonth.toISOString().split('T')[0]);
 
                 // Define as colunas do grid: 90px para a coluna de tempo, e 7 colunas flexíveis para os dias
                 calendarGridWeek.style.gridTemplateColumns = '90px repeat(7, minmax(120px, 1fr))'; // Aumentado min-width para 120px
@@ -1885,7 +2322,6 @@
                                 <span class="label">Serviço:</span>
                                 <span class="value">${app.servico_procedimento_nome}</span>
                             </div>
-                            {# REMOVED PRICE DISPLAY FROM CARD VIEW #}
                         </div>
                     `;
                     listViewContainer.appendChild(card);
@@ -1907,21 +2343,11 @@
                 allProfessionalsItem.dataset.professionalId = ''; // ID vazio para "todos"
                 allProfessionalsItem.addEventListener('click', () => {
                     professionalFilterId = '';
-                    // Ao mudar o filtro de profissional, também recarrega a página para que o backend filtre
-                    const baseUrl = window.location.origin + window.location.pathname;
-                    // Ao clicar em 'Todos os Profissionais', queremos resetar o filtro de profissional
-                    // e manter o mês atual do mini-calendário como referência para a busca de 3 meses.
-                    const year = currentMiniCalendarDate.getFullYear();
-                    const month = currentMiniCalendarDate.getMonth();
-                    const startDate = new Date(year, month, 1);
-                    const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-                    
-                    // Calcula a data de fim como 3 meses a partir do primeiro dia do mês atual do mini-calendário
-                    const endDate = new Date(year, month + 3, 0); 
-                    const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-                    
-                    const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-                    window.location.href = newUrl;
+                    // In a real application, you would redirect to update the backend data.
+                    // For this static HTML, we'll just re-render the views.
+                    renderWeeklyGrid(currentWeekStart);
+                    renderCardView();
+                    updateProfessionalListSelection();
                 });
                 professionalFilterListContainer.appendChild(allProfessionalsItem);
 
@@ -1933,20 +2359,11 @@
                     professionalItem.dataset.professionalId = professional.id;
                     professionalItem.addEventListener('click', () => {
                         professionalFilterId = professional.id;
-                        // Ao mudar o filtro de profissional, também recarrega a página para que o backend filtre
-                        const baseUrl = window.location.origin + window.location.pathname;
-                        // Ao clicar em um profissional, queremos manter o mês atual do mini-calendário como referência para a busca de 3 meses.
-                        const year = currentMiniCalendarDate.getFullYear();
-                        const month = currentMiniCalendarDate.getMonth();
-                        const startDate = new Date(year, month, 1);
-                        const formattedStartDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-                        
-                        // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
-                        const endDate = new Date(year, month + 3, 0); 
-                        const formattedEndDate = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-                        
-                        const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-                        window.location.href = newUrl; 
+                        // In a real application, you would redirect to update the backend data.
+                        // For this static HTML, we'll just re-render the views.
+                        renderWeeklyGrid(currentWeekStart);
+                        renderCardView();
+                        updateProfessionalListSelection();
                     });
                     professionalFilterListContainer.appendChild(professionalItem);
                 });
@@ -1971,45 +2388,17 @@
                 const addManualAppointmentBtn = document.getElementById('addManualAppointmentBtn');
 
                 prevWeekBtn.addEventListener('click', () => {
-                    // Calcula a nova data de início da semana
-                    const newWeekStart = new Date(currentWeekStart);
-                    newWeekStart.setDate(newWeekStart.getDate() - 7);
-                    
-                    // Atualiza a data do mini-calendário para refletir o mês da nova semana de início
-                    currentMiniCalendarDate = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth(), 1);
-
-                    // Formata a data para a URL
-                    const formattedNewWeekStart = `${newWeekStart.getFullYear()}-${String(newWeekStart.getMonth() + 1).padStart(2, '0')}-${String(newWeekStart.getDate()).padStart(2, '0')}`;
-                    
-                    // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
-                    const endDateForBackend = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
-                    const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
-
-                    const baseUrl = window.location.origin + window.location.pathname;
-                    const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-                    window.location.href = newUrl; 
+                    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+                    renderWeeklyGrid(currentWeekStart);
+                    renderCardView(); // Re-render list view as well
+                    renderMiniCalendar(currentMiniCalendarDate); // Update mini-calendar to reflect month change
                 });
 
                 nextWeekBtn.addEventListener('click', () => {
-                    // Calcula a nova data de início da semana
-                    const newWeekStart = new Date(currentWeekStart);
-                    newWeekStart.setDate(newWeekStart.getDate() + 7);
-                    
-                    // Atualiza a data do mini-calendário para refletir o mês da nova semana de início
-                    currentMiniCalendarDate = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth(), 1);
-
-                    // Formata a data para a URL
-                    const formattedNewWeekStart = `${newWeekStart.getFullYear()}-${String(newWeekStart.getMonth() + 1).padStart(2, '0')}-${String(newWeekStart.getDate()).padStart(2, '0')}`;
-                    
-                    // Calcula a data de fim como 3 meses a partir do mês da nova semana de início
-                    const endDateForBackend = new Date(newWeekStart.getFullYear(), newWeekStart.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
-                    const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
-
-                    const baseUrl = window.location.origin + window.location.pathname;
-                    const newUrl = `${baseUrl}?data_inicio=${formattedNewWeekStart}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-
-                    console.log('Mini-calendar next month clicked. Redirecting to:', newUrl);
-                    window.location.href = newUrl; // Redireciona para recarregar os dados do backend
+                    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                    renderWeeklyGrid(currentWeekStart);
+                    renderCardView(); // Re-render list view as well
+                    renderMiniCalendar(currentMiniCalendarDate); // Update mini-calendar to reflect month change
                 });
  
                 addManualAppointmentBtn.addEventListener('click', () => {
@@ -2079,7 +2468,7 @@
             // Abre o modal de registro/edição
             function openBookingModal(date, time) {
                 modalFormRegistro.reset();
-                modalFormRegistro.action = "{{ url_for('registrar_atendimento_manual') }}";
+                modalFormRegistro.action = "#"; // Mock action for static HTML
                 modalTitleRegistro.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> Registrar Atendimento';
                 document.getElementById('agendamento_id_manual').value = '';
 
@@ -2121,6 +2510,28 @@
                     pacienteSelectManual.appendChild(option);
                 });
 
+                // Preenche o select de profissionais
+                const profissionalSelectManual = document.getElementById('profissional_id_manual');
+                profissionalSelectManual.innerHTML = '<option value="">Selecione o profissional</option>';
+                allProfessionalsForFilter.forEach(prof => {
+                    const option = document.createElement('option');
+                    option.value = prof.id;
+                    option.textContent = prof.nome;
+                    profissionalSelectManual.appendChild(option);
+                });
+
+                // Preenche o select de serviços
+                const servicoSelectManual = document.getElementById('servico_id_manual');
+                servicoSelectManual.innerHTML = '<option value="">Selecione o serviço/procedimento</option>';
+                servicos_ativos.forEach(serv => {
+                    const option = document.createElement('option');
+                    option.value = serv.id;
+                    option.textContent = serv.nome;
+                    option.dataset.preco = serv.preco;
+                    servicoSelectManual.appendChild(option);
+                });
+
+
                 modalRegistro.classList.add('active');
             }
 
@@ -2148,7 +2559,6 @@
                             <span class="value">${agendamento.servico_procedimento_nome}</span>
                         </div>
                     </div>
-                    {# REMOVED PRICE DISPLAY FROM DETAILS MODAL #}
                     <div class="info-item">
                         <i class="fa-solid fa-toggle-on"></i>
                         <div class="info-item-content">
@@ -2170,31 +2580,17 @@
                         const newStatus = e.target.value;
 
                         try {
-                            // Backend call to update status
-                            const response = await fetch(`/agendamentos/update_status/${appointmentId}`, {
-                                method: 'POST', 
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ status: newStatus })
-                            });
+                            // Mock backend call for static HTML
+                            console.log(`Updating appointment ${appointmentId} status to ${newStatus}`);
                             
-                            if (!response.ok) {
-                                const errorData = await response.json();
-                                throw new Error(errorData.error || 'Falha ao atualizar o status');
+                            // Update local data only after successful backend response
+                            const appIndex = allAppointments.findIndex(app => app.id === appointmentId);
+                            if (appIndex !== -1) {
+                                allAppointments[appIndex].status = newStatus;
                             }
-                            
-                            const result = await response.json(); 
-                            if (result.success) {
-                                // Update local data only after successful backend response
-                                const appIndex = allAppointments.findIndex(app => app.id === appointmentId);
-                                if (appIndex !== -1) {
-                                    allAppointments[appIndex].status = newStatus;
-                                }
-                                showToast(`Status do agendamento atualizado para "${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}".`, 'success');
-                                // Re-render the current view to reflect the status change
-                                switchView(currentView);
-                            } else {
-                                showToast(result.error || 'Erro desconhecido ao atualizar o status.', 'danger');
-                            }
+                            showToast(`Status do agendamento atualizado para "${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}".`, 'success');
+                            // Re-render the current view to reflect the status change
+                            switchView(currentView);
 
                         } catch (error) {
                             console.error('Erro ao atualizar status:', error);
@@ -2219,9 +2615,17 @@
                     const confirmDeleteButton = document.querySelector("#general-alert-modal-overlay .btn-primary"); // Seleciona o botão OK da modal de alerta geral
                     confirmDeleteButton.onclick = () => {
                         closeNotificationModal(); // Fecha a modal de notificação
-                        formApagar.action = "{{ url_for('apagar_agendamento') }}";
-                        document.getElementById('agendamento_id_apagar').value = agendamento.id;
-                        formApagar.submit();
+                        // Mock form submission for static HTML
+                        console.log(`Deleting appointment with ID: ${agendamento.id}`);
+                        const appIndex = allAppointments.findIndex(app => app.id === agendamento.id);
+                        if (appIndex !== -1) {
+                            allAppointments.splice(appIndex, 1); // Remove from mock data
+                            showToast('Agendamento apagado com sucesso!', 'success');
+                            switchView(currentView); // Re-render to reflect deletion
+                            modalDetalhes.classList.remove('active'); // Close details modal
+                        } else {
+                            showToast('Agendamento não encontrado para exclusão.', 'danger');
+                        }
                     };
                     // Se o usuário clicar no 'x' ou fora da modal, ela apenas fecha sem ação
                     document.getElementById('alert-modal-close-btn').onclick = () => { // Botão X da modal de alerta
@@ -2245,7 +2649,7 @@
             // Abre o modal de edição
             function openEditModal(agendamento) {
                 modalFormRegistro.reset();
-                modalFormRegistro.action = `{{ url_for('editar_agendamento') }}`;
+                modalFormRegistro.action = `#`; // Mock action for static HTML
                 modalTitleRegistro.innerHTML = '<i class="fas fa-edit"></i> Editar Agendamento';
                 
                 document.getElementById('agendamento_id_manual').value = agendamento.id;
@@ -2254,7 +2658,7 @@
                 document.getElementById('servico_id_manual').value = agendamento.servico_procedimento_id;
                 document.getElementById('data_agendamento_manual').value = agendamento.data_agendamento;
                 document.getElementById('hora_agendamento_manual').value = agendamento.hora_agendamento;
-                document.getElementById('preco_manual').value = parseFloat(agendamento.servico_procedimento_preco).toFixed(2);
+                document.getElementById('preco_manual').value = '0.00'; // Mock price
                 document.getElementById('status_manual').value = agendamento.status;
                 
                 // Recurring fields should not be editable for existing appointments
@@ -2290,10 +2694,37 @@
 
                 // Preenche o campo de telefone do paciente a partir do paciente selecionado
                 const selectedPatientOption = pacienteSelectManual.options[pacienteSelectManual.selectedIndex];
-                document.getElementById('cliente_telefone_manual').value = selectedPatientOption.dataset.telefone || agendamento.paciente_numero || '';
+                document.getElementById('cliente_telefone_manual').value = selectedPatientOption ? (selectedPatientOption.dataset.telefone || agendamento.paciente_numero || '') : (agendamento.paciente_numero || '');
 
                 // Define readOnly para o nome do paciente se um paciente existente for selecionado
                 document.getElementById('cliente_nome_manual').readOnly = !!agendamento.paciente_id;
+
+                // Preenche o select de profissionais
+                const profissionalSelectManual = document.getElementById('profissional_id_manual');
+                profissionalSelectManual.innerHTML = '<option value="">Selecione o profissional</option>';
+                allProfessionalsForFilter.forEach(prof => {
+                    const option = document.createElement('option');
+                    option.value = prof.id;
+                    option.textContent = prof.nome;
+                    if (prof.id === agendamento.profissional_id) {
+                        option.selected = true;
+                    }
+                    profissionalSelectManual.appendChild(option);
+                });
+
+                // Preenche o select de serviços
+                const servicoSelectManual = document.getElementById('servico_id_manual');
+                servicoSelectManual.innerHTML = '<option value="">Selecione o serviço/procedimento</option>';
+                servicos_ativos.forEach(serv => {
+                    const option = document.createElement('option');
+                    option.value = serv.id;
+                    option.textContent = serv.nome;
+                    option.dataset.preco = serv.preco;
+                    if (serv.id === agendamento.servico_procedimento_id) {
+                        option.selected = true;
+                    }
+                    servicoSelectManual.appendChild(option);
+                });
                 
                 modalRegistro.classList.add('active');
             }
@@ -2345,8 +2776,19 @@
             }
 
             // --- Mini Calendário Lateral ---
-            // A variável currentMiniCalendarDate já está definida globalmente
-            // A variável currentFilterMonth já está definida globalmente
+            let currentWeekStart = getMonday(initialDate); // Começa na semana da data inicial
+            let currentMiniCalendarDate = new Date(initialDate.getFullYear(), initialDate.getMonth(), 1); // Primeiro dia do mês da data inicial
+
+            // CORREÇÃO: Função para obter a segunda-feira da semana de uma data, tratando corretamente o fuso horário.
+            function getMonday(d) {
+                d = new Date(d);
+                d.setHours(12, 0, 0, 0); // Define a hora para o meio-dia para evitar problemas de fuso horário perto da meia-noite.
+                const day = d.getDay();
+                const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajusta para o domingo ser o último dia da semana.
+                const monday = new Date(d.setDate(diff));
+                monday.setHours(0, 0, 0, 0); // Reseta a hora para o início do dia.
+                return monday;
+            }
 
             function renderMiniCalendar(date) {
                 const miniCalendarGrid = document.getElementById('mini-calendar-grid');
@@ -2396,19 +2838,10 @@
                         
                         // Calcula o início da semana do dia clicado
                         const startOfWeek = getMonday(clickedDate);
-
-                        const formattedStartDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, '0')}-${String(startOfWeek.getDate()).padStart(2, '0')}`;
-                        
-                        // Calcula a data de fim como 3 meses a partir do mês da semana de início
-                        const endDateForBackend = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
-                        const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
-
-                        // Redireciona a página com os parâmetros da semana
-                        const baseUrl = window.location.origin + window.location.pathname;
-                        const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-                        
-                        console.log('Mini-calendar day clicked. Redirecting to:', newUrl);
-                        window.location.href = newUrl; // Redireciona para recarregar os dados do backend
+                        currentWeekStart = startOfWeek; // Update global currentWeekStart
+                        renderWeeklyGrid(currentWeekStart);
+                        renderCardView(); // Re-render list view as well
+                        // No redirect needed for static HTML, just re-render
                     });
                     miniCalendarGrid.appendChild(dayElement);
                 }
@@ -2419,41 +2852,15 @@
                 const miniNextMonthBtn = document.getElementById('mini-next-month-btn');
 
                 miniPrevMonthBtn.addEventListener('click', () => {
-                    // Atualiza a data do mini-calendário para o mês anterior
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() - 1);
-                    
-                    // Calcula a nova data de início para a URL (primeiro dia do mês atualizado do mini-calendário)
-                    const newStartDate = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
-                    const formattedStartDate = `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`;
-                    
-                    // Calcula a data de fim como 3 meses a partir da newStartDate
-                    const endDateForBackend = new Date(newStartDate.getFullYear(), newStartDate.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
-                    const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
-
-                    const baseUrl = window.location.origin + window.location.pathname;
-                    const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-                    
-                    console.log('Mini-calendar previous month clicked. Redirecting to:', newUrl);
-                    window.location.href = newUrl; // Redireciona para recarregar os dados do backend
+                    renderMiniCalendar(currentMiniCalendarDate);
+                    // No redirect needed for static HTML, just re-render
                 });
 
                 miniNextMonthBtn.addEventListener('click', () => {
-                    // Atualiza a data do mini-calendário para o próximo mês
                     currentMiniCalendarDate.setMonth(currentMiniCalendarDate.getMonth() + 1);
-                    
-                    // Calcula a nova data de início para a URL (primeiro dia do mês atualizado do mini-calendário)
-                    const newStartDate = new Date(currentMiniCalendarDate.getFullYear(), currentMiniCalendarDate.getMonth(), 1);
-                    const formattedStartDate = `${newStartDate.getFullYear()}-${String(newStartDate.getMonth() + 1).padStart(2, '0')}-${String(newStartDate.getDate()).padStart(2, '0')}`;
-                    
-                    // Calcula a data de fim como 3 meses a partir da newStartDate
-                    const endDateForBackend = new Date(newStartDate.getFullYear(), newStartDate.getMonth() + 3, 0); // Último dia do mês, 3 meses à frente
-                    const formattedEndDate = `${endDateForBackend.getFullYear()}-${String(endDateForBackend.getMonth() + 1).padStart(2, '0')}-${String(endDateForBackend.getDate()).padStart(2, '0')}`;
-
-                    const baseUrl = window.location.origin + window.location.pathname;
-                    const newUrl = `${baseUrl}?data_inicio=${formattedStartDate}&data_fim=${formattedEndDate}&profissional_id=${professionalFilterId}`;
-
-                    console.log('Mini-calendar next month clicked. Redirecting to:', newUrl);
-                    window.location.href = newUrl; // Redireciona para recarregar os dados do backend
+                    renderMiniCalendar(currentMiniCalendarDate);
+                    // No redirect needed for static HTML, just re-render
                 });
             }
 
@@ -2494,7 +2901,6 @@
                                 <span class="label">Serviço:</span>
                                 <span class="value">${app.servico_procedimento_nome}</span>
                             </div>
-                            {# REMOVED PRICE DISPLAY FROM MULTIPLE APPOINTMENTS MODAL #}
                         </div>
                     `;
                     multiAppointmentsList.appendChild(card);
@@ -2566,7 +2972,36 @@
                 }
                 // If it's a recurring appointment, the backend will handle potential conflicts for future instances.
                 // The frontend only validates the selection of at least one day and the end date if "Em data" is chosen.
+
+                // Mock form submission for static HTML
+                event.preventDefault();
+                const formData = new FormData(modalFormRegistro);
+                const newAppointment = {};
+                for (let [key, value] of formData.entries()) {
+                    newAppointment[key] = value;
+                }
+                newAppointment.id = agendamentoIdSendoEditado || `mock-${Date.now()}`;
+                newAppointment.paciente_nome = newAppointment.cliente_nome_manual;
+                newAppointment.profissional_nome = allProfessionalsForFilter.find(p => p.id === newAppointment.barbeiro_id_manual)?.nome || 'Desconhecido';
+                newAppointment.servico_procedimento_nome = servicos_ativos.find(s => s.id === newAppointment.servico_id_manual)?.nome || 'Desconhecido';
+                newAppointment.status = newAppointment.status_manual;
+                newAppointment.data_agendamento = newAppointment.data_agendamento_manual;
+                newAppointment.hora_agendamento = newAppointment.hora_agendamento_manual;
+
+                if (agendamentoIdSendoEditado) {
+                    const index = allAppointments.findIndex(app => app.id === agendamentoIdSendoEditado);
+                    if (index !== -1) {
+                        allAppointments[index] = { ...allAppointments[index], ...newAppointment };
+                        showToast('Agendamento atualizado com sucesso!', 'success');
+                    }
+                } else {
+                    allAppointments.push(newAppointment);
+                    showToast('Agendamento registrado com sucesso!', 'success');
+                }
+                modalRegistro.classList.remove('active');
+                switchView(currentView); // Re-render to reflect changes
             });
         });
     </script>
+</body>
 </html>
