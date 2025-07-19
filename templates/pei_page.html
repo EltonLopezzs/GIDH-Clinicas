@@ -48,6 +48,10 @@
             border-bottom-right-radius: 0.3125rem;
             transition: background-color 0.8s ease;
         }
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+            border-radius: 3px;
+        }
         ::-webkit-scrollbar-thumb {
             background-color: var(--muted);
             border-radius: .3125rem;
@@ -149,9 +153,7 @@
         }
         .pei-card-modern:hover {
             scale: 1.02;
-            transform: translateY(-4px);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-            border-color: var(--primary);
         }
         .pei-card-modern.modern-card {
             transform: translateY(var(--animation-delay, 0));
@@ -672,6 +674,700 @@
         #addGoalModal {
             z-index: 2100;
         }
+        
+        /* ==== GOAL MODAL MODERNO ==== */
+        .goal-modal-modern {
+            background: var(--card);
+            border-radius: 24px;
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid color-mix(in srgb, var(--primary) 10%, var(--border-color));
+            position: relative;
+        }
+        
+        .goal-modal-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            z-index: 1;
+        }
+        
+        .goal-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, 
+                color-mix(in srgb, var(--primary) 8%, transparent) 0%, 
+                color-mix(in srgb, var(--accent) 4%, transparent) 100%);
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .goal-modal-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 20px;
+            color: white;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 30%, transparent);
+        }
+        
+        .goal-modal-title-section {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .goal-modal-main-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 0.25rem 0;
+            line-height: 1.2;
+        }
+        
+        .goal-modal-subtitle {
+            font-size: 1rem;
+            color: var(--muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+        
+        .goal-modal-close-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.2);
+            /* border: 1px solid rgba(255, 0, 0, 0.2); */
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            z-index: 10;
+            position: relative;
+        }
+        
+        .goal-modal-close-btn:hover {
+            background: rgba(0, 0, 0, 0.5);
+            transform: scale(1.05);
+        }
+        
+        /* Body do Modal */
+        .goal-modal-body {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            scrollbar-width: thin;
+            scrollbar-color: var(--muted) transparent;
+        }
+        
+        /* Layout de duas colunas para seções */
+        .goal-modal-two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            flex: 1;
+            padding: 1.5rem;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        .goal-modal-column {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+        .goal-modal-section {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .goal-modal-section:first-child {
+            padding: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        
+        .goal-modal-section.scrollable-section {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            max-height: 32.5rem;
+        }
+        
+        .goal-modal-section-content {
+            padding: 1.5rem;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .goal-modal-section.scrollable-section .goal-modal-section-content {
+            padding: 0.75rem;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .goal-modal-section-scrollable {
+            padding: 0.75rem;
+            overflow-y: auto;
+            flex: 1;
+            scrollbar-width: thin;
+            scrollbar-color: var(--muted) transparent;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .goal-modal-section-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .goal-modal-section-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .goal-modal-section-title {
+            flex: 1;
+        }
+        
+        .goal-modal-section-title h4 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 0.3rem 0;
+            line-height: 1.3;
+        }
+        
+        .goal-modal-section-title p {
+            font-size: 0.95rem;
+            color: var(--muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+        
+        .goal-modern-input-wrapper {
+            position: relative;
+            margin-top: 0.5rem;
+        }
+        
+        .goal-modern-input {
+            width: 100%;
+            padding: 0.5rem 1.25rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 1rem;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        
+        /* .goal-modern-input:focus {
+            border-color: var(--primary);
+            background: var(--card);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 15%, transparent);
+            border-radius: 12px;
+        }
+        
+        .goal-modern-input:focus + .goal-input-focus-line {
+            width: 100%;
+        } */
+        
+        /* .goal-input-focus-line {
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        } */
+        
+        /* Container de Alvos */
+        .goal-targets-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .goal-target-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .goal-target-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(91, 135, 194, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .goal-target-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        
+        .goal-target-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--card);
+            color: var(--text);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        
+        .goal-target-remove-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: color-mix(in srgb, var(--danger) 10%, transparent);
+            border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
+            border-radius: 8px;
+            color: var(--danger);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .goal-target-remove-btn:hover {
+            background: var(--danger);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        /* Botão Adicionar Alvo */
+        .goal-add-target-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, 
+                color-mix(in srgb, var(--primary) 5%, transparent) 0%, 
+                color-mix(in srgb, var(--accent) 5%, transparent) 100%);
+            border: 2px dashed color-mix(in srgb, var(--primary) 30%, transparent);
+            border-radius: 12px;
+            color: var(--primary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            pointer-events: auto;
+            width: 100%;
+            flex-shrink: 0;
+        }
+        
+        .goal-add-target-btn:hover {
+            background: linear-gradient(135deg, 
+                color-mix(in srgb, var(--primary) 10%, transparent) 0%, 
+                color-mix(in srgb, var(--accent) 10%, transparent) 100%);
+            border-style: solid;
+            transform: translateY(-2px);
+        }
+        
+        .goal-add-target-btn i {
+            font-size: 1.1rem;
+        }
+        
+        /* Container de Ajudas */
+        .goal-aids-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .goal-aid-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .goal-aid-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(91, 135, 194, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .goal-aid-checkbox-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .goal-aid-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            appearance: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .goal-aid-checkbox:checked {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .goal-aid-checkbox:checked::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 0.75rem;
+        }
+        
+        .goal-aid-label {
+            flex: 1;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            user-select: none;
+        }
+        
+        .goal-aid-sigla {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        
+        .goal-aid-description {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .goal-aid-quantity-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        
+        .goal-aid-quantity {
+            width: 80px;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--card);
+            color: var(--text);
+            font-size: 0.9rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        
+        .goal-aid-quantity:enabled {
+            border-color: var(--primary);
+        }
+        
+        .goal-aid-quantity:disabled {
+            background: var(--bg);
+            color: var(--muted);
+        }
+        
+        .goal-aid-quantity-label {
+            font-size: 0.85rem;
+            color: var(--muted);
+            font-weight: 500;
+        }
+        
+        /* Nota da Seção */
+        .goal-modal-section-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            /* margin-top: 1.5rem; */
+            padding: 1rem;
+            background: color-mix(in srgb, var(--info) 5%, transparent);
+            border: 1px solid color-mix(in srgb, var(--info) 20%, transparent);
+            border-radius: 12px;
+            color: var(--info);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .goal-modal-section-note i {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+        
+        .goal-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: var(--bg);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .goal-btn-save {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            outline: none;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .goal-btn-save {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent);
+        }
+        
+        .goal-btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 40%, transparent);
+        }
+        
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .goal-modal-modern {
+                max-width: 95vw;
+                margin: 1rem;
+                border-radius: 20px;
+            }
+            
+            .goal-modal-two-columns {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                height: 50vh;
+            }
+            
+            .goal-modal-header {
+                padding: 1.5rem;
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+            
+            .goal-modal-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+            }
+            
+            .goal-modal-main-title {
+                font-size: 1.5rem;
+            }
+            
+            .goal-modal-subtitle {
+                font-size: 0.9rem;
+            }
+            
+            .goal-modal-section {
+                padding: 1.5rem;
+            }
+            
+            .goal-modal-section-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .goal-modal-footer {
+                flex-direction: column-reverse;
+                padding: 1.5rem;
+            }
+            
+            .goal-btn-save {
+                justify-content: center;
+                padding: 1rem;
+            }
+            
+            .goal-target-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .goal-target-remove-btn {
+                align-self: flex-end;
+            }
+            
+            .goal-aid-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+            }
+            
+            .goal-aid-quantity-wrapper {
+                align-self: flex-start;
+            }
+        }
+
+        /* Responsividade para telas médias - 1466px e menores */
+        @media (max-width: 1466px) {
+            /* Header do modal */
+            .goal-modal-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 1.1rem;
+            }
+            
+            /* Ajustes gerais de fonte */
+            .goal-modal-main-title {
+                font-size: 1.4rem;
+            }
+            
+            .goal-modal-subtitle {
+                font-size: 0.85rem;
+            }
+            
+            .goal-modal-section-title h4 {
+                font-size: 1.1rem;
+            }
+            
+            .goal-modal-section-title p {
+                font-size: 0.85rem;
+            }
+            
+            /* Inputs menores */
+            .goal-modern-input,
+            .goal-target-input {
+                padding: 0.85rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            /* Botões menores */
+            .goal-btn-save {
+                    padding: 0.625rem 1rem;
+                font-size: 0.85rem;
+            }
+            
+            .goal-add-target-btn {
+                padding: 0.85rem;
+                font-size: 0.85rem;
+            }
+            
+            /* Ajudas com fonte menor */
+            .goal-aid-sigla {
+                font-size: 0.8rem;
+            }
+            
+            .goal-aid-description {
+                font-size: 0.82rem;
+            }
+            
+            .goal-aid-quantity-label {
+                font-size: 0.78rem;
+            }
+            
+            .goal-aid-quantity {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.8rem;
+            }
+            
+            /* Seções com padding menor */
+            .goal-modal-section-content {
+                padding: 1.2rem;
+            }
+            
+            .goal-modal-section-scrollable {
+                padding: 1.2rem;
+            }
+            
+            /* Nota informativa menor */
+            .goal-modal-section-note {
+                font-size: 0.75rem;
+                padding: 0.75rem 1rem;
+            }
+            
+            /* Target items menores */
+            .goal-target-item,
+            .goal-aid-item {
+                padding: 0.85rem;
+            }
+            
+            /* Gap menor entre elementos */
+            .goal-modal-two-columns {
+                gap: 1.5rem;
+                padding: 1.5rem;
+            }
+
+            .goal-modal-section.scrollable-section {
+                max-height: 18.75rem;
+            }
+        }
+        
         #confirm-delete-modal {
             z-index: 2200;
         }
@@ -684,7 +1380,7 @@
             border-radius: 16px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.15);
             width: 100%;
-            max-width: 800px;
+            max-width: 75vw;
             max-height: 90vh;
             display: flex;
             flex-direction: column;
@@ -1302,7 +1998,7 @@
         }
         .pei-modal-header-content {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: 1.5rem;
             position: relative;
             z-index: 1;
@@ -1565,21 +2261,6 @@
             overflow-x: hidden; 
             min-height: 0; 
             padding-right: 4px; 
-        }
-        .goals-list-modern::-webkit-scrollbar {
-            width: 6px;
-        }
-        .goals-list-modern::-webkit-scrollbar-track {
-            background: var(--bg);
-            border-radius: 3px;
-        }
-        .goals-list-modern::-webkit-scrollbar-thumb {
-            background: var(--muted);
-            border-radius: 3px;
-            transition: background-color 0.2s ease;
-        }
-        .goals-list-modern::-webkit-scrollbar-thumb:hover {
-            background: var(--primary);
         }
         .goal-item {
             background: var(--card);
@@ -2301,31 +2982,6 @@
             padding: 0.5rem 0.8rem;
             font-size: 0.85rem;
         }
-        .modal-body .targets-input-container .target-input-item {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
-            align-items: center;
-        }
-        .modal-body .targets-input-container .target-input-item input {
-            flex-grow: 1;
-        }
-        .modal-body .targets-input-container .target-input-item .btn-remove-target {
-            background: none;
-            border: none;
-            color: var(--danger);
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 0.2rem;
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
-        }
-        .modal-body .targets-input-container .target-input-item .btn-remove-target:hover {
-            background-color: color-mix(in srgb, var(--danger) 15%, transparent);
-        }
-        .add-target-button-modal {
-            margin-top: 0.75rem;
-        }
         #loading-overlay {
             position: fixed;
             top: 0;
@@ -2465,9 +3121,9 @@
                 margin-right: 1.5rem;
                 scroll-snap-align: start;
             }
-            .pei-list::-webkit-scrollbar {
+            /* .pei-list::-webkit-scrollbar {
                 display: none;
-            }
+            } */
             .topbar .page-title {
                 font-size: 1.1rem;
                 flex-grow: 1;
@@ -2777,58 +3433,145 @@
     </div>
 
     <div id="addGoalModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="text-xl font-semibold">Adicionar Nova Meta ao PEI</h3>
-                <button type="button" class="modal-close-btn" data-close-modal="addGoalModal">&times;</button>
+        <div class="modal-content goal-modal-modern">
+            <div class="goal-modal-header">
+                <div class="goal-modal-icon">
+                    <i class="fas fa-bullseye"></i>
+                </div>
+                <div class="goal-modal-title-section">
+                    <h3 class="goal-modal-main-title">Nova Meta</h3>
+                    <p class="goal-modal-subtitle">Adicionar meta ao Plano Educacional Individualizado</p>
+                </div>
+                <button type="button" class="goal-modal-close-btn" data-close-modal="addGoalModal">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <form id="formAddGoal" method="POST" action="{{ url_for('peis.add_goal', paciente_doc_id=paciente_doc_id) }}">
-                <div class="modal-body">
+                <div class="goal-modal-body">
                     <input type="hidden" name="pei_id" id="goal_pei_id">
                     <input type="hidden" name="paciente_id" value="{{ paciente.id if paciente else '' }}">
-                    <div class="space-y-4">
 
-                        <div class="form-group">
-                            <label for="goal_descricao" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição da Meta</label>
-                            <input type="text" id="goal_descricao" name="descricao" required placeholder="Ex: Desenvolver a coordenação olho-mão"
-                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alvos da Meta</label>
-                            <div id="targets-input-container" class="space-y-3">
-                                <div class="target-input-item flex items-center space-x-2">
-                                    <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                                                     class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                                    <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                    <!-- Seção Principal -->
+                    <div class="goal-modal-section">
+                        <div class="goal-modal-section-content">
+                            <div class="goal-modal-section-header">
+                                <div class="goal-modal-section-icon">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="goal-modal-section-title">
+                                    <h4>Descrição da Meta</h4>
+                                    <p>Defina o objetivo principal que será trabalhado</p>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-secondary btn-sm add-target-button-modal mt-3">
-                                <i class="fas fa-plus mr-2"></i> Adicionar Outro Alvo
-                            </button>
+                            <div class="goal-modern-input-wrapper">
+                                <input type="text" id="goal_descricao" name="descricao" required 
+                                       placeholder="Ex: Desenvolver a coordenação olho-mão"
+                                       class="goal-modern-input">
+                                <div class="goal-input-focus-line"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layout de duas colunas -->
+                    <div class="goal-modal-two-columns">
+                        <!-- Coluna 1: Alvos da Meta -->
+                        <div class="goal-modal-column">
+                            <div class="goal-modal-section scrollable-section">
+                                <div class="goal-modal-section-content">
+                                    <div class="goal-modal-section-header">
+                                        <div class="goal-modal-section-icon">
+                                            <i class="fas fa-list-check"></i>
+                                        </div>
+                                        <div class="goal-modal-section-title">
+                                            <h4>Alvos da Meta</h4>
+                                            <p>Defina as etapas específicas para atingir a meta</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="goal-modal-section-scrollable">
+                                    <div id="targets-input-container" class="goal-targets-container">
+                                        <div class="goal-target-item">
+                                            <div class="goal-target-input-wrapper">
+                                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
+                                                       class="goal-target-input">
+                                                <div class="goal-target-focus-line"></div>
+                                            </div>
+                                            <button type="button" class="goal-target-remove-btn btn-remove-target" style="display: none;">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="goal-add-target-btn add-target-button-modal">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Adicionar Outro Alvo</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ajudas Atreladas aos Alvos</label>
-                            <div id="aid-selection-container" class="aid-selection-container">
-                                {% for aid in available_aids %}
-                                <div class="aid-item">
-                                    <input type="checkbox" id="aid_selected_{{ aid.sigla }}" name="aid_selected_{{ aid.sigla }}" data-aid-sigla="{{ aid.sigla }}">
-                                    <label for="aid_selected_{{ aid.sigla }}">{{ aid.sigla }} - {{ aid.description }}</label>
-                                    <input type="number" id="aid_quant_max_{{ aid.sigla }}" name="aid_quant_max_{{ aid.sigla }}" placeholder="Quant. Máx" min="1" disabled>
+                        <!-- Coluna 2: Ajudas Atreladas aos Alvos -->
+                        <div class="goal-modal-column">
+                            <div class="goal-modal-section scrollable-section">
+
+                                <div class="goal-modal-section-content">
+                                    <div class="goal-modal-section-header">
+
+                                        <div class="goal-modal-section-icon">
+                                            <i class="fas fa-hands-helping"></i>
+                                        </div>
+
+                                        <div class="goal-modal-section-title">
+                                            <h4>Ajudas Atreladas aos Alvos</h4>
+                                            <p>Selecione e configure as ajudas necessárias</p>
+                                        </div>
+
+                                    </div>
                                 </div>
-                                {% endfor %}
+
+                                <div class="goal-modal-section-scrollable">
+                                    <div id="aid-selection-container" class="goal-aids-container">
+                                        {% for aid in available_aids %}
+
+                                        <div class="goal-aid-item">
+                                            
+                                            <div class="goal-aid-checkbox-wrapper">
+                                                <input type="checkbox" id="aid_selected_{{ aid.sigla }}" 
+                                                       name="aid_selected_{{ aid.sigla }}" data-aid-sigla="{{ aid.sigla }}"
+                                                       class="goal-aid-checkbox">
+                                                <label for="aid_selected_{{ aid.sigla }}" class="goal-aid-label">
+                                                    <span class="goal-aid-sigla">{{ aid.sigla }}</span>
+                                                    <span class="goal-aid-description">{{ aid.description }}</span>
+                                                </label>
+                                            </div>
+
+                                            <div class="goal-aid-quantity-wrapper">
+                                                <input type="number" id="aid_quant_max_{{ aid.sigla }}" 
+                                                name="aid_quant_max_{{ aid.sigla }}" 
+                                                placeholder="Máx" min="1" disabled
+                                                class="goal-aid-quantity">
+                                                <span class="goal-aid-quantity-label">Quant.</span>
+                                            </div>
+
+                                        </div>
+
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="goal-modal-section-note">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>Selecione as ajudas que serão associadas a cada alvo desta meta e defina a quantidade máxima para cada uma.</span>
+                                </div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">Selecione as ajudas que serão associadas a cada alvo desta meta e defina a quantidade máxima para cada uma.</p>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal="addGoalModal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save mr-2"></i> Adicionar Meta
+                <div class="goal-modal-footer">
+                    <button type="submit" class="goal-btn-save">
+                        <i class="fas fa-bullseye"></i>
+                        <span>Adicionar Meta</span>
                     </button>
                 </div>
             </form>
@@ -3087,7 +3830,7 @@
                         return;
                     }
                     
-                    const closeBtn = target.closest('.modal-close-btn');
+                    const closeBtn = target.closest('.modal-close-btn') || target.closest('.goal-modal-close-btn');
                     if (closeBtn) {
                         const modalId = closeBtn.dataset.closeModal || closeBtn.closest('.modal-overlay')?.id;
                         if(modalId) closeModalById(modalId);
@@ -3218,11 +3961,14 @@
                         document.getElementById('goal_pei_id').value = peiId; 
                         document.getElementById('formAddGoal').reset(); 
                         document.getElementById('targets-input-container').innerHTML = `
-                            <div class="target-input-item flex items-center space-x-2">
-                                <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
-                                                                     class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                                <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1" style="display: none;">
-                                    <i class="fas fa-trash"></i>
+                            <div class="goal-target-item">
+                                <div class="goal-target-input-wrapper">
+                                    <input type="text" name="targets[]" placeholder="Descrição do Alvo 1" required
+                                           class="goal-target-input">
+                                    <div class="goal-target-focus-line"></div>
+                                </div>
+                                <button type="button" class="goal-target-remove-btn btn-remove-target" style="display: none;">
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         `;
@@ -3246,13 +3992,16 @@
                         }
                         const container = document.getElementById('targets-input-container');
                         const newItem = document.createElement('div');
-                        newItem.classList.add('target-input-item', 'flex', 'items-center', 'space-x-2');
+                        newItem.classList.add('goal-target-item');
                         const targetCount = container.children.length + 1; 
                         newItem.innerHTML = `
-                            <input type="text" name="targets[]" placeholder="Descrição do Alvo ${targetCount}" required
-                                                                     class="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-150 ease-in-out">
-                            <button type="button" class="btn-remove-target text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 text-lg p-1">
-                                <i class="fas fa-trash"></i>
+                            <div class="goal-target-input-wrapper">
+                                <input type="text" name="targets[]" placeholder="Descrição do Alvo ${targetCount}" required
+                                       class="goal-target-input">
+                                <div class="goal-target-focus-line"></div>
+                            </div>
+                            <button type="button" class="goal-target-remove-btn btn-remove-target">
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         `;
                         container.appendChild(newItem);
@@ -3266,23 +4015,38 @@
                             displayFlashMessage('danger', 'Você não tem permissão para remover alvos de metas.');
                             return;
                         }
-                        const container = target.closest('.targets-input-container');
+                        const container = target.closest('#targets-input-container') || target.closest('.goal-targets-container');
                         if (container.children.length > 1) { 
-                            target.closest('.target-input-item').remove();
+                            target.closest('.goal-target-item').remove();
                         }
                         container.querySelectorAll('.btn-remove-target').forEach(btn => {
                             btn.style.display = container.children.length > 1 ? 'block' : 'none';
                         });
                         return;
                     }
-                    const aidCheckbox = target.closest('.aid-item input[type="checkbox"]');
-                    if (aidCheckbox) {
-                        const sigla = aidCheckbox.dataset.aidSigla;
-                        const quantMaxInput = document.getElementById(`aid_quant_max_${sigla}`);
-                        if (quantMaxInput) {
-                            quantMaxInput.disabled = !aidCheckbox.checked;
-                            if (!aidCheckbox.checked) {
-                                quantMaxInput.value = ''; 
+                    const aidCheckbox = target.closest('.aid-item input[type="checkbox"]') || target.matches('.goal-aid-checkbox');
+                    const aidLabel = target.closest('.goal-aid-label');
+                    
+                    if (aidCheckbox || aidLabel) {
+                        let checkbox;
+                        if (aidLabel) {
+                            // Se clicou no label, encontra o checkbox relacionado
+                            checkbox = aidLabel.previousElementSibling;
+                            if (checkbox && checkbox.matches('.goal-aid-checkbox')) {
+                                checkbox.checked = !checkbox.checked;
+                            }
+                        } else {
+                            checkbox = aidCheckbox.matches ? aidCheckbox : target;
+                        }
+                        
+                        if (checkbox) {
+                            const sigla = checkbox.dataset.aidSigla;
+                            const quantMaxInput = document.getElementById(`aid_quant_max_${sigla}`);
+                            if (quantMaxInput) {
+                                quantMaxInput.disabled = !checkbox.checked;
+                                if (!checkbox.checked) {
+                                    quantMaxInput.value = ''; 
+                                }
                             }
                         }
                         return;
