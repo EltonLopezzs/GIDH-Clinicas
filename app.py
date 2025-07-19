@@ -26,6 +26,14 @@ from blueprints.peis import peis_bp # Importar o blueprint de PEIs
 from blueprints.patrimonio import register_patrimonio_routes # NOVO: Importar o blueprint de Patrimônio
 from blueprints.protocols import protocols_bp # NOVO: Importar o blueprint de Protocolos
 
+# --- NOVO: Importações para IA ---
+import google.generativeai as genai
+from PyPDF2 import PdfReader # Para ler PDFs
+from dotenv import load_dotenv
+
+# Carrega variáveis de ambiente do arquivo .env
+load_dotenv()
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 CORS(app)
@@ -59,6 +67,13 @@ except Exception as e:
 
 if _db_client_instance:
     set_db(_db_client_instance)
+
+# --- NOVO: Configura a API do Gemini ---
+# A chave da API será carregada do ambiente (ou do .env se estiver em desenvolvimento local)
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+if not os.getenv("GEMINI_API_KEY"):
+    print("⚠️ VARIÁVEL DE AMBIENTE 'GEMINI_API_KEY' NÃO ENCONTRADA. A funcionalidade de IA pode não funcionar.")
+
 
 @app.route('/login', methods=['GET'])
 def login_page():
@@ -571,6 +586,299 @@ def busca_peis():
         print(f"Erro busca_peis: {e}")
 
     return render_template('busca_peis.html', pacientes=pacientes_lista, current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
+
+# --- NOVO: Rota para importação de protocolo com IA ---
+@app.route('/protocols/import_from_ai', methods=['POST'])
+@login_required
+def import_protocol_from_ai():
+    if 'pdf_file' not in request.files:
+        return jsonify({'success': False, 'message': 'Nenhum arquivo PDF enviado.'}), 400
+
+    pdf_file = request.files['pdf_file']
+    if pdf_file.filename == '':
+        return jsonify({'success': False, 'message': 'Nome de arquivo inválido.'}), 400
+
+    if pdf_file and pdf_file.filename.endswith('.pdf'):
+        try:
+            # Extrair texto do PDF
+            reader = PdfReader(pdf_file)
+            text_content = ""
+            for page in reader.pages:
+                text_content += page.extract_text() + "\n"
+
+            if not text_content.strip():
+                return jsonify({'success': False, 'message': 'Não foi possível extrair texto do PDF. O PDF pode estar vazio ou ser uma imagem.'}), 400
+
+            # Preparar o prompt para o Gemini
+            # O prompt é crucial para a qualidade da extração.
+            # Seja EXTREMAMENTE específico sobre o que você quer e o formato.
+            prompt = f"""
+            Você é um assistente especializado em extrair informações de documentos de protocolo clínico, como o "Guia Portage" ou "Protocolo TEA".
+            Seu objetivo é ler o texto fornecido e preencher um formulário de protocolo com as seguintes seções e campos.
+            Preencha todos os campos que puder encontrar no documento, mesmo que estejam em diferentes formatos (listas, texto corrido, tabelas).
+
+            **Estrutura do Protocolo a ser preenchida:**
+
+            1.  **Geral:**
+                - `nome`: Nome principal do protocolo (ex: "Guia Portage", "Protocolo TEA").
+                - `descricao`: Uma descrição geral do protocolo.
+                - `tipo_protocolo`: Infera se o protocolo é para "Aquisicao de Habilidades" (se focar em desenvolvimento, marcos, aprendizado) ou "Reducao de Comportamentos" (se focar em manejo de comportamentos desafiadores, estereotipias). Se ambos ou não claro, priorize "Aquisicao de Habilidades".
+                - `ativo`: Booleano, sempre `true` para protocolos importados.
+
+            2.  **Etapas (seções ou fases do protocolo):**
+                - `nome`: Nome da etapa (ex: "Introdução", "Classificação").
+                - `descricao`: Descrição breve da etapa, se disponível.
+                **Instrução:** Use esta seção para grandes divisões conceituais do documento, não para categorias de habilidades ou faixas etárias.
+
+            3.  **Níveis (faixas etárias ou níveis de complexidade):**
+                - `nivel`: O número do nível (inteiro). Se não houver número explícito, use a ordem da faixa etária (ex: 1 para "0 a 1 ano", 2 para "1 a 2 anos").
+                - `faixa_etaria`: A faixa etária associada a este nível (ex: "0 a 1 ano", "3 a 4 anos").
+                **Instrução:** Procure por padrões como "Área – X a Y anos" ou "Área – X anos" e extraia a faixa etária e o nível numérico correspondente.
+
+            4.  **Habilidades (listas de habilidades, marcos de desenvolvimento ou competências):**
+                - `nome`: Nome da habilidade ou do marco (ex: "Observa uma pessoa movimentando-se em seu campo visual.", "Suga e deglute líquidos.").
+                **Instrução:** Procure por itens numerados ou com marcadores dentro das seções de áreas de desenvolvimento (ex: "Socialização", "Linguagem", "Cognição", "Auto Cuidados", "Desenvolvimento Motor"). Cada item numerado/marcado é uma habilidade.
+
+            5.  **Pontuação (critérios de avaliação ou escalas):**
+                - `tipo`: Tipo de pontuação (ex: "S-Sim", "N-Não", "AV-Às vezes", "NPV", "NPM", "NmMS").
+                - `descricao`: Descrição do critério ou o que ele representa (ex: "alcançou", "ainda não alcançou", "Parcialmente verdadeiro", "Não verdadeiro", "Problema menor").
+                - `valor`: Valor numérico associado, se houver (ex: 2 para "Sim", 1 para "Às vezes", 0 para "Não").
+
+            6.  **Tarefas/Testes (itens específicos a serem avaliados ou aplicados):**
+                - `nivel`: O nível ou faixa etária da tarefa (inteiro), se aplicável. Use o mesmo `nivel` da seção de Níveis/Faixas Etárias se a tarefa estiver associada a uma.
+                - `item`: O número do item ou da questão (string, ex: "01", "15").
+                - `nome`: O texto da tarefa ou da pergunta (ex: "Observa uma pessoa movimentando-se em seu campo visual.", "Seu filho gosta de se balançar, de pular no seu joelho, etc.?").
+                - `habilidade_marco`: A área de desenvolvimento ou habilidade principal a que a tarefa se refere (ex: "Socialização", "Linguagem", "Cognição", "Desenvolvimento Motor", "Auto Cuidados", "Comportamento Disruptivo", "Consciência Cognitiva/Sensorial", "Saúde/Físico/Comportamento").
+                - `resultado_observacao`: Se houver um campo de resultado ou observação na tabela (ex: "Resultado").
+                - `pergunta`: Se o item for uma pergunta explícita.
+                - `exemplo`: Se houver um exemplo para a tarefa.
+                - `criterio`: Se houver um critério de sucesso para a tarefa.
+                - `objetivo`: Se a tarefa for um objetivo específico.
+                **Instrução:** Extraia cada item de avaliação ou pergunta de questionários/escalas como uma tarefa/teste.
+
+            7.  **Observações Gerais:**
+                - `observacoes_gerais`: Quaisquer observações gerais, dicas, ou informações adicionais sobre o protocolo que não se encaixam nas categorias acima.
+
+            **Instruções CRÍTICAS para Geração de JSON:**
+            - **O resultado DEVE ser um objeto JSON VÁLIDO e COMPLETO. ABSOLUTAMENTE NADA MAIS.**
+            - **Todas as strings DEVEM ser escapadas corretamente para JSON.** Isso é MANDATÓRIO para evitar erros de parsing.
+                - Aspas duplas (") dentro de strings DEVEM ser escapadas como `\"`.
+                - Quebras de linha (`\n`) dentro de strings DEVEM ser escapadas como `\\n`.
+                - Retornos de carro (`\r`) dentro de strings DEVEM ser escapados como `\\r`.
+                - Barras invertidas (`\`) dentro de strings DEVEM ser escapadas como `\\\\`.
+                - **Qualquer outro caractere que não seja JSON-safe (como caracteres de controle ou outros símbolos que possam quebrar o JSON) DEVE ser escapado ou removido.**
+            - **Garanta que todos os elementos de arrays e pares chave-valor em objetos sejam separados por VÍRGULAS.**
+            - **O objeto JSON deve começar com `{{` e terminar com `}}`. Sem prefixos ou sufixos de texto.**
+
+            TEXTO DO PROTOCOLO:
+            {text_content}
+            """
+
+            # Definir o schema para a resposta JSON
+            response_schema = {
+                "type": "OBJECT",
+                "properties": {
+                    "nome": {"type": "STRING"},
+                    "descricao": {"type": "STRING"},
+                    "tipo_protocolo": {"type": "STRING", "enum": ["Aquisicao de Habilidades", "Reducao de Comportamentos"]},
+                    "ativo": {"type": "BOOLEAN"},
+                    "etapas": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "nome": {"type": "STRING"},
+                                "descricao": {"type": "STRING"}
+                            }
+                        }
+                    },
+                    "niveis": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "nivel": {"type": "INTEGER"},
+                                "faixa_etaria": {"type": "STRING"}
+                            }
+                        }
+                    },
+                    "habilidades": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "nome": {"type": "STRING"}
+                            }
+                        }
+                    },
+                    "pontuacao": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "tipo": {"type": "STRING"},
+                                "descricao": {"type": "STRING"},
+                                "valor": {"type": "NUMBER"} # Use NUMBER para float/double
+                            }
+                        }
+                    },
+                    "tarefas_testes": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "nivel": {"type": "INTEGER"},
+                                "item": {"type": "STRING"},
+                                "nome": {"type": "STRING"},
+                                "habilidade_marco": {"type": "STRING"},
+                                "resultado_observacao": {"type": "STRING"},
+                                "pergunta": {"type": "STRING"},
+                                "exemplo": {"type": "STRING"},
+                                "criterio": {"type": "STRING"},
+                                "objetivo": {"type": "STRING"}
+                            }
+                        }
+                    },
+                    "observacoes_gerais": {"type": "STRING"}
+                },
+                "required": ["nome", "tipo_protocolo"] # Campos mínimos obrigatórios
+            }
+
+            # Chamar a API do Gemini
+            model = genai.GenerativeModel('gemini-2.0-flash')
+            response = model.generate_content(
+                prompt,
+                generation_config={
+                    "response_mime_type": "application/json",
+                    "response_schema": response_schema
+                }
+            )
+
+            # A resposta do Gemini virá como um JSON string dentro de response.text
+            # Você precisará parsear isso.
+            import json
+            
+            # --- Início do bloco de tratamento de erro e depuração ---
+            print("Raw Gemini Response Text:")
+            raw_gemini_response = response.text
+            print(raw_gemini_response) # Imprime a resposta bruta para depuração
+
+            parsed_data = {} # Inicializa como dicionário vazio
+
+            # Função para sanitizar strings para JSON
+            def sanitize_json_string(text):
+                if not isinstance(text, str):
+                    return text # Retorna o valor original se não for string
+                
+                # Escapa aspas duplas, barras invertidas, e caracteres de controle
+                text = text.replace('\\', '\\\\') # Escapa barras invertidas primeiro
+                text = text.replace('"', '\\"')   # Escapa aspas duplas
+                text = text.replace('\n', '\\n')  # Escapa quebras de linha
+                text = text.replace('\r', '\\r')  # Escapa retornos de carro
+                text = text.replace('\t', '\\t')  # Escapa tabs
+                return text
+
+            # Tenta sanitizar a resposta bruta antes de carregar como JSON
+            # Isso é uma tentativa de correção para strings malformadas dentro do JSON
+            # Não é uma solução perfeita para JSON completamente quebrado, mas ajuda com strings
+            sanitized_response_text = raw_gemini_response
+            try:
+                # Tenta carregar o JSON diretamente primeiro
+                parsed_data = json.loads(raw_gemini_response)
+            except json.JSONDecodeError as e:
+                print(f"JSONDecodeError: {e}. Tentando sanitizar e corrigir a resposta...")
+                # Se falhar, tenta uma abordagem mais agressiva de sanitização
+                # Esta parte é um pouco mais complexa pois precisamos iterar
+                # sobre a estrutura esperada e sanitizar cada string.
+                # No entanto, a forma mais comum de erro é uma string não terminada.
+                # A tentativa de substituir quebras de linha já foi feita.
+                # Para lidar com aspas duplas não escapadas, é mais difícil sem
+                # um parser robusto que possa "ignorar" o erro ou tentar corrigi-lo.
+                # Uma abordagem simples é tentar encontrar e escapar aspas duplas
+                # que não deveriam estar lá, mas isso pode quebrar JSON válido.
+
+                # A solução mais robusta para aspas duplas não escapadas em conteúdo
+                # é usar uma biblioteca como `demjson` ou processar a string
+                # de forma mais inteligente. No entanto, para manter a simplicidade
+                # e o escopo do problema, vamos focar na instrução ao Gemini e
+                # na sanitização de caracteres de controle.
+
+                # Para o erro "Unterminated string", o problema geralmente é uma quebra de linha
+                # literal que não foi escapada. A linha `replace('\n', '\\n')` já faz isso.
+                # Se o erro persiste, pode ser uma aspa dupla dentro do texto que o Gemini
+                # não escapou, ou algum outro caractere inválido.
+
+                # Vamos tentar uma sanitização mais genérica para caracteres JSON inválidos
+                # Esta é uma forma de "limpar" a string para que json.loads() possa processá-la.
+                # Note: Isso pode alterar o conteúdo original se houver caracteres não ASCII
+                # ou outros que não são UTF-8 válidos, mas para este erro, é mais provável
+                # que sejam aspas/quebras de linha.
+                import re
+                sanitized_response_text = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', raw_gemini_response) # Remove caracteres de controle
+                sanitized_response_text = sanitized_response_text.replace('\\', '\\\\') # Escapa barras invertidas
+                sanitized_response_text = sanitized_response_text.replace('"', '\\"')   # Escapa aspas duplas (temporariamente)
+                
+                # Agora, tentamos reverter as aspas que *deveriam* ser aspas de string JSON
+                # Isso é um hack e pode ser problemático. A melhor solução é que o Gemini
+                # gere o JSON corretamente desde o início.
+                # Por exemplo, se a string original era `{"key": "value with "quotes""}`,
+                # a sanitização acima a transformaria em `{\"key\": \"value with \\\"quotes\\\"\"}`.
+                # Mas se o Gemini já tentou escapar, teríamos `\"` que viraria `\\\"`.
+
+                # A abordagem mais segura é confiar no `response_mime_type` e `response_schema`
+                # e, se falhar, fornecer a resposta bruta para depuração.
+                # A correção de `response.text.replace('\n', '\\n').replace('\r', '\\r')`
+                # já está no `except` block.
+
+                # Para o erro "Unterminated string", o problema é que a string JSON não tem uma aspa final.
+                # Isso geralmente é causado por uma aspa *dentro* da string que não foi escapada,
+                # ou uma quebra de linha literal.
+                
+                # Vamos tentar uma correção mais direcionada para o erro "Unterminated string"
+                # que é adicionar uma aspa dupla no final se a string parece estar cortada.
+                # Isso é arriscado e pode levar a JSON inválido se a suposição estiver errada.
+                
+                # A melhor depuração é inspecionar o `raw_gemini_response`.
+
+                # Por enquanto, vamos manter a lógica de `replace('\n', '\\n')` no `except`
+                # e focar nas instruções do prompt. Se o erro persistir, a resposta bruta
+                # no log será essencial.
+                
+                # A linha `response.text.replace('\n', '\\n').replace('\r', '\\r')` já está lá.
+                # O erro "Unterminated string" é complexo. Pode ser que o conteúdo do PDF
+                # contenha um caractere de aspa dupla que não está sendo escapado
+                # pelo Gemini, ou um caractere de controle que não é válido em JSON.
+
+                # A instrução no prompt já foi reforçada. Se o problema persiste,
+                # a inspeção do `raw_gemini_response` é a chave.
+
+                # Vamos tentar uma última tentativa de pré-processamento para remover
+                # caracteres que *definitivamente* não deveriam estar em JSON strings
+                # e que podem estar vindo do PDF ou da interpretação do Gemini.
+                # Isso pode incluir caracteres de controle ASCII.
+                
+                # Remove caracteres de controle ASCII inválidos em JSON
+                cleaned_text_for_json = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', raw_gemini_response)
+                
+                try:
+                    parsed_data = json.loads(cleaned_text_for_json)
+                    print("Resposta parseada com sucesso após limpeza de caracteres de controle.")
+                except json.JSONDecodeError as e_cleaned:
+                    print(f"Falha ao parsear mesmo após limpeza de caracteres de controle: {e_cleaned}")
+                    # Retorna um erro mais específico para o frontend
+                    return jsonify({
+                        'success': False, 
+                        'message': f'Erro ao interpretar a resposta da IA. Formato JSON inválido. Detalhes: {e_cleaned}. Verifique o log do servidor para a resposta bruta.'
+                    }), 500
+            # --- Fim do bloco de tratamento de erro e depuração ---
+
+            return jsonify({'success': True, 'data': parsed_data}), 200
+
+        except Exception as e:
+            print(f"Erro ao processar PDF ou chamar Gemini: {e}")
+            return jsonify({'success': False, 'message': f'Erro interno ao processar o arquivo: {str(e)}'}), 500
+    else:
+        return jsonify({'success': False, 'message': 'Formato de arquivo não suportado. Por favor, envie um PDF.'}), 400
 
 
 # Chamar as funções para registrar as rotas diretamente no app

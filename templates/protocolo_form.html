@@ -596,6 +596,74 @@
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; transform: translateX(100%); } }
 
+        /* Estilos para a nova modal de IA */
+        .ai-import-modal {
+            max-width: 600px;
+            padding: 2rem;
+            text-align: center;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .ai-import-modal .file-input-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100px;
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .ai-import-modal .file-input-wrapper:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background-color: color-mix(in srgb, var(--primary) 5%, transparent);
+        }
+
+        .ai-import-modal .file-input-wrapper input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .ai-import-modal .file-input-wrapper i {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .ai-import-modal .file-name {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            color: var(--text);
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .ai-import-modal .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+            display: none; /* Hidden by default */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* Responsividade */
         @media (max-width: 768px) {
             .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
@@ -698,6 +766,33 @@
         </div>
     </div>
 
+    <!-- Modal para Importar com IA -->
+    <div id="ai-import-modal-overlay" class="modal-overlay">
+        <div class="modal ai-import-modal">
+            <div class="add-item-modal-header">
+                <h3 class="add-item-modal-title">Importar Protocolo com IA</h3>
+                <button type="button" id="ai-import-modal-close-btn" class="add-item-modal-close-btn">&times;</button>
+            </div>
+            <div class="add-item-modal-body">
+                <p class="text-sm text-gray-500 mb-4">Envie um arquivo PDF contendo os detalhes do protocolo. A IA tentará extrair as informações e preencher os campos automaticamente.</p>
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="pdf-upload-input" accept="application/pdf">
+                    <i class="fas fa-file-upload"></i>
+                    <span>Arraste e solte ou clique para selecionar um PDF</span>
+                    <span id="uploaded-file-name" class="file-name mt-2"></span>
+                </div>
+
+                <div id="ai-loading-spinner" class="loading-spinner"></div>
+                <p id="ai-status-message" class="text-sm text-center text-muted"></p>
+            </div>
+            <div class="add-item-modal-actions">
+                <button type="button" id="ai-import-cancel-btn" class="btn btn-secondary">Cancelar</button>
+                <button type="button" id="process-pdf-btn" class="btn btn-primary"><i class="fas fa-robot mr-2"></i> Processar PDF</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Dropdown de Ações para Tabelas Dinâmicas -->
     <div id="action-dropdown" class="action-dropdown">
         <button id="action-dropdown-edit-btn"><i class="fas fa-edit mr-2"></i> Editar</button>
@@ -718,6 +813,9 @@
                     <a href="{{ url_for('protocols.list_protocols') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Voltar</span>
                     </a>
+                    <button type="button" id="open-ai-import-modal-btn" class="btn btn-info">
+                        <i class="fas fa-magic"></i> <span class="hidden sm:inline">Importar com IA</span>
+                    </button>
                     {% if protocol %} {# Show save button in topbar only when editing #}
                     <button type="submit" form="protocol-form" class="btn btn-primary">
                         <i class="fas fa-save"></i> <span class="hidden sm:inline">Salvar Protocolo</span>
@@ -1337,7 +1435,22 @@
                 // Para textareas que não são hidden
                 const textareas = rowElement.querySelectorAll('textarea');
                 textareas.forEach(textarea => {
-                    const name = textarea.closest('td').dataset.label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                    // Ajusta o nome da chave para corresponder ao campo de dados (ex: 'descricao' para 'Resultado/Observação')
+                    let dataLabel = textarea.closest('td').dataset.label;
+                    let name;
+                    if (dataLabel === "Resultado/Observação") {
+                        name = "resultado_observacao";
+                    } else if (dataLabel === "Pergunta") {
+                        name = "pergunta";
+                    } else if (dataLabel === "Exemplo") {
+                        name = "exemplo";
+                    } else if (dataLabel === "Critério") {
+                        name = "criterio";
+                    } else if (dataLabel === "Objetivo") {
+                        name = "objetivo";
+                    } else {
+                        name = dataLabel.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                    }
                     itemData[name] = textarea.value;
                 });
             }
@@ -1996,6 +2109,337 @@
         
         // Inicializa a página
         showStep(0);
+
+        // --- Lógica para Importação com IA ---
+        const aiImportModalOverlay = document.getElementById('ai-import-modal-overlay');
+        const openAiImportModalBtn = document.getElementById('open-ai-import-modal-btn');
+        const aiImportModalCloseBtn = document.getElementById('ai-import-modal-close-btn');
+        const aiImportCancelBtn = document.getElementById('ai-import-cancel-btn');
+        const pdfUploadInput = document.getElementById('pdf-upload-input');
+        const uploadedFileNameSpan = document.getElementById('uploaded-file-name');
+        const processPdfBtn = document.getElementById('process-pdf-btn');
+        const aiLoadingSpinner = document.getElementById('ai-loading-spinner');
+        const aiStatusMessage = document.getElementById('ai-status-message');
+
+        if (openAiImportModalBtn) {
+            openAiImportModalBtn.addEventListener('click', openAIImportModal);
+        }
+
+        if (aiImportModalCloseBtn) {
+            aiImportModalCloseBtn.addEventListener('click', closeAIImportModal);
+        }
+
+        if (aiImportCancelBtn) {
+            aiImportCancelBtn.addEventListener('click', closeAIImportModal);
+        }
+
+        if (pdfUploadInput) {
+            pdfUploadInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    uploadedFileNameSpan.textContent = this.files[0].name;
+                    processPdfBtn.disabled = false; // Habilita o botão de processar
+                } else {
+                    uploadedFileNameSpan.textContent = '';
+                    processPdfBtn.disabled = true; // Desabilita se nenhum arquivo for selecionado
+                }
+                aiStatusMessage.textContent = ''; // Limpa a mensagem de status
+            });
+        }
+
+        if (processPdfBtn) {
+            processPdfBtn.addEventListener('click', processPDFWithAI);
+        }
+
+        function openAIImportModal() {
+            aiImportModalOverlay.classList.add('show');
+            pdfUploadInput.value = ''; // Limpa o input de arquivo
+            uploadedFileNameSpan.textContent = ''; // Limpa o nome do arquivo exibido
+            processPdfBtn.disabled = true; // Desabilita o botão de processar inicialmente
+            aiLoadingSpinner.style.display = 'none'; // Esconde o spinner
+            aiStatusMessage.textContent = ''; // Limpa a mensagem de status
+        }
+
+        function closeAIImportModal() {
+            aiImportModalOverlay.classList.remove('show');
+        }
+
+        async function processPDFWithAI() {
+            const file = pdfUploadInput.files[0];
+            if (!file) {
+                showToast('Por favor, selecione um arquivo PDF para processar.', 'warning');
+                return;
+            }
+
+            aiLoadingSpinner.style.display = 'block'; // Mostra o spinner
+            aiStatusMessage.textContent = 'Processando documento com IA...';
+            processPdfBtn.disabled = true; // Desabilita o botão durante o processamento
+
+            const formData = new FormData();
+            formData.append('pdf_file', file);
+
+            try {
+                // Endpoint para a API do Flask que processará o PDF com Gemini
+                const response = await fetch('/protocols/import_from_ai', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast('Dados importados com sucesso!', 'success');
+                        populateProtocolForm(result.data);
+                        closeAIImportModal();
+                    } else {
+                        showGeneralAlertModal('Erro na Importação', result.message || 'Não foi possível extrair os dados do PDF.', 'danger');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    showGeneralAlertModal('Erro na Conexão', `Erro ao enviar o PDF para o servidor: ${response.status} ${response.statusText}. Detalhes: ${errorText}`, 'danger');
+                }
+            } catch (error) {
+                console.error('Erro ao processar PDF com IA:', error);
+                showGeneralAlertModal('Erro Inesperado', 'Ocorreu um erro ao tentar processar o PDF. Verifique o console para mais detalhes.', 'danger');
+            } finally {
+                aiLoadingSpinner.style.display = 'none'; // Esconde o spinner
+                aiStatusMessage.textContent = ''; // Limpa a mensagem de status
+                processPdfBtn.disabled = false; // Reabilita o botão
+            }
+        }
+
+        function populateProtocolForm(data) {
+            // Preencher campos da Seção Geral (Step 1)
+            if (data.nome) {
+                document.getElementById('nome').value = data.nome;
+            }
+            if (data.descricao) {
+                document.getElementById('descricao').value = data.descricao;
+            }
+            if (data.tipo_protocolo) {
+                const tipoProtocoloRadios = document.querySelectorAll('input[name="tipo_protocolo"]');
+                tipoProtocoloRadios.forEach(radio => {
+                    if (radio.value === data.tipo_protocolo) {
+                        radio.checked = true;
+                    }
+                });
+            }
+            if (data.ativo !== undefined) {
+                document.getElementById('ativo').checked = data.ativo;
+            }
+
+            // Preencher Etapas (Step 2)
+            const etapasContainer = document.getElementById('etapas-container');
+            if (data.etapas && etapasContainer) {
+                etapasContainer.innerHTML = ''; // Limpa as etapas existentes
+                const noResultsRow = etapasContainer.querySelector('.no-results-row');
+                if (noResultsRow) noResultsRow.remove();
+
+                data.etapas.forEach((etapa, index) => {
+                    const newId = generateUUID();
+                    const newOrdem = index + 1;
+                    const newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="etapa_id[]" value="${newId}">
+                                <input type="hidden" name="etapa_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Nome da Etapa">
+                                <input type="text" value="${etapa.nome || ''}" readonly>
+                                <input type="hidden" name="etapa_nome[]" value="${etapa.nome || ''}">
+                            </td>
+                            <td data-label="Descrição">
+                                <textarea rows="1" readonly>${etapa.descricao || ''}</textarea>
+                                <input type="hidden" name="etapa_descricao[]" value="${etapa.descricao || ''}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'etapa')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    etapasContainer.insertAdjacentHTML('beforeend', newFieldHtml);
+                });
+                filterTable('etapas-container'); // Re-aplica filtros se houver
+            }
+
+            // Preencher Níveis (Step 3)
+            const niveisContainer = document.getElementById('niveis-container');
+            if (data.niveis && niveisContainer) {
+                niveisContainer.innerHTML = ''; // Limpa os níveis existentes
+                const noResultsRow = niveisContainer.querySelector('.no-results-row');
+                if (noResultsRow) noResultsRow.remove();
+
+                data.niveis.forEach((nivel, index) => {
+                    const newId = generateUUID();
+                    const newOrdem = index + 1;
+                    const newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="nivel_id[]" value="${newId}">
+                                <input type="hidden" name="nivel_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Nível">
+                                <input type="number" value="${nivel.nivel || ''}" readonly>
+                                <input type="hidden" name="nivel_valor[]" value="${nivel.nivel || ''}">
+                            </td>
+                            <td data-label="Faixa Etária">
+                                <input type="text" value="${nivel.faixa_etaria || ''}" readonly>
+                                <input type="hidden" name="nivel_faixa_etaria[]" value="${nivel.faixa_etaria || ''}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'nivel')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    niveisContainer.insertAdjacentHTML('beforeend', newFieldHtml);
+                });
+                filterTable('niveis-container');
+            }
+
+            // Preencher Habilidades (Step 4)
+            const habilidadesContainer = document.getElementById('habilidades-container');
+            if (data.habilidades && habilidadesContainer) {
+                habilidadesContainer.innerHTML = ''; // Limpa as habilidades existentes
+                const noResultsRow = habilidadesContainer.querySelector('.no-results-row');
+                if (noResultsRow) noResultsRow.remove();
+
+                data.habilidades.forEach((habilidade, index) => {
+                    const newId = generateUUID();
+                    const newOrdem = index + 1;
+                    const newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="habilidade_id[]" value="${newId}">
+                                <input type="hidden" name="habilidade_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Habilidade">
+                                <input type="text" value="${habilidade.nome || ''}" readonly>
+                                <input type="hidden" name="habilidade_nome[]" value="${habilidade.nome || ''}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'habilidade')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    habilidadesContainer.insertAdjacentHTML('beforeend', newFieldHtml);
+                });
+                filterTable('habilidades-container');
+            }
+
+            // Preencher Pontuação (Step 5)
+            const pontuacoesContainer = document.getElementById('pontuacoes-container');
+            if (data.pontuacao && pontuacoesContainer) {
+                pontuacoesContainer.innerHTML = ''; // Limpa as pontuações existentes
+                const noResultsRow = pontuacoesContainer.querySelector('.no-results-row');
+                if (noResultsRow) noResultsRow.remove();
+
+                data.pontuacao.forEach((item, index) => {
+                    const newId = generateUUID();
+                    const newOrdem = index + 1;
+                    const newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="pontuacao_id[]" value="${newId}">
+                                <input type="hidden" name="pontuacao_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Tipo">
+                                <input type="text" value="${item.tipo || ''}" readonly>
+                                <input type="hidden" name="pontuacao_tipo[]" value="${item.tipo || ''}">
+                            </td>
+                            <td data-label="Descrição">
+                                <input type="text" value="${item.descricao || ''}" readonly>
+                                <input type="hidden" name="pontuacao_descricao[]" value="${item.descricao || ''}">
+                            </td>
+                            <td data-label="Valor">
+                                <input type="number" step="0.1" value="${item.valor || ''}" readonly>
+                                <input type="hidden" name="pontuacao_valor[]" value="${item.valor || ''}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'pontuacao')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    pontuacoesContainer.insertAdjacentHTML('beforeend', newFieldHtml);
+                });
+                filterTable('pontuacoes-container');
+            }
+
+            // Preencher Tarefas (Step 6)
+            const tarefasContainer = document.getElementById('tarefas-container');
+            if (data.tarefas_testes && tarefasContainer) {
+                tarefasContainer.innerHTML = ''; // Limpa as tarefas existentes
+                const noResultsRow = tarefasContainer.querySelector('.no-results-row');
+                if (noResultsRow) noResultsRow.remove();
+
+                data.tarefas_testes.forEach((tarefa, index) => {
+                    const newId = generateUUID();
+                    const newOrdem = index + 1;
+                    const newFieldHtml = `
+                        <tr class="dynamic-field-item">
+                            <td data-label="ID">
+                                <span class="display-id">#${newId.substring(0, 5)}</span>
+                                <input type="hidden" name="tarefa_id[]" value="${newId}">
+                                <input type="hidden" name="tarefa_ordem[]" value="${newOrdem}">
+                            </td>
+                            <td data-label="Nível">
+                                <input type="number" value="${tarefa.nivel || ''}" readonly>
+                                <input type="hidden" name="tarefa_nivel[]" value="${tarefa.nivel || ''}">
+                            </td>
+                            <td data-label="Item">
+                                <input type="text" value="${tarefa.item || ''}" readonly>
+                                <input type="hidden" name="tarefa_item[]" value="${tarefa.item || ''}">
+                            </td>
+                            <td data-label="Nome">
+                                <input type="text" value="${tarefa.nome || ''}" readonly>
+                                <input type="hidden" name="tarefa_nome[]" value="${tarefa.nome || ''}">
+                            </td>
+                            <td data-label="Habilidade/Marco">
+                                <input type="text" value="${tarefa.habilidade_marco || ''}" readonly>
+                                <input type="hidden" name="tarefa_habilidade_marco[]" value="${tarefa.habilidade_marco || ''}">
+                            </td>
+                            <td data-label="Resultado/Observação">
+                                <textarea rows="1" readonly>${tarefa.resultado_observacao || ''}</textarea>
+                                <input type="hidden" name="tarefa_resultado_observacao[]" value="${tarefa.resultado_observacao || ''}">
+                            </td>
+                            <td data-label="Pergunta">
+                                <textarea rows="1" readonly>${tarefa.pergunta || ''}</textarea>
+                                <input type="hidden" name="tarefa_pergunta[]" value="${tarefa.pergunta || ''}">
+                            </td>
+                            <td data-label="Exemplo">
+                                <textarea rows="1" readonly>${tarefa.exemplo || ''}</textarea>
+                                <input type="hidden" name="tarefa_exemplo[]" value="${tarefa.exemplo || ''}">
+                            </td>
+                            <td data-label="Critério">
+                                <textarea rows="1" readonly>${tarefa.criterio || ''}</textarea>
+                                <input type="hidden" name="tarefa_criterio[]" value="${tarefa.criterio || ''}">
+                            </td>
+                            <td data-label="Objetivo">
+                                <textarea rows="1" readonly>${tarefa.objetivo || ''}</textarea>
+                                <input type="hidden" name="tarefa_objetivo[]" value="${tarefa.objetivo || ''}">
+                            </td>
+                            <td class="dynamic-field-item-actions">
+                                <button type="button" class="action-dots-btn" onclick="toggleActionDropdown(this, 'tarefa')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    tarefasContainer.insertAdjacentHTML('beforeend', newFieldHtml);
+                });
+                filterTable('tarefas-container');
+            }
+
+            // Preencher Observações (Step 7)
+            if (data.observacoes_gerais) {
+                document.getElementById('observacoes_gerais').value = data.observacoes_gerais;
+            }
+        }
     });
     </script>
 </body>
