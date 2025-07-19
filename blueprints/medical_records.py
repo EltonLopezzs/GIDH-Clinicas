@@ -594,16 +594,19 @@ def register_medical_records_routes(app):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         try:
+            titulo = request.form.get('titulo', '').strip() # Captura o título do formulário
             conteudo = request.form.get('conteudo', '').strip()
             modelo_base_id = request.form.get('modelo_base_id') # Captura o ID do modelo, se houver
 
+            if not titulo: # Valida se o título foi fornecido
+                return jsonify({'success': False, 'message': 'O título da anamnese é obrigatório.'}), 400
             if not conteudo:
                 return jsonify({'success': False, 'message': 'O conteúdo da anamnese é obrigatório.'}), 400
 
             anamnese_data = {
                 'data_registro': datetime.datetime.now(SAO_PAULO_TZ),
                 'tipo_registro': 'anamnese',
-                'titulo': 'Anamnese',
+                'titulo': titulo, # Usa o título capturado do formulário
                 'conteudo': conteudo,
                 'profissional_nome': session.get('user_name', 'N/A')
             }
@@ -623,15 +626,19 @@ def register_medical_records_routes(app):
         db_instance = get_db()
         clinica_id = session['clinica_id']
         try:
+            titulo = request.form.get('titulo', '').strip() # Captura o título do formulário
             conteudo = request.form.get('conteudo', '').strip()
             modelo_base_id = request.form.get('modelo_base_id') # Captura o ID do modelo, se houver
 
+            if not titulo: # Valida se o título foi fornecido
+                return jsonify({'success': False, 'message': 'O título da anamnese é obrigatório.'}), 400
             if not conteudo:
                 return jsonify({'success': False, 'message': 'O conteúdo da anamnese é obrigatório.'}), 400
 
             anamnese_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(paciente_doc_id).collection('prontuarios').document(anamnese_doc_id)
             
             update_data = {
+                'titulo': titulo, # Usa o título capturado do formulário
                 'conteudo': conteudo, 
                 'atualizado_em': datetime.datetime.now(SAO_PAULO_TZ)
             }
@@ -1191,7 +1198,7 @@ def register_medical_records_routes(app):
             
             all_peis = []
             peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
-            if not is_admin and logged_in_professional_id:
+            if not is_admin and logged_in_individual_id: # Changed to logged_in_professional_id
                 peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
             
             for doc in peis_query.stream():
