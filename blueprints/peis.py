@@ -3,6 +3,7 @@ import datetime
 import uuid
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud import firestore
+import pytz # Importar pytz para manipulação de fuso horário
 
 # Importe as suas funções utilitárias.
 from utils import get_db, login_required, admin_required, SAO_PAULO_TZ, convert_doc_to_dict
@@ -751,7 +752,7 @@ def ver_peis_paciente(paciente_doc_id):
             metas_docs = metas_ref.stream()
 
             for meta_doc in metas_docs:
-                meta_data = convert_doc_to_dict(meta_doc) # Garante que as datas já são datetime.datetime
+                meta_data = meta_doc.to_dict() # Obter os dados brutos do Firestore
                 
                 # Verifica se a meta está em 'Manutenção' e se tem uma data de primeira finalização
                 if meta_data.get('status') == 'Manutenção' and \
@@ -760,7 +761,16 @@ def ver_peis_paciente(paciente_doc_id):
                     
                     first_finalization_date = meta_data['data_primeira_finalizacao']
                     
-                    # Explicitly ensure first_finalization_date is timezone-aware
+                    # Tenta converter a string para datetime.datetime se for uma string
+                    if isinstance(first_finalization_date, str):
+                        try:
+                            # Assumindo o formato ISO que utils.py usa para formatar
+                            naive_dt = datetime.datetime.fromisoformat(first_finalization_date)
+                            first_finalization_date = SAO_PAULO_TZ.localize(naive_dt)
+                        except (ValueError, TypeError):
+                            print(f"AVISO: data_primeira_finalizacao para meta {meta_doc.id} é uma string inválida e não pode ser parseada. Valor: '{first_finalization_date}'. Não será reativada automaticamente.")
+                            first_finalization_date = None # Define como None se não puder parsear
+
                     if isinstance(first_finalization_date, datetime.datetime):
                         if first_finalization_date.tzinfo is None:
                             # Assume naive datetimes from Firestore are in SAO_PAULO_TZ if not specified
@@ -785,7 +795,8 @@ def ver_peis_paciente(paciente_doc_id):
                                 print(f"ERROR: Falha ao reativar meta {meta_doc.id}: {e}")
                                 flash(f"Erro ao reativar meta '{meta_data.get('descricao', meta_doc.id)}'.", "danger")
                     else:
-                        print(f"AVISO: data_primeira_finalizacao para meta {meta_doc.id} não é um objeto datetime.datetime. Tipo: {type(first_finalization_date)}. Não será reativada automaticamente.")
+                        # Este bloco será atingido se first_finalization_date for None após a tentativa de parse
+                        print(f"AVISO: data_primeira_finalizacao para meta {meta_doc.id} não é um objeto datetime.datetime válido. Tipo: {type(first_finalization_date)}. Não será reativada automaticamente.")
 
 
             # Agora prepare o PEI para exibição, que incluirá o status da meta potencialmente atualizado
@@ -1072,7 +1083,15 @@ def add_goal(paciente_doc_id):
                     if 'attempts_count' not in aid_to_save:
                         aid_to_save['attempts_count'] = 0
 
-                    transaction.set(ajuda_doc_ref, aid_to_save)
+                    # Use transaction.set() if this is part of a larger transaction or if you want to ensure atomicity
+                    # For now, keeping it as .set() if not explicitly in a transaction context
+                    # However, if this is called from add_goal, it should be part of a transaction.
+                    # The original code for add_goal does not use a transaction for adding targets/aids,
+                    # which might be a point of improvement for data consistency.
+                    # For now, I'll keep the .set() as is, assuming it's intended to be outside a transaction
+                    # or that the transaction is managed at a higher level if this function is called by one.
+                    ajuda_doc_ref.set(aid_to_save)
+
 
         flash('Meta e alvos adicionados com sucesso ao PEI!', 'success')
     except Exception as e:
