@@ -189,7 +189,8 @@
             color: white;
             text-overflow: ellipsis;
             overflow: hidden;
-            white-space: nowrap;
+            white-space: nowrap; /* Ensure no line breaks */
+            max-width: 100%; /* Ensure it respects container width */
         }
         .pei-meta {
             display: flex;
@@ -739,6 +740,9 @@
             color: var(--text);
             margin: 0 0 0.25rem 0;
             line-height: 1.2;
+            text-overflow: ellipsis; /* Ensure truncation */
+            overflow: hidden;
+            white-space: nowrap;
         }
         
         .goal-modal-subtitle {
@@ -901,29 +905,6 @@
             transition: all 0.3s ease;
             outline: none;
         }
-        
-        /* .goal-modern-input:focus {
-            border-color: var(--primary);
-            background: var(--card);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 15%, transparent);
-            border-radius: 12px;
-        }
-        
-        .goal-modern-input:focus + .goal-input-focus-line {
-            width: 100%;
-        } */
-        
-        /* .goal-input-focus-line {
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        } */
         
         /* Container de Alvos */
         .goal-targets-container {
@@ -1755,9 +1736,6 @@
         .professionals-toggle.expanded .toggle-icon {
             transform: rotate(180deg);
         }
-        .professionals-toggle.expanded .toggle-text {
-            display: none;
-        }
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -1958,8 +1936,8 @@
             background: rgba(239, 68, 68, 0.1);
         }
         .dropdown-item i {
-            font-size: 0.875rem;
-            flex-shrink: 0;
+            width: 16px;
+            text-align: center;
         }
         .dropdown-item.delete:hover {
             background: rgba(239, 68, 68, 0.1);
@@ -2029,6 +2007,9 @@
             margin: 0;
             color: white;
             line-height: 1.2;
+            text-overflow: ellipsis; /* Ensure truncation */
+            overflow: hidden;
+            white-space: nowrap;
         }
         .pei-modal-subtitle {
             font-size: 1rem;
@@ -2192,8 +2173,9 @@
             margin-top: 0.125rem;
             flex-shrink: 0;
         }
+        /* Adjusted for three columns */
         .goals-section-modern {
-            display: grid; /* Changed to grid */
+            display: grid;
             grid-template-columns: repeat(3, 1fr); /* Three equal columns */
             gap: 2rem;
             height: 650px; /* Keep fixed height for scrollable sections */
@@ -2285,10 +2267,11 @@
             transition: all 0.2s ease;
         }
         .goal-card.collapsed {
-            background: color-mix(in srgb, var(--primary) 15%, var(--card));
-            border-color: color-mix(in srgb, var(--primary) 40%, var(--border-color));
+            /* When collapsed, hide the content below the header */
+            padding-bottom: 0.5rem; /* Adjust padding for collapsed state */
         }
-        .goal-card.collapsed .goal-actions {
+        .goal-card.collapsed .targets-list,
+        .goal-card.collapsed .add-target-group {
             display: none;
         }
         .goal-card.collapsed .goal-card-header {
@@ -2302,6 +2285,7 @@
             align-items: flex-start;
             margin-bottom: 1rem;
             gap: 1rem;
+            cursor: pointer; /* Make the header clickable */
         }
         .goal-card-header strong {
             font-size: 1.1rem;
@@ -2309,7 +2293,32 @@
             color: var(--text);
             flex: 1;
             line-height: 1.4;
+            display: flex; /* Allow flex properties for icon and text */
+            align-items: center;
+            gap: 0.5rem; /* Space between icon and text */
         }
+        .goal-collapse-btn {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, color 0.2s ease;
+            padding: 0.25rem;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .goal-collapse-btn:hover {
+            color: var(--primary);
+            background-color: var(--bg);
+        }
+        .goal-collapse-btn.expanded .goal-collapse-icon {
+            transform: rotate(180deg);
+        }
+
         .goal-status {
             padding: 0.25rem 0.75rem;
             border-radius: 12px;
@@ -2996,19 +3005,11 @@
             margin-left: 0.5rem;
             white-space: nowrap;
         }
-        /* Adjust goals-section-modern for three columns */
-        .goals-section-modern {
-            display: grid; /* Changed to grid */
-            grid-template-columns: repeat(3, 1fr); /* Three equal columns */
-            gap: 2rem;
-            height: 650px; /* Keep fixed height for scrollable sections */
-        }
         /* Responsive adjustments for smaller screens */
         @media (max-width: 1200px) {
             .goals-section-modern {
                 grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Adjust for responsiveness */
                 height: auto; /* Allow height to adjust on smaller screens */
-                flex-direction: column; /* Stack columns on very small screens */
             }
             .goals-subsection {
                 min-height: 300px; /* Ensure a minimum height for scroll */
@@ -3351,41 +3352,6 @@
             </div>
 
             <div class="pei-modal-body">
-
-                <!--<div class="pei-info-section">
-                    <div class="info-cards-grid">
-                        <div class="info-card">
-                            <div class="info-card-icon">
-                                <i class="fas fa-calendar-alt"></i>
-                            </div>
-                            <div class="info-card-content">
-                                <span class="info-card-label">Data de Criação</span>
-                                <span class="info-card-value" id="peiCreatedDate"></span>
-                            </div>
-                        </div>
-                        <div class="info-card">
-                            <div class="info-card-icon">
-                                <i class="fas fa-user-tie"></i>
-                            </div>
-                            <div class="info-card-content">
-                                <div class="info-header">
-                                    <span class="info-card-label">Profissionais</span>
-                                    <button class="professionals-toggle-modal" id="professionalsToggleModal" style="display: none;">
-                                        <span class="toggle-text">+<span class="professionals-count-modal"></span></span>
-                                        <i class="fas fa-chevron-down toggle-icon"></i>
-                                    </button>
-                                </div>
-                                <div class="info-card-value">
-                                    <div class="professionals-display-modal">
-                                        <div class="professionals-visible-modal" id="peiProfessionalsVisible"></div>
-                                        <div class="professionals-hidden-modal" id="peiProfessionalsHidden"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
-
                 <div class="goals-section-modern">
 
                     <div class="goals-subsection">
@@ -3579,14 +3545,14 @@
                 document.body.addEventListener('click', async function(e) {
                     const target = e.target;
                     
-                    const goalCollapseHeader = target.closest('[data-goal-collapse]');
-                    if (goalCollapseHeader && !target.closest('.goal-actions') && !target.closest('button')) {
+                    // Handle goal card collapse/expand
+                    const goalCollapseBtn = target.closest('.goal-collapse-btn');
+                    if (goalCollapseBtn) {
                         e.preventDefault();
-                        const goalId = goalCollapseHeader.dataset.goalCollapse;
-                        const goalCard = document.getElementById(`goal-${goalId}`);
+                        const goalCard = goalCollapseBtn.closest('.goal-card');
                         if (goalCard) {
                             goalCard.classList.toggle('collapsed');
-
+                            goalCollapseBtn.classList.toggle('expanded'); // Toggle expanded class on the button
                             const counter = goalCard.querySelector('.goal-targets-counter');
                             if (counter) {
                                 const isCollapsed = goalCard.classList.contains('collapsed');
@@ -3598,7 +3564,7 @@
                         }
                         return;
                     }
-                    
+
                     const closeBtn = target.closest('.modal-close-btn') || target.closest('.goal-modal-close-btn');
                     if (closeBtn) {
                         const modalId = closeBtn.dataset.closeModal || closeBtn.closest('.modal-overlay')?.id;
@@ -4488,8 +4454,8 @@
                     }
                     const goals = pei.goals || [];
                     const activeGoals = goals.filter(goal => goal.status === 'Ativo');
+                    const maintenanceGoals = goals.filter(goal => goal.status === 'Manutenção');
                     const finalizedGoals = goals.filter(goal => goal.status === 'Finalizado');
-                    const maintenanceGoals = goals.filter(goal => goal.status === 'Manutenção'); // Filter for 'Manutenção' goals
                     const canModifyPeiContent = IS_ADMIN || (IS_PROFESSIONAL && pei.profissionais_ids && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID));
                     const isPeiFinalized = pei.status === 'Finalizado';
 
@@ -4653,9 +4619,8 @@
 
                     return `
                         <div class="goal-card ${isGoalFinalizado ? 'finalizado' : ''}" id="goal-${pei.id}-${goal.id}">
-                            <div class="goal-card-header" data-goal-collapse="${pei.id}-${goal.id}">
+                            <div class="goal-card-header">
                                 <strong>
-                                    <i class="fas fa-chevron-down goal-collapse-icon"></i>
                                     Meta: ${goal.descricao}
                                     ${targetCount > 0 ? `<span class="goal-targets-counter" title="${targetCount} alvo(s)">${targetCount}</span>` : ''}
                                 </strong>
@@ -4665,6 +4630,9 @@
                                         ${goalStatusText}
                                     </span>
                                     ${additionalStatusInfo} <!-- Display additional status info here -->
+                                    <button type="button" class="goal-collapse-btn" data-goal-collapse="${pei.id}-${goal.id}">
+                                        <i class="fas fa-chevron-down goal-collapse-icon"></i>
+                                    </button>
                                     ${IS_ADMIN && !isPeiFinalizado ? `
                                         <div class="goal-actions">
                                             <div class="goal-actions-dropdown">
