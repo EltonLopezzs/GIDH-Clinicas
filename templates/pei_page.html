@@ -189,8 +189,7 @@
             color: white;
             text-overflow: ellipsis;
             overflow: hidden;
-            white-space: nowrap; /* Ensure no line breaks */
-            max-width: 100%; /* Ensure it respects container width */
+            white-space: nowrap;
         }
         .pei-meta {
             display: flex;
@@ -740,9 +739,6 @@
             color: var(--text);
             margin: 0 0 0.25rem 0;
             line-height: 1.2;
-            text-overflow: ellipsis; /* Ensure truncation */
-            overflow: hidden;
-            white-space: nowrap;
         }
         
         .goal-modal-subtitle {
@@ -906,6 +902,29 @@
             outline: none;
         }
         
+        /* .goal-modern-input:focus {
+            border-color: var(--primary);
+            background: var(--card);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 15%, transparent);
+            border-radius: 12px;
+        }
+        
+        .goal-modern-input:focus + .goal-input-focus-line {
+            width: 100%;
+        } */
+        
+        /* .goal-input-focus-line {
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        } */
+        
         /* Container de Alvos */
         .goal-targets-container {
             display: flex;
@@ -1040,9 +1059,11 @@
         }
         
         .goal-aid-checkbox {
-            width: 1.25rem;
-            height: 1.25rem;
-            accent-color: var(--primary);
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            appearance: none;
             cursor: pointer;
             transition: all 0.2s ease;
             position: relative;
@@ -1096,14 +1117,15 @@
         
         .goal-aid-quantity {
             width: 80px;
-            padding: 0.4rem 0.6rem;
+            padding: 0.5rem 0.75rem;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 8px;
             background: var(--card);
             color: var(--text);
             font-size: 0.9rem;
             text-align: center;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.2s ease;
+            outline: none;
         }
         
         .goal-aid-quantity:enabled {
@@ -1126,7 +1148,7 @@
             display: flex;
             align-items: flex-start;
             gap: 0.75rem;
-            /* margin-top: 1.5rem; */
+            margin-top: 1rem;
             padding: 1rem;
             background: color-mix(in srgb, var(--info) 5%, transparent);
             border: 1px solid color-mix(in srgb, var(--info) 20%, transparent);
@@ -1165,6 +1187,12 @@
             outline: none;
             position: relative;
             z-index: 1;
+        }
+        
+        .goal-btn-save {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent);
         }
         
         .goal-btn-save:hover {
@@ -1546,6 +1574,7 @@
         }
         .pei-meta {
             display: flex;
+            align-items: center;
             gap: 1rem;
             font-size: 0.875rem;
             opacity: 0.9;
@@ -1725,6 +1754,9 @@
         }
         .professionals-toggle.expanded .toggle-icon {
             transform: rotate(180deg);
+        }
+        .professionals-toggle.expanded .toggle-text {
+            display: none;
         }
         @keyframes fadeIn {
             from {
@@ -1926,8 +1958,8 @@
             background: rgba(239, 68, 68, 0.1);
         }
         .dropdown-item i {
-            width: 16px;
-            text-align: center;
+            font-size: 0.875rem;
+            flex-shrink: 0;
         }
         .dropdown-item.delete:hover {
             background: rgba(239, 68, 68, 0.1);
@@ -1997,9 +2029,6 @@
             margin: 0;
             color: white;
             line-height: 1.2;
-            text-overflow: ellipsis; /* Ensure truncation */
-            overflow: hidden;
-            white-space: nowrap;
         }
         .pei-modal-subtitle {
             font-size: 1rem;
@@ -2163,12 +2192,11 @@
             margin-top: 0.125rem;
             flex-shrink: 0;
         }
-        /* Adjusted for three columns */
         .goals-section-modern {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* Three equal columns */
+            grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
-            height: 650px; /* Keep fixed height for scrollable sections */
+            height: 650px;
         }
         .goals-subsection {
             background: var(--bg-subtle);
@@ -2186,7 +2214,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            /* margin-bottom: 1.5rem; */
             padding-bottom: 1rem;
             border-bottom: 2px solid var(--border-color);
             flex-shrink: 0; 
@@ -2233,7 +2261,8 @@
             overflow-y: auto; 
             overflow-x: hidden; 
             min-height: 0; 
-            padding-right: 4px; 
+            padding-right: 4px;
+            padding-top: 1.5rem;
         }
         .goal-item {
             background: var(--card);
@@ -2257,11 +2286,10 @@
             transition: all 0.2s ease;
         }
         .goal-card.collapsed {
-            /* When collapsed, hide the content below the header */
-            padding-bottom: 0.5rem; /* Adjust padding for collapsed state */
+            background: color-mix(in srgb, var(--primary) 15%, var(--card));
+            border-color: color-mix(in srgb, var(--primary) 40%, var(--border-color));
         }
-        .goal-card.collapsed .targets-list,
-        .goal-card.collapsed .add-target-group {
+        .goal-card.collapsed .goal-actions {
             display: none;
         }
         .goal-card.collapsed .goal-card-header {
@@ -2273,9 +2301,8 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            /* margin-bottom: 1rem; */
             gap: 1rem;
-            cursor: pointer; /* Make the header clickable */
         }
         .goal-card-header strong {
             font-size: 1.1rem;
@@ -2283,32 +2310,7 @@
             color: var(--text);
             flex: 1;
             line-height: 1.4;
-            display: flex; /* Allow flex properties for icon and text */
-            align-items: center;
-            gap: 0.5rem; /* Space between icon and text */
         }
-        .goal-collapse-btn {
-            background: none;
-            border: none;
-            color: var(--muted);
-            font-size: 1rem;
-            cursor: pointer;
-            transition: transform 0.2s ease, color 0.2s ease;
-            padding: 0.25rem;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0; /* Prevent shrinking */
-        }
-        .goal-collapse-btn:hover {
-            color: var(--primary);
-            background-color: var(--bg);
-        }
-        .goal-collapse-btn.expanded .goal-collapse-icon {
-            transform: rotate(180deg);
-        }
-
         .goal-status {
             padding: 0.25rem 0.75rem;
             border-radius: 12px;
@@ -2362,15 +2364,12 @@
             border-radius: 8px;
         }
         .goal-actions-toggle:hover {
-            transform: translateY(-2px) scale(1.05);
-            border-color: var(--primary);
+            /* transform: translateY(-2px) scale(1.05); */
+            border-color: transparent;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
         }
         .goal-actions-toggle:hover::before {
             opacity: 0.1;
-        }
-        .goal-actions-toggle:hover {
-            color: var(--primary);
         }
         .goal-actions-toggle.active {
             background: var(--primary);
@@ -2816,6 +2815,282 @@
                 flex-direction: column;
                 align-items: stretch;
             }
+        }
+        .goals-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .goal-card.finalizado {
+            opacity: 0.9;
+            filter: grayscale(0.2);
+        }
+        .goal-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            /* margin-bottom: 0.75rem; */
+            padding: 0.50rem 0rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            position: relative;
+        }
+        .goal-card-header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+        .goal-card-header:hover::after {
+            width: 100%;
+        }
+        .goal-card.collapsed .goal-card-header:hover::after {
+            width: 0%;
+        }
+        .goal-card-header strong {
+            font-size: 1.1rem;
+            color: var(--text);
+            font-weight: 600;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .goal-collapse-icon {
+            color: var(--muted);
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+        }
+        .goal-card.collapsed .goal-collapse-icon {
+            transform: rotate(-90deg);
+            color: var(--primary);
+        }
+        .goal-targets-counter {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            transition: all 0.3s ease;
+            animation: pulse-subtle 2s infinite;
+        }
+        .goal-card.collapsed .goal-targets-counter {
+            display: inline-flex;
+            background: var(--primary);
+            transform: scale(1.1);
+            animation: bounce-subtle 0.6s ease;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        @keyframes bounce-subtle {
+            0%, 100% { transform: scale(1.1); }
+            50% { transform: scale(1.2); }
+        }
+        .goal-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .goal-status.active-status {
+            background-color: color-mix(in srgb, var(--status-ativo) 20%, transparent); color: var(--status-ativo);
+        }
+        .goal-status.finalizado-status {
+            background-color: color-mix(in srgb, var(--status-finalizado) 20%, transparent); color: var(--status-finalizado);
+        }
+        .targets-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 0.75rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            max-height: 1000px;
+            opacity: 1;
+        }
+        .goal-card.collapsed .targets-list {
+            max-height: 0;
+            margin-top: 0;
+            opacity: 0;
+        }
+        .goal-card.collapsed .add-target-group {
+            max-height: 0;
+            margin-top: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            padding-top: 0;
+        }
+        .add-target-group {
+            transition: all 0.3s ease;
+            max-height: 100px;
+            opacity: 1;
+        }
+        .target-item {
+            display: flex;
+            align-items: center; 
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .target-item i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+            color: var(--info); 
+            margin-top: 2px; 
+        }
+        .target-item.concluido .target-text-content {
+            text-decoration: line-through;
+            color: var(--muted);
+        }
+        .add-target-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            align-items: center;
+        }
+        .add-target-group input {
+            flex-grow: 1;
+        }
+        .btn-add-target {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.85rem;
+        }
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        #loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        #loading-overlay .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        .toggle-btn-desktop {
+            display: none;
+        }
+        .menu-btn-mobile {
+            display: block;
+        }
+        .desktop-only {
+            display: inline;
+        }
+        .mobile-only {
+            display: none;
+        }
+        @media(min-width: 769px) {
+            .toggle-btn-desktop {
+                display: grid;
+            }
+            .menu-btn-mobile {
+                display: none;
+            }
+            span.btn-text-desktop {
+                display: inline;
+            }
+            .desktop-only {
+                display: inline;
+            }
+            .mobile-only {
+                display: none;
+            }
+            .pei-list {
+                grid-template-columns: 1fr; 
+            }
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            }
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+            .sidebar.collapsed nav ul li a,
+            .sidebar.collapsed .sidebar-footer button,
+            .sidebar.collapsed .sidebar-footer a {
+                justify-content: flex-start;
+            }
+            .sidebar.collapsed nav ul li a span,
+            .sidebar.collapsed .sidebar-footer span {
+                display: inline;
+            }
+            .sidebar.collapsed .sidebar-header .logo span {
+                display: inline;
+            }
+            .main-content, .main-content.collapsed {
+                margin-left: 0;
+                width: 100%;
+            }
+            main {
+                padding: 1rem;
+            }
+            .paciente-info-card {
+                padding: 1.5rem;
+            }
+            .paciente-info-grid {
+                grid-template-columns: 1fr;
+            }
+            .prontuario-header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .pei-card-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .pei-card-actions button,
+            .pei-card-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .pei-card-actions .btn-danger-outline {
+                margin-top: 0.5rem;
+            }
+            .add-target-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
             .add-target-group input {
                 width: 100%;
             }
@@ -2982,6 +3257,38 @@
             background-color: var(--bg);
             cursor: not-allowed;
             opacity: 0.7;
+        }
+        .goal-status.manutencao-status {
+            background-color: color-mix(in srgb, var(--info) 20%, transparent);
+            color: var(--info);
+        }
+        .goal-status-info {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-left: 0.5rem;
+            white-space: nowrap;
+        }
+        .goals-section-modern {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            height: 650px;
+        }
+        @media (max-width: 1200px) {
+            .goals-section-modern {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                height: auto;
+                flex-direction: column;
+            }
+            .goals-subsection {
+                min-height: 300px;
+                height: auto;
+            }
+        }
+        @media (max-width: 768px) {
+            .goals-section-modern {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -3279,7 +3586,7 @@
 
                                 <div class="goal-modal-section-note">
                                     <i class="fas fa-info-circle"></i>
-                                    <span>Selecione as ajudas que serão associadas a cada alvo desta meta e defina a quantidade máxima para cada uma.</span>
+                                    <span>Defina as ajudas que serão associadas a meta e sua quantidade máxima.</span>
                                 </div>
                             </div>
                         </div>
@@ -3314,6 +3621,41 @@
             </div>
 
             <div class="pei-modal-body">
+
+                <!--<div class="pei-info-section">
+                    <div class="info-cards-grid">
+                        <div class="info-card">
+                            <div class="info-card-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="info-card-content">
+                                <span class="info-card-label">Data de Criação</span>
+                                <span class="info-card-value" id="peiCreatedDate"></span>
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="info-card-content">
+                                <div class="info-header">
+                                    <span class="info-card-label">Profissionais</span>
+                                    <button class="professionals-toggle-modal" id="professionalsToggleModal" style="display: none;">
+                                        <span class="toggle-text">+<span class="professionals-count-modal"></span></span>
+                                        <i class="fas fa-chevron-down toggle-icon"></i>
+                                    </button>
+                                </div>
+                                <div class="info-card-value">
+                                    <div class="professionals-display-modal">
+                                        <div class="professionals-visible-modal" id="peiProfessionalsVisible"></div>
+                                        <div class="professionals-hidden-modal" id="peiProfessionalsHidden"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> -->
+
                 <div class="goals-section-modern">
 
                     <div class="goals-subsection">
@@ -3337,7 +3679,7 @@
                             </div>
                         </div>
                     </div>
-
+                    
                     <div class="goals-subsection">
                         <div class="goals-subsection-info">
                             <div class="goals-subsection-header">
@@ -3507,14 +3849,14 @@
                 document.body.addEventListener('click', async function(e) {
                     const target = e.target;
                     
-                    // Handle goal card collapse/expand
-                    const goalCollapseBtn = target.closest('.goal-collapse-btn');
-                    if (goalCollapseBtn) {
+                    const goalCollapseHeader = target.closest('[data-goal-collapse]');
+                    if (goalCollapseHeader && !target.closest('.goal-actions') && !target.closest('button')) {
                         e.preventDefault();
-                        const goalCard = goalCollapseBtn.closest('.goal-card');
+                        const goalId = goalCollapseHeader.dataset.goalCollapse;
+                        const goalCard = document.getElementById(`goal-${goalId}`);
                         if (goalCard) {
                             goalCard.classList.toggle('collapsed');
-                            goalCollapseBtn.classList.toggle('expanded'); // Toggle expanded class on the button
+
                             const counter = goalCard.querySelector('.goal-targets-counter');
                             if (counter) {
                                 const isCollapsed = goalCard.classList.contains('collapsed');
@@ -3526,7 +3868,7 @@
                         }
                         return;
                     }
-
+                    
                     const closeBtn = target.closest('.modal-close-btn') || target.closest('.goal-modal-close-btn');
                     if (closeBtn) {
                         const modalId = closeBtn.dataset.closeModal || closeBtn.closest('.modal-overlay')?.id;
@@ -3816,7 +4158,7 @@
                             menu.classList.remove('active', 'show');
                             menu.closest('.goal-actions-dropdown').querySelector('.goal-actions-toggle').classList.remove('active');
                         }
-                        // Check if data_primeira_finalizacao exists to determine message
+                       // Check if data_primeira_finalizacao exists to determine message
                         const currentGoal = allPeisData.find(p => p.id === peiId)?.goals.find(g => g.id === goalId);
                         const message = currentGoal && currentGoal.data_primeira_finalizacao_fmt !== 'N/A'
                             ? 'Tem certeza que deseja finalizar esta meta definitivamente? Esta ação não pode ser desfeita.'
@@ -4184,7 +4526,7 @@
                         }, 200);
                     }
                     if (finalizedCountElement) {
-                        finalifiedCountElement.textContent = finalizedPeisCount;
+                        finalizedCountElement.textContent = finalizedPeisCount;
                         finalizedCountElement.style.transform = 'scale(1.2)';
                         setTimeout(() => {
                             finalizedCountElement.style.transform = 'scale(1)';
@@ -4416,22 +4758,21 @@
                     }
                     const goals = pei.goals || [];
                     const activeGoals = goals.filter(goal => goal.status === 'Ativo');
-                    const maintenanceGoals = goals.filter(goal => goal.status === 'Manutenção');
                     const finalizedGoals = goals.filter(goal => goal.status === 'Finalizado');
+                    const maintenanceGoals = goals.filter(goal => goal.status === 'Manutenção');
                     const canModifyPeiContent = IS_ADMIN || (IS_PROFESSIONAL && pei.profissionais_ids && pei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID));
                     const isPeiFinalized = pei.status === 'Finalizado';
 
-                    // Update counters for each section
                     const activeGoalsCounterEl = document.getElementById('active-goals-counter');
                     const maintenanceGoalsCounterEl = document.getElementById('maintenance-goals-counter');
                     const finalizedGoalsCounterEl = document.getElementById('finalized-goals-counter');
-                    
+
                     if (activeGoalsCounterEl) activeGoalsCounterEl.textContent = activeGoals.length;
                     if (maintenanceGoalsCounterEl) maintenanceGoalsCounterEl.textContent = maintenanceGoals.length;
                     if (finalizedGoalsCounterEl) finalizedGoalsCounterEl.textContent = finalizedGoals.length;
 
-                    // Render goals in their respective containers
                     const activeGoalsContainer = document.getElementById('pei-modal-active-goals');
+
                     if (activeGoalsContainer) {
                         if (activeGoals.length > 0) {
                             activeGoalsContainer.innerHTML = activeGoals
@@ -4439,28 +4780,6 @@
                                 .join('');
                         } else {
                             activeGoalsContainer.innerHTML = '<div class="empty-state-small"><i class="fas fa-bullseye"></i><p>Nenhuma meta ativa para este PEI.</p></div>';
-                        }
-                    }
-
-                    const maintenanceGoalsContainer = document.getElementById('pei-modal-maintenance-goals');
-                    if (maintenanceGoalsContainer) {
-                        if (maintenanceGoals.length > 0) {
-                            maintenanceGoalsContainer.innerHTML = maintenanceGoals
-                                .map(goal => createGoalCard(pei, goal, canModifyPeiContent, isPeiFinalized))
-                                .join('');
-                        } else {
-                            maintenanceGoalsContainer.innerHTML = '<div class="empty-state-small"><i class="fas fa-wrench"></i><p>Nenhuma meta em manutenção.</p></div>';
-                        }
-                    }
-
-                    const finalizedGoalsContainer = document.getElementById('pei-modal-finalized-goals');
-                    if (finalizedGoalsContainer) {
-                        if (finalizedGoals.length > 0) {
-                            finalizedGoalsContainer.innerHTML = finalizedGoals
-                                .map(goal => createGoalCard(pei, goal, canModifyPeiContent, isPeiFinalized))
-                                .join('');
-                        } else {
-                            finalizedGoalsContainer.innerHTML = '<div class="empty-state-small"><i class="fas fa-check-double"></i><p>Nenhuma meta finalizada para este PEI.</p></div>';
                         }
                     }
 
@@ -4475,6 +4794,28 @@
                         }
                     }
                     
+                    const maintenanceGoalsContainer = document.getElementById('pei-modal-maintenance-goals');
+                    if (maintenanceGoalsContainer) {
+                        if (maintenanceGoals.length > 0) {
+                            maintenanceGoalsContainer.innerHTML = maintenanceGoals
+                                .map(goal => createGoalCard(pei, goal, canModifyPeiContent, isPeiFinalized))
+                                .join('');
+                        } else {
+                            maintenanceGoalsContainer.innerHTML = '<div class="empty-state-small"><i class="fas fa-wrench"></i><p>Nenhuma meta em manutenção.</p></div>';
+                        }
+                    }
+                    
+                    const finalizedGoalsContainer = document.getElementById('pei-modal-finalized-goals');
+                    if (finalizedGoalsContainer) {
+                        if (finalizedGoals.length > 0) {
+                            finalizedGoalsContainer.innerHTML = finalizedGoals
+                                .map(goal => createGoalCard(pei, goal, canModifyPeiContent, isPeiFinalized))
+                                .join('');
+                        } else {
+                            finalizedGoalsContainer.innerHTML = '<div class="empty-state-small"><i class="fas fa-check-double"></i><p>Nenhuma meta finalizada para este PEI.</p></div>';
+                        }
+                    }
+
                     const modalFooter = document.getElementById('pei-details-modal-footer');
                     if (modalFooter) {
                         let footerButtons = '';
@@ -4506,14 +4847,13 @@
                 function createGoalCard(pei, goal, canModifyPeiContent, isPeiFinalizado) { 
                     const isGoalFinalizado = goal.status === 'Finalizado';
                     const isGoalManutencao = goal.status === 'Manutenção';
-                    // Disable actions if PEI is finalized, goal is finalized, or goal is in maintenance
-                    const goalActionsDisabled = isPeiFinalizado || isGoalFinalizado || isGoalManutencao || !canModifyPeiContent ? 'disabled' : ''; 
+                    const goalActionsDisabled = isPeiFinalizado || isGoalFinalizado || isGoalManutencao || !canModifyPeiContent ? 'disabled' : '';
                     const targetCount = goal.targets ? goal.targets.length : 0;
                     
                     let targetsHtml = '';
                     if (goal.targets && goal.targets.length > 0) {
                         goal.targets.forEach((target) => { 
-                            const targetStatusIcon = target.status === 'Finalizado' ? 'fa-check-square' : 'fa-square'; 
+                            const targetStatusIcon = target.status === 'Finalizado' ? 'fa-check-square' : 'fa-square';
                             targetsHtml += `
                                 <li class="target-item ${target.status === 'Finalizado' ? 'concluido' : ''}">
                                     <i class="fas ${targetStatusIcon}"></i>
@@ -4529,6 +4869,33 @@
                         });
                     } else {
                         targetsHtml = '<div class="empty-state-small"><i class="fas fa-bullseye"></i><p>Nenhum alvo definido para esta meta.</p></div>';
+                    }
+                    
+                    
+                    // Determine the status badge class and text
+                    let goalStatusClass = '';
+                    let goalStatusText = '';
+                    let goalStatusIcon = '';
+                    let additionalStatusInfo = ''; // New variable for additional info
+
+                    if (isGoalFinalizado) {
+                        goalStatusClass = 'finalizado-status';
+                        goalStatusText = 'Finalizado';
+                        goalStatusIcon = 'fas fa-check-circle';
+                        if (goal.data_primeira_finalizacao_fmt !== 'N/A') {
+                            additionalStatusInfo = `<span class="goal-status-info">(Finalizada Definitivamente)</span>`; // Indicator for second time finalization
+                        }
+                    } else if (isGoalManutencao) {
+                        goalStatusClass = 'manutencao-status';
+                        goalStatusText = 'Manutenção';
+                        goalStatusIcon = 'fas fa-wrench'; // Icon for maintenance
+                        if (goal.data_primeira_finalizacao_fmt !== 'N/A') {
+                            additionalStatusInfo = `<span class="goal-status-info">(Finalizada em: ${goal.data_primeira_finalizacao_fmt})</span>`;
+                        }
+                    } else {
+                        goalStatusClass = 'active-status';
+                        goalStatusText = 'Ativo';
+                        goalStatusIcon = 'fas fa-play-circle';
                     }
 
                     // Determine the finalize/reactivate button text and visibility
@@ -4553,33 +4920,20 @@
                         finalizeButtonHtml = '';
                     }
 
-                    // Determine the date to display and its label
-                    let displayDate = '';
-                    let dateLabel = '';
-                    if (goal.data_primeira_finalizacao_fmt && goal.data_primeira_finalizacao_fmt !== 'N/A') {
-                        displayDate = goal.data_primeira_finalizacao_fmt;
-                        dateLabel = 'Finalizada em';
-                    } else if (goal.data_ultima_ativacao_fmt && goal.data_ultima_ativacao_fmt !== 'N/A' && goal.status === 'Ativo') {
-                        displayDate = goal.data_ultima_ativacao_fmt;
-                        dateLabel = 'Ativa desde';
-                    } else if (goal.data_criacao_fmt && goal.data_criacao_fmt !== 'N/A' && goal.status === 'Manutenção') {
-                        displayDate = goal.data_criacao_fmt;
-                        dateLabel = 'Criada em';
-                    }
-
-                    const dateInfoHtml = displayDate ? `<span class="goal-date-info">${dateLabel}: ${displayDate}</span>` : '';
-
                     return `
                         <div class="goal-card ${isGoalFinalizado ? 'finalizado' : ''}" id="goal-${pei.id}-${goal.id}">
-                            <div class="goal-card-header">
-                                <div class="goal-header-content">
-                                    <strong>
-                                        Meta: ${goal.descricao}
-                                        ${targetCount > 0 ? `<span class="goal-targets-counter" title="${targetCount} alvo(s)">${targetCount}</span>` : ''}
-                                    </strong>
-                                    ${dateInfoHtml}
-                                </div>
-                                <div class="goal-header-actions">
+                            <div class="goal-card-header" data-goal-collapse="${pei.id}-${goal.id}">
+                                <strong>
+                                    <i class="fas fa-chevron-down goal-collapse-icon"></i>
+                                    Meta: ${goal.descricao}
+                                    ${targetCount > 0 ? `<span class="goal-targets-counter" title="${targetCount} alvo(s)">${targetCount}</span>` : ''}
+                                </strong>
+                                <div class="flex items-center gap-2">
+                                    <!-- <span class="goal-status ${goalStatusClass}">
+                                        <i class="${goalStatusIcon}"></i>
+                                        ${goalStatusText}
+                                    </span>
+                                    ${additionalStatusInfo} -->
                                     ${IS_ADMIN && !isPeiFinalizado ? `
                                         <div class="goal-actions">
                                             <div class="goal-actions-dropdown">
@@ -4593,7 +4947,7 @@
                                                             <i class="fas fa-tasks"></i>
                                                             Status
                                                         </div>
-                                                        ${finalizeButtonHtml}
+                                                         ${finalizeButtonHtml}
                                                     </div>
 
                                                     <div class="goal-actions-section">
@@ -4625,9 +4979,6 @@
                                             </div>
                                         </div>
                                     ` : ''}
-                                    <button type="button" class="goal-collapse-btn" data-goal-collapse="${pei.id}-${goal.id}">
-                                        <i class="fas fa-chevron-down goal-collapse-icon"></i>
-                                    </button>
                                 </div>
                             </div>
                             <ul class="targets-list">
