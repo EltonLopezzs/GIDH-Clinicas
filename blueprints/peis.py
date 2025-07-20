@@ -27,6 +27,7 @@ def _format_professional_names(db_instance, clinica_id, professional_ids):
             else:
                 professional_names.append(f"Profissional Desconhecido ({prof_id})")
         except Exception as e:
+                # Log the error but continue processing other professionals
             print(f"Erro ao buscar nome do profissional {prof_id}: {e}")
             professional_names.append(f"Erro ao Carregar Profissional ({prof_id})")
 
@@ -116,6 +117,31 @@ def _prepare_pei_for_display(db_instance, clinica_id, pei_doc, all_professionals
             meta['doc_reference'] = meta['doc_reference'].path
         else:
             meta['doc_reference'] = meta.get('doc_reference') or pei_doc.reference.path
+
+        # Adiciona data_primeira_finalizacao se existir e tenta parsear se for string
+        if 'data_primeira_finalizacao' in meta:
+            if isinstance(meta['data_primeira_finalizacao'], datetime.datetime):
+                meta['data_primeira_finalizacao_fmt'] = meta['data_primeira_finalizacao'].strftime('%d/%m/%Y %H:%M')
+            elif isinstance(meta['data_primeira_finalizacao'], str):
+                try:
+                    # Tenta parsear a string para datetime, assumindo o formato ISO ou outro comum
+                    # Se você tem um formato específico, ajuste aqui.
+                    naive_dt = datetime.datetime.fromisoformat(meta['data_primeira_finalizacao'])
+                    meta['data_primeira_finalizacao'] = SAO_PAULO_TZ.localize(naive_dt) # Localiza a data
+                    meta['data_primeira_finalizacao_fmt'] = meta['data_primeira_finalizacao'].strftime('%d/%m/%Y %H:%M')
+                except (ValueError, TypeError):
+                    meta['data_primeira_finalizacao_fmt'] = 'Data Inválida'
+                    meta['data_primeira_finalizacao'] = None # Define como None se não puder parsear
+            else:
+                meta['data_primeira_finalizacao_fmt'] = 'N/A'
+                meta['data_primeira_finalizacao'] = None
+        else:
+            meta['data_primeira_finalizacao_fmt'] = 'N/A'
+            meta['data_primeira_finalizacao'] = None
+        
+        # Garante que reactivated_count exista no dicionário da meta
+        if 'reactivated_count' not in meta:
+            meta['reactivated_count'] = 0
 
         meta['targets'] = [] # Inicializa a lista de alvos para esta meta
 
@@ -290,8 +316,8 @@ def _update_target_status_transaction(transaction, target_ref, new_target_status
 @firestore.transactional
 def _finalize_goal_transaction(transaction, goal_ref, db_instance):
     """
-    Finaliza uma meta específica, marcando-a como 'finalizado'
-    e todos os seus alvos e ajudas como concluídos/finalizados.
+    Finaliza uma meta específica, marcando-a como 'Manutenção' ou 'Finalizado'
+    e atualizando seus alvos e ajudas de acordo com o ciclo de vida.
     Args:
         transaction: Objeto de transação do Firestore.
         goal_ref: Referência do documento da meta.
@@ -305,26 +331,103 @@ def _finalize_goal_transaction(transaction, goal_ref, db_instance):
         print(f"ERROR: Em _finalize_goal_transaction: Meta {goal_ref.id} não encontrada.")
         raise Exception("Meta não encontrada para finalizar.")
 
-    updated_goal_data = {'status': 'finalizado'}
+    current_meta_data = snapshot.to_dict()
+    
+    # Get current reactivated_count, default to 0 if not present
+    current_reactivated_count = current_meta_data.get('reactivated_count', 0)
+
+    if current_reactivated_count == 0:
+        # Primeira vez que a meta é finalizada (vai para Manutenção)
+        updated_goal_data = {
+            'status': 'Manutenção',
+            'data_primeira_finalizacao': datetime.datetime.now(SAO_PAULO_TZ),
+            'reactivated_count': 1 # Marca como tendo passado pela primeira finalização
+        }
+        transaction.update(goal_ref, updated_goal_data)
+        print(f"DEBUG: Meta {goal_ref.id} atualizada para status 'Manutenção' e data de primeira finalização. reactivated_count: 1")
+
+        # Resetar todos os alvos e ajudas para 'Pendente' e attempts_count para 0
+        alvos_ref = goal_ref.collection('alvos')
+        alvos_docs = alvos_ref.stream()
+
+        for alvo_doc in alvos_docs:
+            print(f"DEBUG: Resetando alvo {alvo_doc.id} para 'Pendente' dentro da meta {goal_ref.id}.")
+            updated_alvo_data = {'status': 'Pendente'}
+            transaction.update(alvo_doc.reference, updated_alvo_data)
+
+            ajudas_ref = alvo_doc.reference.collection('ajudas')
+            ajudas_docs = ajudas_ref.stream()
+            for ajuda_doc in ajudas_docs:
+                print(f"DEBUG: Resetando ajuda {ajuda_doc.id} para 'Pendente' e attempts_count=0 dentro do alvo {alvo_doc.id}.")
+                transaction.update(ajuda_doc.reference, {'status': 'Pendente', 'attempts_count': 0})
+    else:
+        # Segunda ou subsequente vez que a meta é finalizada (após reativação)
+        updated_goal_data = {'status': 'Finalizado'} # Finalização definitiva
+        transaction.update(goal_ref, updated_goal_data)
+        print(f"DEBUG: Meta {goal_ref.id} atualizada para status 'Finalizado' (finalização definitiva).")
+
+        # Finalizar todos os alvos e ajudas
+        alvos_ref = goal_ref.collection('alvos')
+        alvos_docs = alvos_ref.stream()
+
+        for alvo_doc in alvos_docs:
+            print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'Finalizado' dentro da meta {goal_ref.id}.")
+            updated_alvo_data = {'status': 'Finalizado'}
+            transaction.update(alvo_doc.reference, updated_alvo_data)
+
+            ajudas_ref = alvo_doc.reference.collection('ajudas')
+            ajudas_docs = ajudas_ref.stream()
+            for ajuda_doc in ajudas_docs:
+                print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'Finalizado' dentro do alvo {alvo_doc.id}.")
+                transaction.update(ajuda_doc.reference, {'status': 'Finalizado'})
+    print(f"DEBUG: Finalizado _finalize_goal_transaction para meta: {goal_ref.id}")
+
+
+@firestore.transactional
+def _reactivate_goal_after_maintenance_transaction(transaction, goal_ref, db_instance):
+    """
+    Reativa uma meta que estava em 'Manutenção' após 15 dias,
+    voltando-a para 'Ativo' e incrementando o contador de reativações.
+    Args:
+        transaction: Objeto de transação do Firestore.
+        goal_ref: Referência do documento da meta.
+        db_instance: Instância do Firestore DB (necessário para buscar subcoleções).
+    Raises:
+        Exception: Se a meta não for encontrada.
+    """
+    print(f"DEBUG: Iniciando _reactivate_goal_after_maintenance_transaction para meta: {goal_ref.id}")
+    snapshot = goal_ref.get(transaction=transaction)
+    if not snapshot.exists:
+        print(f"ERROR: Em _reactivate_goal_after_maintenance_transaction: Meta {goal_ref.id} não encontrada.")
+        raise Exception("Meta não encontrada para reativação.")
+
+    current_meta_data = snapshot.to_dict()
+    # Increment reactivated_count when re-activating
+    updated_reactivated_count = current_meta_data.get('reactivated_count', 0) + 1
+
+    # Atualiza o status da meta para 'Ativo' e incrementa o contador
+    updated_goal_data = {
+        'status': 'Ativo',
+        'reactivated_count': updated_reactivated_count
+    }
     transaction.update(goal_ref, updated_goal_data)
-    print(f"DEBUG: Meta {goal_ref.id} atualizada para status 'finalizado'.")
+    print(f"DEBUG: Meta {goal_ref.id} atualizada para status 'Ativo' após manutenção. reactivated_count: {updated_reactivated_count}")
 
-    # Atualizar alvos na subcoleção
+    # Resetar todos os alvos para 'Pendente' e suas ajudas para 'Pendente' com attempts_count para 0
     alvos_ref = goal_ref.collection('alvos')
-    alvos_docs = alvos_ref.stream() # Correção: Use alvos_docs aqui
+    alvos_docs = alvos_ref.stream()
 
-    for alvo_doc in alvos_docs: # Correção: Iterar sobre alvos_docs
-        print(f"DEBUG: Atualizando alvo {alvo_doc.id} para 'Finalizado' dentro da meta {goal_ref.id}.")
-        updated_alvo_data = {'status': 'Finalizado'}
+    for alvo_doc in alvos_docs:
+        print(f"DEBUG: Resetando alvo {alvo_doc.id} para 'Pendente' dentro da meta {goal_ref.id} durante reativação.")
+        updated_alvo_data = {'status': 'Pendente'}
         transaction.update(alvo_doc.reference, updated_alvo_data)
 
-        # Atualizar ajudas na subcoleção do alvo
         ajudas_ref = alvo_doc.reference.collection('ajudas')
         ajudas_docs = ajudas_ref.stream()
         for ajuda_doc in ajudas_docs:
-            print(f"DEBUG: Atualizando ajuda {ajuda_doc.id} para 'Finalizado' dentro do alvo {alvo_doc.id}.")
-            transaction.update(ajuda_doc.reference, {'status': 'Finalizado'})
-    print(f"DEBUG: Finalizado _finalize_goal_transaction para meta: {goal_ref.id}")
+            print(f"DEBUG: Resetando ajuda {ajuda_doc.id} para 'Pendente' e attempts_count=0 dentro do alvo {alvo_doc.id}.")
+            transaction.update(ajuda_doc.reference, {'status': 'Pendente', 'attempts_count': 0})
+    print(f"DEBUG: Finalizado _reactivate_goal_after_maintenance_transaction para meta: {goal_ref.id}")
 
 
 @firestore.transactional
@@ -361,7 +464,7 @@ def _finalize_pei_transaction(transaction, pei_ref, db_instance):
 
     for meta_doc in metas_docs:
         meta_data = meta_doc.to_dict()
-        if meta_data.get('status') == 'Ativo':
+        if meta_data.get('status') in ['Ativo', 'Manutenção']: # Inclui metas em manutenção para finalização
             try:
                 print(f"DEBUG: Atualizando meta {meta_doc.id} para 'finalizado' dentro do PEI {pei_ref.id}.")
                 transaction.update(meta_doc.reference, {'status': 'finalizado'})
@@ -636,17 +739,60 @@ def ver_peis_paciente(paciente_doc_id):
         peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', paciente_doc_id))
 
         if is_professional and not is_admin:
-            if logged_in_professional_id:
-                peis_query = peis_query.where(
-                    filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id)
-                )
-            else:
-                peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', 'ID_INVALIDO_PARA_NAO_RETORNAR_NADA'))
+            peis_query = peis_query.where(
+                filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id)
+            )
 
         peis_query = peis_query.order_by('data_criacao', direction=firestore.Query.DESCENDING)
 
         for pei_doc in peis_query.stream():
-            pei = _prepare_pei_for_display(db_instance, clinica_id, pei_doc, profissionais_map)
+            # Antes de preparar para exibição, verificar e reativar metas se necessário
+            metas_ref = db_instance.collection(f'clinicas/{clinica_id}/peis/{pei_doc.id}/metas')
+            metas_docs = metas_ref.stream()
+
+            for meta_doc in metas_docs:
+                meta_data = convert_doc_to_dict(meta_doc) # Garante que as datas já são datetime.datetime
+                
+                # Verifica se a meta está em 'Manutenção' e se tem uma data de primeira finalização
+                if meta_data.get('status') == 'Manutenção' and \
+                   'data_primeira_finalizacao' in meta_data and \
+                   meta_data['data_primeira_finalizacao'] is not None:
+                    
+                    first_finalization_date = meta_data['data_primeira_finalizacao']
+                    
+                    # Explicitly ensure first_finalization_date is timezone-aware
+                    if isinstance(first_finalization_date, datetime.datetime):
+                        if first_finalization_date.tzinfo is None:
+                            # Assume naive datetimes from Firestore are in SAO_PAULO_TZ if not specified
+                            first_finalization_date = SAO_PAULO_TZ.localize(first_finalization_date)
+                        else:
+                            # If it has tzinfo, convert to SAO_PAULO_TZ for consistent comparison
+                            first_finalization_date = first_finalization_date.astimezone(SAO_PAULO_TZ)
+
+                        time_difference = datetime.datetime.now(SAO_PAULO_TZ) - first_finalization_date
+                        print(f"DEBUG: Meta {meta_doc.id} - first_finalization_date: {first_finalization_date}, current_time: {datetime.datetime.now(SAO_PAULO_TZ)}, time_difference_days: {time_difference.days}")
+
+                        if time_difference.days >= 15:
+                            print(f"DEBUG: Meta {meta_doc.id} precisa ser reativada. Diferença: {time_difference.days} dias.")
+                            try:
+                                transaction = db_instance.transaction()
+                                _reactivate_goal_after_maintenance_transaction(transaction, meta_doc.reference, db_instance)
+                                transaction.commit()
+                                flash(f"Meta '{meta_data.get('descricao', meta_doc.id)}' reativada automaticamente após manutenção.", "info")
+                                # Re-fetch the meta data after transaction to ensure updated status is reflected
+                                meta_doc = meta_doc.reference.get()
+                            except Exception as e:
+                                print(f"ERROR: Falha ao reativar meta {meta_doc.id}: {e}")
+                                flash(f"Erro ao reativar meta '{meta_data.get('descricao', meta_doc.id)}'.", "danger")
+                    else:
+                        print(f"AVISO: data_primeira_finalizacao para meta {meta_doc.id} não é um objeto datetime.datetime. Tipo: {type(first_finalization_date)}. Não será reativada automaticamente.")
+
+
+            # Agora prepare o PEI para exibição, que incluirá o status da meta potencialmente atualizado
+            # É importante usar pei_doc.reference.get() aqui para garantir que os dados mais recentes sejam usados
+            # caso uma meta tenha sido reativada na iteração acima.
+            updated_pei_doc_for_display = pei_doc.reference.get()
+            pei = _prepare_pei_for_display(db_instance, clinica_id, updated_pei_doc_for_display, profissionais_map)
             all_peis.append(pei)
 
     except Exception as e:
@@ -819,7 +965,9 @@ def finalize_pei(paciente_doc_id):
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            # Re-fetch the PEI document to ensure latest state after potential reactivation
+            updated_pei_doc = doc.reference.get()
+            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, updated_pei_doc, profissionais_map)
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'PEI finalizado com sucesso!', 'peis': all_peis}), 200
@@ -885,7 +1033,9 @@ def add_goal(paciente_doc_id):
         new_goal_data = {
             'descricao': descricao_goal.strip(),
             'status': 'Ativo',
-            'pei_id': pei_id
+            'pei_id': pei_id,
+            'data_primeira_finalizacao': None, # Novo campo para a data da primeira finalização
+            'reactivated_count': 0 # Inicializa o contador de reativações
         }
 
         meta_doc_ref = metas_ref.document()
@@ -915,7 +1065,14 @@ def add_goal(paciente_doc_id):
                     aid_to_save['meta_id'] = meta_doc_ref.id
                     aid_to_save['alvo_id'] = alvo_doc_ref.id
                     aid_to_save['doc_reference'] = alvo_doc_ref
-                    ajuda_doc_ref.set(aid_to_save)
+                    
+                    # Garante que status e attempts_count existam, se não vierem do frontend
+                    if 'status' not in aid_to_save:
+                        aid_to_save['status'] = 'Pendente'
+                    if 'attempts_count' not in aid_to_save:
+                        aid_to_save['attempts_count'] = 0
+
+                    transaction.set(ajuda_doc_ref, aid_to_save)
 
         flash('Meta e alvos adicionados com sucesso ao PEI!', 'success')
     except Exception as e:
@@ -965,7 +1122,9 @@ def add_target_to_goal(paciente_doc_id):
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            # Re-fetch the PEI document to ensure latest state after potential reactivation
+            updated_pei_doc = doc.reference.get()
+            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, updated_pei_doc, profissionais_map)
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'Alvo adicionado com sucesso!', 'peis': all_peis}), 200
@@ -1079,7 +1238,9 @@ def delete_target(paciente_doc_id):
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            # Re-fetch the PEI document to ensure latest state after potential reactivation
+            updated_pei_doc = doc.reference.get()
+            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, updated_pei_doc, profissionais_map)
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'Alvo excluído com sucesso!', 'peis': all_peis}), 200
@@ -1142,7 +1303,9 @@ def finalize_goal(paciente_doc_id):
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            # Re-fetch the PEI document to ensure latest state after potential reactivation
+            updated_pei_doc = doc.reference.get()
+            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, updated_pei_doc, profissionais_map)
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'Meta Finalizado com sucesso!', 'peis': all_peis}), 200
@@ -1204,7 +1367,9 @@ def activate_goal(paciente_doc_id):
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            # Re-fetch the PEI document to ensure latest state after potential reactivation
+            updated_pei_doc = doc.reference.get()
+            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, updated_pei_doc, profissionais_map)
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'Meta ativada com sucesso!', 'peis': all_peis}), 200
@@ -1227,6 +1392,8 @@ def update_target_and_aid_data(paciente_doc_id):
             user_doc = db_instance.collection('User').document(user_uid).get()
             if user_doc.exists:
                 logged_in_professional_id = user_doc.to_dict().get('profissional_id')
+            else:
+                print(f"Documento de usuário não encontrado para UID: {user_uid}")
         except Exception as e:
             return jsonify({'success': False, 'message': f'Erro ao verificar permissões: {e}'}), 500
 
@@ -1269,7 +1436,9 @@ def update_target_and_aid_data(paciente_doc_id):
             peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
 
         for doc in peis_query.stream():
-            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, doc, profissionais_map)
+            # Re-fetch the PEI document to ensure latest state after potential reactivation
+            updated_pei_doc = doc.reference.get()
+            pei_data_converted = _prepare_pei_for_display(db_instance, clinica_id, updated_pei_doc, profissionais_map)
             all_peis.append(pei_data_converted)
 
         return jsonify({'success': True, 'message': 'Alvo atualizado com sucesso!', 'peis': all_peis}), 200
