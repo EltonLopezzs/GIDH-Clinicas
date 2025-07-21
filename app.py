@@ -1,16 +1,16 @@
+import os
+from flask import Flask, session, redirect, url_for, request # Certifique-se de que 'request' está importado
+from datetime import timedelta # Importar timedelta para sessões permanentes
+
+# --- Importações adicionais do seu app.py ---
 import datetime
 import json
-import os
-
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth_admin
-from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify, render_template_string
 from flask_cors import CORS
-
 from google.cloud.firestore_v1.base_query import FieldFilter
-from collections import Counter, defaultdict # Importar defaultdict
+from collections import Counter, defaultdict
 
-# Importar utils e as funções de registro de rotas dos módulos de blueprint
 from utils import set_db, get_db, login_required, admin_required, SAO_PAULO_TZ, parse_date_input, convert_doc_to_dict
 from blueprints.users import register_users_routes
 from blueprints.professionals import register_professionals_routes
@@ -20,22 +20,54 @@ from blueprints.covenants import register_covenants_routes
 from blueprints.schedules import register_schedules_routes
 from blueprints.appointments import register_appointments_routes
 from blueprints.medical_records import register_medical_records_routes
-from blueprints.estoque import register_estoque_routes # Importar o blueprint de Estoque
-from blueprints.contas_a_pagar import register_contas_a_pagar_routes # Importar o blueprint de Contas a Pagar
-from blueprints.peis import peis_bp # Importar o blueprint de PEIs
-from blueprints.patrimonio import register_patrimonio_routes # NOVO: Importar o blueprint de Patrimônio
-from blueprints.protocols import protocols_bp # NOVO: Importar o blueprint de Protocolos
+from blueprints.estoque import register_estoque_routes
+from blueprints.contas_a_pagar import register_contas_a_pagar_routes
+from blueprints.peis import peis_bp
+from blueprints.patrimonio import register_patrimonio_routes
+from blueprints.protocols import protocols_bp
 
-# --- NOVO: Importações para IA ---
+# NOVO: Importações para IA
 import google.generativeai as genai
-from PyPDF2 import PdfReader # Para ler PDFs
+from PyPDF2 import PdfReader
 from dotenv import load_dotenv
+import re # Para sanitização de JSON
 
-# Carrega variáveis de ambiente do arquivo .env
+# Carrega variáveis de ambiente do arquivo .env (para desenvolvimento local)
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+
+# --- Configurações de Segurança e Sessão (CRUCIAL para ambientes de produção) ---
+
+# 1. SECRET_KEY: Essencial para assinar cookies de sessão.
+#    Use a variável de ambiente FLASK_SECRET_KEY. Se não for encontrada, use uma padrão.
+#    Esta chave DEVE ser CONSISTENTE entre os reinícios do Gunicorn.
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'sua_chave_secreta_padrao_muito_segura_aqui') # Use a chave gerada e colocada no .service
+
+# 2. Configurações de Proxy Reverso:
+#    Isso diz ao Flask para confiar nos cabeçalhos X-Forwarded-For e X-Forwarded-Proto do Nginx.
+#    Sem isso, Flask pode gerar URLs incorretas ou ter problemas de segurança com sessões.
+#    Ajuste o número de proxies conforme sua infraestrutura (1 para Nginx -> Gunicorn -> Flask)
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+# 3. Configurações de Cookie de Sessão:
+#    SESSION_COOKIE_SECURE: Define se o cookie de sessão só deve ser enviado via HTTPS.
+#                           Se você está usando HTTP (por enquanto), defina como False.
+#                           Se for usar HTTPS (altamente recomendado), defina como True.
+app.config['SESSION_COOKIE_SECURE'] = False # Mude para True quando configurar HTTPS!
+
+#    SESSION_COOKIE_HTTPONLY: Impede que JavaScript acesse o cookie, aumentando a segurança.
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+
+#    SESSION_COOKIE_SAMESITE: Proteção contra CSRF. 'Lax' é um bom padrão.
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+#    PERMANENT_SESSION_LIFETIME: Tempo de vida da sessão (ex: 31 dias).
+#                                Se você quer que a sessão persista após fechar o navegador.
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=31)
+
+
 CORS(app)
 
 _db_client_instance = None
@@ -111,6 +143,7 @@ def session_login():
             session['clinica_nome_display'] = mapeamento_data.get('nome_clinica_display', 'Clínica On')
             session['user_role'] = mapeamento_data['role']
             session['user_name'] = mapeamento_data.get('nome_completo', email)
+            session.permanent = True # Adicione esta linha para tornar a sessão permanente
 
             print(f"Usuário {email} logado com sucesso. Função: {session['user_role']}")
             return jsonify({"success": True, "message": "Login bem-sucedido!"})
@@ -159,7 +192,7 @@ def setup_mapeamento_admin():
             except Exception as e:
                 flash(f'Erro ao associar usuário: {e}', 'danger')
                 print(f"Erro em setup_mapeamento_admin: {e}")
-        return redirect(url_for('setup_mapeamento_admin'))
+            return redirect(url_for('setup_mapeamento_admin'))
 
     return render_template_string("""
         <!DOCTYPE html>
@@ -208,6 +241,7 @@ def setup_mapeamento_admin():
                 .flash-message.danger {
                     background-color: #f8d7da;
                     color: #721c24;
+                    border: 1px solid #f5c6cb;
                     border: 1px solid #f5c6cb;
                 }
                 a { color: #a6683c; text-decoration: none; }
@@ -400,7 +434,7 @@ def index():
                             if sigla:
                                 aids_attempts_by_type[sigla] += attempts_count
                                 aids_counts_by_type[sigla] += 1
-            
+                    
             progress_percentage = 0
             if total_targets_patient > 0:
                 progress_percentage = (completed_targets_patient / total_targets_patient) * 100
@@ -768,7 +802,7 @@ def import_protocol_from_ai():
                 
                 # Escapa aspas duplas, barras invertidas, e caracteres de controle
                 text = text.replace('\\', '\\\\') # Escapa barras invertidas primeiro
-                text = text.replace('"', '\\"')   # Escapa aspas duplas
+                text = text.replace('"', '\\"')    # Escapa aspas duplas
                 text = text.replace('\n', '\\n')  # Escapa quebras de linha
                 text = text.replace('\r', '\\r')  # Escapa retornos de carro
                 text = text.replace('\t', '\\t')  # Escapa tabs
@@ -810,51 +844,7 @@ def import_protocol_from_ai():
                 # ou outros que não são UTF-8 válidos, mas para este erro, é mais provável
                 # que sejam aspas/quebras de linha.
                 import re
-                sanitized_response_text = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', raw_gemini_response) # Remove caracteres de controle
-                sanitized_response_text = sanitized_response_text.replace('\\', '\\\\') # Escapa barras invertidas
-                sanitized_response_text = sanitized_response_text.replace('"', '\\"')   # Escapa aspas duplas (temporariamente)
-                
-                # Agora, tentamos reverter as aspas que *deveriam* ser aspas de string JSON
-                # Isso é um hack e pode ser problemático. A melhor solução é que o Gemini
-                # gere o JSON corretamente desde o início.
-                # Por exemplo, se a string original era `{"key": "value with "quotes""}`,
-                # a sanitização acima a transformaria em `{\"key\": \"value with \\\"quotes\\\"\"}`.
-                # Mas se o Gemini já tentou escapar, teríamos `\"` que viraria `\\\"`.
-
-                # A abordagem mais segura é confiar no `response_mime_type` e `response_schema`
-                # e, se falhar, fornecer a resposta bruta para depuração.
-                # A correção de `response.text.replace('\n', '\\n').replace('\r', '\\r')`
-                # já está no `except` block.
-
-                # Para o erro "Unterminated string", o problema é que a string JSON não tem uma aspa final.
-                # Isso geralmente é causado por uma aspa *dentro* da string que não foi escapada,
-                # ou uma quebra de linha literal.
-                
-                # Vamos tentar uma correção mais direcionada para o erro "Unterminated string"
-                # que é adicionar uma aspa dupla no final se a string parece estar cortada.
-                # Isso é arriscado e pode levar a JSON inválido se a suposição estiver errada.
-                
-                # A melhor depuração é inspecionar o `raw_gemini_response`.
-
-                # Por enquanto, vamos manter a lógica de `replace('\n', '\\n')` no `except`
-                # e focar nas instruções do prompt. Se o erro persistir, a resposta bruta
-                # no log será essencial.
-                
-                # A linha `response.text.replace('\n', '\\n').replace('\r', '\\r')` já está lá.
-                # O erro "Unterminated string" é complexo. Pode ser que o conteúdo do PDF
-                # contenha um caractere de aspa dupla que não está sendo escapado
-                # pelo Gemini, ou um caractere de controle que não é válido em JSON.
-
-                # A instrução no prompt já foi reforçada. Se o problema persiste,
-                # a inspeção do `raw_gemini_response` é a chave.
-
-                # Vamos tentar uma última tentativa de pré-processamento para remover
-                # caracteres que *definitivamente* não deveriam estar em JSON strings
-                # e que podem estar vindo do PDF ou da interpretação do Gemini.
-                # Isso pode incluir caracteres de controle ASCII.
-                
-                # Remove caracteres de controle ASCII inválidos em JSON
-                cleaned_text_for_json = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', raw_gemini_response)
+                cleaned_text_for_json = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', raw_gemini_response) # Remove caracteres de controle
                 
                 try:
                     parsed_data = json.loads(cleaned_text_for_json)
@@ -890,7 +880,7 @@ register_estoque_routes(app)
 register_contas_a_pagar_routes(app)
 app.register_blueprint(peis_bp) 
 register_patrimonio_routes(app) 
-app.register_blueprint(protocols_bp) # NOVO: Registrar o blueprint de protocolos
+app.register_blueprint(protocols_bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)
