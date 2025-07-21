@@ -1,5 +1,5 @@
 import os
-from flask import Flask, session, redirect, url_for, request # Certifique-se de que 'request' está importado
+from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify, render_template_string
 from datetime import timedelta # Importar timedelta para sessões permanentes
 
 # --- Importações adicionais do seu app.py ---
