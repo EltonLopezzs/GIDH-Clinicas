@@ -42,7 +42,7 @@ app = Flask(__name__)
 # 1. SECRET_KEY: Essencial para assinar cookies de sessão.
 #    Use a variável de ambiente FLASK_SECRET_KEY. Se não for encontrada, use uma padrão.
 #    Esta chave DEVE ser CONSISTENTE entre os reinícios do Gunicorn.
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'sua_chave_secreta_padrao_muito_segura_aqui') # Use a chave gerada e colocada no .service
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', '169f2ebd4e2dd3590ab847171e711086e2778a04570624da') # Use a chave gerada e colocada no .service
 
 # 2. Configurações de Proxy Reverso:
 #    Isso diz ao Flask para confiar nos cabeçalhos X-Forwarded-For e X-Forwarded-Proto do Nginx.
