@@ -1236,7 +1236,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-close-modal="modalRegistroGenerico">Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Registro</button>
+                    <button type="submit" class="btn btn-primary" id="submitRegistroGenericoBtn"><i class="fas fa-save"></i> Salvar Registro</button>
                 </div>
             </form>
         </div>
@@ -1620,6 +1620,7 @@
                 const conteudoRegistroGenericoEditor = document.getElementById('editor-content-generico');
                 const conteudoGenericoHiddenTextarea = document.getElementById('conteudo_generico_hidden');
                 const agendamentoIdReferenciaInput = document.getElementById('agendamento_id_referencia');
+                const submitRegistroGenericoBtn = document.getElementById('submitRegistroGenericoBtn'); // Botão de submit
 
                 // Sincroniza o editor de texto com o campo oculto do formulário
                 if (conteudoRegistroGenericoEditor && conteudoGenericoHiddenTextarea) {
@@ -1782,6 +1783,43 @@
                     }
                 });
 
+                // NOVO: Lógica de submissão do formulário de Registro Genérico (Laudo, Orientação, Procedimento)
+                formRegistroGenerico?.addEventListener('submit', async (event) => {
+                    event.preventDefault(); // Impede o envio padrão do formulário
+
+                    showLoading(); // Mostra o indicador de carregamento
+                    submitRegistroGenericoBtn.disabled = true; // Desabilita o botão para evitar múltiplos cliques
+                    submitRegistroGenericoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp;Salvando...'; // Altera o texto do botão
+
+                    // Sincroniza o conteúdo final do editor para o hidden textarea
+                    conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
+
+                    const formData = new FormData(formRegistroGenerico);
+
+                    try {
+                        const response = await fetch(formRegistroGenerico.action, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            displayFlashMessage('success', data.message || 'Registro salvo com sucesso!');
+                            window.location.reload(); // Recarrega a página para mostrar as mudanças
+                        } else {
+                            const errorData = await response.json();
+                            displayFlashMessage('danger', errorData.message || 'Erro ao salvar registro.');
+                        }
+                    } catch (error) {
+                        console.error('Erro na submissão do registro genérico:', error);
+                        displayFlashMessage('danger', 'Erro de conexão ou servidor. Tente novamente.');
+                    } finally {
+                        hideLoading(); // Oculta o indicador de carregamento
+                        submitRegistroGenericoBtn.disabled = false; // Reabilita o botão
+                        submitRegistroGenericoBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Registro'; // Restaura o texto do botão
+                    }
+                });
+
 
                 // *** Lógica do Gerador Gemini (Inteligência Artificial) para Registros Genéricos ***
                 const generateGenericBtn = document.getElementById('generate-generic-btn');
@@ -1842,7 +1880,7 @@
                             
                             // Preenche o editor de texto com o conteúdo gerado
                             conteudoRegistroGenericoEditor.innerHTML = text;
-                            if (conteudoGenericoHiddenTextarea) conteudoGenericoGenericoHiddenTextarea.value = text;
+                            if (conteudoGenericoHiddenTextarea) conteudoGenericoHiddenTextarea.value = text; // Fixed typo
 
                         } catch (error) {
                             console.error('Erro na API Gemini:', error);
