@@ -397,16 +397,22 @@ def register_medical_records_routes(app):
                 return redirect(url_for('buscar_prontuario'))
             paciente_data = convert_doc_to_dict(paciente_doc)
 
-            if paciente_data and 'data_nascimento' in paciente_data and isinstance(paciente_data['data_nascimento'], str):
-                try:
-                    paciente_data['data_nascimento'] = datetime.datetime.strptime(paciente_data['data_nascimento'], '%Y-%m-%d')
-                except (ValueError, TypeError):
-                    paciente_data['data_nascimento'] = None
+            # Format patient's birth date for display
+            if 'data_nascimento' in paciente_data and isinstance(paciente_data['data_nascimento'], datetime.datetime):
+                paciente_data['data_nascimento_formatada'] = paciente_data['data_nascimento'].strftime('%d/%m/%Y')
+            else:
+                paciente_data['data_nascimento_formatada'] = 'N/A' # Default if not found or not datetime
             
             prontuarios_ref = paciente_ref.collection('prontuarios')
             docs_stream = prontuarios_ref.order_by('data_registro', direction=firestore.Query.DESCENDING).stream()
             for doc in docs_stream:
-                registros_prontuario.append(convert_doc_to_dict(doc))
+                registro = convert_doc_to_dict(doc)
+                # Format record date for display
+                if 'data_registro' in registro and isinstance(registro['data_registro'], datetime.datetime):
+                    registro['data_registro_fmt'] = registro['data_registro'].strftime('%d/%m/%Y %H:%M')
+                else:
+                    registro['data_registro_fmt'] = 'N/A' # Default if not found or not datetime
+                registros_prontuario.append(registro)
             
             peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
             
@@ -1198,7 +1204,7 @@ def register_medical_records_routes(app):
             
             all_peis = []
             peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(filter=FieldFilter('paciente_id', '==', paciente_doc_id)).order_by('data_criacao', direction=firestore.Query.DESCENDING)
-            if not is_admin and logged_in_individual_id: # Changed to logged_in_professional_id
+            if not is_admin and logged_in_professional_id: # Changed to logged_in_professional_id
                 peis_query = peis_query.where(filter=FieldFilter('profissionais_ids', 'array_contains', logged_in_professional_id))
             
             for doc in peis_query.stream():
@@ -1399,7 +1405,7 @@ def register_medical_records_routes(app):
             print(f"Erro upload_documento_pdf: {e}")
             return jsonify({'success': False, 'message': f'Erro ao fazer upload do documento: {e}'}), 500
 
-    @app.route('/prontuarios/<string:paciente_doc_id>/download_documento_pdf/<string:documento_id>', methods=['GET'], endpoint='download_documento_pdf')
+    @app.route('/prontuarios/<string:paciente_doc_id>/download_documento_pdf', methods=['GET'], endpoint='download_documento_pdf')
     @login_required
     def download_documento_pdf(paciente_doc_id, documento_id):
         db_instance = get_db()

@@ -47,6 +47,10 @@ def format_firestore_timestamp(timestamp):
     return None
 
 def convert_doc_to_dict(doc_snapshot):
+    """
+    Converte um snapshot de documento do Firestore em um dicionário Python.
+    Objetos datetime.datetime são retornados como tal, sem formatação para string.
+    """
     data = doc_snapshot.to_dict()
     if not data:
         return {}
@@ -54,14 +58,10 @@ def convert_doc_to_dict(doc_snapshot):
     data['id'] = doc_snapshot.id
 
     def _convert_value(value):
+        # Se o valor é um datetime.datetime, retorna-o diretamente.
+        # A formatação para string será feita no blueprint ou no template.
         if isinstance(value, datetime.datetime):
-            # Garante que o datetime tenha informações de fuso horário antes de formatar
-            if value.tzinfo is None:
-                # Se o datetime é naive, localize-o para o fuso horário padrão (SAO_PAULO_TZ)
-                # ou para UTC se você souber que o Firestore salva em UTC por padrão.
-                # Aqui, estamos localizando para SAO_PAULO_TZ para consistência.
-                return SAO_PAULO_TZ.localize(value).strftime('%Y-%m-%dT%H:%M:%S')
-            return value.astimezone(SAO_PAULO_TZ).strftime('%Y-%m-%dT%H:%M:%S')
+            return value
         elif isinstance(value, dict):
             return {k: _convert_value(v) for k, v in value.items()}
         elif isinstance(value, list):
