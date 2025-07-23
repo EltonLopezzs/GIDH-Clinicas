@@ -1193,23 +1193,402 @@
             }
         }
 
-        /* --- Modal de Steps para Adicionar/Editar Paciente (visual igual ao paciente_form) --- */
-        /* --- Steps no Modal Centralizado --- */
+        /* =================================
+           MODAL MODERNA DE PACIENTE
+        ================================= */
         #patient-steps-modal-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15,23,42,0.6);
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            /* backdrop-filter: blur(12px); */
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 3500;
             opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        #patient-steps-modal-overlay.visible { 
-            opacity: 1; 
-            pointer-events: auto;
+
+        #patient-steps-modal-overlay.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        #patient-steps-modal {
+            background: var(--card);
+            border-radius: 24px;
+            width: min(95vw, 1200px);
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9) translateY(30px);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #patient-steps-modal-overlay.visible #patient-steps-modal {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Header moderno da modal */
+        .modern-modal-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modern-modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .modal-header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .modal-avatar {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        .modal-title-text h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .modal-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .modal-close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        /* Conteúdo da modal */
+        .modern-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            background: var(--bg);
+        }
+
+        .modern-section {
+            display: none;
+        }
+
+        .modern-section.active {
+            display: block;
+            animation: fadeInScale 0.4s ease;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translateY(15px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .section-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .form-label .required {
+            color: #ef4444;
+            font-size: 1rem;
+        }
+
+        .form-input {
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            background: var(--card);
+            color: var(--text);
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(var(--primary-rgb, 85, 135, 194), 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-input.error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .form-input.success {
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .form-input::placeholder {
+            color: var(--muted);
+        }
+
+        /* Footer da modal */
+        .modern-modal-footer {
+            padding: 1.5rem 2rem;
+            background: var(--card);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .progress-dots {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: var(--primary);
+            transform: scale(1.2);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .modern-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .modern-btn-secondary {
+            background: var(--muted);
+            color: white;
+        }
+
+        .modern-btn-secondary:hover {
+            background: var(--text);
+            transform: translateY(-1px);
+        }
+
+        .modern-btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(var(--primary-rgb, 85, 135, 194), 0.3);
+        }
+
+        .modern-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(var(--primary-rgb, 85, 135, 194), 0.4);
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            #patient-steps-modal {
+                width: 100vw;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+
+            .modern-modal-header {
+                padding: 1.5rem;
+            }
+
+            .modal-title-text h2 {
+                font-size: 1.5rem;
+            }
+
+            .modern-tabs-container {
+                padding: 0 1rem;
+            }
+
+            .modern-tab {
+                padding: 0.75rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .modern-modal-body {
+                padding: 1.5rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .section-card {
+                padding: 1.5rem;
+            }
+
+            .modern-modal-footer {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .modal-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .modern-btn {
+                flex: 1;
+            }
+        }
+
+        /* Animações adicionais */
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-entering {
+            animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         /* --- Modal de Confirmação de Exclusão --- */
@@ -1790,6 +2169,293 @@
         .alert-modal-actions .btn {
             min-width: 100px;
         }
+
+        /* Sistema de Navegação Moderna - Estilos Extras */
+        .form-input.error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Animações suaves para as seções */
+        .modern-section {
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        .modern-section.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: all;
+        }
+
+        /* Estados de hover mais refinados */
+        .modern-tab:hover:not(.active) {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.05));
+            transform: translateY(-2px);
+        }
+
+        .modern-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.12),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        }
+
+        /* Indicador de progresso mais elegante e explícito */
+        .progress-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .progress-steps {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+            position: relative;
+            padding: 0 1rem;
+        }
+
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: calc(50px + 1rem);
+            right: calc(50px + 1rem);
+            height: 3px;
+            background: linear-gradient(90deg, 
+                rgba(99, 102, 241, 0.2) 0%, 
+                rgba(168, 85, 247, 0.2) 100%);
+            border-radius: 2px;
+            z-index: 1;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 2;
+            min-width: 100px;
+            flex: 1;
+        }
+
+        .progress-step:hover {
+            transform: translateY(-2px);
+        }
+
+        .progress-step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--card);
+            border: 3px solid rgba(99, 102, 241, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: var(--muted);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-step-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--muted);
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+        }
+
+        /* Estados ativos do indicador de progresso */
+        .progress-step.active .progress-step-circle {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            border-color: #6366f1;
+            color: white;
+            box-shadow: 
+                0 4px 20px rgba(99, 102, 241, 0.4),
+                0 0 0 4px rgba(99, 102, 241, 0.1);
+            transform: scale(1.1);
+        }
+
+        .progress-step.active .progress-step-label {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Estados de hover para steps não ativos */
+        .progress-step:not(.active):hover .progress-step-circle {
+            border-color: rgba(99, 102, 241, 0.6);
+            background: #FFFFFF;
+            transform: scale(1.05);
+        }
+
+        .progress-step:not(.active):hover .progress-step-label {
+            color: var(--text);
+        }
+
+        /* Linha de progresso dinâmica */
+        .progress-steps::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            /* left: 40px; */
+            left: calc(50px + 1rem);
+            right: calc(50px + 1rem);
+            height: 3px;
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            border-radius: 2px;
+            z-index: 1;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0%;
+        }
+
+        /* Responsividade do indicador de progresso */
+        @media (max-width: 768px) {
+            .progress-steps {
+                gap: 2rem;
+                padding: 0 0.5rem;
+            }
+
+            .progress-steps::before,
+            .progress-steps::after {
+                left: calc(35px + 0.5rem);
+                right: calc(35px + 0.5rem);
+            }
+
+            .progress-step {
+                min-width: 70px;
+            }
+
+            .progress-step-circle {
+                width: 35px;
+                height: 35px;
+                font-size: 0.875rem;
+            }
+
+            .progress-step-label {
+                font-size: 0.75rem;
+                max-width: 70px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .progress-steps {
+                gap: 1.5rem;
+                padding: 0 0.25rem;
+            }
+
+            .progress-step {
+                min-width: 60px;
+            }
+
+            .progress-step-circle {
+                width: 30px;
+                height: 30px;
+                font-size: 0.75rem;
+            }
+
+            .progress-step-label {
+                font-size: 0.65rem;
+                max-width: 60px;
+            }
+
+            .progress-steps::before,
+            .progress-steps::after {
+                left: calc(30px + 0.25rem);
+                right: calc(30px + 0.25rem);
+            }
+        }
+
+        /* Melhorias nos inputs */
+        .form-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 
+                0 0 0 3px rgba(99, 102, 241, 0.1),
+                0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-input::placeholder {
+            color: var(--muted);
+            opacity: 0.7;
+        }
+
+        /* Estilo para campos obrigatórios */
+        .required {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        /* Transições suaves para o overlay */
+        #patient-steps-modal-overlay {
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #patient-steps-modal-overlay.visible {
+            opacity: 1;
+        }
+
+        #patient-steps-modal-overlay.visible #patient-steps-modal {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        #patient-steps-modal {
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Efeitos de foco aprimorados */
+        .modern-tab:focus,
+        .modern-btn:focus,
+        .form-input:focus {
+            outline: 2px solid #6366f1;
+            outline-offset: 2px;
+        }
+
+        /* Loading state para o botão de salvar */
+        .modern-btn.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .modern-btn.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -1844,119 +2510,234 @@
         </div>
     </div>
 
-    <!-- Modal de Steps para Adicionar/Editar Paciente (visual igual ao paciente_form) -->
+    <!-- Modal Moderna de Paciente -->
     <div id="patient-steps-modal-overlay" style="display:none; z-index:3500; align-items:center; justify-content:center;">
-        <div id="patient-steps-modal" style="background:var(--card); border-radius:18px; box-shadow:0 10px 32px rgba(0,0,0,0.18); overflow:auto; position:relative; padding:0; display:flex; flex-direction:column;">
-            <form id="steps-patient-form" class="patient-form" action="{{ url_for('adicionar_paciente') }}" method="post" style="width:100%;">
-                <div class="form-card" style="align-items:stretch;">
-                    <div class="paciente-steps" style="min-width:120px;">
-                        <div class="paciente-step active" data-step="1"><i class="fa-solid fa-user"></i> Dados Pessoais</div>
-                        <div class="paciente-step" data-step="2"><i class="fa-solid fa-phone"></i> Contato</div>
-                        <div class="paciente-step" data-step="3"><i class="fa-solid fa-location-dot"></i> Endereço</div>
-                        <div class="paciente-step" data-step="4"><i class="fa-solid fa-circle-info"></i> Outras Informações</div>
+        <div id="patient-steps-modal">
+            <!-- Header Moderno -->
+            <div class="modern-modal-header">
+                <div class="modal-header-content">
+                    <div class="modal-title-section">
+                        <div class="modal-avatar">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="modal-title-text">
+                            <h2 id="modal-dynamic-title">Novo Paciente</h2>
+                            <p class="modal-subtitle">Preencha as informações do paciente</p>
+                        </div>
                     </div>
-                    <div class="paciente-step-content" style="flex:1; position:relative;">
-                        <button type="button" class="paciente-btn cancel steps-modal-close" style="position:absolute; top:12px; right:12px; z-index:10; background:transparent; color:var(--muted); font-size:1.5rem;">&times;</button>
-                        <div class="paciente-card-section" data-step-content="1" style="display:block;">
-                            <div class="paciente-card-container-modal">
-                                <div class="paciente-card-header-modal">
-                                    <!-- <div class="section-title"><i class="fa-solid fa-user"></i> Dados Pessoais</div> -->
-                                    <div class="paciente-card-fields single">
-                                        <div class="paciente-field required"><label for="steps-nome">Nome Completo</label><input type="text" id="steps-nome" name="nome" required></div>
-                                        <div class="paciente-field required">
-                                            <label for="steps-data_nascimento">Data de Nascimento</label>
-                                            <input type="text" 
-                                                    id="steps-data_nascimento_display" 
-                                                    placeholder="DD/MM/AAAA" 
-                                                    maxlength="10" 
-                                                    class="date-input-display"
-                                                    required>
-                                            <input type="hidden" id="steps-data_nascimento" name="data_nascimento" required>
-                                        </div>
-                                        <div class="paciente-field"><label for="steps-genero">Gênero</label><select id="steps-genero" name="genero"><option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option><option value="Outro">Outro</option></select></div>
-                                        <div class="paciente-field required"><label for="steps-cpf">CPF</label><input type="text" id="steps-cpf" name="cpf" placeholder="XXX.XXX.XXX-XX" required></div>
-                                        <div class="paciente-field"><label for="steps-rg">RG</label><input type="text" id="steps-rg" name="rg" placeholder="XX.XXX.XXX-X"></div>
-                                    </div>
-                                </div>
-                
-                                <div class="paciente-actions paciente-actions-sticky" style="justify-content:flex-end; gap:1rem; margin-top:2rem;">
-                                    <button type="button" class="paciente-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="paciente-card-section" data-step-content="2" style="display:none;">
-                            <div class="paciente-card-container-modal">
-                                <div class="paciente-card-header-modal">
-                                    <!-- <div class="section-title"><i class="fa-solid fa-phone"></i> Contato</div> -->
-                                    <div class="paciente-card-fields single">
-                                        <div class="paciente-field"><label for="steps-telefone">Telefone</label><input type="tel" id="steps-telefone" name="telefone" placeholder="(XX) XXXXX-XXXX"></div>
-                                        <div class="paciente-field"><label for="steps-email">E-mail</label><input type="email" id="steps-email" name="email" placeholder="seu.email@example.com"></div>
-                                    </div>
-                                </div>
-                
-                                <div class="paciente-actions paciente-actions-sticky" style="justify-content:space-between; gap:1rem; margin-top:2rem;">
-                                    <button type="button" class="paciente-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
-                                    <button type="button" class="paciente-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="paciente-card-section" data-step-content="3" style="display:none;">
-                            <div class="paciente-card-container-modal">
-                                <div class="paciente-card-header-modal">
-                                    <!-- <div class="section-title"><i class="fa-solid fa-location-dot"></i> Endereço</div> -->
-                                    <div class="paciente-card-fields single">
-                                        <div class="paciente-field"><label for="steps-cep">CEP</label><input type="text" id="steps-cep" name="cep" placeholder="XXXXX-XXX"></div>
-                                        <div class="paciente-field required"><label for="steps-cidade">Cidade</label><input type="text" id="steps-cidade" name="cidade" required></div>
-                                        <div class="paciente-field required"><label for="steps-estado">Estado (UF)</label><input type="text" id="steps-estado" name="estado" placeholder="SP" required></div>
-                                        <div class="paciente-field"><label for="steps-logradouro">Logradouro</label><input type="text" id="steps-logradouro" name="logradouro" placeholder="Rua Exemplo"></div>
-                                        <div class="paciente-field"><label for="steps-numero">Número</label><input type="text" id="steps-numero" name="numero" placeholder="123"></div>
-                                        <div class="paciente-field"><label for="steps-bairro">Bairro</label><input type="text" id="steps-bairro" name="bairro" placeholder="Centro"></div>
-                                        <div class="paciente-field"><label for="steps-complemento">Complemento</label><input type="text" id="steps-complemento" name="complemento" placeholder="Apto 401"></div>
-                                    </div>
-                                </div>
-                
-                                <div class="paciente-actions paciente-actions-sticky" style="justify-content:space-between; gap:1rem; margin-top:2rem;">
-                                    <button type="button" class="paciente-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
-                                    <button type="button" class="paciente-btn btn-primary steps-next">Próximo <i class="fa fa-chevron-right"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="paciente-card-section" data-step-content="4" style="display:none;">
-                            <div class="paciente-card-container-modal">
-                                <div class="paciente-card-header-modal">
-                                    <!-- <div class="section-title"><i class="fa-solid fa-circle-info"></i> Outras Informações</div> -->
-                                    <div class="paciente-card-fields single">
-                                        <div class="paciente-field"><label for="steps-convenio_id">Convênio</label><select id="steps-convenio_id" name="convenio_id"><option value="">Nenhum / Particular</option></select></div>
-                                        <div class="paciente-field"><label for="steps-observacoes">Observações Gerais</label><textarea id="steps-observacoes" name="observacoes" rows="3" placeholder="Informações relevantes sobre o paciente, alergias, etc."></textarea></div>
-                                        
-                                        <!-- Novos campos para Responsável 1 -->
-                                        <div class="paciente-field">
-                                            <label for="steps-responsavel1_nome">Nome do Responsável 1 (Opcional)</label>
-                                            <input type="text" id="steps-responsavel1_nome" name="responsavel1_nome" placeholder="Nome completo do responsável 1">
-                                        </div>
-                                        <div class="paciente-field">
-                                            <label for="steps-responsavel1_telefone">Telefone do Responsável 1 (Opcional)</label>
-                                            <input type="tel" id="steps-responsavel1_telefone" name="responsavel1_telefone" placeholder="(XX) XXXXX-XXXX">
-                                        </div>
+                    <button type="button" class="modal-close-btn steps-modal-close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
 
-                                        <!-- Novos campos para Responsável 2 -->
-                                        <div class="paciente-field">
-                                            <label for="steps-responsavel2_nome">Nome do Responsável 2 (Opcional)</label>
-                                            <input type="text" id="steps-responsavel2_nome" name="responsavel2_nome" placeholder="Nome completo do responsável 2">
-                                        </div>
-                                        <div class="paciente-field">
-                                            <label for="steps-responsavel2_telefone">Telefone do Responsável 2 (Opcional)</label>
-                                            <input type="tel" id="steps-responsavel2_telefone" name="responsavel2_telefone" placeholder="(XX) XXXXX-XXXX">
-                                        </div>
-
-                                    </div>
+            <!-- Formulário -->
+            <form id="steps-patient-form" class="patient-form" action="{{ url_for('adicionar_paciente') }}" method="post">
+                <div class="modern-modal-body">
+                    
+                    <!-- Seção: Dados Pessoais -->
+                    <div class="modern-section active" data-section="personal">
+                        <div class="section-card">
+                            <div class="section-header">
+                                <div class="section-icon">
+                                    <i class="fas fa-user"></i>
                                 </div>
-                                <div class="paciente-actions paciente-actions-sticky" style="justify-content:space-between; gap:1rem; margin-top:2rem;">
-                                    <button type="button" class="paciente-btn btn-primary steps-prev"><i class="fa fa-chevron-left"></i> Voltar</button>
-                                    <button type="submit" class="paciente-btn btn-primary"><i class="fas fa-save"></i> Salvar</button>
+                                <h3 class="section-title">Dados Pessoais</h3>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label class="form-label">
+                                        Nome Completo <span class="required">*</span>
+                                    </label>
+                                    <input type="text" id="steps-nome" name="nome" class="form-input" placeholder="Digite o nome completo" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        CPF <span class="required">*</span>
+                                    </label>
+                                    <input type="text" id="steps-cpf" name="cpf" class="form-input" placeholder="000.000.000-00" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">RG</label>
+                                    <input type="text" id="steps-rg" name="rg" class="form-input" placeholder="00.000.000-0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Data de Nascimento <span class="required">*</span>
+                                    </label>
+                                    <input type="text" 
+                                            id="steps-data_nascimento_display" 
+                                            placeholder="DD/MM/AAAA" 
+                                            maxlength="10" 
+                                            class="form-input date-input-display"
+                                            required>
+                                    <input type="hidden" id="steps-data_nascimento" name="data_nascimento" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Gênero</label>
+                                    <select id="steps-genero" name="genero" class="form-input">
+                                        <option value="">Selecionar</option>
+                                        <option value="Masculino">Masculino</option>
+                                        <option value="Feminino">Feminino</option>
+                                        <option value="Outro">Outro</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Seção: Contato -->
+                    <div class="modern-section" data-section="contact">
+                        <div class="section-card">
+                            <div class="section-header">
+                                <div class="section-icon">
+                                    <i class="fas fa-phone"></i>
+                                </div>
+                                <h3 class="section-title">Informações de Contato</h3>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Telefone Principal</label>
+                                    <input type="tel" id="steps-telefone" name="telefone" class="form-input" placeholder="(00) 00000-0000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">E-mail</label>
+                                    <input type="email" id="steps-email" name="email" class="form-input" placeholder="email@exemplo.com">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção: Endereço -->
+                    <div class="modern-section" data-section="address">
+                        <div class="section-card">
+                            <div class="section-header">
+                                <div class="section-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <h3 class="section-title">Endereço Residencial</h3>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">CEP</label>
+                                    <input type="text" id="steps-cep" name="cep" class="form-input" placeholder="00000-000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Cidade <span class="required">*</span>
+                                    </label>
+                                    <input type="text" id="steps-cidade" name="cidade" class="form-input" placeholder="Digite a cidade" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        Estado <span class="required">*</span>
+                                    </label>
+                                    <input type="text" id="steps-estado" name="estado" class="form-input" placeholder="SP" maxlength="2" required>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label class="form-label">Logradouro</label>
+                                    <input type="text" id="steps-logradouro" name="logradouro" class="form-input" placeholder="Rua, Avenida, etc.">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Número</label>
+                                    <input type="text" id="steps-numero" name="numero" class="form-input" placeholder="123">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Bairro</label>
+                                    <input type="text" id="steps-bairro" name="bairro" class="form-input" placeholder="Nome do bairro">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label class="form-label">Complemento</label>
+                                    <input type="text" id="steps-complemento" name="complemento" class="form-input" placeholder="Apartamento, sala, etc.">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção: Informações Médicas -->
+                    <div class="modern-section" data-section="medical">
+                        <div class="section-card">
+                            <div class="section-header">
+                                <div class="section-icon">
+                                    <i class="fas fa-heartbeat"></i>
+                                </div>
+                                <h3 class="section-title">Informações Médicas e Responsáveis</h3>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label class="form-label">Convênio</label>
+                                    <select id="steps-convenio_id" name="convenio_id" class="form-input">
+                                        <option value="">Particular</option>
+                                        {% for convenio in convenios %}
+                                        <option value="{{ convenio.id }}">{{ convenio.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label class="form-label">Observações Médicas</label>
+                                    <textarea id="steps-observacoes" name="observacoes" class="form-input" rows="3" placeholder="Alergias, medicamentos, observações importantes..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Nome do Responsável 1</label>
+                                    <input type="text" id="steps-responsavel1_nome" name="responsavel1_nome" class="form-input" placeholder="Nome completo">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Telefone do Responsável 1</label>
+                                    <input type="tel" id="steps-responsavel1_telefone" name="responsavel1_telefone" class="form-input" placeholder="(00) 00000-0000">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Nome do Responsável 2</label>
+                                    <input type="text" id="steps-responsavel2_nome" name="responsavel2_nome" class="form-input" placeholder="Nome completo">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Telefone do Responsável 2</label>
+                                    <input type="tel" id="steps-responsavel2_telefone" name="responsavel2_telefone" class="form-input" placeholder="(00) 00000-0000">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer Moderno -->
+                <div class="modern-modal-footer">
+                    <div class="progress-indicator">
+                        <div class="progress-steps">
+                            <div class="progress-step active" data-section="personal">
+                                <div class="progress-step-circle">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <span class="progress-step-label">Dados Pessoais</span>
+                            </div>
+                            <div class="progress-step" data-section="contact">
+                                <div class="progress-step-circle">
+                                    <i class="fas fa-phone"></i>
+                                </div>
+                                <span class="progress-step-label">Contato</span>
+                            </div>
+                            <div class="progress-step" data-section="address">
+                                <div class="progress-step-circle">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <span class="progress-step-label">Endereço</span>
+                            </div>
+                            <div class="progress-step" data-section="medical">
+                                <div class="progress-step-circle">
+                                    <i class="fas fa-heartbeat"></i>
+                                </div>
+                                <span class="progress-step-label">Médico</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="modern-btn modern-btn-secondary steps-modal-close">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button type="submit" class="modern-btn modern-btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salvar Paciente
+                        </button>
                     </div>
                 </div>
             </form>
@@ -1964,6 +2745,425 @@
     </div>
 
     <script>
+        // Sistema de Navegação Moderna por Abas
+        class ModernPatientModal {
+            constructor() {
+                this.currentSection = 'personal';
+                this.modal = document.getElementById('patient-steps-modal-overlay');
+                this.form = document.getElementById('steps-patient-form');
+                this.sections = document.querySelectorAll('.modern-section');
+                this.progressSteps = document.querySelectorAll('.progress-step');
+                
+                this.initializeModal();
+                this.bindEvents();
+            }
+
+            initializeModal() {
+                // Configurar overlay para fechar ao clicar fora
+                this.modal.addEventListener('click', (e) => {
+                    if (e.target === this.modal) {
+                        this.closeModal();
+                    }
+                });
+
+                // Configurar botões de fechar
+                document.querySelectorAll('.steps-modal-close').forEach(btn => {
+                    btn.addEventListener('click', () => this.closeModal());
+                });
+
+                // Configurar clique nos steps de progresso
+                this.progressSteps.forEach(step => {
+                    step.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const section = step.getAttribute('data-section');
+                        this.navigateToSection(section);
+                    });
+                });
+
+                // Configurar envio do formulário
+                this.form.addEventListener('submit', (e) => {
+                    this.handleFormSubmit(e);
+                });
+            }
+
+            bindEvents() {
+                // Máscara para CPF
+                const cpfInput = document.getElementById('steps-cpf');
+                if (cpfInput) {
+                    cpfInput.addEventListener('input', (e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                        e.target.value = value;
+                    });
+                }
+
+                // Máscara para telefone
+                const phoneInputs = document.querySelectorAll('input[type="tel"]');
+                phoneInputs.forEach(input => {
+                    input.addEventListener('input', (e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        if (value.length <= 10) {
+                            value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                            value = value.replace(/(\d{4})(\d)/, '$1-$2');
+                        } else {
+                            value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                            value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                        }
+                        e.target.value = value;
+                    });
+                });
+
+                // Máscara para data
+                const dateDisplay = document.getElementById('steps-data_nascimento_display');
+                const dateHidden = document.getElementById('steps-data_nascimento');
+                if (dateDisplay && dateHidden) {
+                    dateDisplay.addEventListener('input', (e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        value = value.replace(/(\d{2})(\d)/, '$1/$2');
+                        value = value.replace(/(\d{2})(\d)/, '$1/$2');
+                        e.target.value = value;
+
+                        // Converter para formato ISO para o input hidden
+                        if (value.length === 10) {
+                            const [day, month, year] = value.split('/');
+                            if (day && month && year && year.length === 4) {
+                                dateHidden.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                            }
+                        }
+                    });
+                }
+
+                // Máscara para CEP
+                const cepInput = document.getElementById('steps-cep');
+                if (cepInput) {
+                    cepInput.addEventListener('input', (e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                        e.target.value = value;
+                    });
+                }
+            }
+
+            navigateToSection(sectionName) {
+                // Atualizar seção atual
+                this.currentSection = sectionName;
+
+                // Atualizar seções
+                this.sections.forEach(section => {
+                    section.classList.toggle('active', section.getAttribute('data-section') === sectionName);
+                });
+
+                // Atualizar steps de progresso
+                this.progressSteps.forEach(step => {
+                    step.classList.toggle('active', step.getAttribute('data-section') === sectionName);
+                });
+
+                // Atualizar linha de progresso
+                this.updateProgressLine(sectionName);
+            }
+
+            updateProgressLine(currentSection) {
+                const progressLine = document.querySelector('.progress-steps::after');
+                const sectionOrder = ['personal', 'contact', 'address', 'medical'];
+                const currentIndex = sectionOrder.indexOf(currentSection);
+                let progressPercentage = 0;
+                if (currentIndex === 0) {
+                    progressPercentage = 0;
+                } else if (currentIndex === 1) {
+                    progressPercentage = 25;
+                } else if (currentIndex === 2) {
+                    progressPercentage = 50; // 25% a mais na terceira
+                } else if (currentIndex === 3) {
+                    progressPercentage = 80; // 30% a mais na última
+                }
+                
+                // Criar ou atualizar o estilo da linha de progresso
+                const style = document.getElementById('progress-line-style') || document.createElement('style');
+                style.id = 'progress-line-style';
+                style.textContent = `
+                    .progress-steps::after {
+                        width: ${progressPercentage}% !important;
+                    }
+                `;
+                
+                if (!document.getElementById('progress-line-style')) {
+                    document.head.appendChild(style);
+                }
+            }
+
+            openModal(patientData = null) {
+                console.log('Abrindo modal...');
+                
+                // Garantir que a modal esteja completamente limpa antes de abrir
+                this.modal.style.display = 'none';
+                this.modal.style.opacity = '0';
+                this.modal.classList.remove('visible');
+                
+                // Remover qualquer backdrop existente primeiro
+                removeModalBackdrop('patient-modal-backdrop');
+                
+                if (patientData) {
+                    this.populateForm(patientData);
+                    document.getElementById('modal-dynamic-title').textContent = 'Editar Paciente';
+                    document.querySelector('.modal-subtitle').textContent = 'Atualize as informações do paciente';
+                } else {
+                    this.clearForm();
+                    document.getElementById('modal-dynamic-title').textContent = 'Novo Paciente';
+                    document.querySelector('.modal-subtitle').textContent = 'Preencha as informações do paciente';
+                }
+
+                // Resetar para primeira seção
+                this.navigateToSection('personal');
+                
+                // Aguardar um pouco para garantir que a limpeza foi concluída
+                setTimeout(() => {
+                    console.log('Criando backdrop...');
+                    
+                    // Criar backdrop centralizado
+                    createModalBackdrop({
+                        id: 'patient-modal-backdrop',
+                        onClick: (e) => {
+                            if (e.target.id === 'patient-modal-backdrop') {
+                                this.closeModal();
+                            }
+                        }
+                    });
+
+                    // Aguardar um frame para garantir que o backdrop foi criado
+                    requestAnimationFrame(() => {
+                        console.log('Mostrando modal...');
+                        
+                        // Mostrar modal
+                        this.modal.style.display = 'flex';
+                        
+                        // Aguardar outro frame para permitir que o display seja aplicado
+                        requestAnimationFrame(() => {
+                            this.modal.style.opacity = '1';
+                            this.modal.classList.add('visible');
+                            
+                            console.log('Modal aberta com sucesso');
+                            
+                            // Focar no primeiro campo
+                            setTimeout(() => {
+                                const firstInput = document.getElementById('steps-nome');
+                                if (firstInput) firstInput.focus();
+                            }, 100);
+                        });
+                    });
+                }, 50); // Pequeno delay para garantir limpeza
+            }
+
+            closeModal() {
+                console.log('Fechando modal...');
+                
+                // 1. Remover classe visible para iniciar animação de saída
+                this.modal.classList.remove('visible');
+                
+                // 2. Reset explícito da opacidade
+                this.modal.style.opacity = '0';
+                
+                // 3. Ocultar modal imediatamente
+                setTimeout(() => {
+                    this.modal.style.display = 'none';
+                    this.clearForm();
+                }, 300);
+                
+                // 4. Remover backdrop centralizado em paralelo
+                removeModalBackdrop('patient-modal-backdrop', () => {
+                    console.log('Modal fechada e backdrop removido');
+                });
+            }
+
+            populateForm(patientData) {
+                // Preencher campos do formulário com dados do paciente
+                const fields = [
+                    'nome', 'cpf', 'rg', 'genero', 'telefone', 'email',
+                    'cep', 'cidade', 'estado', 'logradouro', 'numero', 'bairro', 
+                    'complemento', 'convenio_id', 'observacoes',
+                    'responsavel1_nome', 'responsavel1_telefone',
+                    'responsavel2_nome', 'responsavel2_telefone'
+                ];
+
+                fields.forEach(field => {
+                    const input = document.getElementById(`steps-${field}`);
+                    if (input && patientData[field]) {
+                        input.value = patientData[field];
+                    }
+                });
+
+                // Tratar data de nascimento especialmente
+                if (patientData.data_nascimento) {
+                    const dateHidden = document.getElementById('steps-data_nascimento');
+                    const dateDisplay = document.getElementById('steps-data_nascimento_display');
+                    if (dateHidden && dateDisplay) {
+                        dateHidden.value = patientData.data_nascimento;
+                        // Converter de ISO para DD/MM/AAAA
+                        const [year, month, day] = patientData.data_nascimento.split('-');
+                        dateDisplay.value = `${day}/${month}/${year}`;
+                    }
+                }
+
+                // Atualizar action do formulário para edição
+                this.form.action = `/editar_paciente/${patientData.id}`;
+            }
+
+            clearForm() {
+                this.form.reset();
+                this.form.action = '{{ url_for("adicionar_paciente") }}';
+                
+                // Limpar campos específicos
+                const dateHidden = document.getElementById('steps-data_nascimento');
+                const dateDisplay = document.getElementById('steps-data_nascimento_display');
+                if (dateHidden) dateHidden.value = '';
+                if (dateDisplay) dateDisplay.value = '';
+            }
+
+            handleFormSubmit(e) {
+                // Validação básica
+                const requiredFields = ['steps-nome', 'steps-cpf', 'steps-data_nascimento', 'steps-cidade', 'steps-estado'];
+                let isValid = true;
+
+                requiredFields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field && !field.value.trim()) {
+                        isValid = false;
+                        field.classList.add('error');
+                        
+                        // Remover classe de erro após um tempo
+                        setTimeout(() => {
+                            field.classList.remove('error');
+                        }, 3000);
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                    showToast('Por favor, preencha todos os campos obrigatórios', 'error');
+                    return;
+                }
+
+                // Se chegou até aqui, o formulário pode ser enviado
+                showToast('Salvando dados...', 'info');
+            }
+        }
+
+        // Inicializar modal moderna
+        let modernPatientModal;
+        document.addEventListener('DOMContentLoaded', function() {
+            modernPatientModal = new ModernPatientModal();
+        });
+
+        // === SISTEMA CENTRALIZADO DE GERENCIAMENTO DE BACKDROP ===
+        
+        /**
+         * Função genérica para criar backdrop de modal
+         * @param {Object} options - Configurações do backdrop
+         * @param {string} options.id - ID único do backdrop (default: 'modal-backdrop')
+         * @param {number} options.zIndex - Z-index do backdrop (default: 3400)
+         * @param {string} options.opacity - Opacidade do backdrop (default: '0.5')
+         * @param {Function} options.onClick - Função a ser executada no clique do backdrop
+         * @param {boolean} options.closeOnClick - Se deve fechar ao clicar no backdrop (default: true)
+         */
+        function createModalBackdrop(options = {}) {
+            const config = {
+                id: options.id || 'modal-backdrop',
+                zIndex: options.zIndex || 3400,
+                opacity: options.opacity || '0.5',
+                onClick: options.onClick || null,
+                closeOnClick: options.closeOnClick !== false,
+                ...options
+            };
+
+            // Remove backdrop existente com mesmo ID se houver
+            const existingBackdrop = document.getElementById(config.id);
+            if (existingBackdrop) {
+                existingBackdrop.remove();
+            }
+
+            const backdrop = document.createElement('div');
+            backdrop.id = config.id;
+            backdrop.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, ${config.opacity});
+                z-index: ${config.zIndex};
+                pointer-events: auto;
+                transition: opacity 0.3s ease;
+                opacity: 0;
+            `;
+
+            // Adicionar event listener se especificado
+            if (config.onClick) {
+                backdrop.addEventListener('click', config.onClick);
+            }
+
+            document.body.appendChild(backdrop);
+            
+            // Bloquear scroll do body
+            document.body.style.overflow = 'hidden';
+
+            // Animação de fade in
+            requestAnimationFrame(() => {
+                backdrop.style.opacity = config.opacity;
+            });
+
+            return backdrop;
+        }
+
+        /**
+         * Função genérica para remover backdrop de modal
+         * @param {string} backdropId - ID do backdrop a ser removido (default: 'modal-backdrop')
+         * @param {Function} onComplete - Callback executado após remoção
+         */
+        function removeModalBackdrop(backdropId = 'modal-backdrop', onComplete = null) {
+            const backdrop = document.getElementById(backdropId);
+            if (backdrop) {
+                // Animação de fade out
+                backdrop.style.opacity = '0';
+                
+                setTimeout(() => {
+                    if (backdrop.parentNode) {
+                        backdrop.remove();
+                    }
+                    
+                    // Restaurar scroll do body apenas se não há outros backdrops
+                    const allBackdrops = document.querySelectorAll('[id$="-backdrop"], #modal-backdrop');
+                    if (allBackdrops.length === 0) {
+                        document.body.style.overflow = 'auto';
+                    }
+                    
+                    if (onComplete) {
+                        onComplete();
+                    }
+                }, 300);
+            } else if (onComplete) {
+                onComplete();
+            }
+        }
+
+        /**
+         * Função para fechar qualquer modal forçadamente
+         * @param {string} modalSelector - Seletor CSS da modal
+         * @param {string} backdropId - ID do backdrop associado
+         */
+        function forceCloseModal(modalSelector, backdropId = 'modal-backdrop') {
+            const modal = document.querySelector(modalSelector);
+            if (modal) {
+                modal.classList.remove('visible', 'show', 'active');
+                modal.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important;';
+            }
+            
+            removeModalBackdrop(backdropId);
+            
+            // Restaurar body
+            document.body.style.overflow = 'auto';
+        }
+
         // Funções globais para interações dos cards
         function togglePatientActions(patientId) {
             const dropdown = document.getElementById(`actions-${patientId}`);
@@ -1977,6 +3177,25 @@
             });
             
             dropdown.classList.toggle('show');
+        }
+
+        function editPatient(patientId) {
+            const patientData = allPatients.find(p => p.id === patientId);
+            if (patientData && modernPatientModal) {
+                modernPatientModal.openModal(patientData);
+            }
+        }
+
+        function deletePatient(patientId) {
+            if (confirm('Tem certeza que deseja excluir este paciente?')) {
+                window.location.href = `/deletar_paciente/${patientId}`;
+            }
+        }
+
+        function toggleStepperModal() {
+            if (modernPatientModal) {
+                modernPatientModal.openModal();
+            }
         }
 
         function callPatient(phone) {
@@ -2049,6 +3268,16 @@
             
             document.body.appendChild(modal);
             
+            // Criar backdrop centralizado
+            createModalBackdrop({
+                id: 'delete-modal-backdrop',
+                onClick: (e) => {
+                    if (e.target.id === 'delete-modal-backdrop') {
+                        closeDeleteModal();
+                    }
+                }
+            });
+            
             // Animação de entrada
             requestAnimationFrame(() => {
                 modal.classList.add('show');
@@ -2061,32 +3290,19 @@
             if (modal) {
                 modal.classList.remove('show');
                 
-                // Aguardar a transição antes de remover o modal
-                const handleTransitionEnd = () => {
+                // Usar função centralizada para remover backdrop
+                removeModalBackdrop('delete-modal-backdrop', () => {
                     if (modal.parentNode) {
                         modal.parentNode.removeChild(modal);
                     }
-                    modal.removeEventListener('transitionend', handleTransitionEnd);
-                };
-                
-                modal.addEventListener('transitionend', handleTransitionEnd);
-                
-                // Fallback: remover após timeout se a transição não funcionar
-                setTimeout(() => {
-                    if (modal.parentNode) {
-                        modal.parentNode.removeChild(modal);
-                    }
-                    modal.removeEventListener('transitionend', handleTransitionEnd);
-                }, 350);
+                });
             }
         }
 
         // Função para fechar o modal instantaneamente (para usar após exclusão)
         function forceCloseDeleteModal() {
-            const modal = document.querySelector('.delete-modal-overlay');
-            if (modal) {
-                modal.remove();
-            }
+            // Usar função centralizada para fechamento forçado
+            forceCloseModal('.delete-modal-overlay', 'delete-modal-backdrop');
         }
 
         function confirmDelete(patientId) {
@@ -2262,13 +3478,23 @@
                 alertModalIcon.classList.add(category);
                 alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
 
+                // Criar backdrop centralizado
+                createModalBackdrop({
+                    id: 'alert-modal-backdrop',
+                    onClick: (e) => {
+                        if (e.target.id === 'alert-modal-backdrop') {
+                            closeGeneralAlertModal();
+                        }
+                    }
+                });
+
                 generalAlertOverlay.classList.add('show');
-                document.body.style.overflow = 'hidden'; // Bloquear scroll do body
             }
 
             function closeGeneralAlertModal() {
                 generalAlertOverlay.classList.remove('show');
-                document.body.style.overflow = 'auto'; // Restaurar scroll do body
+                // Usar função centralizada para remover backdrop
+                removeModalBackdrop('alert-modal-backdrop');
             }
             // Conectar a função showGeneralAlertModal com a global
             showGeneralAlertModalGlobal = showGeneralAlertModal;
@@ -2814,31 +4040,6 @@
                 }
             });
 
-            // Função auxiliar para bloquear interação com elementos de fundo
-            function createModalBackdrop() {
-                const backdrop = document.createElement('div');
-                backdrop.id = 'modal-backdrop';
-                backdrop.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    background: rgba(0, 0, 0, 0.5);
-                    z-index: 3400;
-                    pointer-events: auto;
-                `;
-                document.body.appendChild(backdrop);
-                return backdrop;
-            }
-
-            function removeModalBackdrop() {
-                const backdrop = document.getElementById('modal-backdrop');
-                if (backdrop) {
-                    backdrop.remove();
-                }
-            }
-
             // --- Lógica da Função openPatientStepsModal ---
             window.openPatientStepsModal = function(patientId) {
                 // Fechar qualquer modal de exclusão que possa estar aberta
@@ -2932,15 +4133,12 @@
                     if (closeBtn) {
                         closeBtn.onclick = () => {
                             overlay.classList.remove('visible');
-                            document.body.style.overflow = 'auto';
                             if (modal._focusTrap) {
                                 document.removeEventListener('keydown', modal._focusTrap);
                                 modal._focusTrap = null;
                             }
-                            if (modal._backdrop) {
-                                modal._backdrop.remove();
-                                modal._backdrop = null;
-                            }
+                            // Usar função centralizada para remover backdrop
+                            removeModalBackdrop('steps-modal-backdrop');
                             setTimeout(() => overlay.style.display = 'none', 300);
                         };
                     }
@@ -2948,15 +4146,12 @@
                     overlay.onclick = (e) => {
                         if (e.target === overlay) {
                             overlay.classList.remove('visible');
-                            document.body.style.overflow = 'auto';
                             if (modal._focusTrap) {
                                 document.removeEventListener('keydown', modal._focusTrap);
                                 modal._focusTrap = null;
                             }
-                            if (modal._backdrop) {
-                                modal._backdrop.remove();
-                                modal._backdrop = null;
-                            }
+                            // Usar função centralizada para remover backdrop
+                            removeModalBackdrop('steps-modal-backdrop');
                             setTimeout(() => overlay.style.display = 'none', 300);
                         }
                     };
@@ -3006,14 +4201,23 @@
                 
                 overlay.style.display='flex';
                 
-                // Criar backdrop adicional para garantir bloqueio
-                const backdrop = createModalBackdrop();
+                // Usar função centralizada para criar backdrop
+                createModalBackdrop({
+                    id: 'steps-modal-backdrop',
+                    onClick: (e) => {
+                        if (e.target.id === 'steps-modal-backdrop') {
+                            // Fechar modal ao clicar no backdrop
+                            overlay.classList.remove('visible');
+                            setTimeout(() => {
+                                overlay.style.display = 'none';
+                                removeModalBackdrop('steps-modal-backdrop');
+                            }, 300);
+                        }
+                    }
+                });
                 
                 setTimeout(() => {
                     overlay.classList.add('visible');
-                    
-                    // Bloquear scroll do body quando modal estiver aberta
-                    document.body.style.overflow = 'hidden';
                     
                     // Configurar navegação dos steps APÓS a modal ser exibida
                     setupStepsForThisModal();
@@ -3023,6 +4227,9 @@
                     if (firstInput) {
                         firstInput.focus();
                     }
+                    
+                    // Obter referência do botão de fechar para usar no trapFocus
+                    const closeBtn = modal.querySelector('.steps-modal-close');
                     
                     // Trap de foco - garantir que o Tab não saia da modal
                     const focusableElements = modal.querySelectorAll(
@@ -3050,7 +4257,14 @@
                         }
                         // Fechar modal com Escape
                         if (e.key === 'Escape') {
-                            closeBtn?.click();
+                            if (closeBtn) {
+                                closeBtn.click();
+                            } else {
+                                // Fallback: fechar modal diretamente
+                                overlay.classList.remove('visible');
+                                removeModalBackdrop('steps-modal-backdrop');
+                                setTimeout(() => overlay.style.display = 'none', 300);
+                            }
                         }
                     };
                     
@@ -3059,7 +4273,7 @@
                     
                     // Armazenar referência para poder remover depois
                     modal._focusTrap = trapFocus;
-                    modal._backdrop = backdrop;
+                    // Note: backdrop é gerenciado pela função centralizada, não precisamos armazenar referência
                 }, 10);
             };
 
