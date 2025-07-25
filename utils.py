@@ -2,13 +2,13 @@ import datetime
 from functools import wraps
 from flask import session, redirect, url_for, flash
 import pytz
-from google.cloud import firestore # Necessário para firestore.SERVER_TIMESTAMP e outros objetos
+from google.cloud import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter # Importar FieldFilter
 
 # Esta variável será inicializada por app.py
 _db_instance = None 
 
 # Garante que SAO_PAULO_TZ seja um objeto de fuso horário válido.
-# Se houver qualquer problema com pytz.timezone, ele será capturado aqui.
 try:
     SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
 except pytz.UnknownTimeZoneError:
@@ -35,10 +35,6 @@ def format_firestore_timestamp(timestamp):
     if isinstance(timestamp, datetime.datetime):
         # Se o datetime não tiver informações de fuso horário (naive), localize-o primeiro
         if timestamp.tzinfo is None:
-            # Assumimos que datetimes sem tzinfo do Firestore são UTC, ou o fuso horário do servidor
-            # É mais seguro localizá-los para o fuso horário de São Paulo se eles representam a hora de lá.
-            # Se eles são UTC e você quer convertê-los, primeiro localize para UTC e depois converta.
-            # Para este caso, vamos assumir que são "naive" e representam a hora de SP.
             localized_timestamp = SAO_PAULO_TZ.localize(timestamp)
         else:
             # Se já tem tzinfo, converte diretamente para o fuso horário de São Paulo
@@ -117,3 +113,118 @@ def admin_required(f):
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
+
+def get_counts_for_navbar(db_instance, clinica_id):
+    """
+    Obtém a contagem de documentos para várias coleções usadas na barra de navegação.
+    """
+    counts = {
+        'pacientes': 0,
+        'prontuarios': 0,
+        'peis': 0,
+        'agendamentos': 0,
+        'servicos': 0,
+        'convenios': 0,
+        'protocolos': 0,
+        'modelos_anamnese': 0,
+        'profissionais': 0,
+        'contas_a_pagar': 0,
+        'estoque': 0,
+        'patrimonio': 0,
+        'horarios': 0,
+        'utilizadores': 0 # Para usuários associados a esta clínica
+    }
+
+    if not db_instance or not clinica_id:
+        print("Aviso: db_instance ou clinica_id não fornecidos para get_counts_for_navbar.")
+        return counts
+
+    try:
+        # Pacientes
+        counts['pacientes'] = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar pacientes: {e}")
+
+    try:
+        # Prontuários
+        counts['prontuarios'] = db_instance.collection('clinicas').document(clinica_id).collection('prontuarios').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar prontuários: {e}")
+    
+    try:
+        # PEIs
+        counts['peis'] = db_instance.collection('clinicas').document(clinica_id).collection('peis').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar PEIs: {e}")
+
+    try:
+        # Agendamentos
+        counts['agendamentos'] = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar agendamentos: {e}")
+
+    try:
+        # Serviços/Procedimentos
+        counts['servicos'] = db_instance.collection('clinicas').document(clinica_id).collection('servicos_procedimentos').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar serviços: {e}")
+
+    try:
+        # Convênios
+        counts['convenios'] = db_instance.collection('clinicas').document(clinica_id).collection('convenios').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar convênios: {e}")
+
+    try:
+        # Protocolos
+        counts['protocolos'] = db_instance.collection('clinicas').document(clinica_id).collection('protocols').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar protocolos: {e}")
+
+    try:
+        # Modelos Anamnese
+        counts['modelos_anamnese'] = db_instance.collection('clinicas').document(clinica_id).collection('modelos_anamnese').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar modelos de anamnese: {e}")
+
+    try:
+        # Profissionais
+        counts['profissionais'] = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar profissionais: {e}")
+
+    try:
+        # Contas a Pagar
+        counts['contas_a_pagar'] = db_instance.collection('clinicas').document(clinica_id).collection('contas_a_pagar').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar contas a pagar: {e}")
+
+    try:
+        # Estoque
+        counts['estoque'] = db_instance.collection('clinicas').document(clinica_id).collection('estoque').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar estoque: {e}")
+
+    try:
+        # Patrimônio
+        counts['patrimonio'] = db_instance.collection('clinicas').document(clinica_id).collection('patrimonio').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar patrimônio: {e}")
+
+    try:
+        # Horários
+        counts['horarios'] = db_instance.collection('clinicas').document(clinica_id).collection('horarios').count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar horários: {e}")
+
+    try:
+        # Utilizadores (filtrando por clinica_id na coleção 'User' global)
+        # Note: 'User' collection is at the root, not under 'clinicas/{clinica_id}'
+        counts['utilizadores'] = db_instance.collection('User').where(
+            filter=FieldFilter('clinica_id', '==', clinica_id)
+        ).count().get()[0][0].value
+    except Exception as e:
+        print(f"Erro ao contar utilizadores: {e}")
+
+    return counts
+

@@ -35,18 +35,21 @@
             <li class="{% if request.endpoint == 'listar_pacientes' %}active{% endif %}">
               <a href="{{ url_for('listar_pacientes') }}" title="Pacientes">
                 <span>Pacientes</span>
+                {% if navbar_counts.pacientes is defined %}<span class="count-badge">{{ navbar_counts.pacientes }}</span>{% endif %}
               </a>
             </li>
 
             <li class="{% if request.endpoint == 'buscar_prontuario' %}active{% endif %}">
               <a href="{{ url_for('buscar_prontuario') }}" title="Prontuários">
                 <span>Prontuários</span>
+                {% if navbar_counts.prontuarios is defined %}<span class="count-badge">{{ navbar_counts.prontuarios }}</span>{% endif %}
               </a>
             </li>
 
             <li class="{% if request.endpoint == 'busca_peis' %}active{% endif %}">
               <a href="{{ url_for('busca_peis') }}" title="PEI's">
                 <span>PEI's</span>
+                {% if navbar_counts.peis is defined %}<span class="count-badge">{{ navbar_counts.peis }}</span>{% endif %}
               </a>
             </li>
           </ul>
@@ -58,6 +61,7 @@
             <div class="submenu-toggle-content">
               <i class="fa-regular fa-calendar-check"></i>
               <span>Agendamentos</span>
+              {% if navbar_counts.agendamentos is defined %}<span class="count-badge">{{ navbar_counts.agendamentos }}</span>{% endif %}
             </div>
           </a>
         </li>
@@ -76,26 +80,31 @@
             <li class="{% if request.endpoint == 'listar_servicos_procedimentos' %}active{% endif %}">
               <a href="{{ url_for('listar_servicos_procedimentos') }}" title="Serviços/Procedimentos">
                 <span>Serviços</span>
+                {% if navbar_counts.servicos is defined %}<span class="count-badge">{{ navbar_counts.servicos }}</span>{% endif %}
               </a>
             </li>
             <li class="{% if request.endpoint == 'listar_convenios' %}active{% endif %}">
               <a href="{{ url_for('listar_convenios') }}" title="Convênios">
                 <span>Convênios</span>
+                {% if navbar_counts.convenios is defined %}<span class="count-badge">{{ navbar_counts.convenios }}</span>{% endif %}
               </a>
             </li>
             <li class="{% if request.endpoint == 'protocols.list_protocols' %}active{% endif %}">
               <a href="{{ url_for('protocols.list_protocols') }}" title="Protocolos">
                 <span>Protocolos</span>
+                {% if navbar_counts.protocolos is defined %}<span class="count-badge">{{ navbar_counts.protocolos }}</span>{% endif %}
               </a>
             </li>
             <li class="{% if request.endpoint == 'listar_modelos_anamnese' %}active{% endif %}">
               <a href="{{ url_for('listar_modelos_anamnese') }}" title="Modelos Anamnese">
                 <span>Modelos Anamnese</span>
+                {% if navbar_counts.modelos_anamnese is defined %}<span class="count-badge">{{ navbar_counts.modelos_anamnese }}</span>{% endif %}
               </a>
             </li>
             <li class="{% if request.endpoint == 'listar_profissionais' %}active{% endif %}">
               <a href="{{ url_for('listar_profissionais') }}" title="Profissionais">
                 <span>Profissionais</span>
+                {% if navbar_counts.profissionais is defined %}<span class="count-badge">{{ navbar_counts.profissionais }}</span>{% endif %}
               </a>
             </li>
           </ul>
@@ -116,18 +125,21 @@
             <li class="{% if request.endpoint == 'listar_contas_a_pagar' %}active{% endif %}">
               <a href="{{ url_for('listar_contas_a_pagar') }}" title="Contas a Pagar">
                 <span>Contas a Pagar</span>
+                {% if navbar_counts.contas_a_pagar is defined %}<span class="count-badge">{{ navbar_counts.contas_a_pagar }}</span>{% endif %}
               </a>
             </li>
 
             <li class="{% if request.endpoint == 'listar_estoque' %}active{% endif %}">
               <a href="{{ url_for('listar_estoque') }}" title="Estoque">
                 <span>Estoque</span>
+                {% if navbar_counts.estoque is defined %}<span class="count-badge">{{ navbar_counts.estoque }}</span>{% endif %}
               </a>
             </li>
 
             <li class="{% if request.endpoint == 'patrimonio.listar_patrimonio' %}active{% endif %}">
               <a href="{{ url_for('patrimonio.listar_patrimonio') }}" title="Patrimônio">
                 <span>Patrimônio</span>
+                {% if navbar_counts.patrimonio is defined %}<span class="count-badge">{{ navbar_counts.patrimonio }}</span>{% endif %}
               </a>
             </li>
           </ul>
@@ -147,11 +159,13 @@
             <li class="{% if request.endpoint == 'listar_horarios' %}active{% endif %}">
               <a href="{{ url_for('listar_horarios') }}" title="Horários">
                 <span>Horários</span>
+                {% if navbar_counts.horarios is defined %}<span class="count-badge">{{ navbar_counts.horarios }}</span>{% endif %}
               </a>
             </li>
             <li class="{% if request.endpoint == 'listar_usuarios' %}active{% endif %}">
               <a href="{{ url_for('listar_usuarios') }}" title="Utilizadores">
                 <span>Utilizadores</span>
+                {% if navbar_counts.utilizadores is defined %}<span class="count-badge">{{ navbar_counts.utilizadores }}</span>{% endif %}
               </a>
             </li>
           </ul>
@@ -289,7 +303,7 @@
   transition: background 0.2s ease, color 0.2s ease;
 
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* Ajustado para espaçar o texto e o contador */
   align-items: center;
   /* gap: 1rem; */
 }
@@ -421,6 +435,23 @@
   display: none;
 }
 
+/* Estilo para o contador */
+.count-badge {
+  background-color: var(--secondary); /* Cor de destaque para o contador */
+  color: white;
+  padding: 0.2em 0.6em;
+  border-radius: 0.75em; /* Cantos mais arredondados */
+  font-size: 0.75em; /* Tamanho menor para o texto do contador */
+  font-weight: 700;
+  margin-left: auto; /* Empurra o contador para a direita */
+  min-width: 1.5em; /* Garante um tamanho mínimo para números de 1 dígito */
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1; /* Garante que o texto esteja centralizado verticalmente */
+}
+
 /* Responsivo para a sidebar */
 @media (max-width: 768px) {
   .sidebar {
@@ -443,7 +474,9 @@
     justify-content: flex-start;
   }
 
-  .sidebar.collapsed nav ul li a span,
+  .sidebar.collapsed nav ul li a span {
+    display: inline; /* Garante que o texto e o contador apareçam em mobile */
+  }
   .sidebar.collapsed .sidebar-footer span {
     display: inline;
   }

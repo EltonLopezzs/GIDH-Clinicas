@@ -11,7 +11,8 @@ from flask_cors import CORS
 from google.cloud.firestore_v1.base_query import FieldFilter
 from collections import Counter, defaultdict
 
-from utils import set_db, get_db, login_required, admin_required, SAO_PAULO_TZ, parse_date_input, convert_doc_to_dict
+# Importar get_counts_for_navbar do utils
+from utils import set_db, get_db, login_required, admin_required, SAO_PAULO_TZ, parse_date_input, convert_doc_to_dict, get_counts_for_navbar
 from blueprints.users import register_users_routes
 from blueprints.professionals import register_professionals_routes
 from blueprints.patients import register_patients_routes
@@ -105,6 +106,16 @@ if _db_client_instance:
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 if not os.getenv("GEMINI_API_KEY"):
     print("⚠️ VARIÁVEL DE AMBIENTE 'GEMINI_API_KEY' NÃO ENCONTRADA. A funcionalidade de IA pode não funcionar.")
+
+# Context processor para injetar contagens na barra de navegação em todas as templates
+@app.context_processor
+def inject_navbar_counts():
+    db_instance = get_db()
+    if 'logged_in' in session and 'clinica_id' in session and db_instance:
+        clinica_id = session['clinica_id']
+        counts = get_counts_for_navbar(db_instance, clinica_id)
+        return {'navbar_counts': counts}
+    return {'navbar_counts': {}} # Retorna dicionário vazio se não estiver logado ou DB não estiver pronto
 
 
 @app.route('/login', methods=['GET'])
@@ -694,7 +705,7 @@ def import_protocol_from_ai():
             - **Todas as strings DEVEM ser escapadas corretamente para JSON.** Isso é MANDATÓRIO para evitar erros de parsing.
                 - Aspas duplas (") dentro de strings DEVEM ser escapadas como `\"`.
                 - Quebras de linha (`\n`) dentro de strings DEVEM ser escapadas como `\\n`.
-                - Retornos de carro (`\r`) dentro de strings DEVEM ser escapados como `\\r`.
+                - Retornos de carro (`\r`) dentro de strings DEVEM ser escapadas como `\\r`.
                 - Barras invertidas (`\`) dentro de strings DEVEM ser escapadas como `\\\\`.
                 - **Qualquer outro caractere que não seja JSON-safe (como caracteres de controle ou outros símbolos que possam quebrar o JSON) DEVE ser escapado ou removido.**
             - **Garanta que todos os elementos de arrays e pares chave-valor em objetos sejam separados por VÍRGULAS.**
@@ -818,31 +829,6 @@ def import_protocol_from_ai():
             except json.JSONDecodeError as e:
                 print(f"JSONDecodeError: {e}. Tentando sanitizar e corrigir a resposta...")
                 # Se falhar, tenta uma abordagem mais agressiva de sanitização
-                # Esta parte é um pouco mais complexa pois precisamos iterar
-                # sobre a estrutura esperada e sanitizar cada string.
-                # No entanto, a forma mais comum de erro é uma string não terminada.
-                # A tentativa de substituir quebras de linha já foi feita.
-                # Para lidar com aspas duplas não escapadas, é mais difícil sem
-                # um parser robusto que possa "ignorar" o erro ou tentar corrigi-lo.
-                # Uma abordagem simples é tentar encontrar e escapar aspas duplas
-                # que não deveriam estar lá, mas isso pode quebrar JSON válido.
-
-                # A solução mais robusta para aspas duplas não escapadas em conteúdo
-                # é usar uma biblioteca como `demjson` ou processar a string
-                # de forma mais inteligente. No entanto, para manter a simplicidade
-                # e o escopo do problema, vamos focar na instrução ao Gemini e
-                # na sanitização de caracteres de controle.
-
-                # Para o erro "Unterminated string", o problema geralmente é uma quebra de linha
-                # literal que não foi escapada. A linha `replace('\n', '\\n')` já faz isso.
-                # Se o erro persiste, pode ser uma aspa dupla dentro do texto que o Gemini
-                # não escapou, ou algum outro caractere inválido.
-
-                # Vamos tentar uma sanitização mais genérica para caracteres JSON inválidos
-                # Esta é uma forma de "limpar" a string para que json.loads() possa processá-la.
-                # Note: Isso pode alterar o conteúdo original se houver caracteres não ASCII
-                # ou outros que não são UTF-8 válidos, mas para este erro, é mais provável
-                # que sejam aspas/quebras de linha.
                 import re
                 cleaned_text_for_json = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', raw_gemini_response) # Remove caracteres de controle
                 
