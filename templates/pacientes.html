@@ -36,7 +36,6 @@
 
             color-scheme: light;
         }
-
         [data-theme="dark"] {
             --bg: var(--dark-bg);
             --text: var(--dark-text);
@@ -45,7 +44,6 @@
             --border-color: var(--dark-border-color);
             color-scheme: dark;
         }
-        
         ::-webkit-scrollbar {
             background-color: var(--bg);
             width: 0.5625rem;
@@ -54,21 +52,23 @@
             border-bottom-right-radius: 0.3125rem;
             transition: background-color 0.8s ease;
         }
-
         ::-webkit-scrollbar-thumb {
             background-color: var(--muted);
             border-radius: .3125rem;
             transition: background-color 0.8s ease;
         }
-
         ::-webkit-scrollbar-thumb:hover {
             transition: background-color 0.8s ease;
             background-color: var(--primary);
         }
-        
-        /* Reset básico e box-sizing */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        html, body {
+            height: 100%;
+        }
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
@@ -76,56 +76,103 @@
             min-height: 100vh;
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
-            /* Removido overflow-x: hidden; para permitir que os toasts apareçam */
         }
-        .layout { display: flex; min-height: 100vh; width: 100%; }
-
+        .layout {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
         /* --- Main Content & Topbar --- */
         .main-content {
-            flex: 1; margin-left: 260px; /* Ajustado para 280px */
+            flex: 1; margin-left: 260px;
             transition: margin-left 0.3s ease;
-            display: flex; flex-direction: column; width: calc(100% - 280px); /* Ajustado para 280px */
-            max-width: calc(100% - 280px); /* Ajustado para 280px */
+            display: flex; flex-direction: column; width: calc(100% - 260px);
+            max-width: calc(100% - 260px);
             box-sizing: border-box;
-            /* Removido overflow-x: hidden; para permitir que os toasts apareçam */
         }
         .main-content.collapsed { 
-            margin-left: 88px; /* Ajustado para 88px */
-            width: calc(100% - 88px); /* Ajustado para 88px */
-            max-width: calc(100% - 88px); /* Ajustado para 88px */
+            margin-left: 88px;
+            width: calc(100% - 88px);
+            max-width: calc(100% - 88px);
         }
         .topbar {
-            background-color: var(--card); color: var(--text); padding: 0 1.5rem;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--border-color); height: 70px; flex-shrink: 0;
-            position: sticky; top: 0; z-index: 900;
+            background-color: var(--card);
+            color: var(--text);
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            height: 70px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 900;
         }
-        .topbar-left { display: flex; align-items: center; gap: 1rem; }
-        .topbar .page-title { font-weight: 600; font-size: 1.25rem; color: var(--text); }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .topbar .page-title {
+            font-weight: 600;
+            font-size: 1.25rem;
+            color: var(--text);
+        }
         .toggle-btn {
-            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
-            width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--muted);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
             transition: background 0.2s ease, color 0.2s ease;
         }
-        .toggle-btn:hover { background-color: var(--bg); color: var(--primary); }
-        .topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
-        .search-form { display: flex; align-items: center; }
+        .toggle-btn:hover {
+            background-color: var(--bg);
+            color: var(--primary);
+        }
+        .topbar-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .search-form {
+            display: flex;
+            align-items: center;
+        }
         .search-input {
-            padding: 0.5rem 0.8rem; border: 1px solid var(--border-color); border-radius: 8px 0 0 8px;
-            font-size: 0.9rem; background-color: var(--bg); color: var(--text);
+            padding: 0.5rem 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px 0 0 8px;
+            font-size: 0.9rem;
+            background-color: var(--bg);
+            color: var(--text);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .search-input:focus {
-            border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
-            outline: none; z-index: 1;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+            z-index: 1;
         }
         .search-button {
-            background-color: var(--primary); color: white; border: none;
-            padding: 0.5rem 1rem; border-radius: 0 8px 8px 0; margin-left: -1px;
-            cursor: pointer; transition: background-color 0.2s ease;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-left: -1px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
         }
-        .search-button:hover { background-color: var(--accent); }
-
+        .search-button:hover {
+            background-color: var(--accent);
+        }
         main { 
             flex-grow: 1; 
             padding: 1.5rem; 
@@ -133,68 +180,66 @@
             width: 100%;
             max-width: 100%;
         }
-
-        /* --- Buttons --- */
         .btn {
-            padding: 0.6rem 1.2rem; font-size: 0.9rem; border-radius: 8px; text-decoration: none;
-            font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
-            gap: 0.5rem; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease-in-out;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
         }
-        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
-        .btn-primary { background-color: var(--primary); color: white; }
-        .btn-primary:hover { background-color: var(--accent); }
-        .btn-info { background-color: var(--info); color: white; }
-        .btn-info:hover { background-color: #0369a1; }
-        .btn-warning { background-color: var(--warning); color: #854d0e; }
-        [data-theme="dark"] .btn-warning { color: var(--dark-bg); }
-        .btn-warning:hover { background-color: #fcd34d; }
-        .btn-danger { background-color: var(--danger); color: white; }
-        .btn-danger:hover { background-color: #b91c1c; }
-
-        /* --- Card Layout for Patients --- */
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--accent);
+        }
+        .btn-info {
+            background-color: var(--info);
+            color: white;
+        }
+        .btn-info:hover {
+            background-color: #0369a1;
+        }
+        .btn-warning {
+            background-color: var(--warning);
+            color: #854d0e;
+        }
+        [data-theme="dark"] .btn-warning {
+            color: var(--dark-bg);
+        }
+        .btn-warning:hover {
+            background-color: #fcd34d;
+        }
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
         .card-list-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
             gap: 1.5rem;
             width: 100%;
             animation: fadeIn 0.5s ease-in-out;
         }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        @media (min-width: 1845px) {
-            .card-list-container {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 1.5rem;
-            }
-        }
-
-        @media (min-width: 1315px) and (max-width: 1844px) { 
-            .card-list-container {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1.5rem;
-            }
-        }
-
-        @media (min-width: 768px) and (max-width: 1314px) {
-            .card-list-container {
-                grid-template-columns: repeat(1, 1fr);
-                gap: 1.5rem;
-            }
-        }
-
-        @media (max-width: 767px) {
-            .card-list-container {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-                padding: 0 0.5rem;
-            }
-        }
-
-        /* Card moderno para pacientes */
         .patient-card-modern {
             background: var(--card);
             border-radius: 16px;
@@ -208,7 +253,6 @@
             flex-direction: column;
             height: 100%;
         }
-
         .paciente-card.modern-card {
             transform: translateY(var(--animation-delay, 0));
             opacity: 0;
@@ -219,7 +263,6 @@
             border-radius: 16px !important;
             height: 100%;
         }
-
         @keyframes slideInUp {
             from {
                 opacity: 0;
@@ -230,13 +273,10 @@
                 transform: translateY(0);
             }
         }
-
         .patient-card-modern:hover {
             scale: 1.01;
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
         }
-
-        /* Header do card */
         .patient-header {
             display: flex;
             align-items: center;
@@ -245,7 +285,6 @@
             color: white;
             position: relative;
         }
-
         .patient-avatar {
             position: relative;
             width: 60px;
@@ -259,7 +298,6 @@
             margin-right: 1rem;
             flex-shrink: 0;
         }
-
         .patient-status-indicator {
             position: absolute;
             bottom: 2px;
@@ -269,16 +307,19 @@
             border-radius: 50%;
             border: 2px solid white;
         }
-
-        .status-active { background: #10b981; }
-        .status-inactive { background: #ef4444; }
-        .status-pending { background: #f59e0b; }
-
+        .status-active {
+            background: #10b981;
+        }
+        .status-inactive {
+            background: #ef4444;
+        }
+        .status-pending {
+            background: #f59e0b;
+        }
         .patient-info {
             flex: 1;
             min-width: 0;
         }
-
         .patient-name {
             font-size: 1.25rem;
             font-weight: 700;
@@ -288,35 +329,28 @@
             overflow: hidden;
             white-space: nowrap;
         }
-
         .patient-meta {
             display: flex;
             gap: 1rem;
             font-size: 0.85rem;
             opacity: 0.9;
         }
-
         .patient-meta span {
             display: flex;
             align-items: center;
             gap: 0.25rem;
         }
-
         .patient-meta i {
             font-size: 0.75rem;
         }
-
         .patient-id, .patient-age {
             text-overflow: ellipsis;
             overflow: hidden;
             white-space: nowrap;
         }
-
-        /* Dropdown de ações */
         .patient-actions-dropdown {
             position: relative;
         }
-
         .dropdown-toggle {
             background: rgba(255, 255, 255, 0.2);
             border: none;
@@ -330,12 +364,10 @@
             justify-content: center;
             transition: all 0.2s ease;
         }
-
         .dropdown-toggle:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: scale(1.1);
         }
-
         .dropdown-menu {
             position: absolute;
             top: -32px;
@@ -353,9 +385,8 @@
             margin-top: 0.5rem;
             overflow-y: auto;
             overflow-x: hidden;
-            max-height: 350px; /* Limita a altura do dropdown */
+            max-height: 350px;
         }
-
         .dropdown-menu::after {
             content: '';
             position: absolute;
@@ -369,13 +400,11 @@
             transform: rotate(270deg);
             z-index: 99999;
         }
-
         .dropdown-menu.show {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
         }
-
         .dropdown-item {
             display: flex;
             align-items: center;
@@ -391,31 +420,25 @@
             cursor: pointer;
             transition: background 0.2s ease;
         }
-
         .dropdown-item:hover {
             background: var(--bg);
         }
-
         .dropdown-item-danger {
             color: var(--danger);
         }
-
         .dropdown-item-danger:hover {
             background: rgba(220, 38, 38, 0.1);
             color: var(--danger);
         }
-
         .dropdown-item i {
             width: 16px;
             text-align: center;
         }
-
         .dropdown-divider {
             height: 1px;
             background: var(--border-color);
             margin: 0.5rem 0;
         }
-
         .dropdown-section-label {
             display: flex;
             align-items: center;
@@ -429,37 +452,30 @@
             opacity: 0.7;
             margin: 0.25rem 0 0.1rem 0;
         }
-
         [data-theme="dark"] .dropdown-section-label {
             color: var(--dark-muted);
             opacity: 0.6;
         }
-
         .dropdown-section-label i {
             font-size: 0.55rem;
             opacity: 0.5;
         }
-
         .dropdown-section-label + .dropdown-item {
             margin-top: 0.1rem;
         }
-
         .dropdown-section-label + .dropdown-divider {
             margin-top: 0.5rem;
         }
-
         /* Detalhes do paciente */
         .patient-details {
             padding: 1.5rem;
             flex: 1;
         }
-
         .detail-grid {
             display: grid;
             gap: 1rem;
             grid-template-columns: 2fr 1fr;
         }
-
         .detail-item {
             display: flex;
             align-items: center;
@@ -469,16 +485,13 @@
             transition: all 0.2s ease;
             width: 100%;
         }
-
         .detail-item.clickable {
             cursor: pointer;
         }
-
         .detail-item.clickable:hover {
             background: var(--bg);
             transform: translateX(4px);
         }
-
         .detail-icon {
             width: 40px;
             height: 40px;
@@ -490,12 +503,10 @@
             color: var(--muted);
             flex-shrink: 0;
         }
-
         .detail-content {
             flex: 1;
             min-width: 0;
         }
-
         .detail-label {
             display: block;
             font-size: 0.75rem;
@@ -505,7 +516,6 @@
             letter-spacing: 0.5px;
             margin-bottom: 0.25rem;
         }
-
         .detail-value {
             display: block;
             font-size: 0.95rem;
@@ -521,31 +531,24 @@
             overflow: visible;
             text-overflow: unset;
         }
-
-
         .detail-empty {
             color: var(--muted);
             font-style: italic;
             opacity: 0.7;
             position: relative;
         }
-
         .detail-empty::before {
             content: "⚪";
             margin-right: 0.5rem;
             font-style: normal;
             opacity: 0.6;
         }
-
-        /* Styling para ícones de campos vazios */
         .detail-item:has(.detail-empty) .detail-icon {
             opacity: 0.5;
         }
-
         .detail-item:has(.detail-empty) .detail-icon i {
             color: var(--muted);
         }
-
         .convenio-badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
@@ -556,7 +559,6 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
         /* Footer do card */
         .patient-footer {
             display: flex;
@@ -567,14 +569,12 @@
             margin-top: auto;
             width: 100%;
         }
-
         .patient-stats {
             display: flex;
             align-items: center;
             gap: 1rem;
             flex: 1;
         }
-
         .stat-item {
             display: flex;
             align-items: center;
@@ -582,16 +582,13 @@
             font-size: 0.8rem;
             color: var(--muted);
         }
-
         .stat-item i {
             font-size: 0.75rem;
         }
-
         .quick-actions {
             display: flex;
             gap: 0.5rem;
         }
-
         .quick-action-btn {
             width: 36px;
             height: 36px;
@@ -604,27 +601,22 @@
             transition: all 0.2s ease;
             font-size: 0.9rem;
         }
-
         .quick-action-btn.primary {
             background: var(--primary);
             color: white;
         }
-
         .quick-action-btn.info {
             background: var(--info);
             color: white;
         }
-
         .quick-action-btn.success {
             background: var(--success);
             color: white;
         }
-
         .quick-action-btn:hover {
             transform: scale(1.1);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-
         /* Estado vazio */
         .empty-state {
             display: flex;
@@ -637,12 +629,10 @@
             border-radius: 16px;
             border: 2px dashed var(--border-color);
         }
-
         .empty-state-animation {
             position: relative;
             margin-bottom: 2rem;
         }
-
         .empty-state-icon {
             width: 80px;
             height: 80px;
@@ -656,12 +646,10 @@
             animation: floatIcon 3s ease-in-out infinite;
             box-shadow: 0 10px 30px rgba(13, 148, 136, 0.3);
         }
-
         @keyframes floatIcon {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
             50% { transform: translateY(-10px) rotate(5deg); }
         }
-
         .empty-state-particles {
             position: absolute;
             top: 0;
@@ -670,7 +658,6 @@
             height: 100%;
             pointer-events: none;
         }
-
         .particle {
             position: absolute;
             width: 4px;
@@ -679,25 +666,21 @@
             border-radius: 50%;
             animation: floatParticle 4s ease-in-out infinite;
         }
-
         .particle:nth-child(1) {
             top: 20%;
             left: 20%;
             animation-delay: 0s;
         }
-
         .particle:nth-child(2) {
             top: 60%;
             right: 30%;
             animation-delay: 1.5s;
         }
-
         .particle:nth-child(3) {
             bottom: 30%;
             left: 60%;
             animation-delay: 3s;
         }
-
         @keyframes floatParticle {
             0%, 100% {
                 transform: translateY(0px) scale(1);
@@ -708,14 +691,12 @@
                 opacity: 1;
             }
         }
-
         .empty-state-title {
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--text);
             margin-bottom: 0.5rem;
         }
-
         .empty-state-description {
             font-size: 1rem;
             color: var(--muted);
@@ -723,14 +704,12 @@
             line-height: 1.5;
             max-width: 500px;
         }
-
         .empty-state-actions {
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
             justify-content: center;
         }
-
         .empty-state-btn {
             padding: 1rem 2rem;
             font-size: 1rem;
@@ -739,7 +718,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .empty-state-btn::before {
             content: '';
             position: absolute;
@@ -750,21 +728,17 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s ease;
         }
-
         .empty-state-btn:hover::before {
             left: 100%;
         }
-
         .btn-secondary {
             background: var(--muted);
             color: white;
         }
-
         .btn-secondary:hover {
             background: var(--text);
             transform: translateY(-2px);
         }
-
         /* Skeleton loading */
         .patient-card-skeleton {
             background: var(--card);
@@ -773,14 +747,12 @@
             overflow: hidden;
             animation: pulse 1.5s ease-in-out infinite;
         }
-
         .skeleton-header {
             display: flex;
             align-items: center;
             padding: 1.5rem;
             background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
         }
-
         .skeleton-avatar {
             width: 60px;
             height: 60px;
@@ -789,35 +761,28 @@
             margin-right: 1rem;
             flex-shrink: 0;
         }
-
         .skeleton-info {
             flex: 1;
         }
-
         .skeleton-line {
             height: 12px;
             background: rgba(255, 255, 255, 0.6);
             border-radius: 6px;
             margin-bottom: 8px;
         }
-
         .skeleton-name {
             width: 70%;
             height: 16px;
         }
-
         .skeleton-meta {
             width: 50%;
         }
-
         .skeleton-body {
             padding: 1.5rem;
         }
-
         .skeleton-short {
             width: 60%;
         }
-
         @keyframes pulse {
             0%, 100% {
                 opacity: 1;
@@ -826,16 +791,13 @@
                 opacity: 0.6;
             }
         }
-
         [data-theme="dark"] .skeleton-header {
             background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
         }
-
         [data-theme="dark"] .skeleton-line,
         [data-theme="dark"] .skeleton-avatar {
             background: rgba(55, 65, 81, 0.6);
         }
-
         /* Responsividade */
         @media (max-width: 767px) {
             .card-list-container {
@@ -843,89 +805,70 @@
                 gap: 1rem;
                 padding: 0 0.5rem;
             }
-            
             .patient-header {
                 padding: 1rem;
             }
-            
             .patient-avatar {
                 width: 50px;
                 height: 50px;
                 font-size: 1.5rem;
                 margin-right: 0.75rem;
             }
-            
             .patient-name {
                 font-size: 1.1rem;
             }
-            
             .patient-meta {
                 flex-direction: column;
                 gap: 0.5rem;
             }
-            
             .patient-details {
                 padding: 1rem;
             }
-            
             .patient-footer {
                 padding: 0.75rem 1rem;
                 flex-direction: column;
                 gap: 1rem;
                 align-items: flex-start;
             }
-            
             .patient-card-modern {
                 width: 100%;
                 max-width: 100%;
             }
-            
             .detail-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 0.75rem;
             }
-            
             .detail-item {
                 padding: 0.5rem;
             }
         }
-
-        /* Melhorias para tablet */
         @media (min-width: 768px) and (max-width: 999px) {
             .card-list-container {
                 padding: 0;
             }
-            
             .patient-card-modern {
                 width: 100%;
                 max-width: 100%;
             }
-            
             .detail-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 1rem;
             }
         }
-
-        /* Melhorias para desktop */
         @media (min-width: 1000px) {
             .card-list-container {
                 padding: 0;
             }
-            
             .patient-card-modern {
                 width: 100%;
                 max-width: 100%;
                 min-height: 300px;
             }
-            
             .detail-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 1rem;
             }
         }
-
-        /* Card original (manter para compatibilidade) */
         .paciente-card:not(.modern-card) {
             background-color: var(--card);
             border-radius: 12px;
@@ -939,12 +882,10 @@
             position: relative;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-
         .paciente-card:not(.modern-card):hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-
         .paciente-card-header {
             display: flex;
             justify-content: space-between;
@@ -964,13 +905,11 @@
         [data-theme="dark"] .paciente-card-header h4 {
             color: var(--dark-text);
         }
-
         .paciente-card-header .actions {
             display: flex;
             gap: 0.5rem;
             align-items: center;
         }
-
         .paciente-card-body {
             display: flex;
             flex-wrap: wrap;
@@ -978,7 +917,6 @@
             font-size: 0.95rem;
             align-items: center;
         }
-
         .paciente-card-item {
             display: flex;
             align-items: center;
@@ -1004,7 +942,6 @@
         [data-theme="dark"] .paciente-card-item .value {
             color: var(--dark-text);
         }
-
         /* --- Pagination Controls --- */
         .pagination-controls {
             display: flex;
@@ -1040,11 +977,9 @@
             color: var(--text);
             font-weight: 500;
         }
-
-        /* --- Flash Messages (Toast-like) --- */
         .toast-container {
             position: fixed;
-            top: 85px; /* Abaixo do topbar */
+            top: 85px;
             right: 20px;
             z-index: 9999;
             display: flex;
@@ -1052,7 +987,6 @@
             gap: 15px;
             width: 360px;
         }
-
         .toast {
             background-color: var(--card);
             color: var(--text);
@@ -1067,22 +1001,35 @@
             position: relative;
             overflow: hidden;
         }
-
-        .toast.success { border-left: 5px solid var(--success); }
-        .toast.danger { border-left: 5px solid var(--danger); }
-        .toast.warning { border-left: 5px solid var(--warning); }
-        .toast.info { border-left: 5px solid var(--info); }
-
+        .toast.success {
+            border-left: 5px solid var(--success);
+        }
+        .toast.danger {
+            border-left: 5px solid var(--danger);
+        }
+        .toast.warning {
+            border-left: 5px solid var(--warning);
+        }
+        .toast.info {
+            border-left: 5px solid var(--info);
+        }
         .toast-icon {
             font-size: 1.5rem;
             flex-shrink: 0;
             margin-top: 2px;
         }
-        .toast.success .toast-icon { color: var(--success); }
-        .toast.danger .toast-icon { color: var(--danger); }
-        .toast.warning .toast-icon { color: var(--warning); }
-        .toast.info .toast-icon { color: var(--info); }
-
+        .toast.success .toast-icon {
+            color: var(--success);
+        }
+        .toast.danger .toast-icon {
+            color: var(--danger);
+        }
+        .toast.warning .toast-icon {
+            color: var(--warning);
+        }
+        .toast.info .toast-icon {
+            color: var(--info);
+        }
         .toast-content {
             flex-grow: 1;
         }
@@ -1098,7 +1045,6 @@
             color: var(--muted);
             line-height: 1.4;
         }
-
         .toast-close {
             background: none;
             border: none;
@@ -1115,7 +1061,6 @@
             opacity: 1;
             color: var(--text);
         }
-
         .toast-progress {
             position: absolute;
             bottom: 0;
@@ -1124,11 +1069,18 @@
             width: 100%;
             animation: toast-progress-bar 5s linear forwards;
         }
-        .toast.success .toast-progress { background-color: var(--success); }
-        .toast.danger .toast-progress { background-color: var(--danger); }
-        .toast.warning .toast-progress { background-color: var(--warning); }
-        .toast.info .toast-progress { background-color: var(--info); }
-
+        .toast.success .toast-progress {
+            background-color: var(--success);
+        }
+        .toast.danger .toast-progress {
+            background-color: var(--danger);
+        }
+        .toast.warning .toast-progress {
+            background-color: var(--warning);
+        }
+        .toast.info .toast-progress {
+            background-color: var(--info);
+        }
         @keyframes toast-slide-in {
             from {
                 opacity: 0;
@@ -1139,7 +1091,6 @@
                 transform: translateX(0);
             }
         }
-
         @keyframes toast-fade-out {
             from {
                 opacity: 1;
@@ -1153,13 +1104,10 @@
         .toast.fade-out {
             animation: toast-fade-out 0.4s ease-in forwards;
         }
-
         @keyframes toast-progress-bar {
             from { width: 100%; }
             to { width: 0%; }
         }
-
-        /* --- Responsive --- */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
         span.btn-text-desktop { display: none; }
@@ -1220,8 +1168,12 @@
         #patient-steps-modal {
             background: var(--card);
             border-radius: 24px;
-            width: min(95vw, 1200px);
-            max-height: 90vh;
+            width: 80vw; /* 80% da largura da viewport */
+            height: 80vh; /* 80% da altura da viewport */
+            max-width: 1400px; /* Largura máxima para telas muito grandes */
+            max-height: 900px; /* Altura máxima para telas muito altas */
+            min-width: 800px; /* Largura mínima para telas pequenas */
+            min-height: 600px; /* Altura mínima para telas pequenas */
             overflow: hidden;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
             transform: scale(0.9) translateY(30px);
@@ -1239,9 +1191,11 @@
         .modern-modal-header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             color: white;
-            padding: 2rem;
+            padding: 1.5rem 2rem;
+            height: 110px;
             position: relative;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .modern-modal-header::before {
@@ -1317,9 +1271,9 @@
         /* Conteúdo da modal */
         .modern-modal-body {
             flex: 1;
-            overflow-y: auto;
-            padding: 2rem;
-            background: var(--bg);
+            height: 540px; /* Altura aumentada para evitar scroll */
+            overflow: hidden;
+            background: var(--card);
         }
 
         .modern-section {
@@ -1344,18 +1298,17 @@
 
         .section-card {
             background: var(--card);
-            border-radius: 16px;
             padding: 2rem;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding-top: 0rem;
+            height: 100%;
+            overflow: hidden;
         }
 
         .section-header {
             display: flex;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -1381,17 +1334,38 @@
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
+            gap: 1.5rem; /* Gap aumentado */
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.5rem; /* Gap aumentado */
         }
 
         .form-group.full-width {
             grid-column: 1 / -1;
+        }
+
+        /* Layout específico para dados pessoais */
+        .personal-data-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Primeira linha: Nome 80% + Gênero 20% */
+        .personal-row-1 {
+            display: grid;
+            grid-template-columns: 4fr 1fr; /* 80% + 20% */
+            gap: 1.5rem;
+        }
+
+        /* Segunda linha: 3 campos iguais */
+        .personal-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* 33.33% cada */
+            gap: 1.5rem;
         }
 
         .form-label {
@@ -1444,21 +1418,28 @@
 
         /* Footer da modal */
         .modern-modal-footer {
-            padding: 1.5rem 2rem;
-            background: var(--card);
-            border-top: 1px solid var(--border-color);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            justify-content: flex-end;
             gap: 1rem;
+            padding: 0.75rem;
+            background: var(--bg);
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            width: 100%;
+            position: absolute;
+            bottom: 0px;
+            right: 0px;
         }
 
         .progress-indicator {
             display: flex;
+            justify-content: center;
             align-items: center;
             gap: 0.5rem;
             color: var(--muted);
             font-size: 0.9rem;
+            padding: 1rem;
+            padding-bottom: 0.5rem;
         }
 
         .progress-dots {
@@ -1510,7 +1491,7 @@
         }
 
         .modern-btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            background: var(--primary);
             color: white;
             box-shadow: 0 4px 15px rgba(var(--primary-rgb, 85, 135, 194), 0.3);
         }
@@ -1521,16 +1502,31 @@
         }
 
         /* Responsividade */
+        @media (max-width: 1200px) {
+            #patient-steps-modal {
+                width: 95vw;
+                height: 85vh;
+            }
+            
+            .modern-modal-body {
+                height: calc(85vh - 200px); /* Ajustar conforme altura do header + footer */
+            }
+        }
+        
         @media (max-width: 768px) {
             #patient-steps-modal {
                 width: 100vw;
                 height: 100vh;
-                max-height: 100vh;
                 border-radius: 0;
+            }
+            
+            .modern-modal-body {
+                height: calc(100vh - 200px); /* Ajustar conforme altura do header + footer */
             }
 
             .modern-modal-header {
                 padding: 1.5rem;
+                height: 100px;
             }
 
             .modal-title-text h2 {
@@ -1555,8 +1551,23 @@
                 gap: 1rem;
             }
 
+            /* Layout responsivo para dados pessoais em tablets */
+            .personal-row-1 {
+                grid-template-columns: 3fr 1fr; /* Nome um pouco menor, gênero maior */
+            }
+
+            .personal-row-2 {
+                grid-template-columns: 1fr 1fr; /* Apenas 2 colunas em tablets */
+                grid-template-rows: auto auto; /* CPF e RG na primeira linha, Data na segunda */
+            }
+
+            .personal-row-2 .form-group:nth-child(3) {
+                grid-column: 1 / -1; /* Data de nascimento ocupa toda a largura */
+            }
+
             .section-card {
                 padding: 1.5rem;
+                padding-top: 0rem;
             }
 
             .modern-modal-footer {
@@ -2210,14 +2221,6 @@
                 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
         }
 
-        /* Indicador de progresso mais elegante e explícito */
-        .progress-indicator {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
         .progress-steps {
             display: flex;
             align-items: center;
@@ -2456,6 +2459,204 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* === DROPDOWN CUSTOMIZADO MODERNO === */
+        .custom-select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .custom-select {
+            position: relative;
+            width: 100%;
+            user-select: none;
+        }
+
+        .custom-select-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 50px;
+            box-sizing: border-box;
+        }
+
+        .custom-select-trigger:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(85, 135, 194, 0.15);
+        }
+
+        .custom-select.open .custom-select-trigger {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        .custom-select-value {
+            font-size: 0.95rem;
+            color: var(--text);
+            flex: 1;
+            text-align: left;
+        }
+
+        .custom-select-value.placeholder {
+            color: var(--muted);
+        }
+
+        .custom-select-arrow {
+            font-size: 0.8rem;
+            color: var(--muted);
+            transition: transform 0.3s ease;
+            margin-left: 0.5rem;
+        }
+
+        .custom-select.open .custom-select-arrow {
+            transform: rotate(180deg);
+            color: var(--primary);
+        }
+
+        .custom-select-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--card);
+            border: 2px solid var(--primary);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            z-index: 1000;
+            max-height: 140px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .custom-select.open .custom-select-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .custom-select-option {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .custom-select-option:last-child {
+            border-bottom: none;
+        }
+
+        .custom-select-option:hover {
+            background: linear-gradient(135deg, var(--primary-light) 0%, color-mix(in srgb, var(--primary) 10%, transparent) 100%);
+            color: var(--primary);
+        }
+
+        .custom-select-option.selected {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+        }
+
+        .custom-select-option.selected:hover {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+        }
+
+        .option-icon {
+            margin-right: 0.75rem;
+            font-size: 0.9rem;
+            width: 16px;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        .custom-select-option.selected .option-icon {
+            opacity: 1;
+        }
+
+        .custom-select-option span {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* Scrollbar para as opções */
+        .custom-select-options::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-select-options::-webkit-scrollbar-track {
+            background: var(--bg);
+            border-radius: 3px;
+        }
+
+        .custom-select-options::-webkit-scrollbar-thumb {
+            background: var(--muted);
+            border-radius: 3px;
+        }
+
+        .custom-select-options::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Estado de foco para acessibilidade */
+        .custom-select-trigger:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+        }
+
+        .custom-select-option:focus {
+            outline: none;
+            background: linear-gradient(135deg, var(--primary-light) 0%, color-mix(in srgb, var(--primary) 10%, transparent) 100%);
+            color: var(--primary);
+        }
+
+        /* Animação suave para aparecer */
+        @keyframes dropdownSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .custom-select.open .custom-select-options {
+            animation: dropdownSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .custom-select-trigger {
+                padding: 0.65rem 0.85rem;
+                min-height: 46px;
+            }
+            
+            .custom-select-option {
+                padding: 0.65rem 0.85rem;
+            }
+            
+            .option-icon {
+                margin-right: 0.6rem;
+            }
+        }
+
+        /* Dark mode */
+        [data-theme="dark"] .custom-select-options {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -2487,7 +2688,7 @@
                         <input type="text" id="searchInput" name="search" placeholder="Buscar paciente..." class="search-input" value="{{ search_query or '' }}">
                         <button type="submit" class="search-button"><i class="fas fa-search"></i></button>
                     </form>
-                    <button id="add-patient-btn" class="btn btn-primary" type="button" onclick="openPatientStepsModal()">
+                    <button id="add-patient-btn" class="btn btn-primary" type="button" onclick="openPatientModal()">
                         <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Paciente</span>
                     </button>
                 </div>
@@ -2530,7 +2731,36 @@
                     </button>
                 </div>
             </div>
-
+            
+            <div class="progress-indicator">
+                <div class="progress-steps">
+                    <div class="progress-step active" data-section="personal">
+                        <div class="progress-step-circle">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span class="progress-step-label">Dados Pessoais</span>
+                    </div>
+                    <div class="progress-step" data-section="contact">
+                        <div class="progress-step-circle">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <span class="progress-step-label">Contato</span>
+                    </div>
+                    <div class="progress-step" data-section="address">
+                        <div class="progress-step-circle">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <span class="progress-step-label">Endereço</span>
+                    </div>
+                    <div class="progress-step" data-section="medical">
+                        <div class="progress-step-circle">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <span class="progress-step-label">Médico</span>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Formulário -->
             <form id="steps-patient-form" class="patient-form" action="{{ url_for('adicionar_paciente') }}" method="post">
                 <div class="modern-modal-body">
@@ -2538,49 +2768,77 @@
                     <!-- Seção: Dados Pessoais -->
                     <div class="modern-section active" data-section="personal">
                         <div class="section-card">
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-user"></i>
+                            
+                            <div class="section-header"></div>
+
+                            <div class="personal-data-grid">
+                                <!-- Primeira linha: Nome (80%) + Gênero (20%) -->
+                                <div class="personal-row-1">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            Nome Completo <span class="required">*</span>
+                                        </label>
+                                        <input type="text" id="steps-nome" name="nome" class="form-input" placeholder="Digite o nome completo" required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label class="form-label">Gênero</label>
+                                        <div class="custom-select-wrapper">
+                                            <div class="custom-select" id="steps-genero-dropdown">
+                                                <div class="custom-select-trigger">
+                                                    <span class="custom-select-value" data-default="Selecionar">Selecionar</span>
+                                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                                </div>
+                                                <div class="custom-select-options">
+                                                    <div class="custom-select-option" data-value="">
+                                                        <i class="fas fa-user-question option-icon"></i>
+                                                        <span>Selecionar</span>
+                                                    </div>
+                                                    <div class="custom-select-option" data-value="Masculino">
+                                                        <i class="fas fa-mars option-icon"></i>
+                                                        <span>Masculino</span>
+                                                    </div>
+                                                    <div class="custom-select-option" data-value="Feminino">
+                                                        <i class="fas fa-venus option-icon"></i>
+                                                        <span>Feminino</span>
+                                                    </div>
+                                                    <div class="custom-select-option" data-value="Outro">
+                                                        <i class="fas fa-genderless option-icon"></i>
+                                                        <span>Outro</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" id="steps-genero" name="genero" value="">
+                                        </div>
+                                    </div>
                                 </div>
-                                <h3 class="section-title">Dados Pessoais</h3>
-                            </div>
-                            <div class="form-grid">
-                                <div class="form-group full-width">
-                                    <label class="form-label">
-                                        Nome Completo <span class="required">*</span>
-                                    </label>
-                                    <input type="text" id="steps-nome" name="nome" class="form-input" placeholder="Digite o nome completo" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">
-                                        CPF <span class="required">*</span>
-                                    </label>
-                                    <input type="text" id="steps-cpf" name="cpf" class="form-input" placeholder="000.000.000-00" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">RG</label>
-                                    <input type="text" id="steps-rg" name="rg" class="form-input" placeholder="00.000.000-0">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">
-                                        Data de Nascimento <span class="required">*</span>
-                                    </label>
-                                    <input type="text" 
-                                            id="steps-data_nascimento_display" 
-                                            placeholder="DD/MM/AAAA" 
-                                            maxlength="10" 
-                                            class="form-input date-input-display"
-                                            required>
-                                    <input type="hidden" id="steps-data_nascimento" name="data_nascimento" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Gênero</label>
-                                    <select id="steps-genero" name="genero" class="form-input">
-                                        <option value="">Selecionar</option>
-                                        <option value="Masculino">Masculino</option>
-                                        <option value="Feminino">Feminino</option>
-                                        <option value="Outro">Outro</option>
-                                    </select>
+
+                                <!-- Segunda linha: CPF + RG + Data de Nascimento (33.33% cada) -->
+                                <div class="personal-row-2">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            CPF <span class="required">*</span>
+                                        </label>
+                                        <input type="text" id="steps-cpf" name="cpf" class="form-input" placeholder="000.000.000-00" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">RG</label>
+                                        <input type="text" id="steps-rg" name="rg" class="form-input" placeholder="00.000.000-0">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            Data de Nascimento <span class="required">*</span>
+                                        </label>
+                                        <input type="text" 
+                                                id="steps-data_nascimento_display" 
+                                                placeholder="DD/MM/AAAA" 
+                                                maxlength="10" 
+                                                class="form-input date-input-display"
+                                                required>
+                                        <input type="hidden" id="steps-data_nascimento" name="data_nascimento" required>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2589,17 +2847,15 @@
                     <!-- Seção: Contato -->
                     <div class="modern-section" data-section="contact">
                         <div class="section-card">
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-phone"></i>
-                                </div>
-                                <h3 class="section-title">Informações de Contato</h3>
-                            </div>
+
+                            <div class="section-header"></div>
+
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label class="form-label">Telefone Principal</label>
                                     <input type="tel" id="steps-telefone" name="telefone" class="form-input" placeholder="(00) 00000-0000">
                                 </div>
+
                                 <div class="form-group">
                                     <label class="form-label">E-mail</label>
                                     <input type="email" id="steps-email" name="email" class="form-input" placeholder="email@exemplo.com">
@@ -2611,45 +2867,49 @@
                     <!-- Seção: Endereço -->
                     <div class="modern-section" data-section="address">
                         <div class="section-card">
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                </div>
-                                <h3 class="section-title">Endereço Residencial</h3>
-                            </div>
+
+                            <div class="section-header"></div>
+
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label class="form-label">CEP</label>
                                     <input type="text" id="steps-cep" name="cep" class="form-input" placeholder="00000-000">
                                 </div>
+
                                 <div class="form-group">
                                     <label class="form-label">
                                         Cidade <span class="required">*</span>
                                     </label>
                                     <input type="text" id="steps-cidade" name="cidade" class="form-input" placeholder="Digite a cidade" required>
                                 </div>
+
                                 <div class="form-group">
                                     <label class="form-label">
                                         Estado <span class="required">*</span>
                                     </label>
                                     <input type="text" id="steps-estado" name="estado" class="form-input" placeholder="SP" maxlength="2" required>
                                 </div>
+
                                 <div class="form-group full-width">
                                     <label class="form-label">Logradouro</label>
                                     <input type="text" id="steps-logradouro" name="logradouro" class="form-input" placeholder="Rua, Avenida, etc.">
                                 </div>
+
                                 <div class="form-group">
                                     <label class="form-label">Número</label>
                                     <input type="text" id="steps-numero" name="numero" class="form-input" placeholder="123">
                                 </div>
+
                                 <div class="form-group">
                                     <label class="form-label">Bairro</label>
                                     <input type="text" id="steps-bairro" name="bairro" class="form-input" placeholder="Nome do bairro">
                                 </div>
+
                                 <div class="form-group full-width">
                                     <label class="form-label">Complemento</label>
                                     <input type="text" id="steps-complemento" name="complemento" class="form-input" placeholder="Apartamento, sala, etc.">
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -2657,42 +2917,61 @@
                     <!-- Seção: Informações Médicas -->
                     <div class="modern-section" data-section="medical">
                         <div class="section-card">
-                            <div class="section-header">
-                                <div class="section-icon">
-                                    <i class="fas fa-heartbeat"></i>
-                                </div>
-                                <h3 class="section-title">Informações Médicas e Responsáveis</h3>
-                            </div>
+
+                            <div class="section-header"></div>
+
                             <div class="form-grid">
+
                                 <div class="form-group full-width">
                                     <label class="form-label">Convênio</label>
-                                    <select id="steps-convenio_id" name="convenio_id" class="form-input">
-                                        <option value="">Particular</option>
-                                        {% for convenio in convenios %}
-                                        <option value="{{ convenio.id }}">{{ convenio.nome }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <div class="custom-select-wrapper">
+                                        <div class="custom-select" id="steps-convenio-dropdown">
+                                            <div class="custom-select-trigger">
+                                                <span class="custom-select-value" data-default="Particular">Particular</span>
+                                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                            </div>
+                                            <div class="custom-select-options">
+                                                <div class="custom-select-option" data-value="">
+                                                    <i class="fas fa-user option-icon"></i>
+                                                    <span>Particular</span>
+                                                </div>
+                                                {% for convenio in convenios %}
+                                                <div class="custom-select-option" data-value="{{ convenio.id }}">
+                                                    <i class="fas fa-hospital option-icon"></i>
+                                                    <span>{{ convenio.nome }}</span>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <input type="hidden" id="steps-convenio_id" name="convenio_id" value="">
+                                    </div>
                                 </div>
+
                                 <div class="form-group full-width">
                                     <label class="form-label">Observações Médicas</label>
                                     <textarea id="steps-observacoes" name="observacoes" class="form-input" rows="3" placeholder="Alergias, medicamentos, observações importantes..."></textarea>
                                 </div>
+
                                 <div class="form-group">
                                     <label class="form-label">Nome do Responsável 1</label>
                                     <input type="text" id="steps-responsavel1_nome" name="responsavel1_nome" class="form-input" placeholder="Nome completo">
                                 </div>
+
                                 <div class="form-group">
                                     <label class="form-label">Telefone do Responsável 1</label>
                                     <input type="tel" id="steps-responsavel1_telefone" name="responsavel1_telefone" class="form-input" placeholder="(00) 00000-0000">
                                 </div>
+
                                 <div class="form-group">
                                     <label class="form-label">Nome do Responsável 2</label>
                                     <input type="text" id="steps-responsavel2_nome" name="responsavel2_nome" class="form-input" placeholder="Nome completo">
                                 </div>
+
                                 <div class="form-group">
                                     <label class="form-label">Telefone do Responsável 2</label>
                                     <input type="tel" id="steps-responsavel2_telefone" name="responsavel2_telefone" class="form-input" placeholder="(00) 00000-0000">
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -2701,39 +2980,7 @@
 
                 <!-- Footer Moderno -->
                 <div class="modern-modal-footer">
-                    <div class="progress-indicator">
-                        <div class="progress-steps">
-                            <div class="progress-step active" data-section="personal">
-                                <div class="progress-step-circle">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <span class="progress-step-label">Dados Pessoais</span>
-                            </div>
-                            <div class="progress-step" data-section="contact">
-                                <div class="progress-step-circle">
-                                    <i class="fas fa-phone"></i>
-                                </div>
-                                <span class="progress-step-label">Contato</span>
-                            </div>
-                            <div class="progress-step" data-section="address">
-                                <div class="progress-step-circle">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                </div>
-                                <span class="progress-step-label">Endereço</span>
-                            </div>
-                            <div class="progress-step" data-section="medical">
-                                <div class="progress-step-circle">
-                                    <i class="fas fa-heartbeat"></i>
-                                </div>
-                                <span class="progress-step-label">Médico</span>
-                            </div>
-                        </div>
-                    </div>
                     <div class="modal-actions">
-                        <button type="button" class="modern-btn modern-btn-secondary steps-modal-close">
-                            <i class="fas fa-times"></i>
-                            Cancelar
-                        </button>
                         <button type="submit" class="modern-btn modern-btn-primary">
                             <i class="fas fa-save"></i>
                             Salvar Paciente
@@ -2745,239 +2992,328 @@
     </div>
 
     <script>
-        // Sistema de Navegação Moderna por Abas
-        class ModernPatientModal {
-            constructor() {
-                this.currentSection = 'personal';
-                this.modal = document.getElementById('patient-steps-modal-overlay');
-                this.form = document.getElementById('steps-patient-form');
-                this.sections = document.querySelectorAll('.modern-section');
-                this.progressSteps = document.querySelectorAll('.progress-step');
-                
-                this.initializeModal();
-                this.bindEvents();
-            }
+        let currentSection = 'personal';
+        let modal = null;
+        let form = null;
+        let sections = null;
+        let progressSteps = null;
 
-            initializeModal() {
-                // Configurar overlay para fechar ao clicar fora
-                this.modal.addEventListener('click', (e) => {
-                    if (e.target === this.modal) {
-                        this.closeModal();
-                    }
+        function initializePatientModal() {
+            modal = document.getElementById('patient-steps-modal-overlay');
+            form = document.getElementById('steps-patient-form');
+            sections = document.querySelectorAll('.modern-section');
+            progressSteps = document.querySelectorAll('.progress-step');
+            
+            if (!modal || !form) return;
+
+            document.querySelectorAll('.steps-modal-close').forEach(btn => {
+                btn.addEventListener('click', () => closePatientModal());
+            });
+
+            progressSteps.forEach(step => {
+                step.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = step.getAttribute('data-section');
+                    navigateToSection(section);
                 });
+            });
 
-                // Configurar botões de fechar
-                document.querySelectorAll('.steps-modal-close').forEach(btn => {
-                    btn.addEventListener('click', () => this.closeModal());
-                });
+            form.addEventListener('submit', (e) => {
+                handleFormSubmit(e);
+            });
 
-                // Configurar clique nos steps de progresso
-                this.progressSteps.forEach(step => {
-                    step.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const section = step.getAttribute('data-section');
-                        this.navigateToSection(section);
-                    });
-                });
+            initializeInputMasks();
+            initializeCustomDropdowns();
+        }
 
-                // Configurar envio do formulário
-                this.form.addEventListener('submit', (e) => {
-                    this.handleFormSubmit(e);
-                });
-            }
-
-            bindEvents() {
-                // Máscara para CPF
-                const cpfInput = document.getElementById('steps-cpf');
-                if (cpfInput) {
-                    cpfInput.addEventListener('input', (e) => {
-                        let value = e.target.value.replace(/\D/g, '');
-                        value = value.replace(/(\d{3})(\d)/, '$1.$2');
-                        value = value.replace(/(\d{3})(\d)/, '$1.$2');
-                        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-                        e.target.value = value;
-                    });
-                }
-
-                // Máscara para telefone
-                const phoneInputs = document.querySelectorAll('input[type="tel"]');
-                phoneInputs.forEach(input => {
-                    input.addEventListener('input', (e) => {
-                        let value = e.target.value.replace(/\D/g, '');
-                        if (value.length <= 10) {
-                            value = value.replace(/(\d{2})(\d)/, '($1) $2');
-                            value = value.replace(/(\d{4})(\d)/, '$1-$2');
-                        } else {
-                            value = value.replace(/(\d{2})(\d)/, '($1) $2');
-                            value = value.replace(/(\d{5})(\d)/, '$1-$2');
-                        }
-                        e.target.value = value;
-                    });
-                });
-
-                // Máscara para data
-                const dateDisplay = document.getElementById('steps-data_nascimento_display');
-                const dateHidden = document.getElementById('steps-data_nascimento');
-                if (dateDisplay && dateHidden) {
-                    dateDisplay.addEventListener('input', (e) => {
-                        let value = e.target.value.replace(/\D/g, '');
-                        value = value.replace(/(\d{2})(\d)/, '$1/$2');
-                        value = value.replace(/(\d{2})(\d)/, '$1/$2');
-                        e.target.value = value;
-
-                        // Converter para formato ISO para o input hidden
-                        if (value.length === 10) {
-                            const [day, month, year] = value.split('/');
-                            if (day && month && year && year.length === 4) {
-                                dateHidden.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                            }
-                        }
-                    });
-                }
-
-                // Máscara para CEP
-                const cepInput = document.getElementById('steps-cep');
-                if (cepInput) {
-                    cepInput.addEventListener('input', (e) => {
-                        let value = e.target.value.replace(/\D/g, '');
-                        value = value.replace(/(\d{5})(\d)/, '$1-$2');
-                        e.target.value = value;
-                    });
-                }
-            }
-
-            navigateToSection(sectionName) {
-                // Atualizar seção atual
-                this.currentSection = sectionName;
-
-                // Atualizar seções
-                this.sections.forEach(section => {
-                    section.classList.toggle('active', section.getAttribute('data-section') === sectionName);
-                });
-
-                // Atualizar steps de progresso
-                this.progressSteps.forEach(step => {
-                    step.classList.toggle('active', step.getAttribute('data-section') === sectionName);
-                });
-
-                // Atualizar linha de progresso
-                this.updateProgressLine(sectionName);
-            }
-
-            updateProgressLine(currentSection) {
-                const progressLine = document.querySelector('.progress-steps::after');
-                const sectionOrder = ['personal', 'contact', 'address', 'medical'];
-                const currentIndex = sectionOrder.indexOf(currentSection);
-                let progressPercentage = 0;
-                if (currentIndex === 0) {
-                    progressPercentage = 0;
-                } else if (currentIndex === 1) {
-                    progressPercentage = 25;
-                } else if (currentIndex === 2) {
-                    progressPercentage = 50; // 25% a mais na terceira
-                } else if (currentIndex === 3) {
-                    progressPercentage = 80; // 30% a mais na última
-                }
+        function initializeCustomDropdowns() {
+            const customSelects = document.querySelectorAll('.custom-select');
+            
+            customSelects.forEach(customSelect => {
+                // Remover event listeners existentes para evitar duplicatas
+                const existingTrigger = customSelect.querySelector('.custom-select-trigger');
+                if (existingTrigger._initialized) return;
                 
-                // Criar ou atualizar o estilo da linha de progresso
-                const style = document.getElementById('progress-line-style') || document.createElement('style');
-                style.id = 'progress-line-style';
-                style.textContent = `
-                    .progress-steps::after {
-                        width: ${progressPercentage}% !important;
-                    }
-                `;
+                const trigger = customSelect.querySelector('.custom-select-trigger');
+                const options = customSelect.querySelector('.custom-select-options');
+                const valueSpan = customSelect.querySelector('.custom-select-value');
+                const hiddenInput = customSelect.parentElement.querySelector('input[type="hidden"]');
+                const defaultText = valueSpan.getAttribute('data-default');
                 
-                if (!document.getElementById('progress-line-style')) {
-                    document.head.appendChild(style);
-                }
-            }
-
-            openModal(patientData = null) {
-                console.log('Abrindo modal...');
-                
-                // Garantir que a modal esteja completamente limpa antes de abrir
-                this.modal.style.display = 'none';
-                this.modal.style.opacity = '0';
-                this.modal.classList.remove('visible');
-                
-                // Remover qualquer backdrop existente primeiro
-                removeModalBackdrop('patient-modal-backdrop');
-                
-                if (patientData) {
-                    this.populateForm(patientData);
-                    document.getElementById('modal-dynamic-title').textContent = 'Editar Paciente';
-                    document.querySelector('.modal-subtitle').textContent = 'Atualize as informações do paciente';
-                } else {
-                    this.clearForm();
-                    document.getElementById('modal-dynamic-title').textContent = 'Novo Paciente';
-                    document.querySelector('.modal-subtitle').textContent = 'Preencha as informações do paciente';
-                }
-
-                // Resetar para primeira seção
-                this.navigateToSection('personal');
-                
-                // Aguardar um pouco para garantir que a limpeza foi concluída
-                setTimeout(() => {
-                    console.log('Criando backdrop...');
+                // Abrir/fechar dropdown
+                trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     
-                    // Criar backdrop centralizado
-                    createModalBackdrop({
-                        id: 'patient-modal-backdrop',
-                        onClick: (e) => {
-                            if (e.target.id === 'patient-modal-backdrop') {
-                                this.closeModal();
-                            }
+                    // Fechar outros dropdowns
+                    customSelects.forEach(otherSelect => {
+                        if (otherSelect !== customSelect) {
+                            otherSelect.classList.remove('open');
                         }
                     });
-
-                    // Aguardar um frame para garantir que o backdrop foi criado
-                    requestAnimationFrame(() => {
-                        console.log('Mostrando modal...');
-                        
-                        // Mostrar modal
-                        this.modal.style.display = 'flex';
-                        
-                        // Aguardar outro frame para permitir que o display seja aplicado
-                        requestAnimationFrame(() => {
-                            this.modal.style.opacity = '1';
-                            this.modal.classList.add('visible');
-                            
-                            console.log('Modal aberta com sucesso');
-                            
-                            // Focar no primeiro campo
-                            setTimeout(() => {
-                                const firstInput = document.getElementById('steps-nome');
-                                if (firstInput) firstInput.focus();
-                            }, 100);
-                        });
+                    
+                    customSelect.classList.toggle('open');
+                });
+                
+                trigger._initialized = true;
+                
+                // Selecionar opção
+                options.addEventListener('click', (e) => {
+                    const option = e.target.closest('.custom-select-option');
+                    if (!option) return;
+                    
+                    const value = option.getAttribute('data-value');
+                    
+                    // Atualizar valor
+                    hiddenInput.value = value;
+                    // Usar innerHTML para preservar ícones
+                    valueSpan.innerHTML = option.innerHTML;
+                    
+                    // Atualizar classes visuais
+                    if (value === '') {
+                        valueSpan.classList.add('placeholder');
+                    } else {
+                        valueSpan.classList.remove('placeholder');
+                    }
+                    
+                    // Atualizar opções selecionadas
+                    options.querySelectorAll('.custom-select-option').forEach(opt => {
+                        opt.classList.remove('selected');
                     });
-                }, 50); // Pequeno delay para garantir limpeza
+                    option.classList.add('selected');
+                    
+                    // Fechar dropdown
+                    customSelect.classList.remove('open');
+                    
+                    e.stopPropagation();
+                });
+                
+                // Suporte a teclado
+                trigger.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        trigger.click();
+                    } else if (e.key === 'Escape') {
+                        customSelect.classList.remove('open');
+                    }
+                });
+                
+                // Navegação por teclado nas opções
+                options.addEventListener('keydown', (e) => {
+                    const optionsList = options.querySelectorAll('.custom-select-option');
+                    const currentIndex = Array.from(optionsList).findIndex(opt => opt.classList.contains('focused'));
+                    
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const nextIndex = currentIndex < optionsList.length - 1 ? currentIndex + 1 : 0;
+                        optionsList.forEach(opt => opt.classList.remove('focused'));
+                        optionsList[nextIndex].classList.add('focused');
+                        optionsList[nextIndex].focus();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const prevIndex = currentIndex > 0 ? currentIndex - 1 : optionsList.length - 1;
+                        optionsList.forEach(opt => opt.classList.remove('focused'));
+                        optionsList[prevIndex].classList.add('focused');
+                        optionsList[prevIndex].focus();
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (currentIndex >= 0) {
+                            optionsList[currentIndex].click();
+                        }
+                    }
+                });
+            });
+            
+            // Fechar dropdown ao clicar fora (adicionar apenas uma vez)
+            if (!document._dropdownClickListenerAdded) {
+                document.addEventListener('click', () => {
+                    customSelects.forEach(customSelect => {
+                        customSelect.classList.remove('open');
+                    });
+                });
+                document._dropdownClickListenerAdded = true;
             }
+        }
 
-            closeModal() {
-                console.log('Fechando modal...');
-                
-                // 1. Remover classe visible para iniciar animação de saída
-                this.modal.classList.remove('visible');
-                
-                // 2. Reset explícito da opacidade
-                this.modal.style.opacity = '0';
-                
-                // 3. Ocultar modal imediatamente
-                setTimeout(() => {
-                    this.modal.style.display = 'none';
-                    this.clearForm();
-                }, 300);
-                
-                // 4. Remover backdrop centralizado em paralelo
-                removeModalBackdrop('patient-modal-backdrop', () => {
-                    console.log('Modal fechada e backdrop removido');
+        function initializeInputMasks() {
+            const cpfInput = document.getElementById('steps-cpf');
+            if (cpfInput) {
+                cpfInput.addEventListener('input', (e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                    e.target.value = value;
                 });
             }
 
-            populateForm(patientData) {
-                // Preencher campos do formulário com dados do paciente
+            // Máscara para telefone
+            const phoneInputs = document.querySelectorAll('input[type="tel"]');
+            phoneInputs.forEach(input => {
+                input.addEventListener('input', (e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 10) {
+                        value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+                    } else {
+                        value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                        value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                    }
+                    e.target.value = value;
+                });
+            });
+
+            // Máscara para data
+            const dateDisplay = document.getElementById('steps-data_nascimento_display');
+            const dateHidden = document.getElementById('steps-data_nascimento');
+            if (dateDisplay && dateHidden) {
+                dateDisplay.addEventListener('input', (e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    value = value.replace(/(\d{2})(\d)/, '$1/$2');
+                    value = value.replace(/(\d{2})(\d)/, '$1/$2');
+                    e.target.value = value;
+
+                    // Converter para formato ISO para o input hidden
+                    if (value.length === 10) {
+                        const [day, month, year] = value.split('/');
+                        if (day && month && year && year.length === 4) {
+                            // Validar se é uma data válida
+                            const dayNum = parseInt(day);
+                            const monthNum = parseInt(month);
+                            const yearNum = parseInt(year);
+                            
+                            if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 1900) {
+                                const testDate = new Date(yearNum, monthNum - 1, dayNum);
+                                // Verificar se a data é válida (ex: 31/02 não é válido)
+                                if (testDate.getDate() === dayNum && testDate.getMonth() === monthNum - 1) {
+                                    dateHidden.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                                    e.target.classList.remove('error');
+                                    e.target.classList.add('success');
+                                } else {
+                                    e.target.classList.add('error');
+                                    e.target.classList.remove('success');
+                                }
+                            } else {
+                                e.target.classList.add('error');
+                                e.target.classList.remove('success');
+                            }
+                        }
+                    } else {
+                        e.target.classList.remove('error', 'success');
+                        dateHidden.value = '';
+                    }
+                });
+            }
+
+            // Máscara para CEP
+            const cepInput = document.getElementById('steps-cep');
+            if (cepInput) {
+                cepInput.addEventListener('input', (e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                    e.target.value = value;
+                });
+            }
+        }
+
+        function navigateToSection(sectionName) {
+            currentSection = sectionName;
+
+            sections.forEach(section => {
+                section.classList.toggle('active', section.getAttribute('data-section') === sectionName);
+            });
+
+            progressSteps.forEach(step => {
+                step.classList.toggle('active', step.getAttribute('data-section') === sectionName);
+            });
+
+            updateProgressLine(sectionName);
+        }
+
+        function updateProgressLine(currentSection) {
+            const progressLine = document.querySelector('.progress-steps::after');
+            const sectionOrder = ['personal', 'contact', 'address', 'medical'];
+            const currentIndex = sectionOrder.indexOf(currentSection);
+            let progressPercentage = 0;
+            if (currentIndex === 0) {
+                progressPercentage = 0;
+            } else if (currentIndex === 1) {
+                progressPercentage = 25;
+            } else if (currentIndex === 2) {
+                progressPercentage = 50; // 25% a mais na terceira
+            } else if (currentIndex === 3) {
+                progressPercentage = 80; // 30% a mais na última
+            }
+            
+            const style = document.getElementById('progress-line-style') || document.createElement('style');
+            style.id = 'progress-line-style';
+            style.textContent = `
+                .progress-steps::after {
+                    width: ${progressPercentage}% !important;
+                }
+            `;
+            
+            if (!document.getElementById('progress-line-style')) {
+                document.head.appendChild(style);
+            }
+        }
+
+        function openPatientModal(patientData = null) {
+            initializeCustomDropdowns();
+            
+            if (patientData) {
+                setTimeout(() => {
+                    populateForm(patientData);
+                }, 50);
+                document.getElementById('modal-dynamic-title').textContent = 'Editar Paciente';
+                document.querySelector('.modal-subtitle').textContent = 'Atualize as informações do paciente';
+            } else {
+                clearForm();
+                document.getElementById('modal-dynamic-title').textContent = 'Novo Paciente';
+                document.querySelector('.modal-subtitle').textContent = 'Preencha as informações do paciente';
+            }
+
+            navigateToSection('personal');
+            
+            openModal({
+                modalSelector: '#patient-steps-modal-overlay',
+                backdropId: 'patient-modal-backdrop',
+                onOpen: () => {
+                    setTimeout(() => {
+                        const firstInput = document.getElementById('steps-nome');
+                        if (firstInput) firstInput.focus();
+                    }, 100);
+                },
+                onBackdropClick: (e) => {
+                    if (e.target.id === 'patient-modal-backdrop') {
+                        closePatientModal();
+                    }
+                }
+            });
+        }
+
+        function closePatientModal() {
+            closeModal({
+                modalSelector: '#patient-steps-modal-overlay',
+                backdropId: 'patient-modal-backdrop',
+                onClose: () => {
+                    clearForm();
+                }
+            });
+        }
+
+        function populateForm(patientData) {
+                const fieldMappings = {
+                    'telefone': 'contato_telefone',
+                    'email': 'contato_email',
+                    'cep': ['endereco', 'cep'],
+                    'cidade': ['endereco', 'cidade'],
+                    'estado': ['endereco', 'estado'],
+                    'logradouro': ['endereco', 'logradouro'],
+                    'numero': ['endereco', 'numero'],
+                    'bairro': ['endereco', 'bairro'],
+                    'complemento': ['endereco', 'complemento']
+                };
+                
                 const fields = [
                     'nome', 'cpf', 'rg', 'genero', 'telefone', 'email',
                     'cep', 'cidade', 'estado', 'logradouro', 'numero', 'bairro', 
@@ -2987,41 +3323,158 @@
                 ];
 
                 fields.forEach(field => {
-                    const input = document.getElementById(`steps-${field}`);
-                    if (input && patientData[field]) {
-                        input.value = patientData[field];
+                    if (field === 'genero') {
+                        if (patientData[field]) {
+                            const customSelect = document.getElementById('steps-genero-dropdown');
+                            const valueSpan = customSelect.querySelector('.custom-select-value');
+                            const hiddenInput = document.getElementById('steps-genero');
+                            const option = customSelect.querySelector(`.custom-select-option[data-value="${patientData[field]}"]`);
+                            
+                            if (option) {
+                                hiddenInput.value = patientData[field];
+                                // Usar innerHTML para preservar os ícones
+                                valueSpan.innerHTML = option.innerHTML;
+                                valueSpan.classList.remove('placeholder');
+                                
+                                // Atualizar visual das opções
+                                customSelect.querySelectorAll('.custom-select-option').forEach(opt => {
+                                    opt.classList.remove('selected');
+                                });
+                                option.classList.add('selected');
+                            }
+                        }
+                    } else if (field === 'convenio_id') {
+                        // Tratar dropdown customizado de convênio
+                        const customSelect = document.getElementById('steps-convenio-dropdown');
+                        const valueSpan = customSelect.querySelector('.custom-select-value');
+                        const hiddenInput = document.getElementById('steps-convenio_id');
+                        const targetValue = patientData[field] || '';
+                        const option = customSelect.querySelector(`.custom-select-option[data-value="${targetValue}"]`);
+                        
+                        if (option) {
+                            hiddenInput.value = targetValue;
+                            // Usar innerHTML para preservar os ícones
+                            valueSpan.innerHTML = option.innerHTML;
+                            
+                            if (targetValue === '') {
+                                valueSpan.classList.add('placeholder');
+                            } else {
+                                valueSpan.classList.remove('placeholder');
+                            }
+                            
+                            // Atualizar visual das opções
+                            customSelect.querySelectorAll('.custom-select-option').forEach(opt => {
+                                opt.classList.remove('selected');
+                            });
+                            option.classList.add('selected');
+                        }
+                    } else {
+                        const input = document.getElementById(`steps-${field}`);
+                        
+                        let fieldValue = null;
+                        if (fieldMappings[field]) {
+                            const mapping = fieldMappings[field];
+                            if (Array.isArray(mapping)) {
+                                fieldValue = patientData[mapping[0]] ? patientData[mapping[0]][mapping[1]] : null;
+                            } else {
+                                fieldValue = patientData[mapping];
+                            }
+                        } else {
+                            fieldValue = patientData[field];
+                        }
+                        
+                        if (input && fieldValue) {
+                            input.value = fieldValue;
+                        }
                     }
                 });
 
-                // Tratar data de nascimento especialmente
                 if (patientData.data_nascimento) {
                     const dateHidden = document.getElementById('steps-data_nascimento');
                     const dateDisplay = document.getElementById('steps-data_nascimento_display');
                     if (dateHidden && dateDisplay) {
                         dateHidden.value = patientData.data_nascimento;
-                        // Converter de ISO para DD/MM/AAAA
-                        const [year, month, day] = patientData.data_nascimento.split('-');
-                        dateDisplay.value = `${day}/${month}/${year}`;
+                        
+                        // Converter data para formato brasileiro (DD/MM/AAAA)
+                        let displayValue = '';
+                        try {
+                            // Se a data está em formato ISO (YYYY-MM-DD)
+                            if (patientData.data_nascimento.includes('-') && patientData.data_nascimento.length === 10) {
+                                const [year, month, day] = patientData.data_nascimento.split('-');
+                                displayValue = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+                            } 
+                            // Se a data é um objeto Date ou string que precisa ser convertida
+                            else {
+                                const date = new Date(patientData.data_nascimento);
+                                if (!isNaN(date.getTime())) {
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const year = date.getFullYear();
+                                    displayValue = `${day}/${month}/${year}`;
+                                    // Também atualize o campo hidden com formato correto
+                                    dateHidden.value = `${year}-${month}-${day}`;
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Erro ao formatar data:', error);
+                            displayValue = patientData.data_nascimento;
+                        }
+                        
+                        dateDisplay.value = displayValue;
                     }
                 }
 
-                // Atualizar action do formulário para edição
-                this.form.action = `/editar_paciente/${patientData.id}`;
-            }
+            form.action = `/pacientes/editar/${patientData.id}`;
+        }
 
-            clearForm() {
-                this.form.reset();
-                this.form.action = '{{ url_for("adicionar_paciente") }}';
-                
-                // Limpar campos específicos
-                const dateHidden = document.getElementById('steps-data_nascimento');
-                const dateDisplay = document.getElementById('steps-data_nascimento_display');
-                if (dateHidden) dateHidden.value = '';
-                if (dateDisplay) dateDisplay.value = '';
+        function clearForm() {
+            form.reset();
+            form.action = '{{ url_for("adicionar_paciente") }}';
+            
+            // Limpar campos específicos dessa desgraça
+            const dateHidden = document.getElementById('steps-data_nascimento');
+            const dateDisplay = document.getElementById('steps-data_nascimento_display');
+            if (dateHidden) dateHidden.value = '';
+            if (dateDisplay) dateDisplay.value = '';
+            
+            // Resetar dropdown customizado de gênero
+            const generoDropdown = document.getElementById('steps-genero-dropdown');
+            const generoValueSpan = generoDropdown.querySelector('.custom-select-value');
+            const generoHiddenInput = document.getElementById('steps-genero');
+            const generoDefaultText = generoValueSpan.getAttribute('data-default');
+            
+            generoHiddenInput.value = '';
+            generoValueSpan.textContent = generoDefaultText;
+            generoValueSpan.classList.add('placeholder');
+            
+            // Remover seleção visual
+            generoDropdown.querySelectorAll('.custom-select-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Resetar dropdown customizado de convênio
+            const convenioDropdown = document.getElementById('steps-convenio-dropdown');
+            const convenioValueSpan = convenioDropdown.querySelector('.custom-select-value');
+            const convenioHiddenInput = document.getElementById('steps-convenio_id');
+            
+            // Resetar para "Particular" (valor padrão)
+            convenioHiddenInput.value = '';
+            convenioValueSpan.innerHTML = '<i class="fas fa-hospital"></i> Particular';
+            convenioValueSpan.classList.remove('placeholder');
+            
+            // Remover seleção visual e marcar "Particular" como selecionado
+            convenioDropdown.querySelectorAll('.custom-select-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            const particularOption = convenioDropdown.querySelector('.custom-select-option[data-value=""]');
+            if (particularOption) {
+                particularOption.classList.add('selected');
             }
+        }
 
-            handleFormSubmit(e) {
-                // Validação básica
+        function handleFormSubmit(e) {
+                // Validação básica aprende café
                 const requiredFields = ['steps-nome', 'steps-cpf', 'steps-data_nascimento', 'steps-cidade', 'steps-estado'];
                 let isValid = true;
 
@@ -3031,7 +3484,7 @@
                         isValid = false;
                         field.classList.add('error');
                         
-                        // Remover classe de erro após um tempo
+                        // Remover classe de erro após um tempo pra n encher o saco
                         setTimeout(() => {
                             field.classList.remove('error');
                         }, 3000);
@@ -3044,18 +3497,15 @@
                     return;
                 }
 
-                // Se chegou até aqui, o formulário pode ser enviado
-                showToast('Salvando dados...', 'info');
-            }
+            // Se chegou até aqui, o formulário pode ser enviado
+            showToast('Salvando dados...', 'info');
         }
 
-        // Inicializar modal moderna
-        let modernPatientModal;
         document.addEventListener('DOMContentLoaded', function() {
-            modernPatientModal = new ModernPatientModal();
+            initializePatientModal();
         });
 
-        // === SISTEMA CENTRALIZADO DE GERENCIAMENTO DE BACKDROP ===
+        // === SISTEMA CENTRALIZADO DE GERENCIAMENTO DE BACKDROP (se alguém quebrar começa a rezar) ===
         
         /**
          * Função genérica para criar backdrop de modal
@@ -3066,6 +3516,7 @@
          * @param {Function} options.onClick - Função a ser executada no clique do backdrop
          * @param {boolean} options.closeOnClick - Se deve fechar ao clicar no backdrop (default: true)
          */
+
         function createModalBackdrop(options = {}) {
             const config = {
                 id: options.id || 'modal-backdrop',
@@ -3120,6 +3571,7 @@
          * @param {string} backdropId - ID do backdrop a ser removido (default: 'modal-backdrop')
          * @param {Function} onComplete - Callback executado após remoção
          */
+
         function removeModalBackdrop(backdropId = 'modal-backdrop', onComplete = null) {
             const backdrop = document.getElementById(backdropId);
             if (backdrop) {
@@ -3147,21 +3599,96 @@
         }
 
         /**
-         * Função para fechar qualquer modal forçadamente
-         * @param {string} modalSelector - Seletor CSS da modal
-         * @param {string} backdropId - ID do backdrop associado
+         * FUNÇÃO CENTRAL PARA FECHAR QUALQUER MODAL
+         * @param {Object} options - Opções de fechamento
+         * @param {string} options.modalSelector - Seletor CSS da modal
+         * @param {string} options.backdropId - ID do backdrop associado
+         * @param {Function} options.onClose - Callback executado após fechamento
+         * @param {boolean} options.force - Se deve fechar forçadamente (default: false)
          */
-        function forceCloseModal(modalSelector, backdropId = 'modal-backdrop') {
+
+        function closeModal(options = {}) {
+            const {
+                modalSelector,
+                backdropId = 'modal-backdrop',
+                onClose = null,
+                force = false
+            } = options;
+
             const modal = document.querySelector(modalSelector);
-            if (modal) {
+            if (!modal) {
+                console.warn(`Modal não encontrada: ${modalSelector}`);
+                return;
+            }
+
+            if (force) {
+                // Fechamento forçado - imediato
                 modal.classList.remove('visible', 'show', 'active');
                 modal.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important;';
+                removeModalBackdrop(backdropId, onClose);
+                document.body.style.overflow = 'auto';
+            } else {
+                // Fechamento com animação
+                modal.classList.remove('visible', 'show', 'active');
+                modal.style.opacity = '0';
+                
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    if (onClose) onClose();
+                }, 300);
+                
+                removeModalBackdrop(backdropId);
             }
-            
-            removeModalBackdrop(backdropId);
-            
-            // Restaurar body
-            document.body.style.overflow = 'auto';
+        }
+
+        /**
+         * FUNÇÃO CENTRAL PARA ABRIR QUALQUER MODAL
+         * @param {Object} options - Opções de abertura
+         * @param {string} options.modalSelector - Seletor CSS da modal
+         * @param {string} options.backdropId - ID do backdrop
+         * @param {Function} options.onOpen - Callback executado após abertura
+         * @param {Function} options.onBackdropClick - Callback para clique no backdrop
+         */
+
+        function openModal(options = {}) {
+            const {
+                modalSelector,
+                backdropId = 'modal-backdrop',
+                onOpen = null,
+                onBackdropClick = null
+            } = options;
+
+            const modal = document.querySelector(modalSelector);
+            if (!modal) {
+                console.warn(`Modal não encontrada: ${modalSelector}`);
+                return;
+            }
+
+            // Limpar estado anterior
+            modal.style.display = 'none';
+            modal.style.opacity = '0';
+            modal.classList.remove('visible', 'show', 'active');
+
+            createModalBackdrop({
+                id: backdropId,
+                onClick: onBackdropClick || ((e) => {
+                    if (e.target.id === backdropId) {
+                        closeModal({ modalSelector, backdropId });
+                    }
+                })
+            });
+
+            // Aguardar frame para garantir limpeza
+            requestAnimationFrame(() => {
+                modal.style.display = 'flex';
+                
+                requestAnimationFrame(() => {
+                    modal.style.opacity = '1';
+                    modal.classList.add('visible');
+                    
+                    if (onOpen) onOpen();
+                });
+            });
         }
 
         // Funções globais para interações dos cards
@@ -3180,9 +3707,9 @@
         }
 
         function editPatient(patientId) {
-            const patientData = allPatients.find(p => p.id === patientId);
-            if (patientData && modernPatientModal) {
-                modernPatientModal.openModal(patientData);
+            const patientData = allPatientsGlobal.find(p => p.id === patientId);
+            if (patientData) {
+                openPatientModal(patientData);
             }
         }
 
@@ -3193,9 +3720,7 @@
         }
 
         function toggleStepperModal() {
-            if (modernPatientModal) {
-                modernPatientModal.openModal();
-            }
+            openPatientModal();
         }
 
         function callPatient(phone) {
@@ -3227,7 +3752,7 @@
         let showToastGlobal = null;
         let currentPageGlobal = 1;
         let renderPatientCardsGlobal = null;
-        let showGeneralAlertModalGlobal = null; // Nova variável global para a modal de alerta
+        let showGeneralAlertModalGlobal = null;
 
         function deletePatient(patientId, patientName) {
             // Fechar o dropdown
@@ -3268,41 +3793,49 @@
             
             document.body.appendChild(modal);
             
-            // Criar backdrop centralizado
-            createModalBackdrop({
-                id: 'delete-modal-backdrop',
-                onClick: (e) => {
+            // Usar função centralizada para criar modal
+            openModal({
+                modalSelector: '.delete-modal-overlay',
+                backdropId: 'delete-modal-backdrop',
+                onOpen: () => {
+                    modal.classList.add('show');
+                },
+                onBackdropClick: (e) => {
                     if (e.target.id === 'delete-modal-backdrop') {
                         closeDeleteModal();
                     }
                 }
             });
-            
-            // Animação de entrada
-            requestAnimationFrame(() => {
-                modal.classList.add('show');
-            });
         }
 
         function closeDeleteModal() {
-            // Buscar especificamente pela modal de exclusão
-            const modal = document.querySelector('.delete-modal-overlay');
-            if (modal) {
-                modal.classList.remove('show');
-                
-                // Usar função centralizada para remover backdrop
-                removeModalBackdrop('delete-modal-backdrop', () => {
-                    if (modal.parentNode) {
+            // Usar função centralizada
+            closeModal({
+                modalSelector: '.delete-modal-overlay',
+                backdropId: 'delete-modal-backdrop',
+                onClose: () => {
+                    const modal = document.querySelector('.delete-modal-overlay');
+                    if (modal && modal.parentNode) {
                         modal.parentNode.removeChild(modal);
                     }
-                });
-            }
+                }
+            });
         }
 
         // Função para fechar o modal instantaneamente (para usar após exclusão)
         function forceCloseDeleteModal() {
-            // Usar função centralizada para fechamento forçado
-            forceCloseModal('.delete-modal-overlay', 'delete-modal-backdrop');
+            // Usar função centralizada com força
+            closeModal({
+                modalSelector: '.delete-modal-overlay',
+                backdropId: 'delete-modal-backdrop',
+                force: true,
+                onClose: () => {
+                    const modal = document.querySelector('.delete-modal-overlay');
+                    if (modal && modal.parentNode) {
+                        modal.parentNode.removeChild(modal);
+                    }
+                }
+            });
         }
 
         function confirmDelete(patientId) {
@@ -3478,23 +4011,27 @@
                 alertModalIcon.classList.add(category);
                 alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
 
-                // Criar backdrop centralizado
-                createModalBackdrop({
-                    id: 'alert-modal-backdrop',
-                    onClick: (e) => {
+                // Usar função centralizada para abrir modal
+                openModal({
+                    modalSelector: '#general-alert-modal-overlay',
+                    backdropId: 'alert-modal-backdrop',
+                    onOpen: () => {
+                        generalAlertOverlay.classList.add('show');
+                    },
+                    onBackdropClick: (e) => {
                         if (e.target.id === 'alert-modal-backdrop') {
                             closeGeneralAlertModal();
                         }
                     }
                 });
-
-                generalAlertOverlay.classList.add('show');
             }
 
             function closeGeneralAlertModal() {
-                generalAlertOverlay.classList.remove('show');
-                // Usar função centralizada para remover backdrop
-                removeModalBackdrop('alert-modal-backdrop');
+                // Usar função centralizada
+                closeModal({
+                    modalSelector: '#general-alert-modal-overlay',
+                    backdropId: 'alert-modal-backdrop'
+                });
             }
             // Conectar a função showGeneralAlertModal com a global
             showGeneralAlertModalGlobal = showGeneralAlertModal;
@@ -3643,7 +4180,7 @@
                                     <div class="dropdown-section-label">
                                         <i class="fas fa-cog"></i> Ações
                                     </div>
-                                    <button type="button" class="dropdown-item" onclick="openPatientStepsModal('${paciente.id}')">
+                                    <button type="button" class="dropdown-item" onclick="editPatient('${paciente.id}')">
                                         <i class="fas fa-edit"></i>
                                         Editar Dados
                                     </button>
@@ -3794,7 +4331,7 @@
                             }
                         </p>
                         <div class="empty-state-actions">
-                            <button class="btn btn-primary empty-state-btn" onclick="openPatientStepsModal()">
+                            <button class="btn btn-primary empty-state-btn" onclick="openPatientModal()">
                                 <i class="fas fa-plus"></i>
                                 Adicionar Paciente
                             </button>
@@ -3906,8 +4443,6 @@
                     case 'masculino': return 'fa-solid fa-mars';
                     case 'feminino': return 'fa-solid fa-venus';
                     case 'masculino': return 'fa-solid fa-user-tie';
-                    // case 'feminino': return 'fa-solid fa-person-dress';
-                    // case 'feminino': return 'fas fa-user-female';
                     default: return 'fa-solid fa-child-reaching';
                 }
             }
@@ -4040,241 +4575,14 @@
                 }
             });
 
-            // --- Lógica da Função openPatientStepsModal ---
+            // --- Redirecionamento para sistema centralizado ---
             window.openPatientStepsModal = function(patientId) {
-                // Fechar qualquer modal de exclusão que possa estar aberta
-                const deleteModal = document.querySelector('.delete-modal-overlay');
-                if (deleteModal) {
-                    deleteModal.remove();
-                }
-                
-                const overlay = document.getElementById('patient-steps-modal-overlay');
-                const modal = document.getElementById('patient-steps-modal');
-                
-                if (!overlay || !modal) {
-                    return;
-                }
-                
-                const steps = modal.querySelectorAll('.paciente-step');
-                const sections = modal.querySelectorAll('.paciente-card-section');
-                const form = document.getElementById('steps-patient-form');
-                const convenioSelect = document.getElementById('steps-convenio_id');
-
-                if (!form) {
-                    return;
-                }
-                
-                // Limpar e popular o select de convênios
-                convenioSelect.innerHTML = '<option value="">Nenhum / Particular</option>';
-                allConvenios.forEach(convenio => {
-                    const option = document.createElement('option');
-                    option.value = convenio.id;
-                    option.textContent = convenio.nome;
-                    convenioSelect.appendChild(option);
-                });
-
-
-                // Configurar navegação dos steps TODA VEZ que a modal for aberta
-                function setupStepsForThisModal() {
-                    let currentStep = 0;
-                    
-                    function showStep(idx) {
-                        steps.forEach((s,i) => {
-                            s.classList.toggle('active', i === idx);
-                        });
-                        sections.forEach((sec,i) => {
-                            sec.style.display = i === idx ? 'block' : 'none';
-                        });
-                        currentStep = idx;
-                    }
-                    
-                    if (steps.length === 0 || sections.length === 0) {
-                        return;
-                    }
-                    
-                    steps.forEach((step, i) => {
-                        step.onclick = null;
-                        step.removeEventListener('click', step._clickHandler);
-                        
-                        const clickHandler = (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            showStep(i);
-                        };
-                        
-                        step._clickHandler = clickHandler;
-                        step.addEventListener('click', clickHandler);
-                        
-                        step.style.cursor = 'pointer';
-                        step.style.userSelect = 'none';
-                        step.setAttribute('data-step-index', i);
-                    });
-                    
-                    const nextBtns = modal.querySelectorAll('.steps-next');
-                    const prevBtns = modal.querySelectorAll('.steps-prev');
-                    
-                    nextBtns.forEach((btn, index) => {
-                        btn.onclick = null;
-                        btn.addEventListener('click', () => {
-                            showStep(Math.min(currentStep + 1, sections.length - 1));
-                        });
-                    });
-                    
-                    prevBtns.forEach((btn, index) => {
-                        btn.onclick = null;
-                        btn.addEventListener('click', () => {
-                            showStep(Math.max(currentStep - 1, 0));
-                        });
-                    });
-                    
-                    showStep(0);
-                    
-                    const closeBtn = modal.querySelector('.steps-modal-close');
-                    if (closeBtn) {
-                        closeBtn.onclick = () => {
-                            overlay.classList.remove('visible');
-                            if (modal._focusTrap) {
-                                document.removeEventListener('keydown', modal._focusTrap);
-                                modal._focusTrap = null;
-                            }
-                            // Usar função centralizada para remover backdrop
-                            removeModalBackdrop('steps-modal-backdrop');
-                            setTimeout(() => overlay.style.display = 'none', 300);
-                        };
-                    }
-                    
-                    overlay.onclick = (e) => {
-                        if (e.target === overlay) {
-                            overlay.classList.remove('visible');
-                            if (modal._focusTrap) {
-                                document.removeEventListener('keydown', modal._focusTrap);
-                                modal._focusTrap = null;
-                            }
-                            // Usar função centralizada para remover backdrop
-                            removeModalBackdrop('steps-modal-backdrop');
-                            setTimeout(() => overlay.style.display = 'none', 300);
-                        }
-                    };
-                }
-                
-                form.reset();
-                clearValidationClasses();
-                
+                // Função redirecionada para sistema centralizado
                 if (patientId) {
-                    form.action = editUrlTemplate.replace('__ID__', patientId);
-                    const paciente = allPatients.find(p => String(p.id) === String(patientId));
-                    if (paciente) {
-                        form.elements['nome'].value = paciente.nome || '';
-                        const dataNascimento = paciente.data_nascimento;
-                        if (dataNascimento) {
-                            const formattedDate = formatDateToYMD(dataNascimento);
-                            form.elements['data_nascimento'].value = formattedDate;
-                            const displayInput = document.getElementById('steps-data_nascimento_display');
-                            if (displayInput && formattedDate) {
-                                displayInput.value = formatDateToDMY(formattedDate);
-                            }
-                        }
-                        form.elements['genero'].value = paciente.genero || '';
-                        form.elements['cpf'].value = paciente.cpf || '';
-                        form.elements['rg'].value = paciente.rg || '';
-                        form.elements['telefone'].value = paciente.contato_telefone || '';
-                        form.elements['email'].value = paciente.contato_email || '';
-                        // Acessar os campos de endereço aninhados
-                        form.elements['cep'].value = paciente.endereco?.cep || '';
-                        form.elements['cidade'].value = paciente.endereco?.cidade || '';
-                        form.elements['estado'].value = paciente.endereco?.estado || '';
-                        form.elements['logradouro'].value = paciente.endereco?.logradouro || '';
-                        form.elements['numero'].value = paciente.endereco?.numero || '';
-                        form.elements['bairro'].value = paciente.endereco?.bairro || '';
-                        form.elements['complemento'].value = paciente.endereco?.complemento || '';
-                        form.elements['convenio_id'].value = paciente.convenio_id || '';
-                        form.elements['observacoes'].value = paciente.observacoes || '';
-                        // Preencher novos campos de responsável
-                        form.elements['responsavel1_nome'].value = paciente.responsavel1_nome || '';
-                        form.elements['responsavel1_telefone'].value = paciente.responsavel1_telefone || '';
-                        form.elements['responsavel2_nome'].value = paciente.responsavel2_nome || '';
-                        form.elements['responsavel2_telefone'].value = paciente.responsavel2_telefone || '';
-                    }
+                    editPatient(patientId);
                 } else {
-                    form.action = "{{ url_for('adicionar_paciente') }}";
+                    openPatientModal();
                 }
-                
-                overlay.style.display='flex';
-                
-                // Usar função centralizada para criar backdrop
-                createModalBackdrop({
-                    id: 'steps-modal-backdrop',
-                    onClick: (e) => {
-                        if (e.target.id === 'steps-modal-backdrop') {
-                            // Fechar modal ao clicar no backdrop
-                            overlay.classList.remove('visible');
-                            setTimeout(() => {
-                                overlay.style.display = 'none';
-                                removeModalBackdrop('steps-modal-backdrop');
-                            }, 300);
-                        }
-                    }
-                });
-                
-                setTimeout(() => {
-                    overlay.classList.add('visible');
-                    
-                    // Configurar navegação dos steps APÓS a modal ser exibida
-                    setupStepsForThisModal();
-                    
-                    // Focar no primeiro input da modal
-                    const firstInput = modal.querySelector('input:not([type="hidden"]), select, textarea');
-                    if (firstInput) {
-                        firstInput.focus();
-                    }
-                    
-                    // Obter referência do botão de fechar para usar no trapFocus
-                    const closeBtn = modal.querySelector('.steps-modal-close');
-                    
-                    // Trap de foco - garantir que o Tab não saia da modal
-                    const focusableElements = modal.querySelectorAll(
-                        'button, [href], input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])'
-                    );
-                    const firstFocusableElement = focusableElements[0];
-                    const lastFocusableElement = focusableElements[focusableElements.length - 1];
-                    
-                    // Função para interceptar Tab
-                    const trapFocus = (e) => {
-                        if (e.key === 'Tab') {
-                            if (e.shiftKey) {
-                                // Shift + Tab
-                                if (document.activeElement === firstFocusableElement) {
-                                    lastFocusableElement.focus();
-                                    e.preventDefault();
-                                }
-                            } else {
-                                // Tab
-                                if (document.activeElement === lastFocusableElement) {
-                                    firstFocusableElement.focus();
-                                    e.preventDefault();
-                                }
-                            }
-                        }
-                        // Fechar modal com Escape
-                        if (e.key === 'Escape') {
-                            if (closeBtn) {
-                                closeBtn.click();
-                            } else {
-                                // Fallback: fechar modal diretamente
-                                overlay.classList.remove('visible');
-                                removeModalBackdrop('steps-modal-backdrop');
-                                setTimeout(() => overlay.style.display = 'none', 300);
-                            }
-                        }
-                    };
-                    
-                    // Adicionar trap de foco
-                    document.addEventListener('keydown', trapFocus);
-                    
-                    // Armazenar referência para poder remover depois
-                    modal._focusTrap = trapFocus;
-                    // Note: backdrop é gerenciado pela função centralizada, não precisamos armazenar referência
-                }, 10);
             };
 
             function clearValidationClasses() {
@@ -4407,73 +4715,6 @@
                 });
             }
 
-            // --- Validação de formulário antes do submit ---
-            const patientForm = document.getElementById('steps-patient-form');
-            patientForm.addEventListener('submit', function(event) {
-                let allFieldsValid = true;
-                const requiredFields = patientForm.querySelectorAll('.paciente-field.required input:not([type="hidden"]), .paciente-field.required select, .paciente-field.required textarea');
-                
-                // Limpar classes de erro e shake de todos os campos e steps
-                requiredFields.forEach(field => {
-                    field.classList.remove('invalid', 'shake');
-                });
-                document.querySelectorAll('.paciente-step').forEach(step => step.classList.remove('has-error'));
-
-                const invalidFieldsPerStep = new Map();
-
-                requiredFields.forEach(field => {
-                    const isValid = validateRequiredField(field);
-                    if (!isValid) {
-                        allFieldsValid = false;
-                        field.classList.add('invalid');
-                        field.classList.add('shake'); // Adiciona animação de shake
-                        
-                        // Marca o step como tendo erro
-                        const stepContent = field.closest('[data-step-content]');
-                        if (stepContent) {
-                            const stepIndex = Array.from(stepContent.parentNode.children).indexOf(stepContent);
-                            const stepElement = document.querySelector(`.paciente-step[data-step="${stepIndex + 1}"]`);
-                            if (stepElement) {
-                                stepElement.classList.add('has-error');
-                            }
-                            // Armazena o primeiro campo inválido por step
-                            if (!invalidFieldsPerStep.has(stepIndex)) {
-                                invalidFieldsPerStep.set(stepIndex, field);
-                            }
-                        }
-                    }
-                });
-
-                if (!allFieldsValid) {
-                    event.preventDefault(); // Impede o envio do formulário
-                    
-                    // Encontra o primeiro step com erro e o exibe
-                    const firstInvalidStepIndex = Array.from(invalidFieldsPerStep.keys()).sort((a,b) => a - b)[0];
-                    if (firstInvalidStepIndex !== undefined) {
-                        const steps = patientForm.querySelectorAll('.paciente-step');
-                        const sections = patientForm.querySelectorAll('.paciente-card-section');
-                        
-                        steps.forEach((s,i) => {
-                            s.classList.toggle('active', i === firstInvalidStepIndex);
-                        });
-                        sections.forEach((sec,i) => {
-                            sec.style.display = i === firstInvalidStepIndex ? 'block' : 'none';
-                        });
-                        
-                        // Foca no primeiro campo inválido do primeiro step com erro
-                        const firstInvalidField = invalidFieldsPerStep.get(firstInvalidStepIndex);
-                        if (firstInvalidField) {
-                            firstInvalidField.focus();
-                        }
-                    }
-
-                    showGeneralAlertModal('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios e corrija os erros indicados.', 'danger');
-                }
-            });
-
-            // setupSidebar(); // Removido para evitar duplicação
-            // setupTheme(); // Removido para evitar duplicação
-            // setupLogout(); // Removido para evitar duplicação
             setupRequiredFieldValidation();
             renderPatientCards();
             
@@ -4642,8 +4883,8 @@
                         try {
                             // Adicionar um indicador de carregamento
                             this.style.background = `url('https://cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif') no-repeat right 10px center / 20px 20px`;
-                            this.style.backgroundSize = '20px 20px'; // Ajustar o tamanho da imagem
-                            this.style.paddingRight = '40px'; // Adicionar padding para o ícone
+                            this.style.backgroundSize = '20px 20px';
+                            this.style.paddingRight = '40px';
 
                             const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
                             const data = await response.json();
