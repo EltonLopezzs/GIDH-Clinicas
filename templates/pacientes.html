@@ -3927,17 +3927,17 @@
 
             // Dados de pacientes passados pelo Jinja2
             const allPatients = {{ pacientes | tojson | safe }};
-            const allConvenios = {{ convenios | tojson | safe }}; // Dados de convênios
-            let filteredPatients = []; // Lista de pacientes após a filtragem
+            const allConvenios = {{ convenios | tojson | safe }};
+            let filteredPatients = [];
 
             let currentPage = 1;
-            let itemsPerPage = calculateItemsPerPage(); // Dinâmico baseado na resolução
+            let itemsPerPage = calculateItemsPerPage();
 
             // Função para calcular items por página dinamicamente
             function calculateItemsPerPage() {
                 const containerWidth = document.querySelector('.main-content')?.offsetWidth || window.innerWidth - 250; // Largura disponível
                 const cardMinWidth = 520; // minmax(520px, 1fr) do CSS
-                const gap = 24; // 1.5rem = 24px
+                const gap = 24; // 1.5rem = 24px pego la CSS
                 
                 // Ajustar para mobile/tablet
                 let actualCardMinWidth = cardMinWidth;
@@ -3951,13 +3951,13 @@
                 
                 // Calcular altura disponível da viewport
                 const viewportHeight = window.innerHeight;
-                const headerHeight = 60; // Altura aproximada do header
-                const searchHeight = 80; // Altura aproximada da barra de pesquisa
-                const paginationHeight = 60; // Altura aproximada da paginação
-                const cardHeight = 280; // Altura aproximada de cada card
-                const cardGap = 24; // Gap entre as linhas
+                const headerHeight = 60;
+                const searchHeight = 80;
+                const paginationHeight = 60;
+                const cardHeight = 280;
+                const cardGap = 24;
                 
-                const availableHeight = viewportHeight - headerHeight - searchHeight - paginationHeight - 40; // 40px de margem extra
+                const availableHeight = viewportHeight - headerHeight - searchHeight - paginationHeight - 40;
                 const rowsVisible = Math.floor((availableHeight + cardGap) / (cardHeight + cardGap));
                 const minRowsVisible = Math.max(rowsVisible, 2); // Mínimo 2 linhas
                 
@@ -3965,13 +3965,10 @@
                 const calculatedItems = cardsPerRow * minRowsVisible;
                 
                 // Definir limites mínimo e máximo
-                const minItems = cardsPerRow * 2; // Mínimo 2 linhas
-                const maxItems = cardsPerRow * 8; // Máximo 8 linhas
+                const minItems = cardsPerRow * 2;
+                const maxItems = cardsPerRow * 8;
                 
                 const result = Math.min(Math.max(calculatedItems, minItems), maxItems);
-                
-                // Debug info (pode ser removido em produção)
-                console.log(`ItemsPerPage: ${result} (${cardsPerRow} por linha × ${minRowsVisible} linhas) - Viewport: ${window.innerWidth}x${window.innerHeight}`);
                 
                 return result;
             }
@@ -3990,11 +3987,9 @@
                 }, 250);
             });
 
-            // Conectar variáveis locais com as globais para as funções de exclusão
             allPatientsGlobal = allPatients;
             currentPageGlobal = currentPage;
 
-            // --- Lógica para Notificações Toast ---
             const toastContainer = document.getElementById('toast-container');
             function showToast(message, category = 'info') {
                 if (!toastContainer) return;
@@ -4040,10 +4035,9 @@
                 setTimeout(() => {
                     toast.classList.add('fade-out');
                     toast.addEventListener('animationend', () => toast.remove());
-                }, 5000); // A notificação desaparece após 5 segundos
+                }, 5000);
             }
 
-            // Conectar a função showToast com a global
             showToastGlobal = showToast;
 
             // --- Lógica para Modal de Alerta Geral ---
