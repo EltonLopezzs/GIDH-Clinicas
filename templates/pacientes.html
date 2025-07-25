@@ -3931,7 +3931,64 @@
             let filteredPatients = []; // Lista de pacientes após a filtragem
 
             let currentPage = 1;
-            const itemsPerPage = 20; // 20 cards por página
+            let itemsPerPage = calculateItemsPerPage(); // Dinâmico baseado na resolução
+
+            // Função para calcular items por página dinamicamente
+            function calculateItemsPerPage() {
+                const containerWidth = document.querySelector('.main-content')?.offsetWidth || window.innerWidth - 250; // Largura disponível
+                const cardMinWidth = 520; // minmax(520px, 1fr) do CSS
+                const gap = 24; // 1.5rem = 24px
+                
+                // Ajustar para mobile/tablet
+                let actualCardMinWidth = cardMinWidth;
+                if (window.innerWidth <= 768) {
+                    actualCardMinWidth = Math.min(cardMinWidth, containerWidth - 40); // 20px padding cada lado
+                }
+                
+                // Calcular quantos cards cabem por linha
+                let cardsPerRow = Math.floor((containerWidth + gap) / (actualCardMinWidth + gap));
+                if (cardsPerRow < 1) cardsPerRow = 1;
+                
+                // Calcular altura disponível da viewport
+                const viewportHeight = window.innerHeight;
+                const headerHeight = 60; // Altura aproximada do header
+                const searchHeight = 80; // Altura aproximada da barra de pesquisa
+                const paginationHeight = 60; // Altura aproximada da paginação
+                const cardHeight = 280; // Altura aproximada de cada card
+                const cardGap = 24; // Gap entre as linhas
+                
+                const availableHeight = viewportHeight - headerHeight - searchHeight - paginationHeight - 40; // 40px de margem extra
+                const rowsVisible = Math.floor((availableHeight + cardGap) / (cardHeight + cardGap));
+                const minRowsVisible = Math.max(rowsVisible, 2); // Mínimo 2 linhas
+                
+                // Total de items = cards por linha × linhas visíveis
+                const calculatedItems = cardsPerRow * minRowsVisible;
+                
+                // Definir limites mínimo e máximo
+                const minItems = cardsPerRow * 2; // Mínimo 2 linhas
+                const maxItems = cardsPerRow * 8; // Máximo 8 linhas
+                
+                const result = Math.min(Math.max(calculatedItems, minItems), maxItems);
+                
+                // Debug info (pode ser removido em produção)
+                console.log(`ItemsPerPage: ${result} (${cardsPerRow} por linha × ${minRowsVisible} linhas) - Viewport: ${window.innerWidth}x${window.innerHeight}`);
+                
+                return result;
+            }
+
+            // Recalcular itemsPerPage quando a janela for redimensionada
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    const newItemsPerPage = calculateItemsPerPage();
+                    if (newItemsPerPage !== itemsPerPage) {
+                        itemsPerPage = newItemsPerPage;
+                        renderPatientCards();
+                        renderPaginationControls();
+                    }
+                }, 250);
+            });
 
             // Conectar variáveis locais com as globais para as funções de exclusão
             allPatientsGlobal = allPatients;
@@ -4716,7 +4773,12 @@
             }
 
             setupRequiredFieldValidation();
-            renderPatientCards();
+            
+            // Garantir que itemsPerPage seja calculado corretamente no carregamento
+            setTimeout(() => {
+                itemsPerPage = calculateItemsPerPage();
+                renderPatientCards();
+            }, 100);
             
             renderPatientCardsGlobal = renderPatientCards;
         });
