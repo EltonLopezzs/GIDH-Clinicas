@@ -1,10 +1,26 @@
 from flask import Blueprint, render_template, session, flash, redirect, url_for, request, jsonify
 import datetime
 from google.cloud.firestore_v1.base_query import FieldFilter
+from google.cloud import firestore # Importar firestore para DocumentReference
 from utils import get_db, login_required, SAO_PAULO_TZ, convert_doc_to_dict
 
 # Cria um novo Blueprint para o planejamento semanal
 weekly_planning_bp = Blueprint('weekly_planning', __name__)
+
+def _convert_doc_references_to_paths(data):
+    """
+    Converte objetos DocumentReference em um dicionário ou lista de dicionários
+    para seus respectivos paths (strings) para que possam ser serializados em JSON.
+    Esta função é recursiva.
+    """
+    if isinstance(data, dict):
+        return {k: _convert_doc_references_to_paths(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [_convert_doc_references_to_paths(elem) for elem in data]
+    elif isinstance(data, firestore.DocumentReference):
+        return data.path
+    else:
+        return data
 
 @weekly_planning_bp.route('/pacientes/<patient_id>/planejamento_semanal', methods=['GET'], endpoint='planejamento_semanal')
 @login_required
@@ -48,7 +64,7 @@ def planejamento_semanal(patient_id):
         peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(
             filter=FieldFilter('paciente_id', '==', patient_id)
         ).where(
-            filter=FieldFilter('status', '==', 'ativo')
+            filter=FieldFilter('status', '==', 'Ativo') # Corrigido: 'Ativo' com 'A' maiúsculo
         )
         
         # Se não for admin, filtra por profissional associado ao PEI
@@ -65,7 +81,7 @@ def planejamento_semanal(patient_id):
             metas_docs = metas_ref.stream()
             for meta_doc in metas_docs:
                 meta_data = convert_doc_to_dict(meta_doc)
-                if meta_data and meta_data.get('status') == 'ativa': # Apenas metas ativas
+                if meta_data and meta_data.get('status') == 'Ativo': # Corrigido: 'Ativo' com 'A' maiúsculo
                     meta_data['id'] = meta_doc.id
                     meta_data['pei_id'] = pei_id # Adiciona o ID do PEI para referência
                     
@@ -79,7 +95,9 @@ def planejamento_semanal(patient_id):
                             alvo_data['id'] = alvo_doc.id
                             alvos_meta.append(alvo_data)
                     meta_data['alvos'] = alvos_meta
-                    metas_ativas.append(meta_data)
+                    
+                    # Converte DocumentReferences em meta_data e seus alvos
+                    metas_ativas.append(_convert_doc_references_to_paths(meta_data))
     except Exception as e:
         flash(f"Erro ao carregar metas do paciente: {e}", "danger")
         print(f"Erro ao carregar metas: {e}")
@@ -124,7 +142,8 @@ def planejamento_semanal(patient_id):
                 # Se o campo 'metas_associadas' não existir, ele será um array vazio por padrão
                 ag_data['metas_associadas'] = ag_data.get('metas_associadas', [])
                 
-                agendamentos_semana.append(ag_data)
+                # Converte DocumentReferences em ag_data
+                agendamentos_semana.append(_convert_doc_references_to_paths(ag_data))
     except Exception as e:
         flash(f"Erro ao carregar agendamentos da semana: {e}", "danger")
         print(f"Erro ao carregar agendamentos da semana: {e}")
@@ -168,7 +187,7 @@ def get_planning_data(patient_id):
         peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(
             filter=FieldFilter('paciente_id', '==', patient_id)
         ).where(
-            filter=FieldFilter('status', '==', 'ativo')
+            filter=FieldFilter('status', '==', 'Ativo') # Corrigido: 'Ativo' com 'A' maiúsculo
         )
         if user_role != 'admin' and profissional_id_logado:
             peis_query = peis_query.where(
@@ -182,7 +201,7 @@ def get_planning_data(patient_id):
             metas_docs = metas_ref.stream()
             for meta_doc in metas_docs:
                 meta_data = convert_doc_to_dict(meta_doc)
-                if meta_data and meta_data.get('status') == 'ativa':
+                if meta_data and meta_data.get('status') == 'Ativo': # Corrigido: 'Ativo' com 'A' maiúsculo
                     meta_data['id'] = meta_doc.id
                     meta_data['pei_id'] = pei_id
                     
@@ -195,7 +214,7 @@ def get_planning_data(patient_id):
                             alvo_data['id'] = alvo_doc.id
                             alvos_meta.append(alvo_data)
                     meta_data['alvos'] = alvos_meta
-                    metas_ativas.append(meta_data)
+                    metas_ativas.append(_convert_doc_references_to_paths(meta_data)) # Aplica a conversão
     except Exception as e:
         print(f"Erro ao carregar metas ativas (API): {e}")
         return jsonify({"error": f"Erro ao carregar metas: {e}"}), 500
@@ -229,10 +248,10 @@ def get_planning_data(patient_id):
                 if ag_data.get('data_agendamento_ts'):
                     ag_data['data_formatada'] = ag_data['data_agendamento_ts'].strftime('%d/%m/%Y')
                 ag_data['metas_associadas'] = ag_data.get('metas_associadas', [])
-                agendamentos_semana.append(ag_data)
+                agendamentos_semana.append(_convert_doc_references_to_paths(ag_data)) # Aplica a conversão
     except Exception as e:
         print(f"Erro ao carregar agendamentos da semana (API): {e}")
-        return jsonify({"error": f"Erro ao carregar agendamentos: {e}"}), 500
+        return jsonify({"error": f"Erro ao carinhosamente carregar agendamentos: {e}"}), 500
 
     return jsonify({
         "metas_ativas": metas_ativas,
@@ -249,13 +268,24 @@ def associar_meta_agendamento():
     user_uid = session.get('user_uid')
 
     data = request.json
+    print(f"DEBUG: Dados recebidos para associar_meta_agendamento: {data}") # DEBUG PRINT
+
     agendamento_id = data.get('agendamento_id')
     meta_id = data.get('meta_id')
     meta_nome = data.get('meta_nome')
     pei_id = data.get('pei_id')
     action = data.get('action') # 'associar' ou 'desassociar'
 
+    # DEBUG PRINT for individual variables
+    print(f"DEBUG: agendamento_id: {agendamento_id}, type: {type(agendamento_id)}")
+    print(f"DEBUG: meta_id: {meta_id}, type: {type(meta_id)}")
+    print(f"DEBUG: meta_nome: {meta_nome}, type: {type(meta_nome)}")
+    print(f"DEBUG: pei_id: {pei_id}, type: {type(pei_id)}")
+    print(f"DEBUG: action: {action}, type: {type(action)}")
+
+
     if not all([agendamento_id, meta_id, meta_nome, pei_id, action]):
+        print("DEBUG: Falha na validação 'not all()'. Um ou mais campos estão faltando ou são falsos.") # DEBUG PRINT
         return jsonify({"success": False, "message": "Dados incompletos."}), 400
 
     try:
@@ -263,6 +293,7 @@ def associar_meta_agendamento():
         agendamento_doc = agendamento_ref.get()
 
         if not agendamento_doc.exists:
+            print(f"DEBUG: Agendamento {agendamento_id} não encontrado.") # DEBUG PRINT
             return jsonify({"success": False, "message": "Agendamento não encontrado."}), 404
         
         agendamento_data = agendamento_doc.to_dict()
@@ -279,22 +310,27 @@ def associar_meta_agendamento():
             if not any(m['meta_id'] == meta_id for m in metas_associadas):
                 metas_associadas.append(meta_to_associate)
                 agendamento_ref.update({'metas_associadas': metas_associadas})
+                print(f"DEBUG: Meta {meta_id} associada com sucesso ao agendamento {agendamento_id}.") # DEBUG PRINT
                 return jsonify({"success": True, "message": "Meta associada com sucesso!"}), 200
             else:
+                print(f"DEBUG: Meta {meta_id} já associada ao agendamento {agendamento_id}.") # DEBUG PRINT
                 return jsonify({"success": False, "message": "Meta já associada a este agendamento."}), 409
         
         elif action == 'desassociar':
             new_metas_associadas = [m for m in metas_associadas if m['meta_id'] != meta_id]
             if len(new_metas_associadas) < len(metas_associadas):
                 agendamento_ref.update({'metas_associadas': new_metas_associadas})
+                print(f"DEBUG: Meta {meta_id} desassociada com sucesso do agendamento {agendamento_id}.") # DEBUG PRINT
                 return jsonify({"success": True, "message": "Meta desassociada com sucesso!"}), 200
             else:
+                print(f"DEBUG: Meta {meta_id} não encontrada no agendamento {agendamento_id} para desassociar.") # DEBUG PRINT
                 return jsonify({"success": False, "message": "Meta não encontrada neste agendamento para desassociar."}), 404
         
         else:
+            print(f"DEBUG: Ação inválida: {action}.") # DEBUG PRINT
             return jsonify({"success": False, "message": "Ação inválida."}), 400
 
     except Exception as e:
-        print(f"Erro ao associar/desassociar meta: {e}")
+        print(f"ERROR: Erro ao associar/desassociar meta: {e}") # DEBUG PRINT
         return jsonify({"success": False, "message": f"Erro interno do servidor: {e}"}), 500
 

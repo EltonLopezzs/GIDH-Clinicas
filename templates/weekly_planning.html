@@ -207,7 +207,7 @@
         .toast-content { flex-grow: 1; }
         .toast-title { font-weight: 700; font-size: 1rem; color: var(--text); display: block; margin-bottom: 0.25rem; }
         .toast-message { font-size: 0.9rem; color: var(--muted); line-height: 1.4; }
-        .toast-close { background: none; border: none; color: var(--muted); font-size: 1.5rem; cursor: pointer; padding: 0; line-height: 1; opacity: 0.7; transition: opacity 0.2s ease, color 0.2s ease; flex-shrink: 0; }
+        .toast-close { background: none; border: none; font-size: 1.5rem; color: var(--muted); cursor: pointer; padding: 0; line-height: 1; opacity: 0.7; transition: opacity 0.2s ease, color 0.2s ease; flex-shrink: 0; }
         .toast-close:hover { opacity: 1; color: var(--text); }
         .toast-progress { position: absolute; bottom: 0; left: 0; height: 4px; width: 100%; animation: toast-progress-bar 5s linear forwards; }
         .toast.success .toast-progress { background-color: var(--success); }
@@ -530,9 +530,9 @@
                                 {% for meta in metas_ativas %}
                                     <div class="meta-card" draggable="true" 
                                         data-meta-id="{{ meta.id }}" 
-                                        data-meta-name="{{ meta.nome }}"
+                                        data-meta-name="{{ meta.descricao }}" {# Changed from meta.nome to meta.descricao #}
                                         data-pei-id="{{ meta.pei_id }}">
-                                        <h5>{{ meta.nome }}</h5>
+                                        <h5>{{ meta.descricao }}</h5>
                                         <p>{{ meta.descricao }}</p>
                                         <span class="pei-tag">PEI: {{ meta.pei_id }}</span>
                                     </div>
@@ -784,12 +784,18 @@
                 // Adiciona listener para remover a meta
                 newMetaDiv.querySelector('.remove-meta-btn').addEventListener('click', async (e) => {
                     e.stopPropagation();
+                    console.log('Attempting to disassociate meta via dynamically added button.'); // DEBUG
                     const confirmRemove = confirm('Tem certeza que deseja desassociar esta meta deste agendamento?');
+                    console.log('Confirmation result:', confirmRemove); // DEBUG
                     if (!confirmRemove) return;
 
+                    const slotElement = newMetaDiv.closest('.appointment-slot'); // Corrected from metaDiv to newMetaDiv
                     const appointmentId = slotElement.dataset.appointmentId;
                     const metaIdToRemove = newMetaDiv.dataset.associatedMetaId;
                     const peiIdToRemove = newMetaDiv.dataset.associatedPeiId;
+                    const metaName = newMetaDiv.querySelector('span').textContent;
+
+                    console.log('Disassociating data:', { appointmentId, metaIdToRemove, peiIdToRemove, metaName }); // DEBUG
 
                     try {
                         const response = await fetch('/api/planejamento_semanal/associar_meta', {
@@ -800,7 +806,7 @@
                             body: JSON.stringify({
                                 agendamento_id: appointmentId,
                                 meta_id: metaIdToRemove,
-                                meta_nome: metaData.name, // Nome da meta também pode ser enviado para consistência
+                                meta_nome: metaName,
                                 pei_id: peiIdToRemove,
                                 action: 'desassociar'
                             })
@@ -824,7 +830,9 @@
             document.querySelectorAll('.associated-meta').forEach(metaDiv => {
                 metaDiv.querySelector('.remove-meta-btn').addEventListener('click', async (e) => {
                     e.stopPropagation();
+                    console.log('Attempting to disassociate meta via pre-existing button.'); // DEBUG
                     const confirmRemove = confirm('Tem certeza que deseja desassociar esta meta deste agendamento?');
+                    console.log('Confirmation result:', confirmRemove); // DEBUG
                     if (!confirmRemove) return;
 
                     const slotElement = metaDiv.closest('.appointment-slot');
@@ -832,6 +840,8 @@
                     const metaIdToRemove = metaDiv.dataset.associatedMetaId;
                     const peiIdToRemove = metaDiv.dataset.associatedPeiId;
                     const metaName = metaDiv.querySelector('span').textContent;
+
+                    console.log('Disassociating data:', { appointmentId, metaIdToRemove, peiIdToRemove, metaName }); // DEBUG
 
                     try {
                         const response = await fetch('/api/planejamento_semanal/associar_meta', {
@@ -921,12 +931,7 @@
                 }
             });
 
-            // --- Lógica do Seletor de Pacientes ---
-            // A lista de pacientes é carregada inicialmente com o paciente atual.
-            // Para carregar todos os pacientes, seria necessário um endpoint API separado
-            // ou passar a lista completa via Jinja2 para o paciente logado.
-            // Por enquanto, o seletor apenas exibe o paciente atual.
-            // Uma funcionalidade de "trocar paciente" exigiria redirecionamento ou recarregamento de dados via API.
+ 
             patientSelector.addEventListener('change', (e) => {
                 const selectedPatientId = e.target.value;
                 if (selectedPatientId && selectedPatientId !== currentPatientId) {
