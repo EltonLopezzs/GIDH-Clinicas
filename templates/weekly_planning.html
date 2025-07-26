@@ -11,28 +11,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* Estilos principais - Reutilizados de style.css e pacientes.html */
         :root {
-            --bg: #f1f5f9;                  /* Gray-100 */
-            --card: #ffffff;                /* White */
-            --text: #0f172a;                /* Gray-900 */
-            --muted: #64748b;               /* Gray-500 */
-            --accent: #9b53b8;              /* Purple-500 */
-            --primary-dark: #115e59;        
-            --primary: #5587c2;             /* Blue-500 */
-            --primary-light: #c8dcf3;       /* Blue-100 */
-            --secondary: #f59e0b;           /* Yellow-500 */
-            --danger: #dc2626;              /* Red-600 */
-            --success: #16a34a;             /* Green-600 */
-            --warning: #f59e0b;             /* Yellow-500 */
-            --info: #0ea5e9;                /* Sky-500 */
-            --border-color: #e2e8f0;        /* Gray-200 */
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #9b53b8;
+            --primary-dark: #115e59;
+            --primary: #5587c2;
+            --primary-light: #c8dcf3;
+            --secondary: #f59e0b;
+            --danger: #dc2626;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --border-color: #e2e8f0;
 
-            --dark-bg: #0f172a;             /* Gray-900 */
-            --dark-card: #1e293b;           /* Gray-800 */
-            --dark-text: #f1f5f9;           /* Gray-100 */
-            --dark-muted: #94a3b8;          /* Gray-400 */
-            --dark-border-color: #334155;   /* Gray-600 */
+            --dark-bg: #0f172a;
+            --dark-card: #1e293b;
+            --dark-text: #f1f5f9;
+            --dark-muted: #94a3b8;
+            --dark-border-color: #334155;
 
             color-scheme: light;
         }
@@ -82,7 +81,6 @@
             min-height: 100vh;
             width: 100%;
         }
-        /* --- Main Content & Topbar --- */
         .main-content {
             flex: 1; margin-left: 260px;
             transition: margin-left 0.3s ease;
@@ -144,11 +142,11 @@
         main { 
             flex-grow: 1; 
             padding: 1.5rem; 
-            overflow-y: auto; 
             width: 100%;
             max-width: 100%;
-            display: flex; /* Adicionado para layout de colunas */
-            gap: 1.5rem; /* Espaçamento entre as colunas */
+            display: flex;
+            gap: 1.5rem;
+            height: calc(100vh - 70px - 3rem - 1.5rem - 1.5rem); 
         }
         .btn {
             padding: 0.6rem 1.2rem;
@@ -178,7 +176,6 @@
         .btn-secondary:hover {
             background-color: var(--text);
         }
-        /* REMOVED: Toast Container & Styles */
 
         @media(min-width: 769px) {
             .toggle-btn-desktop { display: grid; }
@@ -193,16 +190,20 @@
             .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
             .main-content, .main-content.collapsed { margin-left: 0; width: 100%; }
-            main { padding: 1rem; flex-direction: column; } /* Empilha colunas em mobile */
+            main { 
+                padding: 1rem; 
+                flex-direction: column; 
+                height: auto;
+            }
             .topbar { flex-wrap: wrap; height: auto; row-gap: 1rem; padding-top: 1rem; padding-bottom: 1rem;}
             .topbar-left, .topbar-actions { width: 100%; justify-content: space-between; }
         }
 
-        /* Estilos específicos para o Planejamento Semanal */
         .planning-container {
             display: flex;
             flex-grow: 1;
             gap: 1.5rem;
+            height: 100%; 
         }
 
         .column {
@@ -212,8 +213,9 @@
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            flex: 1; /* Ocupa espaço igual */
-            min-width: 300px; /* Largura mínima para as colunas */
+            flex: 1;
+            min-width: 300px;
+            height: 100%; 
         }
 
         .column-header {
@@ -223,42 +225,78 @@
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
             border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
         }
 
         .column-content {
             flex-grow: 1;
-            overflow-y: auto; /* Adiciona scroll para o conteúdo da coluna */
-            padding-right: 0.5rem; /* Espaço para a scrollbar */
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            min-height: 0; 
         }
 
-        /* Estilos para os cards de Meta (arrastáveis) */
-        .meta-card {
-            background-color: var(--primary-light);
-            color: var(--primary-dark);
-            border: 1px solid var(--primary);
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.75rem;
-            cursor: grab;
-            transition: all 0.2s ease;
+        .planning-card {
+            background: var(--card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
             position: relative;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            margin-bottom: 0.75rem;
         }
-        .meta-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            background-color: color-mix(in srgb, var(--primary) 20%, transparent);
+
+        .planning-card:hover {
+            scale: 1.01;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .planning-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            position: relative;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .planning-card-header h5 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 0;
+            color: white;
+            flex: 1;
+        }
+
+        .planning-card-body {
+            padding: 1rem 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .planning-card-body p {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin: 0;
+        }
+        
+        .meta-card {
+            cursor: grab;
+            position: relative;
         }
         .meta-card.dragging {
             opacity: 0.5;
             border-style: dashed;
         }
-        .meta-card h5 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-        .meta-card p {
+        .meta-card .meta-description {
             font-size: 0.85rem;
             color: var(--muted);
         }
@@ -273,31 +311,19 @@
             font-weight: 500;
         }
 
-        /* Estilos para os slots de Agendamento (drop zones) */
         .appointment-slot {
-            background-color: var(--bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.75rem;
-            min-height: 80px; /* Altura mínima para o slot */
+            min-height: 80px;
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
         .appointment-slot.drag-over {
             background-color: color-mix(in srgb, var(--primary) 10%, transparent);
             border-color: var(--primary);
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
         }
-        .appointment-slot h5 {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-        .appointment-slot p {
-            font-size: 0.8rem;
+        .appointment-slot .appointment-info {
+            font-size: 0.85rem;
             color: var(--muted);
         }
         .appointment-slot .associated-meta {
@@ -330,7 +356,6 @@
             transform: scale(1.1);
         }
 
-        /* Estilos para o Modal de Detalhes da Meta */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -367,7 +392,7 @@
             overflow-y: auto; 
             padding: 2rem; 
             flex-grow: 1;
-            max-height: calc(90vh - 150px); /* Ajustado para caber no modal */
+            max-height: calc(90vh - 150px);
         }
         .modal-body h4 {
             font-size: 1.1rem;
@@ -400,7 +425,6 @@
         .modal-body ul li .status-indicator.pendente { background-color: var(--warning); }
         .modal-body ul li .status-indicator.em-progresso { background-color: var(--info); }
 
-        /* Estilos para o seletor de paciente */
         .patient-select-container {
             background-color: var(--card);
             border-radius: 12px;
@@ -431,18 +455,16 @@
             outline: none;
         }
 
-        /* Responsividade das colunas */
         @media (max-width: 992px) {
             .planning-container {
-                flex-direction: column; /* Empilha as colunas em telas menores */
+                flex-direction: column;
             }
             .column {
-                min-width: unset; /* Remove min-width quando empilhado */
+                min-width: unset;
                 width: 100%;
             }
         }
 
-        /* Estilos para o Modal de Confirmação Personalizado */
         .custom-confirm-modal .modal-content {
             max-width: 400px;
             text-align: center;
@@ -496,17 +518,16 @@
             border-color: var(--danger);
         }
 
-        /* Novo: Estilos para o Modal de Mensagens (sucesso, erro, aviso, info) */
         .message-modal .modal-content {
             max-width: 450px;
             text-align: center;
             padding: 2rem;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             border: 1px solid var(--border-color);
-            display: flex; /* Adicionado */
-            flex-direction: column; /* Adicionado */
-            align-items: center; /* Adicionado */
-            justify-content: center; /* Adicionado */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         .message-modal .modal-header {
             border-bottom: none;
@@ -514,14 +535,14 @@
             margin-bottom: 1.5rem;
             justify-content: center;
             position: relative;
-            width: 100%; /* Adicionado */
-            flex-direction: column; /* Adicionado */
+            width: 100%;
+            flex-direction: column;
         }
         .message-modal .modal-header .modal-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
-            display: block; /* Adicionado */
-            width: auto; /* Adicionado */
+            display: block;
+            width: auto;
         }
         .message-modal .modal-header .modal-icon.success { color: var(--success); }
         .message-modal .modal-header .modal-icon.danger { color: var(--danger); }
@@ -532,7 +553,7 @@
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--text);
-            margin: 0; /* Adicionado */
+            margin: 0;
         }
         .message-modal .modal-body {
             padding: 0;
@@ -540,13 +561,13 @@
             color: var(--muted);
             line-height: 1.5;
             margin-bottom: 1.5rem;
-            width: 100%; /* Adicionado */
+            width: 100%;
         }
         .message-modal .modal-footer {
             border-top: none;
             padding: 0;
             justify-content: center;
-            width: 100%; /* Adicionado */
+            width: 100%;
         }
         .message-modal .modal-close-btn {
             position: absolute;
@@ -569,7 +590,6 @@
             border-color: var(--danger);
         }
 
-        /* Estilo do botão OK no modal de mensagem */
         #messageModalCloseBtn {
             background-color: var(--primary);
             color: white;
@@ -582,7 +602,6 @@
             background-color: var(--accent);
         }
 
-        /* Estilos para o Modal de Filtros */
         .filter-modal .modal-content {
             max-width: 500px;
             padding: 2rem;
@@ -620,10 +639,163 @@
             padding-top: 1.5rem;
             border-top: 1px solid var(--border-color);
         }
+
+        .meta-details-modal-modern .modal-content {
+            max-width: 800px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .meta-details-modal-modern .modal-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            border-bottom: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .meta-details-modal-modern .modal-header::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .meta-details-modal-modern .modal-header h3 {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .meta-details-modal-modern .modal-header h3 i {
+            font-size: 1.8rem;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .meta-details-modal-modern .modal-close-btn {
+            color: white;
+            font-size: 1.8rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .meta-details-modal-modern .modal-body {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            overflow-y: auto;
+        }
+
+        @media (min-width: 768px) {
+            .meta-details-modal-modern .modal-body {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .meta-details-modal-modern .info-section {
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .meta-details-modal-modern .info-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .meta-details-modal-modern .info-section-title i {
+            color: var(--primary);
+        }
+
+        .meta-details-modal-modern .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .meta-details-modal-modern .info-label {
+            font-size: 0.85rem;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .meta-details-modal-modern .info-value {
+            font-size: 0.95rem;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .meta-details-modal-modern .alvos-list-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 250px;
+            padding-right: 0.5rem;
+        }
+
+        .meta-details-modal-modern .alvos-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .meta-details-modal-modern .alvos-list li {
+            background-color: var(--card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .meta-details-modal-modern .alvos-list li:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transform: translateY(-1px);
+        }
+
+        .meta-details-modal-modern .alvos-list li .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .meta-details-modal-modern .alvos-list li .status-indicator.finalizada { background-color: var(--success); }
+        .meta-details-modal-modern .alvos-list li .status-indicator.pendente { background-color: var(--warning); }
+        .meta-details-modal-modern .alvos-list li .status-indicator.em-progresso { background-color: var(--info); }
+        
+        .meta-details-modal-modern .empty-list-message {
+            color: var(--muted);
+            font-style: italic;
+            text-align: center;
+            padding: 1rem;
+        }
     </style>
 </head>
 <body>
-    <!-- REMOVED: <div id="toast-container"></div> -->
     <div class="layout">
         {% include 'Nav.html' %}
 
@@ -635,21 +807,20 @@
                     <h1 class="page-title">Planejamento Semanal</h1>
                 </div>
                 <div class="topbar-actions">
-                    <!-- Botão de Filtros -->
                     <button id="filterButton" class="btn btn-primary">
                         <i class="fas fa-filter"></i> Filtros
+                    </button>
+                    <button id="printWeeklyPlanningBtn" class="btn btn-secondary">
+                        <i class="fas fa-print"></i> Imprimir Relatório
                     </button>
                 </div>
             </header>
 
             <main>
-                {# REMOVED: Flash Messages section as it will be handled by the new message modal #}
-
                 <div class="patient-select-container">
                     <label for="patient-selector">Paciente:</label>
                     <select id="patient-selector">
                         <option value="">Selecione um paciente</option>
-                        <!-- Pacientes serão carregados via JS ou Jinja se houver uma lista de todos os pacientes -->
                         <option value="{{ patient.id }}" selected>{{ patient.nome }}</option>
                     </select>
                 </div>
@@ -660,13 +831,18 @@
                         <div class="column-content" id="metas-list">
                             {% if metas_ativas %}
                                 {% for meta in metas_ativas %}
-                                    <div class="meta-card" draggable="true" 
+                                    <div class="meta-card planning-card" draggable="true" 
                                         data-meta-id="{{ meta.id }}" 
                                         data-meta-name="{{ meta.descricao }}"
-                                        data-pei-id="{{ meta.pei_id }}">
-                                        <h5>{{ meta.descricao }}</h5>
-                                        <p>{{ meta.descricao }}</p>
-                                        <span class="pei-tag">PEI: {{ meta.pei_id }}</span>
+                                        data-pei-id="{{ meta.pei_id }}"
+                                        data-pei-title="{{ meta.pei_title }}">
+                                        <div class="planning-card-header">
+                                            <h5>{{ meta.descricao }}</h5>
+                                        </div>
+                                        <div class="planning-card-body">
+                                            <p class="meta-description">{{ meta.descricao }}</p>
+                                            <span class="pei-tag">PEI: {{ meta.pei_title }}</span>
+                                        </div>
                                     </div>
                                 {% endfor %}
                             {% else %}
@@ -680,24 +856,28 @@
                         <div class="column-content" id="sessions-list">
                             {% if agendamentos_semana %}
                                 {% for agendamento in agendamentos_semana %}
-                                    <div class="appointment-slot" 
+                                    <div class="appointment-slot planning-card" 
                                         data-appointment-id="{{ agendamento.id }}"
                                         data-date="{{ agendamento.data_agendamento }}"
                                         data-time="{{ agendamento.hora_agendamento }}">
-                                        <h5>{{ agendamento.data_formatada }} - {{ agendamento.hora_agendamento }}</h5>
-                                        <p>Profissional: {{ agendamento.profissional_nome }}</p>
-                                        <p>Serviço: {{ agendamento.servico_procedimento_nome }}</p>
-                                        <div class="associated-metas-container">
-                                            {% for associated_meta in agendamento.metas_associadas %}
-                                                <div class="associated-meta" 
-                                                    data-associated-meta-id="{{ associated_meta.meta_id }}"
-                                                    data-associated-pei-id="{{ associated_meta.pei_id }}">
-                                                    <span>{{ associated_meta.meta_nome }}</span>
-                                                    <button class="remove-meta-btn" title="Remover Meta">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </div>
-                                            {% endfor %}
+                                        <div class="planning-card-header">
+                                            <h5>{{ agendamento.data_formatada }} - {{ agendamento.hora_agendamento }}</h5>
+                                        </div>
+                                        <div class="planning-card-body">
+                                            <p class="appointment-info">Profissional: {{ agendamento.profissional_nome }}</p>
+                                            <p class="appointment-info">Serviço: {{ agendamento.servico_procedimento_nome }}</p>
+                                            <div class="associated-metas-container">
+                                                {% for associated_meta in agendamento.metas_associadas %}
+                                                    <div class="associated-meta" 
+                                                        data-associated-meta-id="{{ associated_meta.meta_id }}"
+                                                        data-associated-pei-id="{{ associated_meta.pei_id }}">
+                                                        <span>{{ associated_meta.meta_nome }}</span>
+                                                        <button class="remove-meta-btn" title="Remover Meta">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                     </div>
                                 {% endfor %}
@@ -711,29 +891,33 @@
         </div>
     </div>
 
-    <!-- Modal de Detalhes da Meta -->
-    <div class="modal-overlay" id="metaDetailsModal">
+    <div class="modal-overlay meta-details-modal-modern" id="metaDetailsModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="meta-modal-title"><i class="fas fa-bullseye"></i> Detalhes da Meta</h3>
                 <button type="button" class="modal-close-btn" data-close-modal>&times;</button>
             </div>
             <div class="modal-body">
-                <h4>Descrição:</h4>
-                <p id="meta-modal-description"></p>
-                <h4 style="margin-top: 1.5rem;">Alvos:</h4>
-                <ul id="meta-modal-alvos-list">
-                    <!-- Alvos serão injetados aqui via JS -->
-                </ul>
-                <h4 style="margin-top: 1.5rem;">Ajudas Necessárias:</h4>
-                <ul id="meta-modal-aids-list">
-                    <!-- Ajudas serão injetadas aqui via JS -->
-                </ul>
+                <div class="info-section">
+                    <h4 class="info-section-title"><i class="fas fa-info-circle"></i> Descrição da Meta</h4>
+                    <div class="info-item">
+                        <span class="info-label">Descrição:</span>
+                        <span class="info-value" id="meta-modal-description"></span>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h4 class="info-section-title"><i class="fas fa-list-check"></i> Alvos da Meta</h4>
+                    <div class="alvos-list-container">
+                        <ul class="alvos-list" id="meta-modal-alvos-list">
+                        </ul>
+                        <p id="no-alvos-message" class="empty-list-message" style="display: none;">Nenhum alvo definido para esta meta.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Custom Confirm Modal -->
     <div class="modal-overlay custom-confirm-modal" id="customConfirmModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -750,7 +934,6 @@
         </div>
     </div>
 
-    <!-- Novo: Modal de Mensagens (Sucesso, Erro, Aviso, Info) -->
     <div class="modal-overlay message-modal" id="messageModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -767,7 +950,6 @@
         </div>
     </div>
 
-    <!-- Modal de Filtros -->
     <div class="modal-overlay filter-modal" id="filterModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -804,8 +986,8 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module">
-        // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
         const FAKE_FIREBASE = {
             initializeApp: () => ({}),
             getAuth: () => ({ currentUser: null, signOut: () => new Promise(res => res()) })
@@ -816,7 +998,6 @@
         let auth = getAuth(initializeApp(firebaseConfig));
 
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Lógica para Mensagens em Modal (substitui Toast) ---
             const messageModal = document.getElementById('messageModal');
             const messageModalIcon = document.getElementById('message-modal-icon');
             const messageModalTitle = document.getElementById('message-modal-title');
@@ -824,7 +1005,7 @@
             const messageModalCloseBtn = document.getElementById('messageModalCloseBtn');
 
             function showMessageModal(message, type = 'info', title = '') {
-                messageModalIcon.className = 'modal-icon'; // Reset classes
+                messageModalIcon.className = 'modal-icon';
                 messageModalTitle.textContent = title;
                 messageModalText.textContent = message;
 
@@ -855,12 +1036,12 @@
                 messageModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
                 
                 messageModal.classList.add('active');
-                document.body.style.overflow = 'hidden'; // Prevent body scroll
+                document.body.style.overflow = 'hidden';
             }
 
             function closeMessageModal() {
                 messageModal.classList.remove('active');
-                document.body.style.overflow = ''; // Restore body scroll
+                document.body.style.overflow = '';
             }
 
             messageModalCloseBtn.addEventListener('click', closeMessageModal);
@@ -870,7 +1051,6 @@
                 }
             });
 
-            // --- Sidebar Logic (reused from Nav.html) ---
             const htmlEl = document.documentElement;
             const sidebar = document.querySelector('.sidebar');
             const mainContent = document.querySelector('.main-content');
@@ -879,97 +1059,121 @@
             const themeToggle = document.getElementById('theme-toggle');
             const logoutButton = document.getElementById('logoutButton');
 
-            // --- Lógica de Drag and Drop ---
             let draggedMeta = null;
 
             const metasList = document.getElementById('metas-list');
             const sessionsList = document.getElementById('sessions-list');
-            const metaCards = document.querySelectorAll('.meta-card');
-            const appointmentSlots = document.querySelectorAll('.appointment-slot');
+            let metaCards = document.querySelectorAll('.meta-card');
+            let appointmentSlots = document.querySelectorAll('.appointment-slot');
             const patientSelector = document.getElementById('patient-selector');
 
-            // Dados iniciais (podem ser atualizados via API)
             let allMetas = {{ metas_ativas | tojson | safe }};
             let allAppointments = {{ agendamentos_semana | tojson | safe }};
             let currentPatientId = "{{ patient.id }}";
 
-            // Event Listeners para Drag
-            metaCards.forEach(card => {
-                card.addEventListener('dragstart', (e) => {
-                    draggedMeta = {
-                        id: e.target.dataset.metaId,
-                        name: e.target.dataset.metaName,
-                        pei_id: e.target.dataset.peiId
-                    };
-                    e.target.classList.add('dragging');
-                    e.dataTransfer.setData('text/plain', JSON.stringify(draggedMeta));
-                    console.log('Drag started for meta:', draggedMeta);
-                });
+            const IS_ADMIN = {{ is_admin | default(false) | tojson }};
+            const IS_PROFESSIONAL = {{ is_professional | default(false) | tojson }};
+            const LOGGED_IN_PROFESSIONAL_ID = "{{ logged_in_professional_id | default('') }}";
+            const LOGGED_IN_PROFESSIONAL_NAME = "{{ logged_in_professional_name | default('N/A') }}";
 
-                card.addEventListener('dragend', (e) => {
-                    e.target.classList.remove('dragging');
-                    draggedMeta = null;
-                });
-            });
 
-            // Event Listeners para Drop
-            appointmentSlots.forEach(slot => {
-                slot.addEventListener('dragover', (e) => {
-                    e.preventDefault(); // Necessário para permitir o drop
-                    slot.classList.add('drag-over');
-                });
-
-                slot.addEventListener('dragleave', () => {
-                    slot.classList.remove('drag-over');
-                });
-
-                slot.addEventListener('drop', async (e) => {
-                    e.preventDefault();
-                    slot.classList.remove('drag-over');
-
-                    const appointmentId = e.currentTarget.dataset.appointmentId;
-                    const metaData = JSON.parse(e.dataTransfer.getData('text/plain'));
-
-                    console.log('Meta dropped:', metaData, 'onto appointment:', appointmentId);
-
-                    // Verifica se a meta já está associada a este agendamento
-                    const existingMetas = Array.from(slot.querySelectorAll('.associated-meta')).map(el => el.dataset.associatedMetaId);
-                    if (existingMetas.includes(metaData.id)) {
-                        showMessageModal('Esta meta já está associada a este agendamento.', 'warning'); 
-                        return;
-                    }
-
-                    try {
-                        const response = await fetch('/api/planejamento_semanal/associar_meta', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                agendamento_id: appointmentId,
-                                meta_id: metaData.id,
-                                meta_nome: metaData.name,
-                                pei_id: metaData.pei_id,
-                                action: 'associar'
-                            })
-                        });
-
-                        const result = await response.json();
-                        if (result.success) {
-                            showMessageModal(result.message, 'success'); 
-                            // Adiciona visualmente a meta ao slot
-                            addMetaToSlotUI(slot, metaData);
-                        } else {
-                            showMessageModal(result.message, 'danger'); 
+            function initializeMetaCards() {
+                metaCards = document.querySelectorAll('.meta-card');
+                metaCards.forEach(card => {
+                    card.addEventListener('dragstart', (e) => {
+                        const peiId = e.target.dataset.peiId;
+                        const metaPei = allMetas.find(m => m.id === e.target.dataset.metaId && m.pei_id === peiId);
+                        
+                        if (!IS_ADMIN && IS_PROFESSIONAL && metaPei && metaPei.profissionais_ids && !metaPei.profissionais_ids.includes(LOGGED_IN_PROFESSIONAL_ID)) {
+                            e.preventDefault();
+                            showMessageModal('Você não tem permissão para associar metas de outros profissionais.', 'warning');
+                            return;
                         }
-                    } catch (error) {
-                        console.error('Erro ao associar meta:', error);
-                        showMessageModal('Erro ao associar meta. Tente novamente.', 'danger'); 
-                    }
-                });
-            });
 
-            // Função para adicionar visualmente a meta a um slot
+                        draggedMeta = {
+                            id: e.target.dataset.metaId,
+                            name: e.target.dataset.metaName,
+                            pei_id: e.target.dataset.peiId,
+                            pei_title: e.target.dataset.peiTitle
+                        };
+                        e.target.classList.add('dragging');
+                        e.dataTransfer.setData('text/plain', JSON.stringify(draggedMeta));
+                    });
+
+                    card.addEventListener('dragend', (e) => {
+                        e.target.classList.remove('dragging');
+                        draggedMeta = null;
+                    });
+                });
+            }
+
+            initializeMetaCards();
+
+            function initializeAppointmentSlots() {
+                appointmentSlots = document.querySelectorAll('.appointment-slot');
+                appointmentSlots.forEach(slot => {
+                    slot.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        slot.classList.add('drag-over');
+                    });
+
+                    slot.addEventListener('dragleave', () => {
+                        slot.classList.remove('drag-over');
+                    });
+
+                    slot.addEventListener('drop', async (e) => {
+                        e.preventDefault();
+                        slot.classList.remove('drag-over');
+
+                        const appointmentId = e.currentTarget.dataset.appointmentId;
+                        const metaData = JSON.parse(e.dataTransfer.getData('text/plain'));
+
+                        const appointment = allAppointments.find(a => a.id === appointmentId);
+                        if (!IS_ADMIN && IS_PROFESSIONAL && appointment && appointment.profissional_id !== LOGGED_IN_PROFESSIONAL_ID) {
+                            showMessageModal('Você não pode associar metas a agendamentos de outros profissionais.', 'warning');
+                            return;
+                        }
+
+                        const existingMetasContainer = slot.querySelector('.associated-metas-container');
+                        const existingMetas = existingMetasContainer ? Array.from(existingMetasContainer.children).map(el => el.dataset.associatedMetaId) : [];
+
+                        if (existingMetas.includes(metaData.id)) {
+                            showMessageModal('Esta meta já está associada a este agendamento.', 'warning'); 
+                            return;
+                        }
+
+                        try {
+                            const response = await fetch('/api/planejamento_semanal/associar_meta', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    agendamento_id: appointmentId,
+                                    meta_id: metaData.id,
+                                    meta_nome: metaData.name,
+                                    pei_id: metaData.pei_id,
+                                    action: 'associar'
+                                })
+                            });
+
+                            const result = await response.json();
+                            if (result.success) {
+                                showMessageModal(result.message, 'success'); 
+                                addMetaToSlotUI(slot, metaData);
+                            } else {
+                                showMessageModal(result.message, 'danger'); 
+                            }
+                        } catch (error) {
+                            console.error('Erro ao associar meta:', error);
+                            showMessageModal('Erro ao associar meta. Tente novamente.', 'danger'); 
+                        }
+                    });
+                });
+            }
+
+            initializeAppointmentSlots();
+
             function addMetaToSlotUI(slotElement, metaData) {
                 let associatedMetasContainer = slotElement.querySelector('.associated-metas-container');
                 if (!associatedMetasContainer) {
@@ -991,13 +1195,10 @@
                 `;
                 associatedMetasContainer.appendChild(newMetaDiv);
 
-                // Adiciona listener para remover a meta
                 newMetaDiv.querySelector('.remove-meta-btn').addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    console.log('Attempting to disassociate meta via dynamically added button.'); // DEBUG
                     
                     showCustomConfirm('Tem certeza que deseja desassociar esta meta deste agendamento?', async (confirmed) => {
-                        console.log('Confirmation result (modal):', confirmed); // DEBUG
                         if (!confirmed) return;
 
                         const slotElement = newMetaDiv.closest('.appointment-slot');
@@ -1006,7 +1207,11 @@
                         const peiIdToRemove = newMetaDiv.dataset.associatedPeiId;
                         const metaName = newMetaDiv.querySelector('span').textContent;
 
-                        console.log('Disassociating data:', { appointmentId, metaIdToRemove, peiIdToRemove, metaName }); // DEBUG
+                        const appointment = allAppointments.find(a => a.id === appointmentId);
+                        if (!IS_ADMIN && IS_PROFESSIONAL && appointment && appointment.profissional_id !== LOGGED_IN_PROFESSIONAL_ID) {
+                            showMessageModal('Você não pode desassociar metas de agendamentos de outros profissionais.', 'warning');
+                            return;
+                        }
 
                         try {
                             const response = await fetch('/api/planejamento_semanal/associar_meta', {
@@ -1038,75 +1243,75 @@
                 });
             }
 
-            
-            document.querySelectorAll('.associated-meta').forEach(metaDiv => {
-                metaDiv.querySelector('.remove-meta-btn').addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    console.log('Attempting to disassociate meta via pre-existing button.'); // DEBUG
-                    
-                    showCustomConfirm('Tem certeza que deseja desassociar esta meta deste agendamento?', async (confirmed) => {
-                        console.log('Confirmation result (modal):', confirmed); // DEBUG
-                        if (!confirmed) return;
+            function initializeRemoveMetaButtons() {
+                document.querySelectorAll('.associated-meta .remove-meta-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        
+                        showCustomConfirm('Tem certeza que deseja desassociar esta meta deste agendamento?', async (confirmed) => {
+                            if (!confirmed) return;
 
-                        const slotElement = metaDiv.closest('.appointment-slot');
-                        const appointmentId = slotElement.dataset.appointmentId;
-                        const metaIdToRemove = metaDiv.dataset.associatedMetaId;
-                        const peiIdToRemove = metaDiv.dataset.associatedPeiId;
-                        const metaName = metaDiv.querySelector('span').textContent;
+                            const metaDiv = e.target.closest('.associated-meta');
+                            const slotElement = metaDiv.closest('.appointment-slot');
+                            const appointmentId = slotElement.dataset.appointmentId;
+                            const metaIdToRemove = metaDiv.dataset.associatedMetaId;
+                            const peiIdToRemove = metaDiv.dataset.associatedPeiId;
+                            const metaName = metaDiv.querySelector('span').textContent;
 
-                        console.log('Disassociating data:', { appointmentId, metaIdToRemove, peiIdToRemove, metaName }); // DEBUG
-
-                        try {
-                            const response = await fetch('/api/planejamento_semanal/associar_meta', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    agendamento_id: appointmentId,
-                                    meta_id: metaIdToRemove,
-                                    meta_nome: metaName,
-                                    pei_id: peiIdToRemove,
-                                    action: 'desassociar'
-                                })
-                            });
-
-                            const result = await response.json();
-                            if (result.success) {
-                                showMessageModal(result.message, 'success'); 
-                                metaDiv.remove(); // Remove visualmente
-                            } else {
-                                showMessageModal(result.message, 'danger'); 
+                            const appointment = allAppointments.find(a => a.id === appointmentId);
+                            if (!IS_ADMIN && IS_PROFESSIONAL && appointment && appointment.profissional_id !== LOGGED_IN_PROFESSIONAL_ID) {
+                                showMessageModal('Você não pode desassociar metas de agendamentos de outros profissionais.', 'warning');
+                                return;
                             }
-                        } catch (error) {
-                            console.error('Erro ao desassociar meta:', error);
-                            showMessageModal('Erro ao desassociar meta. Tente novamente.', 'danger'); 
-                        }
+
+                            try {
+                                const response = await fetch('/api/planejamento_semanal/associar_meta', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        agendamento_id: appointmentId,
+                                        meta_id: metaIdToRemove,
+                                        meta_nome: metaName,
+                                        pei_id: peiIdToRemove,
+                                        action: 'desassociar'
+                                    })
+                                });
+
+                                const result = await response.json();
+                                if (result.success) {
+                                    showMessageModal(result.message, 'success'); 
+                                    metaDiv.remove(); 
+                                } else {
+                                    showMessageModal(result.message, 'danger'); 
+                                }
+                            } catch (error) {
+                                console.error('Erro ao desassociar meta:', error);
+                                showMessageModal('Erro ao desassociar meta. Tente novamente.', 'danger'); 
+                            }
+                        });
                     });
                 });
-            });
+            }
+            initializeRemoveMetaButtons();
 
-            // --- Lógica do Modal de Detalhes da Meta ---
             const metaDetailsModal = document.getElementById('metaDetailsModal');
             const metaModalTitle = document.getElementById('meta-modal-title');
             const metaModalDescription = document.getElementById('meta-modal-description');
             const metaModalAlvosList = document.getElementById('meta-modal-alvos-list');
-            const metaModalAidsList = document.getElementById('meta-modal-aids-list'); // Novo elemento para ajudas
-            const closeModalBtn = metaDetailsModal.querySelector('[data-close-modal]');
-
-            // Abre o modal de detalhes da meta
+            const noAlvosMessage = document.getElementById('no-alvos-message');
+            
             function openMetaDetailsModal(meta) {
-                metaModalTitle.innerHTML = `<i class="fas fa-bullseye"></i> Detalhes da Meta: ${meta.descricao}`; // Usar descricao
+                metaModalTitle.innerHTML = `<i class="fas fa-bullseye"></i> Detalhes da Meta: ${meta.descricao}`;
                 metaModalDescription.textContent = meta.descricao || 'Nenhuma descrição fornecida.';
-                metaModalAlvosList.innerHTML = ''; // Limpa a lista de alvos
-                metaModalAidsList.innerHTML = ''; // Limpa a lista de ajudas
+                metaModalAlvosList.innerHTML = '';
 
-                // Exibir Alvos
                 if (meta.alvos && meta.alvos.length > 0) {
+                    noAlvosMessage.style.display = 'none';
                     meta.alvos.forEach(alvo => {
                         const li = document.createElement('li');
                         let statusClass = '';
-                        // Note: O status de alvo no backend é 'Pendente' ou 'Finalizado'. Ajuste conforme necessário se houver outros.
                         if (alvo.status === 'Finalizado') statusClass = 'finalizada';
                         else if (alvo.status === 'Pendente') statusClass = 'pendente';
                         else statusClass = 'em-progresso'; 
@@ -1118,60 +1323,13 @@
                         metaModalAlvosList.appendChild(li);
                     });
                 } else {
-                    const li = document.createElement('li');
-                    li.textContent = 'Nenhum alvo encontrado para esta meta.';
-                    metaModalAlvosList.appendChild(li);
+                    noAlvosMessage.style.display = 'block';
                 }
-
- 
-                let allAids = [];
-                if (meta.alvos) {
-                    meta.alvos.forEach(alvo => {
-                        if (alvo.aids) {
-                            alvo.aids.forEach(aid => {
-                                allAids.push(aid);
-                            });
-                        }
-                    });
-                }
-
-                if (allAids.length > 0) {
-         
-                    const aidsSummary = {};
-                    allAids.forEach(aid => {
-                        if (!aidsSummary[aid.sigla]) {
-                            aidsSummary[aid.sigla] = {
-                                description: aid.description,
-                                count: 0,
-                                totalAttempts: 0,
-                                maxQuantity: aid.quant_max || 0 // Assume quant_max existe
-                            };
-                        }
-                        aidsSummary[aid.sigla].count++;
-                        aidsSummary[aid.sigla].totalAttempts += aid.attempts_count || 0;
-                    });
-
-                    for (const sigla in aidsSummary) {
-                        const summary = aidsSummary[sigla];
-                        const li = document.createElement('li');
-                        li.innerHTML = `
-                            <strong>${sigla}</strong>: ${summary.description} (Usada em ${summary.count} alvos)
-                            ${summary.maxQuantity ? ` - Quantidade Máxima: ${summary.maxQuantity}` : ''}
-                            ${summary.totalAttempts > 0 ? ` - Tentativas Registradas: ${summary.totalAttempts}` : ''}
-                        `;
-                        metaModalAidsList.appendChild(li);
-                    }
-                } else {
-                    const li = document.createElement('li');
-                    li.textContent = 'Nenhuma ajuda associada a esta meta.';
-                    metaModalAidsList.appendChild(li);
-                }
-
 
                 metaDetailsModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
             }
 
-            // Event listener para abrir o modal ao clicar em uma meta
             metasList.addEventListener('click', (e) => {
                 const metaCard = e.target.closest('.meta-card');
                 if (metaCard) {
@@ -1183,79 +1341,71 @@
                 }
             });
 
-            // Fecha o modal de detalhes da meta
-            closeModalBtn.addEventListener('click', () => {
+            const closeModalBtnMetaDetails = metaDetailsModal.querySelector('.modal-close-btn');
+            closeModalBtnMetaDetails.addEventListener('click', () => {
                 metaDetailsModal.classList.remove('active');
+                document.body.style.overflow = '';
             });
             metaDetailsModal.addEventListener('click', (e) => {
                 if (e.target === metaDetailsModal) {
                     metaDetailsModal.classList.remove('active');
+                    document.body.style.overflow = '';
                 }
             });
 
-            // --- Lógica do Seletor de Pacientes ---
-            // A lista de pacientes é carregada inicialmente com o paciente atual.
-            // Para carregar todos os pacientes, seria necessário um endpoint API separado
-            // ou passar a lista completa via Jinja2 para o paciente logado.
-            // Por enquanto, o seletor apenas exibe o paciente atual.
-            // Uma funcionalidade de "trocar paciente" exigiria redirecionamento ou recarregamento de dados via API.
+
             patientSelector.addEventListener('change', (e) => {
                 const selectedPatientId = e.target.value;
                 if (selectedPatientId && selectedPatientId !== currentPatientId) {
-                    // Redireciona para a página do novo paciente
                     window.location.href = `/pacientes/${selectedPatientId}/planejamento_semanal`;
                 }
             });
 
-            // --- Custom Confirm Modal Logic ---
             const customConfirmModal = document.getElementById('customConfirmModal');
             const confirmModalTitle = document.getElementById('confirm-modal-title');
             const confirmModalMessage = document.getElementById('confirm-modal-message');
             const confirmCancelBtn = document.getElementById('confirmCancelBtn');
             const confirmConfirmBtn = document.getElementById('confirmConfirmBtn');
 
-            let confirmCallback = null; // Callback para ser chamado após a confirmação
+            let confirmCallback = null;
 
             function showCustomConfirm(message, callback) {
                 confirmModalTitle.textContent = 'Confirmação Necessária';
                 confirmModalMessage.textContent = message;
-                confirmCallback = callback; // Armazena o callback
+                confirmCallback = callback;
                 customConfirmModal.classList.add('active');
-                document.body.style.overflow = 'hidden'; // Evita scroll no body
+                document.body.style.overflow = 'hidden';
             }
 
             function closeCustomConfirm() {
                 customConfirmModal.classList.remove('active');
-                document.body.style.overflow = ''; // Restaura scroll
-                confirmCallback = null; // Limpa o callback
+                document.body.style.overflow = '';
+                confirmCallback = null;
             }
 
-            // Event listeners para os botões do modal de confirmação
             confirmCancelBtn.addEventListener('click', () => {
                 if (confirmCallback) {
-                    confirmCallback(false); // Chama o callback com false (cancelado)
+                    confirmCallback(false);
                 }
                 closeCustomConfirm();
             });
 
             confirmConfirmBtn.addEventListener('click', () => {
                 if (confirmCallback) {
-                    confirmCallback(true); // Chama o callback com true (confirmado)
+                    confirmCallback(true);
                 }
                 closeCustomConfirm();
             });
 
-            // Fechar modal clicando no X ou fora
             customConfirmModal.addEventListener('click', (e) => {
                 if (e.target === customConfirmModal || e.target.closest('[data-close-modal="customConfirmModal"]')) {
                     if (confirmCallback) {
-                        confirmCallback(false); // Considera cancelado se fechar sem clicar nos botões
+                        confirmCallback(false);
                     }
                     closeCustomConfirm();
                 }
             });
 
-            // --- Lógica do Modal de Filtros ---
             const filterButton = document.getElementById('filterButton');
             const filterModal = document.getElementById('filterModal');
             const startDateInput = document.getElementById('startDate');
@@ -1264,28 +1414,24 @@
             const applyFiltersBtn = document.getElementById('applyFiltersBtn');
             const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
-            // Função para abrir o modal de filtros
             filterButton.addEventListener('click', () => {
                 filterModal.classList.add('active');
-                document.body.style.overflow = 'hidden'; // Evita scroll no body
-                // Preencher os campos do formulário com os valores atuais da URL, se existirem
+                document.body.style.overflow = 'hidden';
                 const urlParams = new URLSearchParams(window.location.search);
                 startDateInput.value = urlParams.get('start_date') || '';
                 endDateInput.value = urlParams.get('end_date') || '';
-                if (professionalSelect) { // Apenas se o elemento existir (admin)
+                if (professionalSelect) {
                     professionalSelect.value = urlParams.get('professional_id') || '';
                 }
             });
 
-            // Função para fechar o modal de filtros
             filterModal.addEventListener('click', (e) => {
                 if (e.target === filterModal || e.target.closest('[data-close-modal="filterModal"]')) {
                     filterModal.classList.remove('active');
-                    document.body.style.overflow = ''; // Restaura scroll
+                    document.body.style.overflow = '';
                 }
             });
 
-            // Aplicar filtros
             applyFiltersBtn.addEventListener('click', () => {
                 const startDate = startDateInput.value;
                 const endDate = endDateInput.value;
@@ -1298,28 +1444,118 @@
                 if (endDate) {
                     urlParams.set('end_date', endDate);
                 }
-                if (professionalId) {
+                if (!IS_ADMIN && IS_PROFESSIONAL) {
+                    urlParams.set('professional_id', LOGGED_IN_PROFESSIONAL_ID);
+                } else if (professionalId) {
                     urlParams.set('professional_id', professionalId);
                 }
 
-                // Redireciona para a mesma página com os novos parâmetros de filtro
                 window.location.search = urlParams.toString();
                 filterModal.classList.remove('active');
                 document.body.style.overflow = '';
             });
 
-            // Limpar filtros
             clearFiltersBtn.addEventListener('click', () => {
-                // Remove todos os parâmetros de filtro da URL
                 window.location.search = '';
                 filterModal.classList.remove('active');
                 document.body.style.overflow = '';
             });
 
-            // Define o valor inicial do seletor de paciente com base no paciente atual
-            // Isso garante que o paciente correto esteja selecionado ao carregar a página
             if (currentPatientId) {
                 patientSelector.value = currentPatientId;
+            }
+
+            const printWeeklyPlanningBtn = document.getElementById('printWeeklyPlanningBtn');
+            if (printWeeklyPlanningBtn) {
+                printWeeklyPlanningBtn.addEventListener('click', () => {
+                    generateWeeklyPlanningPdf();
+                });
+            }
+
+            function generateWeeklyPlanningPdf() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                let yPos = 20;
+                const margin = 15;
+                const contentLineHeight = 6;
+                const contentFontSize = 10;
+                const maxWidth = doc.internal.pageSize.width - margin * 2;
+
+                const patientName = "{{ patient.nome if patient else 'Paciente' }}";
+                const patientCpf = "{{ patient.cpf or 'N/A' }}";
+                const patientDob = "{{ patient.data_nascimento.strftime('%d/%m/%Y') if patient.data_nascimento else 'N/A' }}";
+                const clinicName = "{{ session.clinica_nome_display or 'Clínica On' }}";
+                const loggedInProfessionalName = LOGGED_IN_PROFESSIONAL_NAME;
+
+                const checkPageBreak = (heightNeeded) => {
+                    if (yPos + heightNeeded > doc.internal.pageSize.height - margin) {
+                        doc.addPage();
+                        yPos = margin;
+                    }
+                };
+
+                doc.setFontSize(14).setFont("helvetica", "bold").text(clinicName, margin, yPos);
+                yPos += 10;
+                doc.setLineWidth(0.8).setDrawColor(85, 135, 194).line(margin, yPos, maxWidth + margin, yPos);
+                yPos += 12;
+
+                doc.setFontSize(11).setFont("helvetica", "normal");
+                doc.text(`Paciente: ${patientName}`, margin, yPos);
+                yPos += 7;
+                doc.text(`CPF: ${patientCpf}`, margin, yPos);
+                doc.text(`Data de Nascimento: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
+                yPos += 7;
+                doc.text(`Profissional Responsável: ${loggedInProfessionalName}`, margin, yPos);
+                yPos += 15;
+
+                checkPageBreak(20);
+                doc.setFontSize(18).setFont("helvetica", "bold").setTextColor(85, 135, 194).text("Relatório de Planejamento Semanal", doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                yPos += 12;
+                doc.setLineWidth(0.5).setDrawColor(85, 135, 194).line(margin, yPos, maxWidth + margin, yPos);
+                yPos += 15;
+                doc.setTextColor(0, 0, 0);
+
+                checkPageBreak(15);
+                doc.setFontSize(14).setFont("helvetica", "bold").text("Agendamentos da Semana:", margin, yPos);
+                yPos += 10;
+
+                if (allAppointments.length > 0) {
+                    allAppointments.forEach((agendamento) => {
+                        checkPageBreak(40);
+                        
+                        doc.setFillColor(241, 245, 249);
+                        doc.rect(margin, yPos, maxWidth, 35 + (agendamento.metas_associadas.length * contentLineHeight), 'F');
+
+                        doc.setFontSize(11).setFont("helvetica", "bold").text(`Data: ${agendamento.data_formatada} - ${agendamento.hora_agendamento}`, margin + 5, yPos + 7);
+                        doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                        doc.text(`Profissional: ${agendamento.profissional_nome}`, margin + 5, yPos + 14);
+                        doc.text(`Serviço: ${agendamento.servico_procedimento_nome}`, margin + 5, yPos + 21);
+
+                        let currentMetaY = yPos + 28;
+
+                        if (agendamento.metas_associadas && agendamento.metas_associadas.length > 0) {
+                            doc.setFontSize(contentFontSize).setFont("helvetica", "bold").text('Metas Associadas:', margin + 5, currentMetaY);
+                            currentMetaY += contentLineHeight;
+                            agendamento.metas_associadas.forEach(associatedMeta => {
+                                checkPageBreak(contentLineHeight);
+                                doc.setFontSize(contentFontSize).setFont("helvetica", "normal").text(`  - ${associatedMeta.meta_nome} (PEI: ${associatedMeta.pei_title || 'N/A'})`, margin + 10, currentMetaY);
+                                currentMetaY += contentLineHeight;
+                            });
+                        } else {
+                            checkPageBreak(contentLineHeight);
+                            doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta associada a este agendamento.', margin + 5, currentMetaY);
+                            currentMetaY += contentLineHeight;
+                        }
+                        yPos = currentMetaY + 10;
+                    });
+                } else {
+                    checkPageBreak(10);
+                    doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhum agendamento encontrado para este paciente nesta semana.', margin, yPos);
+                    yPos += contentLineHeight;
+                }
+
+                doc.save(`planejamento-semanal-${patientName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`);
+                showMessageModal('PDF do Planejamento Semanal gerado com sucesso!', 'success');
             }
         });
     </script>
