@@ -1180,6 +1180,8 @@
 
         #patient-steps-modal-overlay.visible #patient-steps-modal {
             transform: scale(1) translateY(0);
+            position: relative;
+            overflow: hidden;
         }
 
         /* Header moderno da modal */
@@ -1458,6 +1460,10 @@
         .modal-actions {
             display: flex;
             gap: 1rem;
+        }
+        
+        .patient-form {
+            overflow-y: auto;
         }
 
         .modern-btn {
@@ -2282,7 +2288,7 @@
         /* Estados ativos do indicador de progresso */
         .progress-step.active .progress-step-circle {
             background: linear-gradient(135deg, #6366f1, #a855f7);
-            border-color: #6366f1;
+            /* border-color: #6366f1; */
             color: white;
             box-shadow: 
                 0 4px 20px rgba(99, 102, 241, 0.4),
@@ -2767,7 +2773,6 @@
                             <div class="section-header"></div>
 
                             <div class="personal-data-grid">
-                                <!-- Primeira linha: Nome (80%) + Gênero (20%) -->
                                 <div class="personal-row-1">
                                     <div class="form-group">
                                         <label class="form-label">
@@ -2808,7 +2813,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Segunda linha: CPF + RG + Data de Nascimento (33.33% cada) -->
                                 <div class="personal-row-2">
                                     <div class="form-group">
                                         <label class="form-label">
@@ -2976,9 +2980,8 @@
                 <!-- Footer Moderno -->
                 <div class="modern-modal-footer">
                     <div class="modal-actions">
-                        <button type="submit" class="modern-btn modern-btn-primary">
-                            <i class="fas fa-save"></i>
-                            Salvar Paciente
+                        <button id="dynamic-patient-btn" type="submit" class="modern-btn modern-btn-primary">
+                            <!-- Título dinâmico -->
                         </button>
                     </div>
                 </div>
@@ -3256,15 +3259,25 @@
             initializeCustomDropdowns();
             
             if (patientData) {
+                // Preenche o formulário com os dados do paciente
                 setTimeout(() => {
                     populateForm(patientData);
                 }, 50);
+                
                 document.getElementById('modal-dynamic-title').textContent = 'Editar Paciente';
                 document.querySelector('.modal-subtitle').textContent = 'Atualize as informações do paciente';
+
+                // Atualiza o botão dinâmico
+                document.getElementById('dynamic-patient-btn').textContent = 'Salvar paciente';
             } else {
+                // Limpa o formulário e prepara para novo paciente
                 clearForm();
+                
                 document.getElementById('modal-dynamic-title').textContent = 'Novo Paciente';
                 document.querySelector('.modal-subtitle').textContent = 'Preencha as informações do paciente';
+
+                // Atualiza o botão dinâmico
+                document.getElementById('dynamic-patient-btn').textContent = 'Cadastrar paciente';
             }
 
             navigateToSection('personal');
