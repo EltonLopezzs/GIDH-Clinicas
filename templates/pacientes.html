@@ -343,11 +343,6 @@
         .patient-meta i {
             font-size: 0.75rem;
         }
-        .patient-id, .patient-age {
-            text-overflow: ellipsis;
-            overflow: hidden;
-            white-space: nowrap;
-        }
         .patient-actions-dropdown {
             position: relative;
         }
@@ -1967,14 +1962,14 @@
         }
 
         .paciente-field.required input:valid,
-        .paciente-field.required select:valid,
-        .paciente-field.required textarea:valid {
+        .paciente-field.required select.valid,
+        .paciente-field.required textarea.valid {
             border-left-color: var(--success);
         }
 
         .paciente-field.required input:invalid,
-        .paciente-field.required select:invalid,
-        .paciente-field.required textarea:invalid {
+        .paciente-field.required select.invalid,
+        .paciente-field.required textarea.invalid {
             border-left-color: var(--danger);
         }
 
@@ -2929,7 +2924,7 @@
                                             <div class="custom-select-trigger">
                                                 <span class="custom-select-value" data-default="Particular">Particular</span>
                                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
-                                            </div>
+                                                </div>
                                             <div class="custom-select-options">
                                                 <div class="custom-select-option" data-value="">
                                                     <i class="fas fa-user option-icon"></i>
@@ -3906,6 +3901,7 @@
         // Define os modelos de URL usando Jinja2 para serem avaliados no servidor
         const prontuarioUrlTemplate = "{{ url_for('ver_prontuario', paciente_doc_id='__ID__') }}";
         const peiUrlTemplate = "{{ url_for('peis.ver_peis_paciente', paciente_doc_id='__ID__') }}";
+        const planejamentoSemanalUrlTemplate = "/pacientes/__ID__/planejamento_semanal"; // Nova URL
         const editUrlTemplate = "{{ url_for('editar_paciente', paciente_doc_id='__ID__') }}";
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -4251,6 +4247,10 @@
                                     <a href="${peiUrlTemplate.replace('__ID__', paciente.id)}" class="dropdown-item">
                                         <i class="fas fa-child-reaching"></i>
                                         Ver PEI
+                                    </a>
+                                    <a href="${planejamentoSemanalUrlTemplate.replace('__ID__', paciente.id)}" class="dropdown-item">
+                                        <i class="fas fa-calendar-week"></i>
+                                        Planejamento Semanal
                                     </a>
                                     ${paciente.contato_telefone || paciente.contato_email || paciente.responsavel1_telefone || paciente.responsavel2_telefone ? `
                                         <div class="dropdown-divider"></div>
