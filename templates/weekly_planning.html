@@ -171,6 +171,13 @@
         .btn-primary:hover {
             background-color: var(--accent);
         }
+        .btn-secondary {
+            background-color: var(--muted);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: var(--text);
+        }
         /* REMOVED: Toast Container & Styles */
 
         @media(min-width: 769px) {
@@ -489,7 +496,7 @@
             border-color: var(--danger);
         }
 
-        /* Novo: Estilos para o Modal de Mensagens (sucesso, erro, etc.) */
+        /* Novo: Estilos para o Modal de Mensagens (sucesso, erro, aviso, info) */
         .message-modal .modal-content {
             max-width: 450px;
             text-align: center;
@@ -574,6 +581,45 @@
         #messageModalCloseBtn:hover {
             background-color: var(--accent);
         }
+
+        /* Estilos para o Modal de Filtros */
+        .filter-modal .modal-content {
+            max-width: 500px;
+            padding: 2rem;
+        }
+        .filter-modal .modal-body .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .filter-modal .modal-body label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+        .filter-modal .modal-body input[type="date"],
+        .filter-modal .modal-body select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg);
+            color: var(--text);
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .filter-modal .modal-body input[type="date"]:focus,
+        .filter-modal .modal-body select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+            outline: none;
+        }
+        .filter-modal .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
     </style>
 </head>
 <body>
@@ -589,7 +635,10 @@
                     <h1 class="page-title">Planejamento Semanal</h1>
                 </div>
                 <div class="topbar-actions">
-                    <!-- Botões de ação futuros, se houver -->
+                    <!-- Botão de Filtros -->
+                    <button id="filterButton" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Filtros
+                    </button>
                 </div>
             </header>
 
@@ -613,7 +662,7 @@
                                 {% for meta in metas_ativas %}
                                     <div class="meta-card" draggable="true" 
                                         data-meta-id="{{ meta.id }}" 
-                                        data-meta-name="{{ meta.descricao }}" {# Changed from meta.nome to meta.descricao #}
+                                        data-meta-name="{{ meta.descricao }}"
                                         data-pei-id="{{ meta.pei_id }}">
                                         <h5>{{ meta.descricao }}</h5>
                                         <p>{{ meta.descricao }}</p>
@@ -714,6 +763,43 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" id="messageModalCloseBtn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Filtros -->
+    <div class="modal-overlay filter-modal" id="filterModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-filter"></i> Filtrar Agendamentos</h3>
+                <button type="button" class="modal-close-btn" data-close-modal="filterModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="filterForm">
+                    <div class="form-group">
+                        <label for="startDate">Data Inicial:</label>
+                        <input type="date" id="startDate" name="start_date" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="endDate">Data Final:</label>
+                        <input type="date" id="endDate" name="end_date" class="form-control">
+                    </div>
+                    {% if is_admin %}
+                    <div class="form-group" id="professionalFilterGroup">
+                        <label for="professionalSelect">Profissional:</label>
+                        <select id="professionalSelect" name="professional_id" class="form-control">
+                            <option value="">Todos os Profissionais</option>
+                            {% for professional in professionals %}
+                                <option value="{{ professional.id }}">{{ professional.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="clearFiltersBtn">Limpar Filtros</button>
+                <button type="button" class="btn btn-primary" id="applyFiltersBtn">Aplicar Filtros</button>
             </div>
         </div>
     </div>
@@ -849,7 +935,7 @@
                     // Verifica se a meta já está associada a este agendamento
                     const existingMetas = Array.from(slot.querySelectorAll('.associated-meta')).map(el => el.dataset.associatedMetaId);
                     if (existingMetas.includes(metaData.id)) {
-                        showMessageModal('Esta meta já está associada a este agendamento.', 'warning'); // Changed to showMessageModal
+                        showMessageModal('Esta meta já está associada a este agendamento.', 'warning'); 
                         return;
                     }
 
@@ -870,22 +956,22 @@
 
                         const result = await response.json();
                         if (result.success) {
-                            showMessageModal(result.message, 'success'); // Changed to showMessageModal
+                            showMessageModal(result.message, 'success'); 
                             // Adiciona visualmente a meta ao slot
                             addMetaToSlotUI(slot, metaData);
                         } else {
-                            showMessageModal(result.message, 'danger'); // Changed to showMessageModal
+                            showMessageModal(result.message, 'danger'); 
                         }
                     } catch (error) {
                         console.error('Erro ao associar meta:', error);
-                        showMessageModal('Erro ao associar meta. Tente novamente.', 'danger'); // Changed to showMessageModal
+                        showMessageModal('Erro ao associar meta. Tente novamente.', 'danger'); 
                     }
                 });
             });
 
             // Função para adicionar visualmente a meta a um slot
             function addMetaToSlotUI(slotElement, metaData) {
-                const associatedMetasContainer = slotElement.querySelector('.associated-metas-container');
+                let associatedMetasContainer = slotElement.querySelector('.associated-metas-container');
                 if (!associatedMetasContainer) {
                     const newContainer = document.createElement('div');
                     newContainer.className = 'associated-metas-container';
@@ -939,20 +1025,20 @@
 
                             const result = await response.json();
                             if (result.success) {
-                                showMessageModal(result.message, 'success'); // Changed to showMessageModal
-                                newMetaDiv.remove(); // Remove visualmente
+                                showMessageModal(result.message, 'success'); 
+                                newMetaDiv.remove(); 
                             } else {
-                                showMessageModal(result.message, 'danger'); // Changed to showMessageModal
+                                showMessageModal(result.message, 'danger'); 
                             }
                         } catch (error) {
                             console.error('Erro ao desassociar meta:', error);
-                            showMessageModal('Erro ao desassociar meta. Tente novamente.', 'danger'); // Changed to showMessageModal
+                            showMessageModal('Erro ao desassociar meta. Tente novamente.', 'danger'); 
                         }
                     });
                 });
             }
 
-            // Adiciona listeners para remover metas já existentes
+            
             document.querySelectorAll('.associated-meta').forEach(metaDiv => {
                 metaDiv.querySelector('.remove-meta-btn').addEventListener('click', async (e) => {
                     e.stopPropagation();
@@ -987,14 +1073,14 @@
 
                             const result = await response.json();
                             if (result.success) {
-                                showMessageModal(result.message, 'success'); // Changed to showMessageModal
+                                showMessageModal(result.message, 'success'); 
                                 metaDiv.remove(); // Remove visualmente
                             } else {
-                                showMessageModal(result.message, 'danger'); // Changed to showMessageModal
+                                showMessageModal(result.message, 'danger'); 
                             }
                         } catch (error) {
                             console.error('Erro ao desassociar meta:', error);
-                            showMessageModal('Erro ao desassociar meta. Tente novamente.', 'danger'); // Changed to showMessageModal
+                            showMessageModal('Erro ao desassociar meta. Tente novamente.', 'danger'); 
                         }
                     });
                 });
@@ -1037,11 +1123,7 @@
                     metaModalAlvosList.appendChild(li);
                 }
 
-                // Exibir Ajudas
-                // Para exibir as ajudas, precisamos que elas venham junto com a meta.
-                // Atualmente, o backend em weekly_planning.py não está buscando as ajudas do alvo.
-                // Isso será uma próxima etapa. Por enquanto, vou simular ou deixar um placeholder.
-                // Se o `meta.alvos` tiver `alvo.aids` (vindo do backend), podemos iterar.
+ 
                 let allAids = [];
                 if (meta.alvos) {
                     meta.alvos.forEach(alvo => {
@@ -1054,7 +1136,7 @@
                 }
 
                 if (allAids.length > 0) {
-                    // Agrupar ajudas por sigla para mostrar um resumo
+         
                     const aidsSummary = {};
                     allAids.forEach(aid => {
                         if (!aidsSummary[aid.sigla]) {
@@ -1172,6 +1254,73 @@
                     closeCustomConfirm();
                 }
             });
+
+            // --- Lógica do Modal de Filtros ---
+            const filterButton = document.getElementById('filterButton');
+            const filterModal = document.getElementById('filterModal');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const professionalSelect = document.getElementById('professionalSelect');
+            const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+            // Função para abrir o modal de filtros
+            filterButton.addEventListener('click', () => {
+                filterModal.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Evita scroll no body
+                // Preencher os campos do formulário com os valores atuais da URL, se existirem
+                const urlParams = new URLSearchParams(window.location.search);
+                startDateInput.value = urlParams.get('start_date') || '';
+                endDateInput.value = urlParams.get('end_date') || '';
+                if (professionalSelect) { // Apenas se o elemento existir (admin)
+                    professionalSelect.value = urlParams.get('professional_id') || '';
+                }
+            });
+
+            // Função para fechar o modal de filtros
+            filterModal.addEventListener('click', (e) => {
+                if (e.target === filterModal || e.target.closest('[data-close-modal="filterModal"]')) {
+                    filterModal.classList.remove('active');
+                    document.body.style.overflow = ''; // Restaura scroll
+                }
+            });
+
+            // Aplicar filtros
+            applyFiltersBtn.addEventListener('click', () => {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                const professionalId = professionalSelect ? professionalSelect.value : '';
+
+                const urlParams = new URLSearchParams();
+                if (startDate) {
+                    urlParams.set('start_date', startDate);
+                }
+                if (endDate) {
+                    urlParams.set('end_date', endDate);
+                }
+                if (professionalId) {
+                    urlParams.set('professional_id', professionalId);
+                }
+
+                // Redireciona para a mesma página com os novos parâmetros de filtro
+                window.location.search = urlParams.toString();
+                filterModal.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            // Limpar filtros
+            clearFiltersBtn.addEventListener('click', () => {
+                // Remove todos os parâmetros de filtro da URL
+                window.location.search = '';
+                filterModal.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            // Define o valor inicial do seletor de paciente com base no paciente atual
+            // Isso garante que o paciente correto esteja selecionado ao carregar a página
+            if (currentPatientId) {
+                patientSelector.value = currentPatientId;
+            }
         });
     </script>
 </body>
