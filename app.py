@@ -81,7 +81,7 @@ if not firebase_admin._apps:
             firebase_config_dict = json.loads(firebase_config_str)
             cred = credentials.Certificate(firebase_config_dict)
             firebase_admin.initialize_app(cred, {
-                'storageBucket': firebase_config_dict.get('storageBucket', os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.appspot.com')) # Prioriza config, depois env, depois hardcoded default
+                'storageBucket': firebase_config_dict.get('storageBucket', os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.firebasestorage.app')) # Prioriza config, depois env, depois hardcoded default
             })
             print("🔥 Firebase Admin SDK inicializado usando __firebase_config!")
         else:
@@ -89,7 +89,7 @@ if not firebase_admin._apps:
             if os.path.exists(cred_path):
                 cred = credentials.Certificate(cred_path)
                 firebase_admin.initialize_app(cred, {
-                    'storageBucket': os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.appspot.com') # Use env var ou hardcode
+                    'storageBucket': os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.firebasestorage.app') # Use env var ou hardcode
                 })
                 print("🔥 Firebase Admin SDK inicializado a partir de serviceAccountKey.json (desenvolvimento)!")
             else:
