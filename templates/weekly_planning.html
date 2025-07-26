@@ -769,7 +769,6 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            transition: all 0.2s ease;
         }
 
         .meta-details-modal-modern .alvos-list li:hover {
@@ -1075,6 +1074,8 @@
             const IS_PROFESSIONAL = {{ is_professional | default(false) | tojson }};
             const LOGGED_IN_PROFESSIONAL_ID = "{{ logged_in_professional_id | default('') }}";
             const LOGGED_IN_PROFESSIONAL_NAME = "{{ logged_in_professional_name | default('N/A') }}";
+            const CLINIC_LOGO_URL = "{{ session.clinica_url_logo | default('') }}";
+            const CLINIC_NAME_DISPLAY = "{{ session.clinica_nome_display | default('Clínica On') }}";
 
 
             function initializeMetaCards() {
@@ -1472,7 +1473,7 @@
                 });
             }
 
-            function generateWeeklyPlanningPdf() {
+            async function generateWeeklyPlanningPdf() {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 let yPos = 20;
@@ -1484,8 +1485,9 @@
                 const patientName = "{{ patient.nome if patient else 'Paciente' }}";
                 const patientCpf = "{{ patient.cpf or 'N/A' }}";
                 const patientDob = "{{ patient.data_nascimento.strftime('%d/%m/%Y') if patient.data_nascimento else 'N/A' }}";
-                const clinicName = "{{ session.clinica_nome_display or 'Clínica On' }}";
+                const clinicName = CLINIC_NAME_DISPLAY;
                 const loggedInProfessionalName = LOGGED_IN_PROFESSIONAL_NAME;
+                const clinicLogoUrl = CLINIC_LOGO_URL;
 
                 const checkPageBreak = (heightNeeded) => {
                     if (yPos + heightNeeded > doc.internal.pageSize.height - margin) {
@@ -1494,39 +1496,73 @@
                     }
                 };
 
-                doc.setFontSize(14).setFont("helvetica", "bold").text(clinicName, margin, yPos);
-                yPos += 10;
+                // Adicionar logo da clínica e nome
+                const logoWidth = 25; // Largura ajustada
+                const logoHeight = 25; // Altura ajustada
+                const textX = margin + logoWidth + 5;
+                const initialYPos = yPos; // Guarda a posição Y inicial para calcular a altura total do cabeçalho
+
+                if (clinicLogoUrl) {
+                    try {
+                        const response = await fetch(clinicLogoUrl);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        const blob = await response.blob();
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        await new Promise(resolve => {
+                            reader.onloadend = () => {
+                                const base64Image = reader.result;
+                                doc.addImage(base64Image, 'PNG', margin, yPos, logoWidth, logoHeight);
+                                resolve();
+                            };
+                        });
+                    } catch (error) {
+                        console.error("Erro ao carregar a logo da clínica:", error);
+                        showMessageModal(`Não foi possível carregar a logo da clínica para o PDF. Erro: ${error.message}`, 'warning');
+                    }
+                }
+                
+                // Nome da Clínica (sempre adicionado)
+                doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, textX, yPos + (logoHeight / 2) - 8); 
+                // Subtítulo do Relatório
+                doc.setFontSize(9).setFont("helvetica", "normal").text("Relatório de Planejamento Semanal", textX, yPos + (logoHeight / 2) + 2);
+
+                yPos = initialYPos + Math.max(logoHeight, 25) + 5; // Garante espaço suficiente após logo/nome/subtítulo
+
                 doc.setLineWidth(0.8).setDrawColor(85, 135, 194).line(margin, yPos, maxWidth + margin, yPos);
                 yPos += 12;
 
-                doc.setFontSize(11).setFont("helvetica", "normal");
+                doc.setFontSize(10).setFont("helvetica", "normal");
                 doc.text(`Paciente: ${patientName}`, margin, yPos);
-                yPos += 7;
+                yPos += 6;
                 doc.text(`CPF: ${patientCpf}`, margin, yPos);
                 doc.text(`Data de Nascimento: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
-                yPos += 7;
+                yPos += 6;
                 doc.text(`Profissional Responsável: ${loggedInProfessionalName}`, margin, yPos);
-                yPos += 15;
+                yPos += 10;
 
-                checkPageBreak(20);
-                doc.setFontSize(18).setFont("helvetica", "bold").setTextColor(85, 135, 194).text("Relatório de Planejamento Semanal", doc.internal.pageSize.width / 2, yPos, { align: 'center' });
-                yPos += 12;
+                checkPageBreak(15);
+                doc.setFontSize(14).setFont("helvetica", "bold").setTextColor(85, 135, 194).text("Agendamentos da Semana", doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                yPos += 8;
                 doc.setLineWidth(0.5).setDrawColor(85, 135, 194).line(margin, yPos, maxWidth + margin, yPos);
-                yPos += 15;
+                yPos += 10;
                 doc.setTextColor(0, 0, 0);
 
                 checkPageBreak(15);
-                doc.setFontSize(14).setFont("helvetica", "bold").text("Agendamentos da Semana:", margin, yPos);
-                yPos += 10;
+                doc.setFontSize(12).setFont("helvetica", "bold").text("Detalhes dos Agendamentos:", margin, yPos);
+                yPos += 8;
 
                 if (allAppointments.length > 0) {
-                    allAppointments.forEach((agendamento) => {
+                    for (const agendamento of allAppointments) {
                         checkPageBreak(40);
                         
                         doc.setFillColor(241, 245, 249);
-                        doc.rect(margin, yPos, maxWidth, 35 + (agendamento.metas_associadas.length * contentLineHeight), 'F');
+                        const rectHeight = 35 + (agendamento.metas_associadas.length * contentLineHeight);
+                        doc.rect(margin, yPos, maxWidth, rectHeight, 'F');
 
-                        doc.setFontSize(11).setFont("helvetica", "bold").text(`Data: ${agendamento.data_formatada} - ${agendamento.hora_agendamento}`, margin + 5, yPos + 7);
+                        doc.setFontSize(10).setFont("helvetica", "bold").text(`Data: ${agendamento.data_formatada} - ${agendamento.hora_agendamento}`, margin + 5, yPos + 7);
                         doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
                         doc.text(`Profissional: ${agendamento.profissional_nome}`, margin + 5, yPos + 14);
                         doc.text(`Serviço: ${agendamento.servico_procedimento_nome}`, margin + 5, yPos + 21);
@@ -1536,18 +1572,18 @@
                         if (agendamento.metas_associadas && agendamento.metas_associadas.length > 0) {
                             doc.setFontSize(contentFontSize).setFont("helvetica", "bold").text('Metas Associadas:', margin + 5, currentMetaY);
                             currentMetaY += contentLineHeight;
-                            agendamento.metas_associadas.forEach(associatedMeta => {
+                            for (const associatedMeta of agendamento.metas_associadas) {
                                 checkPageBreak(contentLineHeight);
                                 doc.setFontSize(contentFontSize).setFont("helvetica", "normal").text(`  - ${associatedMeta.meta_nome} (PEI: ${associatedMeta.pei_title || 'N/A'})`, margin + 10, currentMetaY);
                                 currentMetaY += contentLineHeight;
-                            });
+                            }
                         } else {
                             checkPageBreak(contentLineHeight);
                             doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhuma meta associada a este agendamento.', margin + 5, currentMetaY);
                             currentMetaY += contentLineHeight;
                         }
                         yPos = currentMetaY + 10;
-                    });
+                    }
                 } else {
                     checkPageBreak(10);
                     doc.setFontSize(contentFontSize).setFont("helvetica", "italic").text('Nenhum agendamento encontrado para este paciente nesta semana.', margin, yPos);
