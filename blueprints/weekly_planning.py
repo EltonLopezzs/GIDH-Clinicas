@@ -7,6 +7,10 @@ from utils import get_db, login_required, SAO_PAULO_TZ, convert_doc_to_dict
 weekly_planning_bp = Blueprint('weekly_planning', __name__)
 
 def _convert_doc_references_to_paths(data):
+    """
+    Converte referências de documentos do Firestore em seus caminhos (strings)
+    para que possam ser serializadas para JSON.
+    """
     if isinstance(data, dict):
         return {k: _convert_doc_references_to_paths(v) for k, v in data.items()}
     elif isinstance(data, list):
@@ -19,6 +23,11 @@ def _convert_doc_references_to_paths(data):
 @weekly_planning_bp.route('/pacientes/<patient_id>/planejamento_semanal', methods=['GET'], endpoint='planejamento_semanal')
 @login_required
 def planejamento_semanal(patient_id):
+    """
+    Renderiza a página de planejamento semanal para um paciente específico.
+    Carrega metas ativas e agendamentos da semana para o paciente.
+    Permite filtragem por data e profissional (para admins).
+    """
     db_instance = get_db()
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
@@ -36,6 +45,7 @@ def planejamento_semanal(patient_id):
         session['clinica_url_logo'] = ''
 
     profissional_id_logado = None
+    # Verifica se o usuário logado é um profissional e obtém seu ID
     if user_role != 'admin':
         try:
             user_doc = db_instance.collection('User').document(user_uid).get()
@@ -48,6 +58,7 @@ def planejamento_semanal(patient_id):
             flash(f"Erro ao buscar informações do profissional: {e}", "danger")
             return redirect(url_for('listar_pacientes'))
 
+    # Busca os dados do paciente
     patient_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id)
     patient_doc = patient_ref.get()
     if not patient_doc.exists:
@@ -56,6 +67,7 @@ def planejamento_semanal(patient_id):
     
     patient_data = convert_doc_to_dict(patient_doc)
 
+    # Define o período de busca para agendamentos (semana atual por padrão ou filtros)
     start_date_str = request.args.get('start_date')
     end_date_str = request.args.get('end_date')
     filter_professional_id = request.args.get('professional_id')
@@ -86,6 +98,7 @@ def planejamento_semanal(patient_id):
 
     metas_ativas = []
     try:
+        # Busca PEIs ativos para o paciente, filtrando por profissional se não for admin
         peis_query = db_instance.collection('clinicas').document(clinica_id).collection('peis').where(
             filter=FieldFilter('paciente_id', '==', patient_id)
         ).where(
@@ -128,6 +141,7 @@ def planejamento_semanal(patient_id):
 
     agendamentos_semana = []
     try:
+        # Busca agendamentos para o paciente dentro do período e filtros
         agendamentos_query = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').where(
             filter=FieldFilter('paciente_id', '==', patient_id)
         ).where(
@@ -154,20 +168,32 @@ def planejamento_semanal(patient_id):
                 if ag_data.get('data_agendamento_ts'):
                     ag_data['data_formatada'] = ag_data['data_agendamento_ts'].strftime('%d/%m/%Y')
                 
+                # Carrega metas já associadas a este agendamento
                 ag_data['metas_associadas'] = []
                 metas_associadas_ref = ag_doc.reference.collection('metas_associadas')
                 metas_associadas_docs = metas_associadas_ref.stream()
                 for meta_assoc_doc in metas_associadas_docs:
                     meta_assoc_data = convert_doc_to_dict(meta_assoc_doc)
                     if meta_assoc_data:
+                        # Busca o título do PEI para exibição
                         pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(meta_assoc_data.get('pei_id'))
                         pei_doc = pei_ref.get()
                         if pei_doc.exists:
                             meta_assoc_data['pei_title'] = pei_doc.to_dict().get('titulo', 'PEI sem Título')
                         else:
                             meta_assoc_data['pei_title'] = 'PEI não encontrado'
+                        
+                        # Converte referências de documentos para caminhos para envio ao template
+                        if 'ref_meta' in meta_assoc_data and isinstance(meta_assoc_data['ref_meta'], firestore.DocumentReference):
+                            meta_assoc_data['ref_meta'] = meta_assoc_data['ref_meta'].path
+                        if 'ref_pei' in meta_assoc_data and isinstance(meta_assoc_data['ref_pei'], firestore.DocumentReference):
+                            meta_assoc_data['ref_pei'] = meta_assoc_data['ref_pei'].path
+                        if 'ref_agendamentos' in meta_assoc_data and isinstance(meta_assoc_data['ref_agendamentos'], firestore.DocumentReference):
+                            meta_assoc_data['ref_agendamentos'] = meta_assoc_data['ref_agendamentos'].path
+
                         ag_data['metas_associadas'].append(meta_assoc_data)
 
+                # Busca o nome do profissional para exibição
                 if ag_data.get('profissional_id'):
                     prof_doc = db_instance.collection('clinicas').document(clinica_id).collection('profissionais').document(ag_data['profissional_id']).get()
                     if prof_doc.exists:
@@ -220,6 +246,11 @@ def planejamento_semanal(patient_id):
 @weekly_planning_bp.route('/api/planejamento_semanal/associar_meta', methods=['POST'])
 @login_required
 def associar_meta_agendamento():
+    """
+    Associa ou desassocia uma meta a um agendamento.
+    Recebe agendamento_id, meta_id, meta_nome, pei_id e a ação (associar/desassociar).
+    Agora salva referências de documento do Firestore.
+    """
     db_instance = get_db()
     clinica_id = session['clinica_id']
     user_role = session.get('user_role')
@@ -238,6 +269,8 @@ def associar_meta_agendamento():
 
     try:
         agendamento_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos').document(agendamento_id)
+        meta_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id).collection('metas').document(meta_id)
+        pei_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis').document(pei_id)
         
         metas_associadas_subcollection_ref = agendamento_ref.collection('metas_associadas')
 
@@ -245,6 +278,9 @@ def associar_meta_agendamento():
             'meta_id': meta_id,
             'meta_nome': meta_nome,
             'pei_id': pei_id,
+            'ref_meta': meta_ref,  # Salva como DocumentReference
+            'ref_pei': pei_ref,    # Salva como DocumentReference
+            'ref_agendamentos': agendamento_ref, # Salva como DocumentReference
             'timestamp': firestore.SERVER_TIMESTAMP
         }
 
