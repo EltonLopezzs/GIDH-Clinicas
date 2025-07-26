@@ -372,89 +372,91 @@
 
         /* Estilos para os cartões de registro - ATUALIZADOS para formato de lista */
         .medical-record-list {
-            display: grid; /* Changed to grid */
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 3 columns on larger screens */
-            gap: 1.5rem; /* Espaçamento entre os itens da lista */
-            margin-top: 1.5rem; /* Espaço do topo */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
         }
 
         .registro-card {
             background: var(--card);
-            padding: 1rem; /* Reduced padding */
+            padding: 1rem;
             border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04); /* Mais proeminente */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Sombra inicial mais suave */
             position: relative;
-            border: 1px solid var(--border-color); /* Adiciona borda geral */
-            border-left: 8px solid transparent; /* Mantém a borda lateral colorida */
+            border: 1px solid var(--border-color);
+            border-left: 8px solid transparent;
             display: flex;
             flex-direction: column;
-            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-            overflow: hidden; /* Garante que nada transborde */
-            /* min-height: 200px; Removed min-height for smaller cards */
-            height: auto; /* Allow height to adjust based on content */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Transição mais abrangente */
+            overflow: hidden;
+            height: auto;
+            cursor: pointer; /* Adicionado para indicar interatividade */
         }
         .registro-card:hover {
-            transform: translateY(-5px); /* Elevação mais notável */
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.08); /* Sombra maior no hover */
+            transform: translateY(-2px) scale(1.01); /* Elevação sutil e leve aumento de escala no hover */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Sombra mais pronunciada no hover */
         }
         [data-theme="dark"] .registro-card {
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        [data-theme="dark"] .registro-card:hover {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
         }
 
         .registro-header {
             display: flex;
-            flex-direction: column; /* Stack title and meta vertically */
+            flex-direction: column;
             justify-content: space-between;
             align-items: flex-start;
-            padding-bottom: 0.75rem; /* Reduced padding */
-            margin-bottom: 0.75rem; /* Reduced margin */
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
             border-bottom: 1px solid var(--border-color);
             position: relative;
-            flex-wrap: wrap; /* Permite quebrar linha em telas menores */
-            gap: 0.25rem; /* Reduced gap between title and meta */
+            flex-wrap: wrap;
+            gap: 0.25rem;
         }
         .registro-header::after {
             content: '';
             position: absolute;
             bottom: -1px;
             left: 0;
-            width: 50px; /* Linha de destaque */
+            width: 50px;
             height: 3px;
-            background-color: var(--primary); /* Cor da linha de destaque */
+            background-color: var(--primary);
             border-radius: 2px;
         }
         .registro-header h4 {
-            font-size: 1.1rem; /* Smaller font size for title */
+            font-size: 1.1rem;
             color: var(--primary);
             margin: 0;
             font-weight: 700;
-            flex-grow: 1; /* Permite que o título ocupe o espaço */
+            flex-grow: 1;
         }
         .registro-meta {
-            font-size: 0.8rem; /* Smaller font size for meta */
+            font-size: 0.8rem;
             color: var(--muted);
-            text-align: left; /* Align meta to left */
+            text-align: left;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
             gap: 0.2rem;
         }
         .registro-meta span { display: block; line-height: 1.4; }
-        .registro-meta i { margin-right: 0.4rem; color: var(--primary); } /* Icon color */
+        .registro-meta i { margin-right: 0.4rem; color: var(--primary); }
         .registro-content {
-            display: none; /* Hide content in the card view */
+            display: none;
         }
-        /* Scrollbar customizada para o conteúdo (still applies to modal) */
         .registro-content::-webkit-scrollbar { width: 6px; }
         .registro-content::-webkit-scrollbar-track { background: transparent; }
         .registro-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
         [data-theme="dark"] .registro-content::-webkit-scrollbar-thumb { background: #4b5563; }
 
         .registro-actions {
-            margin-top: 1rem; /* Reduced margin */
+            margin-top: 1rem;
             border-top: 1px solid var(--border-color);
-            padding-top: 1rem; /* Reduced padding */
-            display: flex; justify-content: flex-end; gap: 0.5rem; /* Reduced gap */
+            padding-top: 1rem;
+            display: flex; justify-content: flex-end; gap: 0.5rem;
         }
         .empty-state {
             text-align: center; padding: 2.5rem; color: var(--muted);
@@ -463,18 +465,17 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            /* Remove grid-column: 1 / -1; as it's no longer a grid */
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border: 1px dashed var(--border-color); /* Dashed border for empty state */
-            grid-column: 1 / -1; /* Ensure empty state spans all columns in grid */
+            border: 1px dashed var(--border-color);
+            grid-column: 1 / -1;
         }
         .empty-state i {
-            font-size: 3.5rem; /* Larger icon */
+            font-size: 3.5rem;
             margin-bottom: 1rem;
             color: var(--primary);
         }
         .empty-state p {
-            font-size: 1.2rem; /* Larger text */
+            font-size: 1.2rem;
             font-weight: 500;
         }
         .empty-state-small {
@@ -495,12 +496,11 @@
         }
 
         /* --- Custom Record Card Colors (Cores Personalizadas do Cartão de Registro) --- */
-        .registro-card--anamnese { border-left-color: var(--primary); } /* Teal-600 */
-        .registro-card--laudo { border-left-color: var(--info); } /* Sky-500 (info) */
-        .registro-card--orientacao { border-left-color: var(--warning); } /* Amber-500 (secondary) */
-        .registro-card--procedimento { border-left-color: var(--success); } /* Green-600 (success) */
-        /* NOVO: Estilo para Outros Documentos */
-        .registro-card--documento { border-left-color: #6366f1; } /* Indigo-500 */
+        .registro-card--anamnese { border-left-color: var(--primary); }
+        .registro-card--laudo { border-left-color: var(--info); }
+        .registro-card--orientacao { border-left-color: var(--warning); }
+        .registro-card--procedimento { border-left-color: var(--success); }
+        .registro-card--documento { border-left-color: #6366f1; }
 
 
         /* --- Tabs (Abas) --- */
@@ -509,11 +509,11 @@
         }
         .tab-nav {
             display: flex;
-            gap: 8px; /* Increased gap */
+            gap: 8px;
             border-bottom: 2px solid var(--border-color);
             margin-bottom: 1.5rem;
             flex-wrap: wrap;
-            padding-bottom: 4px; /* Space above border */
+            padding-bottom: 4px;
         }
         .tab-nav-item {
             padding: 0.75rem 1.25rem;
@@ -526,24 +526,24 @@
             transform: translateY(2px);
             transition: color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
             font-size: 0.95rem;
-            border-radius: 6px 6px 0 0; /* Rounded top corners */
+            border-radius: 6px 6px 0 0;
         }
         .tab-nav-item:hover {
             color: var(--text);
-            background-color: var(--bg); /* Subtle background on hover */
+            background-color: var(--bg);
         }
         .tab-nav-item.active {
             color: var(--primary);
             border-bottom-color: var(--primary);
-            background-color: var(--card); /* Solid background for active tab */
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.05); /* Subtle shadow for active tab */
-            transform: translateY(0); /* Resets transform for active tab */
+            background-color: var(--card);
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+            transform: translateY(0);
         }
         .tab-panel {
             display: none;
             transition: opacity 0.3s ease-in-out;
             opacity: 0;
-            padding-top: 0.5rem; /* Space between tabs and content */
+            padding-top: 0.5rem;
         }
         .tab-panel.active {
             display: block;
@@ -554,57 +554,46 @@
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.6);
-            display: flex; /* Always flex to center content */
-            align-items: center; /* Center vertically */
+            display: flex;
+            align-items: center;
             justify-content: center;
             padding: 1rem;
             z-index: 2000; opacity: 0; transition: opacity 0.25s ease;
-            overflow-y: auto; /* Allow scrolling for modal content */
-            pointer-events: none; /* Initially non-interactive */
+            overflow-y: auto;
+            pointer-events: none;
         }
         .modal-overlay.active { 
             opacity: 1; 
-            pointer-events: auto; /* Make interactive when active */
+            pointer-events: auto;
         }
         .modal-content {
-            background-color: var(--card); /* Usar variável para o background */
+            background-color: var(--card);
             color: var(--text);
             border-radius: 12px;
             box-shadow: 0 15px 30px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05);
-            width: 99vw; /* Aumentado para 99% da largura da viewport */
-            max-width: 1400px; /* Aumentado para 1400px */
-            max-height: 99vh; /* Aumentado para 99vh */
+            width: 99vw;
+            max-width: 1400px;
+            max-height: 99vh;
             transform: translateY(-20px); 
             transition: transform 0.3s ease, opacity 0.3s ease;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Ensures content doesn't spill out rounded corners */
-            z-index: 2001; /* Ensure content is above overlay */
+            overflow: hidden;
+            z-index: 2001;
         }
-        /* Specific override for the full record modal */
-        #registro-completo-modal .modal-content {
-            max-width: 98vw; /* Aumentado para 98vw */
-            max-height: 98vh; /* Aumentado para 98vh */
+        .modal-content {
+            max-width: 98vw;
+            max-height: 98vh;
         }
-        /* REMOVIDO: Specific override for anamnese modal */
-        /* #modalAnamnese .modal-content {
-            max-width: 1300px;
-            max-height: 95vh;
-        } */
 
 
-        @media (min-width: 1024px) { /* Para telas maiores, aumente um pouco */
+        @media (min-width: 1024px) {
             .modal-content {
-                max-width: 1800px; /* Aumentado para 1800px em telas maiores */
+                max-width: 1800px;
             }
             #registro-completo-modal .modal-content {
-                max-width: 1900px; /* Aumentado para 1900px em telas maiores */
+                max-width: 1900px;
             }
-            /* REMOVIDO: Specific override for anamnese modal on larger screens */
-            /* #modalAnamnese .modal-content {
-                max-width: 1500px;
-                max-height: 98vh;
-            } */
         }
         [data-theme="dark"] .modal-content {
             box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 5px 15px rgba(0,0,0,0.15);
@@ -614,13 +603,13 @@
         .modal-header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
-            background-color: var(--bg); /* Subtle background for header */
+            background-color: var(--bg);
         }
         .modal-header h3 { font-size: 1.4rem; color: var(--text); margin: 0; font-weight: 700; }
         .modal-close-btn {
             background: none; border: none; font-size: 1.8rem; color: var(--muted); cursor: pointer; line-height: 1; transition: color 0.2s ease;
-            padding: 0.2rem 0.5rem; /* Add padding for easier clicking */
-            border-radius: 4px; /* Slight rounded corners */
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
         }
         .modal-close-btn:hover { color: var(--danger); background-color: rgba(220, 38, 38, 0.1); }
         .modal-body { overflow-y: auto; padding: 1.5rem; line-height: 1.7; flex-grow: 1; }
@@ -631,11 +620,11 @@
         .form-group input[type="date"],
         .form-group select,
         .form-group textarea,
-        .form-group input[type="file"] { /* Adicionado input[type="file"] */
+        .form-group input[type="file"] {
             font-size: 0.95rem; padding: 0.8rem 1rem; width: 100%; border: 1px solid var(--border-color);
             border-radius: 8px; background-color: var(--bg); color: var(--text);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.03); /* Inner shadow for inputs */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
         }
         [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select, [data-theme="dark"] .form-group textarea, [data-theme="dark"] .form-group input[type="file"] {
             background-color: var(--dark-bg);
@@ -646,13 +635,13 @@
         .form-group input[type="date"]:focus,
         .form-group select:focus,
         .form-group textarea:focus,
-        .form-group input[type="file"]:focus { /* Adicionado input[type="file"] */
+        .form-group input[type="file"]:focus {
             border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); outline: none;
         }
         .modal-footer {
             padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);
             display: flex; justify-content: flex-end; gap: 0.75rem; flex-shrink: 0;
-            background-color: var(--card); /* Usa --card para o background */
+            background-color: var(--card);
         }
 
         /* Rich Text Editor para modal genérico */
@@ -661,7 +650,7 @@
             border-radius: 8px;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Ensures toolbar/content doesn't overflow corners */
+            overflow: hidden;
         }
         .editor-container .editor-toolbar {
             background-color: var(--bg);
@@ -673,15 +662,15 @@
         }
         .editor-container .editor-toolbar button {
             background: none; border: 1px solid transparent; padding: 8px;
-            cursor: pointer; font-size: 1rem; color: var(--muted); /* Muted color for icons */
+            cursor: pointer; font-size: 1rem; color: var(--muted);
             border-radius: 4px; transition: background-color 0.2s ease, color 0.2s ease;
         }
         .editor-container .editor-toolbar button:hover { background-color: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
         .editor-container .editor-toolbar button.is-active { background-color: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--primary-dark); }
 
         .editor-content-generic {
-            min-height: 300px; /* Ajustado para telas menores */
-            max-height: 300px; /* Ajustado para telas menores */
+            min-height: 300px;
+            max-height: 300px;
             overflow-y: auto;
             padding: 1rem;
             background-color: var(--card);
@@ -691,7 +680,7 @@
             resize: vertical;
             flex-grow: 1;
         }
-        @media (min-width: 768px) { /* Aumenta a altura em telas maiores */
+        @media (min-width: 768px) {
             .editor-content-generic {
                 min-height: 350px;
                 max-height: 350px;
@@ -752,7 +741,7 @@
             animation: spin 0.8s linear infinite;
         }
         .btn.loading span, .btn.loading i {
-            visibility: hidden; /* Oculta texto e ícone durante o carregamento */
+            visibility: hidden;
         }
 
         @keyframes spin {
@@ -783,7 +772,6 @@
         /* Responsive (Responsividade) */
         .toggle-btn-desktop { display: none; }
         .menu-btn-mobile { display: block; }
-        /* Classes para mostrar/esconder texto em desktop/mobile */
         .desktop-only { display: inline; }
         .mobile-only { display: none; }
 
@@ -795,27 +783,25 @@
             .desktop-only { display: inline; }
             .mobile-only { display: none; }
 
-            /* Adjust medical record list for desktop to maintain grid view */
             .medical-record-list {
-                grid-template-columns: repeat(3, 1fr); /* Force 3 columns on desktop */
+                grid-template-columns: repeat(3, 1fr);
             }
         }
         
         @media (max-width: 768px) {
-            /* ATUALIZADO: Sidebar em mobile para ser fixed e deslizar */
             .sidebar { 
-                position: fixed; /* Volta a ser fixed em mobile */
+                position: fixed;
                 top: 0; 
                 left: 0; 
                 height: 100vh;
                 transform: translateX(-100%); 
-                width: 260px; /* Largura padrão para mobile */
+                width: 260px;
             }
             .sidebar.open { 
                 transform: translateX(0); 
                 box-shadow: 4px 0 15px rgba(0,0,0,0.1); 
             }
-            .sidebar.collapsed { /* Em mobile, collapsed é igual a hidden */
+            .sidebar.collapsed {
                 transform: translateX(-100%); 
                 width: 260px; 
             } 
@@ -831,16 +817,13 @@
             .sidebar.collapsed .sidebar-header .logo span { 
                 display: inline; 
             }
-            /* Main content should not have margin-left on mobile */
             .main-content, .main-content.collapsed { 
                 margin-left: 0; 
                 width: 100%; 
             }
             main { padding: 1rem; }
             .paciente-info-card { padding: 1.5rem; }
-            /* .paciente-info-grid { grid-template-columns: 1fr; } Removed as grid is simplified */
             .prontuario-header { flex-direction: column; align-items: stretch; text-align: center; }
-            /* Ações do PEI móvel para empilhar */
             .pei-card-actions {
                 flex-direction: column;
                 align-items: stretch;
@@ -851,7 +834,6 @@
             }
             .pei-card-actions .btn-danger-outline { margin-top: 0.5rem; }
 
-            /* Novo: Ajusta o grupo de adicionar alvo em mobile para empilhar se necessário */
             .add-target-group {
                 flex-direction: column;
                 align-items: stretch;
@@ -864,8 +846,6 @@
                 justify-content: center;
             }
 
-            /* Estilos para scroll lateral de cards em mobile - REMOVIDO PARA LISTA */
-            /* Ajuste específico para o título do prontuário em mobile */
             .topbar .page-title {
                 font-size: 1.1rem;
                 flex-grow: 1;
@@ -874,7 +854,6 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
-            /* Ajuste para o botão "+ Novo" */
             .topbar-actions #addRecordDropdownBtn {
                 padding: 0.6rem 1rem;
                 font-size: 0.9rem;
@@ -889,9 +868,8 @@
                 margin-left: 0;
             }
 
-            /* Ensure medical records stack on mobile */
             .medical-record-list {
-                grid-template-columns: 1fr; /* Single column on mobile */
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -1423,6 +1401,12 @@
         // ATUALIZADO: Obtém o ID do paciente diretamente do input oculto
         const PACIENTE_DOC_ID = document.querySelector('input[name="paciente_id"]').value;
 
+        // Variáveis da sessão para o PDF
+        const CLINIC_LOGO_URL = "{{ session.clinica_url_logo | default('') }}";
+        const CLINIC_NAME_DISPLAY = "{{ session.clinica_nome_display | default('Clínica On') }}";
+        const LOGGED_IN_PROFESSIONAL_NAME = "{{ session.user_name | default('N/A') }}"; // Assuming user_name is professional's name
+
+
         document.addEventListener('DOMContentLoaded', () => {
             const htmlEl = document.documentElement; // Elemento HTML raiz para manipular atributos de tema
             const loadingOverlay = document.getElementById('loading-overlay'); // Obtém o overlay de carregamento
@@ -1437,6 +1421,8 @@
             console.log('-------------------------------------------');
             console.log('Outros Documentos Carregados:', allOtherDocuments); // DEBUG para novos documentos
             console.log('Modelos de Anamnese Carregados:', allModelosAnamnese); // DEBUG para modelos de anamnese
+            console.log('URL da Logo da Clínica:', CLINIC_LOGO_URL);
+            console.log('Nome da Clínica:', CLINIC_NAME_DISPLAY);
 
 
             // Função para mostrar o overlay de carregamento
@@ -1794,7 +1780,12 @@
                     // Sincroniza o conteúdo final do editor para o hidden textarea
                     conteudoGenericoHiddenTextarea.value = conteudoRegistroGenericoEditor.innerHTML;
 
+                    // Log the FormData contents for debugging
+                    console.log('Dados do formulário de Registro Genérico sendo enviados:');
                     const formData = new FormData(formRegistroGenerico);
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`${key}: ${value}`);
+                    }
 
                     try {
                         const response = await fetch(formRegistroGenerico.action, {
@@ -1933,7 +1924,7 @@
                         const selected = e.target.options[e.target.selectedIndex];
                         const content = selected.dataset.conteudo;
                         // Usar showCustomConfirm para substituir o confirm nativo
-                        if (content && (!conteudoAnamneseEditor.innerHTML.trim() || await showCustomConfirm('Deseja substituir o conteúdo atual pelo modelo?'))) {
+                        if (content && (!conteudoAnamneseEditor.innerHTML.trim() || await showCustomConfirm('Deseja substituir o conteúdo atual pelo texto gerado pela IA?'))) {
                             conteudoAnamneseEditor.innerHTML = content;
                             conteudoAnamneseHiddenTextarea.value = content;
                         }
@@ -2236,11 +2227,6 @@
                         return;
                     }
 
-                    // REMOVIDO: Lógica para fechar a modal ao clicar no overlay
-                    // A modal não deve fechar ao clicar fora, apenas nos botões específicos.
-                    // A `stopPropagation` nos conteúdos das modais foi removida,
-                    // permitindo que os cliques nos botões de fechar cheguem aqui.
-
                     // Botão EXPANDIR registro
                     const expandButton = target.closest('.btn-expand-registro');
                     if (expandButton) {
@@ -2353,10 +2339,6 @@
                     }
                 });
 
-                // REMOVIDO: A lógica de stopPropagation nos conteúdos das modais.
-                // Isso permite que os cliques nos botões de fechar dentro da modal
-                // cheguem ao event listener do document.body.
-
                 // --- Funções AJAX para PEI/Metas/Alvos --- (REMOVIDAS)
 
 
@@ -2383,7 +2365,7 @@
                 }
 
                 // Gera um PDF para um registro específico (Anamnese, Laudo, etc.)
-                function generatePdfForRecord(button) {
+                async function generatePdfForRecord(button) {
                     const recordCard = button.closest('.registro-card');
                     const recordId = recordCard.id.replace('registro-', '');
                     const fullRecord = allRecordsData.find(record => record.id === recordId);
@@ -2396,54 +2378,95 @@
                     const title = `${fullRecord.tipo_registro.charAt(0).toUpperCase() + fullRecord.tipo_registro.slice(1)} - ${fullRecord.titulo || ''}`;
                     const date = fullRecord.data_registro_fmt;
                     const professional = fullRecord.profissional_nome;
-                    const contentHtml = fullRecord.conteudo || ''; // Use full content
+                    const contentHtml = fullRecord.conteudo || '';
 
                     const patientName = "{{ paciente.nome if paciente else 'Paciente' }}";
                     const patientCpf = "{{ paciente.cpf or 'N/A' }}";
-                    const patientDob = "{{ paciente.data_nascimento_formatada if paciente.data_nascimento_formatada else 'N/A' }}"; // MODIFICADO AQUI
-                    const clinicName = "{{ session.clinica_nome_display or 'Clinica On' }}";
+                    const patientDob = "{{ paciente.data_nascimento_formatada if paciente.data_nascimento_formatada else 'N/A' }}";
+                    const clinicName = CLINIC_NAME_DISPLAY;
+                    const loggedInProfessionalName = LOGGED_IN_PROFESSIONAL_NAME;
+                    const clinicLogoUrl = CLINIC_LOGO_URL;
+
 
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
 
                     let yPos = 20;
                     const margin = 15;
-                    // Ajustes de fonte e espaçamento
-                    const contentLineHeight = 5; // Altura da linha reduzida
-                    const contentFontSize = 9;    // Tamanho da fonte do conteúdo reduzido
+                    const contentLineHeight = 6;
+                    const contentFontSize = 10;
                     const maxWidth = doc.internal.pageSize.width - margin * 2;
 
-                    // Cabeçalho da Clínica
-                    doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, margin, yPos);
-                    yPos += 8;
-                    doc.setLineWidth(0.5).line(margin, yPos, maxWidth + margin, yPos);
-                    yPos += 8;
+                    const checkPageBreak = (heightNeeded) => {
+                        if (yPos + heightNeeded > doc.internal.pageSize.height - margin) {
+                            doc.addPage();
+                            yPos = margin;
+                        }
+                    };
 
-                    // Informações do Paciente
+                    // Adicionar logo da clínica e nome
+                    const logoWidth = 25;
+                    const logoHeight = 25;
+                    const textX = margin + logoWidth + 5;
+                    const initialYPos = yPos;
+
+                    if (clinicLogoUrl) {
+                        try {
+                            const response = await fetch(clinicLogoUrl);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            const blob = await response.blob();
+                            const reader = new FileReader();
+                            reader.readAsDataURL(blob);
+                            await new Promise(resolve => {
+                                reader.onloadend = () => {
+                                    const base64Image = reader.result;
+                                    doc.addImage(base64Image, 'PNG', margin, yPos, logoWidth, logoHeight);
+                                    resolve();
+                                };
+                            });
+                        } catch (error) {
+                            console.error("Erro ao carregar a logo da clínica:", error);
+                            showMessageModal(`Não foi possível carregar a logo da clínica para o PDF. Erro: ${error.message}`, 'warning');
+                        }
+                    }
+                    
+                    doc.setFontSize(12).setFont("helvetica", "bold").text(clinicName, textX, yPos + (logoHeight / 2) - 8); 
+                    doc.setFontSize(9).setFont("helvetica", "normal").text("Relatório de Prontuário Médico", textX, yPos + (logoHeight / 2) + 2);
+
+                    yPos = initialYPos + Math.max(logoHeight, 25) + 5;
+
+                    doc.setLineWidth(0.8).setDrawColor(85, 135, 194).line(margin, yPos, maxWidth + margin, yPos);
+                    yPos += 12;
+
                     doc.setFontSize(10).setFont("helvetica", "normal");
                     doc.text(`Paciente: ${patientName}`, margin, yPos);
                     yPos += 6;
                     doc.text(`CPF: ${patientCpf}`, margin, yPos);
-                    doc.text(`Data Nasc: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
-                    yPos += 8;
-
-                    // Título do Registro
-                    doc.setFontSize(14).setFont("helvetica", "bold").text(title, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
-                    yPos += 8;
-
-                    // Metadados do Registro
-                    doc.setFontSize(9).setFont("helvetica", "italic").text(`Data: ${date} | Profissional: ${professional}`, margin, yPos);
+                    doc.text(`Data de Nascimento: ${patientDob}`, maxWidth + margin, yPos, { align: 'right' });
                     yPos += 6;
-                    doc.setLineWidth(0.2).line(margin, yPos, maxWidth + margin, yPos);
-                    yPos += 8;
+                    doc.text(`Profissional Responsável: ${loggedInProfessionalName}`, margin, yPos);
+                    yPos += 10;
 
-                    // Conteúdo do Registro
+                    checkPageBreak(15);
+                    doc.setFontSize(14).setFont("helvetica", "bold").setTextColor(85, 135, 194).text(title, doc.internal.pageSize.width / 2, yPos, { align: 'center' });
+                    yPos += 8;
+                    doc.setLineWidth(0.5).setDrawColor(85, 135, 194).line(margin, yPos, maxWidth + margin, yPos);
+                    yPos += 10;
+                    doc.setTextColor(0, 0, 0);
+
                     doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
-                    const contentText = htmlToPlainText(contentHtml); // Converte HTML para texto plano
-                    const splitText = doc.splitTextToSize(contentText, maxWidth); // Divide o texto em linhas para o PDF
+                    doc.text(`Data do Registro: ${date}`, margin, yPos);
+                    yPos += contentLineHeight;
+                    doc.text(`Profissional: ${professional}`, margin, yPos);
+                    yPos += contentLineHeight + 5;
+
+                    doc.setFontSize(contentFontSize).setFont("helvetica", "normal");
+                    const contentText = htmlToPlainText(contentHtml);
+                    const splitText = doc.splitTextToSize(contentText, maxWidth);
 
                     splitText.forEach(line => {
-                        // Adiciona nova página se não houver espaço suficiente
                         if (yPos > doc.internal.pageSize.height - margin) {
                             doc.addPage();
                             yPos = margin;
@@ -2452,15 +2475,13 @@
                         yPos += contentLineHeight;
                     });
 
-                    // Salva o PDF com um nome descritivo
                     doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${patientName.toLowerCase().replace(/\s/g, '-')}.pdf`);
+                    displayFlashMessage('success', 'PDF do Registro gerado com sucesso!');
                 }
 
-                // --- Initialization ---
                 setupTabs();
             }
 
-            // --- General Initialization ---
             setupCommonUI();
             setupProntuarioPage();
         });
