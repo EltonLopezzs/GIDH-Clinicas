@@ -6,7 +6,7 @@ from datetime import timedelta # Importar timedelta para sessões permanentes
 import datetime
 import json
 import firebase_admin
-from firebase_admin import credentials, firestore, auth as firebase_auth_admin
+from firebase_admin import credentials, firestore, auth as firebase_auth_admin, storage
 from flask_cors import CORS
 from google.cloud.firestore_v1.base_query import FieldFilter
 from collections import Counter, defaultdict
@@ -26,7 +26,8 @@ from blueprints.contas_a_pagar import register_contas_a_pagar_routes
 from blueprints.peis import peis_bp
 from blueprints.patrimonio import register_patrimonio_routes
 from blueprints.protocols import protocols_bp
-from blueprints.weekly_planning import weekly_planning_bp # NOVO: Importa o blueprint de planejamento semanal
+from blueprints.weekly_planning import weekly_planning_bp 
+from blueprints.user_api import user_api_bp
 
 # NOVO: Importações para IA
 import google.generativeai as genai
@@ -41,63 +42,68 @@ app = Flask(__name__)
 
 # --- Configurações de Segurança e Sessão (CRUCIAL para ambientes de produção) ---
 
-# 1. SECRET_KEY: Essencial para assinar cookies de sessão.
-#    Use a variável de ambiente FLASK_SECRET_KEY. Se não for encontrada, use uma padrão.
-#    Esta chave DEVE ser CONSISTENTE entre os reinícios do Gunicorn.
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', '169f2ebd4e2dd3590ab847171e711086e2778a04570624da') # Use a chave gerada e colocada no .service
+# SECRET_KEY: Essencial para assinar cookies de sessão.
+# Use a variável de ambiente FLASK_SECRET_KEY. Se não for encontrada, use uma padrão.
+# Esta chave DEVE ser CONSISTENTE entre os reinícios do Gunicorn.
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', '169f2ebd4e2dd3590ab847171e711086e2778a04570624da')
 
-# 2. Configurações de Proxy Reverso:
-#    Isso diz ao Flask para confiar nos cabeçalhos X-Forwarded-For e X-Forwarded-Proto do Nginx.
-#    Sem isso, Flask pode gerar URLs incorretas ou ter problemas de segurança com sessões.
-#    Ajuste o número de proxies conforme sua infraestrutura (1 para Nginx -> Gunicorn -> Flask)
+# Configurações de Proxy Reverso:
+# Isso diz ao Flask para confiar nos cabeçalhos X-Forwarded-For e X-Forwarded-Proto do Nginx.
+# Sem isso, Flask pode gerar URLs incorretas ou ter problemas de segurança com sessões.
+# Ajuste o número de proxies conforme sua infraestrutura (1 para Nginx -> Gunicorn -> Flask)
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
-# 3. Configurações de Cookie de Sessão:
-#    SESSION_COOKIE_SECURE: Define se o cookie de sessão só deve ser enviado via HTTPS.
-#                           Se você está usando HTTP (por enquanto), defina como False.
-#                           Se for usar HTTPS (altamente recomendado), defina como True.
+# Configurações de Cookie de Sessão:
+# SESSION_COOKIE_SECURE: Define se o cookie de sessão só deve ser enviado via HTTPS.
 app.config['SESSION_COOKIE_SECURE'] = False # Mude para True quando configurar HTTPS!
 
-#    SESSION_COOKIE_HTTPONLY: Impede que JavaScript acesse o cookie, aumentando a segurança.
+# SESSION_COOKIE_HTTPONLY: Impede que JavaScript acesse o cookie, aumentando a segurança.
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
-#    SESSION_COOKIE_SAMESITE: Proteção contra CSRF. 'Lax' é um bom padrão.
+# SESSION_COOKIE_SAMESITE: Proteção contra CSRF. 'Lax' é um bom padrão.
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-#    PERMANENT_SESSION_LIFETIME: Tempo de vida da sessão (ex: 31 dias).
-#                                Se você quer que a sessão persista após fechar o navegador.
+# PERMANENT_SESSION_LIFETIME: Tempo de vida da sessão (ex: 31 dias).
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=31)
 
 
 CORS(app)
 
 _db_client_instance = None
-try:
-    firebase_config_str = os.environ.get('__firebase_config')
-    if firebase_config_str:
-        firebase_config_dict = json.loads(firebase_config_str)
-        cred = credentials.Certificate(firebase_config_dict)
-        if not firebase_admin._apps:
-            firebase_admin.initialize_app(cred)
+
+# Inicialização do Firebase Admin SDK
+# Garante que o Firebase seja inicializado apenas uma vez e com o storageBucket
+if not firebase_admin._apps:
+    try:
+        firebase_config_str = os.environ.get('__firebase_config')
+        if firebase_config_str:
+            firebase_config_dict = json.loads(firebase_config_str)
+            cred = credentials.Certificate(firebase_config_dict)
+            firebase_admin.initialize_app(cred, {
+                'storageBucket': firebase_config_dict.get('storageBucket', os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.appspot.com')) # Prioriza config, depois env, depois hardcoded default
+            })
             print("🔥 Firebase Admin SDK inicializado usando __firebase_config!")
         else:
-            print("🔥 Firebase Admin SDK já foi inicializado.")
-        _db_client_instance = firestore.client()
-    else:
-        cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
-        if os.path.exists(cred_path):
-            cred = credentials.Certificate(cred_path)
-            if not firebase_admin._apps:
-                firebase_admin.initialize_app(cred)
+            cred_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
+            if os.path.exists(cred_path):
+                cred = credentials.Certificate(cred_path)
+                firebase_admin.initialize_app(cred, {
+                    'storageBucket': os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.appspot.com') # Use env var ou hardcode
+                })
                 print("🔥 Firebase Admin SDK inicializado a partir de serviceAccountKey.json (desenvolvimento)!")
             else:
-                print("🔥 Firebase Admin SDK já foi inicializado.")
-            _db_client_instance = firestore.client()
-        else:
-            print("⚠️ Nenhuma credencial Firebase encontrada (__firebase_config ou serviceAccountKey.json). Firebase Admin SDK não inicializado.")
+                print("⚠️ Nenhuma credencial Firebase encontrada (__firebase_config ou serviceAccountKey.json). Firebase Admin SDK não inicializado.")
+    except Exception as e:
+        print(f"🚨 ERRO CRÍTICO ao inicializar o Firebase Admin SDK: {e}")
+else:
+    print("🔥 Firebase Admin SDK já foi inicializado.")
+
+# Obtém a instância do cliente Firestore APÓS o Firebase app ser inicializado
+try:
+    _db_client_instance = firestore.client()
 except Exception as e:
-    print(f"🚨 ERRO CRÍTICO ao inicializar o Firebase Admin SDK: {e}")
+    print(f"🚨 ERRO CRÍTICO ao obter cliente Firestore: {e}")
 
 if _db_client_instance:
     set_db(_db_client_instance)
@@ -155,7 +161,9 @@ def session_login():
             session['clinica_nome_display'] = mapeamento_data.get('nome_clinica_display', 'Clínica On')
             session['user_role'] = mapeamento_data['role']
             session['user_name'] = mapeamento_data.get('nome_completo', email)
-            session.permanent = True # Adicione esta linha para tornar a sessão permanente
+            # NOVO: Carrega a URL da foto do Firestore para a sessão
+            session['user_photo_url'] = mapeamento_data.get('photo_url', '') 
+            session.permanent = True
 
             print(f"Usuário {email} logado com sucesso. Função: {session['user_role']}")
             return jsonify({"success": True, "message": "Login bem-sucedido!"})
@@ -327,43 +335,39 @@ def index():
     # Referências das coleções
     agendamentos_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos')
     pacientes_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')
-    peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis') # Referência para PEIs
+    peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
 
     current_year = datetime.datetime.now(SAO_PAULO_TZ).year
     hoje_dt = datetime.datetime.now(SAO_PAULO_TZ)
     mes_atual_nome = hoje_dt.strftime('%B').capitalize()
 
-    # --- Novas contagens para o dashboard ---
     total_peis = 0
     peis_finalizados = 0
     peis_em_progresso = 0
-    total_atendimentos_concluidos = 0 # Contagem de atendimentos com status 'concluido'
-    total_agendamentos = 0 # Contagem de todos os agendamentos
+    total_atendimentos_concluidos = 0
+    total_agendamentos = 0
     total_pacientes = 0
 
     try:
-        # Contagem de Pacientes
         total_pacientes = pacientes_ref.count().get()[0][0].value
     except Exception as e:
         print(f"Erro ao contar pacientes: {e}")
         flash("Erro ao carregar contagem de pacientes.", "danger")
 
     try:
-        # Contagem de PEIs
         peis_docs = peis_ref.stream()
         for doc in peis_docs:
             total_peis += 1
             pei_data = doc.to_dict()
             if pei_data.get('status') == 'finalizado':
                 peis_finalizados += 1
-            elif pei_data.get('status') == 'ativo': # Assumindo 'ativo' como em progresso
+            elif pei_data.get('status') == 'ativo':
                 peis_em_progresso += 1
     except Exception as e:
         print(f"Erro ao contar PEIs: {e}")
         flash("Erro ao carregar contagem de PEIs.", "danger")
 
     try:
-        # Contagem de Agendamentos e Atendimentos Concluídos
         agendamentos_docs = agendamentos_ref.stream()
         for doc in agendamentos_docs:
             total_agendamentos += 1
@@ -375,7 +379,6 @@ def index():
         flash("Erro ao carregar contagem de agendamentos.", "danger")
 
 
-    # Dados para os novos cards de KPI
     kpi_cards = {
         'total_pacientes': total_pacientes,
         'total_peis': total_peis,
@@ -385,12 +388,10 @@ def index():
         'total_atendimentos_concluidos': total_atendimentos_concluidos,
     }
 
-    # --- PEI Progress per Patient ---
     pacientes_pei_progress = []
-    pacientes_pei_mental_map_data = {} # NOVO: Para armazenar dados do mapa mental
+    pacientes_pei_mental_map_data = {}
 
     try:
-        # Fetch all patients
         all_patients_docs = pacientes_ref.order_by('nome').stream()
         for patient_doc in all_patients_docs:
             patient_id = patient_doc.id
@@ -400,15 +401,13 @@ def index():
             completed_targets_patient = 0
             total_active_peis_patient = 0
             
-            # NOVO: Para o mapa mental, agregaremos as tentativas por tipo de ajuda
             aids_attempts_by_type = defaultdict(int)
-            aids_counts_by_type = defaultdict(int) # Para calcular a média
+            aids_counts_by_type = defaultdict(int)
 
-            # Fetch active PEIs for this patient
             patient_peis_query = peis_ref.where(
                 filter=FieldFilter('paciente_id', '==', patient_id)
             ).where(
-                filter=FieldFilter('status', '==', 'ativo') # Only active PEIs
+                filter=FieldFilter('status', '==', 'ativo')
             )
 
             if user_role != 'admin' and profissional_id_logado:
@@ -416,18 +415,15 @@ def index():
                     filter=FieldFilter('profissionais_ids', 'array_contains', profissional_id_logado)
                 )
             elif user_role != 'admin' and not profissional_id_logado:
-                # Se não é admin e não tem profissional_id, não deve ver nenhum PEI
                 patient_peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', 'INVALID_ID_TO_RETURN_NONE'))
 
 
-            for pei_doc in patient_peis_query.stream(): # Adicionado .stream()
+            for pei_doc in patient_peis_query.stream():
                 total_active_peis_patient += 1
-                # For each active PEI, fetch its metas
                 metas_ref = peis_ref.document(pei_doc.id).collection('metas')
                 metas_docs = metas_ref.stream()
 
                 for meta_doc in metas_docs:
-                    # For each meta, fetch its alvos (targets)
                     alvos_ref = metas_ref.document(meta_doc.id).collection('alvos')
                     alvos_docs = alvos_ref.stream()
 
@@ -436,7 +432,6 @@ def index():
                         if alvo_doc.to_dict().get('status') == 'finalizada':
                             completed_targets_patient += 1
                         
-                        # NOVO: Coletar dados das ajudas para o mapa mental
                         ajudas_ref = alvos_ref.document(alvo_doc.id).collection('ajudas')
                         ajudas_docs = ajudas_ref.stream()
                         for ajuda_doc in ajudas_docs:
@@ -451,13 +446,11 @@ def index():
             if total_targets_patient > 0:
                 progress_percentage = (completed_targets_patient / total_targets_patient) * 100
 
-            # NOVO: Calcular a média de tentativas para cada tipo de ajuda
             mental_map_data_for_patient = {}
             for sigla, total_attempts in aids_attempts_by_type.items():
                 count = aids_counts_by_type[sigla]
                 mental_map_data_for_patient[sigla] = round(total_attempts / count, 1) if count > 0 else 0
 
-            # Garantir que todas as siglas estejam presentes, mesmo que com 0 tentativas
             all_siglas = ['AFT', 'AFP', 'AG', 'AE', 'I']
             for sigla in all_siglas:
                 if sigla not in mental_map_data_for_patient:
@@ -478,13 +471,12 @@ def index():
         flash("Erro ao carregar progresso de PEIs por paciente.", "danger")
 
 
-    # --- Lógica para gráficos (mantida, mas os dados de receita serão removidos no template) ---
     agendamentos_para_analise = []
     try:
         query_analise = agendamentos_ref.where(
             filter=FieldFilter('status', 'in', ['confirmado', 'concluido'])
         ).where(
-            filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt - datetime.timedelta(days=15)) # Últimos 15 dias
+            filter=FieldFilter('data_agendamento_ts', '>=', hoje_dt - datetime.timedelta(days=15))
         )
 
         if user_role != 'admin':
@@ -493,7 +485,7 @@ def index():
                     filter=FieldFilter('profissional_id', '==', profissional_id_logado)
                 )
             else:
-                agendamentos_para_analise = [] # Se não tem profissional_id logado, não mostra nada
+                agendamentos_para_analise = []
 
         if user_role == 'admin' or profissional_id_logado:
             docs_analise = query_analise.stream()
@@ -523,30 +515,25 @@ def index():
     dados_atendimento_vs_receita = {
         "labels": [label.strftime('%d/%m') for label in labels_atend_receita],
         "atendimentos": [atendimentos_por_dia[label] for label in labels_atend_receita],
-        "receitas": [0 for _ in labels_atend_receita] # Manter a estrutura, mas com valores zerados
+        "receitas": [0 for _ in labels_atend_receita]
     }
 
-    # Gráfico de Top Procedimentos (pode ser adaptado para contagem se preferir)
-    # Mantendo a estrutura original, mas o template pode ignorar se não houver dados de receita
-    contagem_procedimento = Counter() # Alterado para contagem
+    contagem_procedimento = Counter()
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
-        # Apenas para o mês atual, se relevante
         if ag_ts and ag_ts.month == hoje_dt.month and ag_ts.year == hoje_dt.year:
             nome_proc = ag.get('servico_procedimento_nome', 'Desconhecido')
-            contagem_procedimento[nome_proc] += 1 # Contagem de procedimentos
+            contagem_procedimento[nome_proc] += 1
 
     top_5_procedimentos = contagem_procedimento.most_common(5)
-    dados_receita_procedimento = { # Renomeie se quiser, mas o template usa este nome
+    dados_receita_procedimento = {
         "labels": [item[0] for item in top_5_procedimentos],
         "valores": [item[1] for item in top_5_procedimentos]
     }
 
-    # Gráfico de Top Profissionais por Atendimentos
     atendimentos_por_profissional = Counter()
     for ag in agendamentos_para_analise:
         ag_ts = ag.get('data_agendamento_ts')
-        # Apenas para o mês atual, se relevante
         if ag_ts and ag_ts.month == hoje_dt.month and ag_ts.year == hoje_dt.year:
             nome_prof = ag.get('profissional_nome', 'Desconhecido')
             atendimentos_por_profissional[nome_prof] += 1
@@ -571,7 +558,7 @@ def index():
                     filter=FieldFilter('profissional_id', '==', profissional_id_logado)
                 )
             else:
-                proximos_agendamentos_lista = [] # Se não tem profissional_id logado, não mostra nada
+                proximos_agendamentos_lista = []
 
         if user_role == 'admin' or profissional_id_logado:
             docs_proximos = query_proximos.order_by('data_agendamento_ts').limit(10).stream()
@@ -601,7 +588,7 @@ def index():
         dados_receita_procedimento=json.dumps(dados_receita_procedimento),
         dados_desempenho_profissional=json.dumps(dados_desempenho_profissional),
         pacientes_pei_progress=pacientes_pei_progress,
-        pacientes_pei_mental_map_data=json.dumps(pacientes_pei_mental_map_data) # NOVO: Passando dados do mapa mental
+        pacientes_pei_mental_map_data=json.dumps(pacientes_pei_mental_map_data)
     )
 
 # NOVO: Rota para a página de busca de PEIs
@@ -613,13 +600,11 @@ def busca_peis():
     pacientes_lista = []
 
     try:
-        # Busca todos os pacientes para preencher o dropdown
         pacientes_docs = db_instance.collection('clinicas').document(clinica_id).collection('pacientes').order_by('nome').stream()
         for doc in pacientes_docs:
             paciente_data = doc.to_dict()
             if paciente_data:
                 paciente_data['id'] = doc.id
-                # Formata a data de nascimento para exibição na tabela
                 if paciente_data.get('data_nascimento') and isinstance(paciente_data['data_nascimento'], datetime.date):
                     paciente_data['data_nascimento_fmt'] = paciente_data['data_nascimento'].strftime('%d/%m/%Y')
                 elif isinstance(paciente_data.get('data_nascimento'), datetime.datetime):
@@ -646,7 +631,6 @@ def import_protocol_from_ai():
 
     if pdf_file and pdf_file.filename.endswith('.pdf'):
         try:
-            # Extrair texto do PDF
             reader = PdfReader(pdf_file)
             text_content = ""
             for page in reader.pages:
@@ -655,9 +639,6 @@ def import_protocol_from_ai():
             if not text_content.strip():
                 return jsonify({'success': False, 'message': 'Não foi possível extrair texto do PDF. O PDF pode estar vazio ou ser uma imagem.'}), 400
 
-            # Preparar o prompt para o Gemini
-            # O prompt é crucial para a qualidade da extração.
-            # Seja EXTREMAMENTE específico sobre o que você quer e o formato.
             prompt = f"""
             Você é um assistente especializado em extrair informações de documentos de protocolo clínico, como o "Guia Portage" ou "Protocolo TEA".
             Seu objetivo é ler o texto fornecido e preencher um formulário de protocolo com as seguintes seções e campos.
@@ -716,77 +697,6 @@ def import_protocol_from_ai():
             {text_content}
             """
 
-            # Definir o schema para a resposta JSON
-            response_schema = {
-                "type": "OBJECT",
-                "properties": {
-                    "nome": {"type": "STRING"},
-                    "descricao": {"type": "STRING"},
-                    "tipo_protocolo": {"type": "STRING", "enum": ["Aquisicao de Habilidades", "Reducao de Comportamentos"]},
-                    "ativo": {"type": "BOOLEAN"},
-                    "etapas": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "nome": {"type": "STRING"},
-                                "descricao": {"type": "STRING"}
-                            }
-                        }
-                    },
-                    "niveis": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "nivel": {"type": "INTEGER"},
-                                "faixa_etaria": {"type": "STRING"}
-                            }
-                        }
-                    },
-                    "habilidades": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "nome": {"type": "STRING"}
-                            }
-                        }
-                    },
-                    "pontuacao": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "tipo": {"type": "STRING"},
-                                "descricao": {"type": "STRING"},
-                                "valor": {"type": "NUMBER"} # Use NUMBER para float/double
-                            }
-                        }
-                    },
-                    "tarefas_testes": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "nivel": {"type": "INTEGER"},
-                                "item": {"type": "STRING"},
-                                "nome": {"type": "STRING"},
-                                "habilidade_marco": {"type": "STRING"},
-                                "resultado_observacao": {"type": "STRING"},
-                                "pergunta": {"type": "STRING"},
-                                "exemplo": {"type": "STRING"},
-                                "criterio": {"type": "STRING"},
-                                "objetivo": {"type": "STRING"}
-                            }
-                        }
-                    },
-                    "observacoes_gerais": {"type": "STRING"}
-                },
-                "required": ["nome", "tipo_protocolo"] # Campos mínimos obrigatórios
-            }
-
-            # Chamar a API do Gemini
             model = genai.GenerativeModel('gemini-2.0-flash')
             response = model.generate_content(
                 prompt,
@@ -796,54 +706,39 @@ def import_protocol_from_ai():
                 }
             )
 
-            # A resposta do Gemini virá como um JSON string dentro de response.text
-            # Você precisará parsear isso.
-            import json
-            
-            # --- Início do bloco de tratamento de erro e depuração ---
             print("Raw Gemini Response Text:")
             raw_gemini_response = response.text
-            print(raw_gemini_response) # Imprime a resposta bruta para depuração
+            print(raw_gemini_response)
 
-            parsed_data = {} # Inicializa como dicionário vazio
+            parsed_data = {}
 
-            # Função para sanitizar strings para JSON
             def sanitize_json_string(text):
                 if not isinstance(text, str):
-                    return text # Retorna o valor original se não for string
+                    return text
                 
-                # Escapa aspas duplas, barras invertidas, e caracteres de controle
-                text = text.replace('\\', '\\\\') # Escapa barras invertidas primeiro
-                text = text.replace('"', '\\"')    # Escapa aspas duplas
-                text = text.replace('\n', '\\n')  # Escapa quebras de linha
-                text = text.replace('\r', '\\r')  # Escapa retornos de carro
-                text = text.replace('\t', '\\t')  # Escapa tabs
+                text = text.replace('\\', '\\\\')
+                text = text.replace('"', '\\"')
+                text = text.replace('\n', '\\n')
+                text = text.replace('\r', '\\r')
+                text = text.replace('\t', '\\t')
                 return text
 
-            # Tenta sanitizar a resposta bruta antes de carregar como JSON
-            # Isso é uma tentativa de correção para strings malformadas dentro do JSON
-            # Não é uma solução perfeita para JSON completamente quebrado, mas ajuda com strings
             sanitized_response_text = raw_gemini_response
             try:
-                # Tenta carregar o JSON diretamente primeiro
                 parsed_data = json.loads(raw_gemini_response)
             except json.JSONDecodeError as e:
                 print(f"JSONDecodeError: {e}. Tentando sanitizar e corrigir a resposta...")
-                # Se falhar, tenta uma abordagem mais agressiva de sanitização
-                import re
-                cleaned_text_for_json = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', raw_gemini_response) # Remove caracteres de controle
+                cleaned_text_for_json = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', raw_gemini_response)
                 
                 try:
                     parsed_data = json.loads(cleaned_text_for_json)
                     print("Resposta parseada com sucesso após limpeza de caracteres de controle.")
                 except json.JSONDecodeError as e_cleaned:
                     print(f"Falha ao parsear mesmo após limpeza de caracteres de controle: {e_cleaned}")
-                    # Retorna um erro mais específico para o frontend
                     return jsonify({
                         'success': False, 
                         'message': f'Erro ao interpretar a resposta da IA. Formato JSON inválido. Detalhes: {e_cleaned}. Verifique o log do servidor para a resposta bruta.'
                     }), 500
-            # --- Fim do bloco de tratamento de erro e depuração ---
 
             return jsonify({'success': True, 'data': parsed_data}), 200
 
@@ -854,7 +749,6 @@ def import_protocol_from_ai():
         return jsonify({'success': False, 'message': 'Formato de arquivo não suportado. Por favor, envie um PDF.'}), 400
 
 
-# Chamar as funções para registrar as rotas diretamente no app
 register_users_routes(app)
 register_professionals_routes(app)
 register_patients_routes(app)
@@ -868,7 +762,8 @@ register_contas_a_pagar_routes(app)
 app.register_blueprint(peis_bp) 
 register_patrimonio_routes(app) 
 app.register_blueprint(protocols_bp)
-app.register_blueprint(weekly_planning_bp) # NOVO: Registra o blueprint de planejamento semanal
+app.register_blueprint(weekly_planning_bp) 
+app.register_blueprint(user_api_bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)

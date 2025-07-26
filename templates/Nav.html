@@ -3,8 +3,9 @@
   <div class="sidebar-inner-content">
 
     <div class="sidebar-header">
-      <a href="{{ url_for('index') }}" class="logo" title="{{ session.clinica_nome_display or 'ClínicaOn' }}">
-        <i class="fa-solid fa-staff-snake"></i> <span>{{ session.clinica_nome_display or 'ClínicaOn' }}</span>
+      <a href="{{ url_for('index') }}" class="logo" title="ClinicSolutions">
+        <img src="https://i.imgur.com/484AdCn.png" alt="ClinicSolutions Logo" class="h-7 w-auto mr-2"> <!-- Logo ajustada para h-7 -->
+        <span>ClinicSolutions</span> <!-- Nome do sistema ClinicSolutions -->
       </a>
     </div>
 
@@ -61,17 +62,16 @@
             <div class="submenu-toggle-content">
               <i class="fa-regular fa-calendar-check"></i>
               <span>Agendamentos</span>
-              {% if navbar_counts.agendamentos is defined %}<span class="count-badge">{{ navbar_counts.agendamentos }}</span>{% endif %}
             </div>
+            {% if navbar_counts.agendamentos is defined %}<span class="count-badge">{{ navbar_counts.agendamentos }}</span>{% endif %}
           </a>
         </li>
 
         {% if session.user_role == 'admin' %}
-        {# NOVO: Cadastro #}
         <li class="has-submenu {% if request.endpoint in ['listar_servicos_procedimentos', 'listar_convenios', 'protocols.list_protocols', 'listar_modelos_anamnese', 'listar_profissionais'] %}open{% endif %}">
           <a href="#" class="submenu-toggle" title="Cadastro">
             <div class="submenu-toggle-content">
-              <i class="fa-solid fa-folder-open"></i> {# Ícone para Cadastro #}
+              <i class="fa-solid fa-folder-open"></i>
               <span>Cadastro</span>
             </div>
             <i class="fa-solid fa-chevron-down submenu-arrow"></i>
@@ -146,11 +146,10 @@
 
         </li>
 
-        {# NOVO: Gerir Sistema #}
         <li class="has-submenu {% if request.endpoint in ['listar_horarios', 'listar_usuarios'] %}open{% endif %}">
           <a href="#" class="submenu-toggle" title="Gerir Sistema">
             <div class="submenu-toggle-content">
-              <i class="fa-solid fa-gear"></i> {# Ícone para Gerir Sistema #}
+              <i class="fa-solid fa-gear"></i>
               <span>Gerir Sistema</span>
             </div>
             <i class="fa-solid fa-chevron-down submenu-arrow"></i>
@@ -176,22 +175,82 @@
     </nav>
 
     <div class="sidebar-footer">
+      <div class="user-info-section">
+        <img src="{{ session.user_photo_url | default('https://placehold.co/40x40/cccccc/ffffff?text=User') }}" alt="Foto do Usuário" class="user-photo" id="userPhoto">
+        <div class="user-details">
+          <span class="user-name">{{ session.user_name | default('Utilizador') }}</span>
+          <span class="clinic-name">{{ session.clinica_nome_display | default('Clínica On') }}</span>
+        </div>
+      </div>
 
-      <button id="theme-toggle" aria-label="Alternar tema" title="Alternar Tema">
-        <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
-      </button>
+      <div class="footer-buttons">
+        <button id="theme-toggle" aria-label="Alternar tema" title="Alternar Tema">
+          <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
+        </button>
 
-      <a href="#" id="logoutButton" title="Sair">
-        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span>
-      </a>
-
+        <button id="logoutButton" title="Sair"> <!-- Alterado para button -->
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span>
+        </button>
+      </div>
     </div>
 
   </div>
 </aside>
 
-<style>
+<!-- Modal para Gerir Foto do Usuário -->
+<div id="managePhotoModal" class="nav-modal-overlay"> <!-- Prefixo nav- -->
+  <div class="nav-modal-content"> <!-- Prefixo nav- -->
+    <div class="nav-modal-header"> <!-- Prefixo nav- -->
+      <h3>Gerir Foto de Perfil</h3>
+      <button type="button" class="nav-modal-close-btn" data-close-modal="managePhotoModal">&times;</button> <!-- Prefixo nav- -->
+    </div>
+    <div class="nav-modal-body flex flex-col items-center p-4"> <!-- Prefixo nav- -->
+      <input type="file" id="photoUploadInput" accept="image/*" class="mb-4 p-2 border border-gray-300 rounded-md w-full">
+      <div class="nav-image-crop-container mb-4 w-full max-w-xs md:max-w-sm lg:max-w-md"> <!-- Prefixo nav- -->
+        <img id="imageToCrop" style="display: block; max-width: 100%; max-height: 100%;" src="{{ session.user_photo_url | default('https://placehold.co/300x300/cccccc/ffffff?text=Selecione+uma+imagem') }}" alt="Imagem para Corte">
+      </div>
+      <div class="flex space-x-2 w-full justify-center">
+        <button id="uploadPhotoButton" class="btn btn-primary flex-1"><i class="fas fa-upload"></i> <span>Salvar Foto</span></button>
+        <button id="removePhotoButton" class="btn btn-danger-outline flex-1"><i class="fas fa-trash-alt"></i> <span>Remover Foto</span></button>
+      </div>
+    </div>
+  </div>
+</div>
 
+<style>
+/* Estilos existentes do Nav.html */
+:root {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --primary: #5587c2;
+    --accent: #9b53b8;
+    --primary-light: #c8dcf3;
+    --primary-dark: #406a96;
+    --secondary: #f59e0b;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --warning: #f59e0b;
+    --info: #0ea5e9;
+    --border-color: #e2e8f0;
+
+    --dark-bg: #1e293b;
+    --dark-card: #334155;
+    --dark-text: #f1f5f9;
+    --dark-muted: #94a3b8;
+    --dark-border-color: #475569;
+
+    color-scheme: light;
+}
+[data-theme="dark"] {
+    --bg: var(--dark-bg);
+    --text: var(--dark-text);
+    --card: var(--dark-card);
+    --muted: var(--dark-muted);
+    --border-color: var(--dark-border-color);
+    color-scheme: dark;
+}
 ::-webkit-scrollbar {
   background-color: var(--bg);
   width: 0.5625rem;
@@ -250,14 +309,20 @@
 .sidebar-header .logo {
   color: white;
   font-weight: 700;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
   
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+}
+
+.sidebar-header .logo img {
+    height: 1.75rem;
+    width: auto;
+    margin-right: 0.5rem;
 }
 
 .sidebar-header .logo i {
@@ -303,16 +368,20 @@
   transition: background 0.2s ease, color 0.2s ease;
 
   display: flex;
-  justify-content: space-between; /* Ajustado para espaçar o texto e o contador */
+  justify-content: space-between; /* Mantido para espaçar texto/ícone e badge */
   align-items: center;
-  /* gap: 1rem; */
 }
 
 .submenu-toggle-content {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start; /* Alinha o conteúdo à esquerda */
   align-items: center;
   gap: 0.75rem;
+  flex-grow: 1; /* Permite que o conteúdo ocupe o espaço */
+  min-width: 0; /* Permite que o texto encolha */
+  overflow: hidden; /* Esconde o texto que transborda */
+  text-overflow: ellipsis; /* Adiciona reticências ao texto que transborda */
+  white-space: nowrap; /* Impede que o texto quebre linha */
 }
 
 .sidebar nav ul li a i {
@@ -347,10 +416,66 @@
   margin-top: auto;
   padding: 1rem 0.75rem;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
-.sidebar.collapsed .sidebar-footer {
-  padding: 1rem 0.5rem;
+.user-info-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: white;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+.user-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.user-photo:hover {
+    transform: scale(1.05);
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.clinic-name {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.footer-buttons {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  gap: 0.5rem;
 }
 
 .sidebar-footer button,
@@ -359,23 +484,38 @@
   border: none;
   cursor: pointer;
   color: #e2e8f0;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.5rem;
   border-radius: 0.5rem;
-  width: 100%;
+  flex-grow: 1;
   font-family: 'Inter', sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   text-decoration: none;
   transition: background 0.2s ease, color 0.2s ease;
 
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .sidebar-footer button:hover,
 .sidebar-footer a:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: white;;
+  color: white;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 1rem 0.5rem;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-footer .user-info-section {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-footer .footer-buttons {
+    flex-direction: column;
 }
 
 .sidebar.collapsed .sidebar-footer span {
@@ -386,6 +526,7 @@
 .sidebar.collapsed .sidebar-footer a {
   justify-content: center;
   padding: 0.75rem;
+  width: auto;
 }
 
 /* Estilos para Submenu (Dropdown) */
@@ -404,9 +545,9 @@
 }
 
 .sidebar nav ul li.has-submenu.open .submenu {
-  overflow-y: hidden;
+  overflow-y: auto; /* Permite rolagem interna se o conteúdo exceder a altura máxima */
   transition: max-height 0.5s ease-in;
-  max-height: 62.5rem;
+  max-height: 62.5rem; /* Um valor alto para permitir a expansão total */
 }
 
 .sidebar nav ul li.has-submenu.open .submenu-toggle {
@@ -437,19 +578,19 @@
 
 /* Estilo para o contador */
 .count-badge {
-  background-color: var(--secondary); /* Cor de destaque para o contador */
+  background-color: var(--secondary);
   color: white;
   padding: 0.2em 0.6em;
-  border-radius: 0.75em; /* Cantos mais arredondados */
-  font-size: 0.75em; /* Tamanho menor para o texto do contador */
+  border-radius: 0.75em;
+  font-size: 0.75em;
   font-weight: 700;
-  margin-left: auto; /* Empurra o contador para a direita */
-  min-width: 1.5em; /* Garante um tamanho mínimo para números de 1 dígito */
+  margin-left: auto;
+  min-width: 1.5em;
   text-align: center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1; /* Garante que o texto esteja centralizado verticalmente */
+  line-height: 1;
 }
 
 /* Responsivo para a sidebar */
@@ -475,7 +616,7 @@
   }
 
   .sidebar.collapsed nav ul li a span {
-    display: inline; /* Garante que o texto e o contador apareçam em mobile */
+    display: inline;
   }
   .sidebar.collapsed .sidebar-footer span {
     display: inline;
@@ -486,7 +627,155 @@
   }
 }
 
+/* Estilos para o Modal (com prefixo nav-) */
+.nav-modal-overlay { /* Prefixo nav- */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+}
+
+.nav-modal-overlay.active { /* Prefixo nav- */
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.nav-modal-content { /* Prefixo nav- */
+    background-color: var(--card);
+    color: var(--text);
+    border-radius: 12px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05);
+    width: 90%;
+    max-width: 500px;
+    transform: translateY(-20px);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 2001;
+    border: 1px solid var(--border-color);
+}
+
+.nav-modal-overlay.active .nav-modal-content { /* Prefixo nav- */
+    transform: translateY(0);
+}
+
+.nav-modal-header { /* Prefixo nav- */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    background-color: var(--bg);
+}
+
+.nav-modal-header h3 { /* Prefixo nav- */
+    font-size: 1.25rem;
+    color: var(--text);
+    margin: 0;
+    font-weight: 600;
+}
+
+.nav-modal-close-btn { /* Prefixo nav- */
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--muted);
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s ease, background-color 0.2s ease;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.nav-modal-close-btn:hover { /* Prefixo nav- */
+    color: var(--danger);
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
+.nav-modal-body { /* Prefixo nav- */
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Estilos para o Cropper.js (com prefixo nav-) */
+.nav-image-crop-container { /* Prefixo nav- */
+    background-color: var(--bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 400px;
+    height: 300px;
+    position: relative;
+}
+
+.nav-image-crop-container img { /* Prefixo nav- */
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* Estilos para o input de arquivo (dentro do modal nav-) */
+.nav-modal-body input[type="file"] { /* Prefixo nav- */
+    background-color: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.nav-modal-body input[type="file"]:hover { /* Prefixo nav- */
+    border-color: var(--primary);
+}
+
+.nav-modal-body input[type="file"]::-webkit-file-upload-button { /* Prefixo nav- */
+    background-color: var(--primary);
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.nav-modal-body input[type="file"]::-webkit-file-upload-button:hover { /* Prefixo nav- */
+    background-color: var(--primary-dark);
+}
+
+/* Estilo para botões de ação no modal de foto (dentro do modal nav-) */
+.nav-modal-body .flex.space-x-2 { /* Prefixo nav- */
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.nav-modal-body .flex.space-x-2 .btn { /* Prefixo nav- */
+    flex: 1;
+}
+
 </style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
 
 <script type="module">
   document.addEventListener('DOMContentLoaded', () => {
@@ -498,11 +787,230 @@
     const themeToggle = document.querySelector('#theme-toggle');
     const logoutButton = document.getElementById('logoutButton');
 
+    const USER_UID = "{{ session.user_uid | default('') }}";
+    const USER_PHOTO_URL_INITIAL = "{{ session.user_photo_url | default('') }}";
+    const DEFAULT_PHOTO_URL = "https://placehold.co/100x100/cccccc/ffffff?text=User";
+
+    const userPhoto = document.getElementById('userPhoto');
+    const managePhotoModal = document.getElementById('managePhotoModal');
+    const imageToCrop = document.getElementById('imageToCrop');
+    const photoUploadInput = document.getElementById('photoUploadInput');
+    const uploadPhotoButton = document.getElementById('uploadPhotoButton');
+    const removePhotoButton = document.getElementById('removePhotoButton');
+    const closeModalButtons = document.querySelectorAll('[data-close-modal]');
+
+    let cropper; // Variável para a instância do Cropper.js
+
+    // Função para atualizar o texto do botão de upload/salvar
+    function updateUploadButtonText() {
+        if (userPhoto && userPhoto.src && userPhoto.src !== DEFAULT_PHOTO_URL) {
+            uploadPhotoButton.querySelector('span').textContent = 'Alterar Foto';
+        } else {
+            uploadPhotoButton.querySelector('span').textContent = 'Salvar Foto';
+        }
+    }
+
+    // Inicializa a foto do utilizador e o texto do botão
+    if (userPhoto) {
+        userPhoto.src = USER_PHOTO_URL_INITIAL || DEFAULT_PHOTO_URL;
+        updateUploadButtonText(); // Define o texto inicial do botão
+    }
+
+    // Abre o modal de gestão de foto ao clicar na foto do utilizador
+    userPhoto?.addEventListener('click', () => {
+        // Redefine a imagem para corte para a foto atual ou padrão
+        imageToCrop.src = userPhoto.src;
+        // Destroi a instância anterior do cropper se existir
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        // Exibe a imagem para o cropper
+        imageToCrop.style.display = 'block';
+        // Inicializa o cropper na imagem
+        cropper = new Cropper(imageToCrop, {
+            aspectRatio: 1, // Proporção 1:1 para foto de perfil (quadrada)
+            viewMode: 1, // Restringe a área de corte ao tamanho do canvas
+            autoCropArea: 0.8, // Área de corte inicial (80% da imagem)
+            background: false, // Sem fundo quadriculado
+            zoomable: true,
+            movable: true,
+            ready: function () {
+                // Opcional: ajustar a imagem para caber no contêiner se for muito grande
+                // this.cropper.zoomTo(1);
+            }
+        });
+
+        managePhotoModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        updateUploadButtonText(); // Atualiza o texto do botão ao abrir o modal
+    });
+
+    // Quando um novo arquivo é selecionado no input
+    photoUploadInput?.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imageToCrop.src = e.target.result; // Define a nova imagem para o cropper
+                if (cropper) {
+                    cropper.destroy(); // Destrói a instância anterior
+                }
+                // Exibe a imagem novamente para o cropper
+                imageToCrop.style.display = 'block';
+                // Inicializa o cropper com a nova imagem
+                cropper = new Cropper(imageToCrop, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    autoCropArea: 0.8,
+                    background: false,
+                    zoomable: true,
+                    movable: true,
+                    ready: function () {
+                        // this.cropper.zoomTo(1);
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+        uploadPhotoButton.querySelector('span').textContent = 'Salvar Foto'; // Ao selecionar um novo arquivo, é sempre "Salvar Foto"
+    });
+
+    // Lógica para Salvar/Atualizar Foto
+    uploadPhotoButton?.addEventListener('click', async () => {
+        if (!cropper) {
+            alert('Por favor, selecione uma imagem e ajuste o corte.');
+            return;
+        }
+
+        uploadPhotoButton.disabled = true;
+        uploadPhotoButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+        // Obtém a imagem cortada como um blob
+        cropper.getCroppedCanvas({
+            width: 200, // Largura final da imagem (ajuste conforme necessário)
+            height: 200, // Altura final da imagem (ajuste conforme necessário)
+            fillColor: '#fff' // Cor de preenchimento para áreas transparentes (se houver)
+        }).toBlob(async (blob) => {
+            if (!blob) {
+                alert('Erro ao obter a imagem cortada.');
+                uploadPhotoButton.disabled = false;
+                uploadPhotoButton.innerHTML = '<i class="fas fa-upload"></i> <span>Salvar Foto</span>';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('profile_photo', blob, 'profile.png'); // Adiciona o blob como um arquivo
+            formData.append('user_uid', USER_UID);
+
+            try {
+                const response = await fetch('/api/upload_user_photo', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.photo_url) {
+                        userPhoto.src = data.photo_url;
+                        alert('Foto de perfil atualizada com sucesso!');
+                        managePhotoModal.classList.remove('active');
+                        document.body.style.overflow = '';
+                        if (cropper) {
+                            cropper.destroy(); // Destruir o cropper após o upload bem-sucedido
+                            cropper = null;
+                        }
+                        updateUploadButtonText(); // Atualiza o texto do botão após salvar
+                    } else {
+                        alert('Erro ao salvar foto: ' + (data.message || 'Erro desconhecido.'));
+                    }
+                } else {
+                    alert('Erro no servidor ao carregar foto.');
+                }
+            } catch (error) {
+                console.error('Erro ao fazer upload da foto:', error);
+                alert('Erro na comunicação com o servidor.');
+            } finally {
+                uploadPhotoButton.disabled = false;
+                uploadPhotoButton.innerHTML = '<i class="fas fa-upload"></i> <span>Salvar Foto</span>'; // Volta para texto padrão
+            }
+        }, 'image/png', 0.9); // Formato PNG, qualidade 0.9
+    });
+
+    // Lógica para Remover Foto
+    removePhotoButton?.addEventListener('click', async () => {
+        removePhotoButton.disabled = true;
+        removePhotoButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removendo...';
+
+        try {
+            const response = await fetch('/api/remove_user_photo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_uid: USER_UID })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    userPhoto.src = DEFAULT_PHOTO_URL;
+                    imageToCrop.src = DEFAULT_PHOTO_URL; // Atualiza a imagem no cropper também
+                    if (cropper) {
+                        cropper.destroy(); // Destrói o cropper
+                        cropper = null;
+                    }
+                    alert('Foto de perfil removida com sucesso!');
+                    managePhotoModal.classList.remove('active');
+                    document.body.style.overflow = '';
+                    updateUploadButtonText(); // Atualiza o texto do botão após remover
+                } else {
+                    alert('Erro ao remover foto: ' + (data.message || 'Erro desconhecido.'));
+                }
+            } else {
+                alert('Erro no servidor ao remover foto.');
+            }
+        } catch (error) {
+            console.error('Erro ao remover foto:', error);
+            alert('Erro na comunicação com o servidor.');
+        } finally {
+            removePhotoButton.disabled = false;
+            removePhotoButton.innerHTML = '<i class="fas fa-trash-alt"></i> <span>Remover Foto</span>'; // Volta para texto padrão
+        }
+    });
+
+    // Fecha o modal ao clicar nos botões de fechar
+    closeModalButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const modalId = button.dataset.closeModal;
+            if (modalId) {
+                document.getElementById(modalId).classList.remove('active');
+                document.body.style.overflow = '';
+                if (cropper) { // Destrói o cropper ao fechar o modal
+                    cropper.destroy();
+                    cropper = null;
+                }
+            }
+        });
+    });
+
+    // Fecha o modal ao clicar fora dele
+    managePhotoModal?.addEventListener('click', (e) => {
+        if (e.target === managePhotoModal) {
+            managePhotoModal.classList.remove('active');
+            document.body.style.overflow = '';
+            if (cropper) { // Destrói o cropper ao fechar o modal
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+    });
+
     // Submenu functionality
     document.querySelectorAll('.has-submenu').forEach(item => {
       const toggle = item.querySelector('.submenu-toggle');
 
-      if (toggle) { // Ensure toggle exists
+      if (toggle) {
         toggle.addEventListener('click', (e) => {
           e.preventDefault();
           item.classList.toggle('open');
@@ -635,10 +1143,25 @@
       logoutButton.addEventListener('click', async (event) => {
         
         event.preventDefault(); 
-        fetch("{{ url_for('logout') }}", { method: 'POST' })
-            .then(() => window.location.href = "{{ url_for('login_page') }}")
-            .catch(() => window.location.href = "{{ url_for('login_page') }}");
-        
+        // Faz uma requisição POST para o endpoint de logout do Flask
+        try {
+            const response = await fetch("{{ url_for('logout') }}", { method: 'POST' });
+            if (response.ok) {
+                // Se o logout no servidor foi bem-sucedido, redireciona para a página de login
+                window.location.href = "{{ url_for('login_page') }}";
+            } else {
+                // Se houve um erro no servidor, exibe uma mensagem
+                const errorData = await response.json();
+                alert('Erro ao fazer logout: ' + (errorData.message || 'Erro desconhecido.'));
+                console.error('Erro no logout do servidor:', errorData);
+            }
+        } catch (error) {
+            // Erro de rede ou outra falha na requisição
+            console.error('Erro na requisição de logout:', error);
+            alert('Erro de conexão ao tentar fazer logout. Tente novamente.');
+            // Em caso de falha na requisição, ainda pode tentar redirecionar como fallback
+            window.location.href = "{{ url_for('login_page') }}";
+        }
       });
     }
 
