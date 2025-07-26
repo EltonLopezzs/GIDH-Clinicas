@@ -4,8 +4,8 @@
 
     <div class="sidebar-header">
       <a href="{{ url_for('index') }}" class="logo" title="ClinicSolutions">
-        <img src="https://i.imgur.com/484AdCn.png" alt="ClinicSolutions Logo" class="h-7 w-auto mr-2"> <!-- Logo ajustada para h-7 -->
-        <span>ClinicSolutions</span> <!-- Nome do sistema ClinicSolutions -->
+        <img src="https://i.imgur.com/484AdCn.png" alt="ClinicSolutions Logo" class="h-7 w-auto mr-2">
+        <span>ClinicSolutions</span>
       </a>
     </div>
 
@@ -69,6 +69,7 @@
 
         {% if session.user_role == 'admin' %}
         <li class="has-submenu {% if request.endpoint in ['listar_servicos_procedimentos', 'listar_convenios', 'protocols.list_protocols', 'listar_modelos_anamnese', 'listar_profissionais'] %}open{% endif %}">
+
           <a href="#" class="submenu-toggle" title="Cadastro">
             <div class="submenu-toggle-content">
               <i class="fa-solid fa-folder-open"></i>
@@ -188,7 +189,7 @@
           <i class="fa-solid fa-sun"></i> <span>Alternar Tema</span>
         </button>
 
-        <button id="logoutButton" title="Sair"> <!-- Alterado para button -->
+        <button id="logoutButton" title="Sair">
           <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sair</span>
         </button>
       </div>
@@ -197,28 +198,26 @@
   </div>
 </aside>
 
-<!-- Modal para Gerir Foto do Usuário -->
-<div id="managePhotoModal" class="nav-modal-overlay"> <!-- Prefixo nav- -->
-  <div class="nav-modal-content"> <!-- Prefixo nav- -->
-    <div class="nav-modal-header"> <!-- Prefixo nav- -->
+<div id="managePhotoModal" class="nav-modal-overlay">
+  <div class="nav-modal-content">
+    <div class="nav-modal-header">
       <h3>Gerir Foto de Perfil</h3>
-      <button type="button" class="nav-modal-close-btn" data-close-modal="managePhotoModal">&times;</button> <!-- Prefixo nav- -->
+      <button type="button" class="nav-modal-close-btn" data-close-modal="managePhotoModal">&times;</button>
     </div>
-    <div class="nav-modal-body flex flex-col items-center p-4"> <!-- Prefixo nav- -->
+    <div class="nav-modal-body flex flex-col items-center p-4">
       <input type="file" id="photoUploadInput" accept="image/*" class="mb-4 p-2 border border-gray-300 rounded-md w-full">
-      <div class="nav-image-crop-container mb-4 w-full max-w-xs md:max-w-sm lg:max-w-md"> <!-- Prefixo nav- -->
+      <div class="nav-image-crop-container mb-4 w-full max-w-xs md:max-w-sm lg:max-w-md">
         <img id="imageToCrop" style="display: block; max-width: 100%; max-height: 100%;" src="{{ session.user_photo_url | default('https://placehold.co/300x300/cccccc/ffffff?text=Selecione+uma+imagem') }}" alt="Imagem para Corte">
       </div>
       <div class="flex space-x-2 w-full justify-center">
-        <button id="uploadPhotoButton" class="btn btn-primary flex-1"><i class="fas fa-upload"></i> <span>Salvar Foto</span></button>
-        <button id="removePhotoButton" class="btn btn-danger-outline flex-1"><i class="fas fa-trash-alt"></i> <span>Remover Foto</span></button>
+        <button id="uploadPhotoButton" class="btn btn-primary flex-1" disabled><i class="fas fa-upload"></i> <span>Salvar Foto</span></button>
+        <button id="removePhotoButton" class="btn btn-danger-outline flex-1" disabled><i class="fas fa-trash-alt"></i> <span>Remover Foto</span></button>
       </div>
     </div>
   </div>
 </div>
 
 <style>
-/* Estilos existentes do Nav.html */
 :root {
     --bg: #f1f5f9;
     --card: #ffffff;
@@ -276,30 +275,28 @@
   color: white;
   transition: width 0.3s ease, transform 0.3s ease;
   z-index: 1000;
-
   position: fixed;
   width: 16.25rem;
   height: 100vh;
   top: 0;
   left: 0;
-
   display: flex;
   flex-direction: column;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-inner-content {
-  padding: 0rem;
+  padding: 0;
   height: 100%;
   overflow-y: auto;
-  
   display: flex;
   flex-direction: column;
 }
+
 .sidebar-header {
   padding: 0 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   height: 4.375rem;
-  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -313,7 +310,6 @@
   text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
-  
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -323,6 +319,7 @@
     height: 1.75rem;
     width: auto;
     margin-right: 0.5rem;
+    border-radius: 0.375rem;
 }
 
 .sidebar-header .logo i {
@@ -330,7 +327,7 @@
 }
 
 .sidebar.collapsed {
-  width: 4.875rem;
+  width: 5.5rem;
 }
 
 .sidebar.collapsed .sidebar-header .logo span {
@@ -365,23 +362,22 @@
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
-  transition: background 0.2s ease, color 0.2s ease;
-
+  transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
   display: flex;
-  justify-content: space-between; /* Mantido para espaçar texto/ícone e badge */
+  justify-content: space-between;
   align-items: center;
 }
 
 .submenu-toggle-content {
   display: flex;
-  justify-content: flex-start; /* Alinha o conteúdo à esquerda */
+  justify-content: flex-start;
   align-items: center;
   gap: 0.75rem;
-  flex-grow: 1; /* Permite que o conteúdo ocupe o espaço */
-  min-width: 0; /* Permite que o texto encolha */
-  overflow: hidden; /* Esconde o texto que transborda */
-  text-overflow: ellipsis; /* Adiciona reticências ao texto que transborda */
-  white-space: nowrap; /* Impede que o texto quebre linha */
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar nav ul li a i {
@@ -401,8 +397,9 @@
 }
 
 .sidebar nav ul li a:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   color: white;
+  transform: translateY(-1px);
 }
 
 .sidebar nav ul li.active a {
@@ -410,6 +407,7 @@
   color: var(--primary);
   border-radius: 0.5rem;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-footer {
@@ -420,6 +418,7 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .user-info-section {
@@ -440,11 +439,13 @@
   border: 2px solid rgba(255, 255, 255, 0.5);
   margin-bottom: 0.5rem;
   cursor: pointer;
-  transition: transform 0.2s ease-in-out;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .user-photo:hover {
-    transform: scale(1.05);
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .user-details {
@@ -490,8 +491,7 @@
   font-family: 'Inter', sans-serif;
   font-size: 0.9rem;
   text-decoration: none;
-  transition: background 0.2s ease, color 0.2s ease;
-
+  transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -500,8 +500,9 @@
 
 .sidebar-footer button:hover,
 .sidebar-footer a:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   color: white;
+  transform: translateY(-1px);
 }
 
 .sidebar.collapsed .sidebar-footer {
@@ -529,7 +530,6 @@
   width: auto;
 }
 
-/* Estilos para Submenu (Dropdown) */
 .sidebar nav ul li.has-submenu .submenu {
   padding: 0rem;
   max-height: 0rem;
@@ -538,6 +538,7 @@
   transition: max-height 0.3s ease-out;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 0rem 0rem 0.5rem 0.5rem;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .sidebar nav ul li ul.submenu li.active a {
@@ -545,9 +546,9 @@
 }
 
 .sidebar nav ul li.has-submenu.open .submenu {
-  overflow-y: auto; /* Permite rolagem interna se o conteúdo exceder a altura máxima */
+  max-height: 62.5rem;
+  overflow-y: auto;
   transition: max-height 0.5s ease-in;
-  max-height: 62.5rem; /* Um valor alto para permitir a expansão total */
 }
 
 .sidebar nav ul li.has-submenu.open .submenu-toggle {
@@ -563,7 +564,6 @@
   margin-bottom: 0rem;
 }
 
-/* Ajustar estado colapsado para o submenu */
 .sidebar.collapsed .has-submenu .submenu-toggle span {
   display: none;
 }
@@ -576,7 +576,6 @@
   display: none;
 }
 
-/* Estilo para o contador */
 .count-badge {
   background-color: var(--secondary);
   color: white;
@@ -591,12 +590,13 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Responsivo para a sidebar */
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
+    box-shadow: none;
   }
 
   .sidebar.open {
@@ -627,37 +627,37 @@
   }
 }
 
-/* Estilos para o Modal (com prefixo nav-) */
-.nav-modal-overlay { /* Prefixo nav- */
+.nav-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 2000;
     opacity: 0;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.3s ease;
     pointer-events: none;
+    backdrop-filter: blur(5px);
 }
 
-.nav-modal-overlay.active { /* Prefixo nav- */
+.nav-modal-overlay.active {
     opacity: 1;
     pointer-events: auto;
 }
 
-.nav-modal-content { /* Prefixo nav- */
+.nav-modal-content {
     background-color: var(--card);
     color: var(--text);
     border-radius: 12px;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.25), 0 5px 15px rgba(0,0,0,0.1);
     width: 90%;
     max-width: 500px;
     transform: translateY(-20px);
-    transition: transform 0.25s ease, opacity 0.25s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
@@ -666,11 +666,11 @@
     border: 1px solid var(--border-color);
 }
 
-.nav-modal-overlay.active .nav-modal-content { /* Prefixo nav- */
+.nav-modal-overlay.active .nav-modal-content {
     transform: translateY(0);
 }
 
-.nav-modal-header { /* Prefixo nav- */
+.nav-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -680,38 +680,38 @@
     background-color: var(--bg);
 }
 
-.nav-modal-header h3 { /* Prefixo nav- */
+.nav-modal-header h3 {
     font-size: 1.25rem;
     color: var(--text);
     margin: 0;
     font-weight: 600;
 }
 
-.nav-modal-close-btn { /* Prefixo nav- */
+.nav-modal-close-btn {
     background: none;
     border: none;
     font-size: 1.5rem;
     color: var(--muted);
     cursor: pointer;
     line-height: 1;
-    transition: color 0.2s ease, background-color 0.2s ease;
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
 }
 
-.nav-modal-close-btn:hover { /* Prefixo nav- */
+.nav-modal-close-btn:hover {
     color: var(--danger);
     background-color: rgba(220, 38, 38, 0.1);
+    transform: rotate(90deg);
 }
 
-.nav-modal-body { /* Prefixo nav- */
+.nav-modal-body {
     padding: 1.5rem;
     overflow-y: auto;
     flex-grow: 1;
 }
 
-/* Estilos para o Cropper.js (com prefixo nav-) */
-.nav-image-crop-container { /* Prefixo nav- */
+.nav-image-crop-container {
     background-color: var(--bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -725,51 +725,80 @@
     position: relative;
 }
 
-.nav-image-crop-container img { /* Prefixo nav- */
+.nav-image-crop-container img {
     display: block;
     max-width: 100%;
     max-height: 100%;
 }
 
-/* Estilos para o input de arquivo (dentro do modal nav-) */
-.nav-modal-body input[type="file"] { /* Prefixo nav- */
+.nav-modal-body input[type="file"] {
     background-color: var(--bg);
     color: var(--text);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 0.5rem 1rem;
     cursor: pointer;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.nav-modal-body input[type="file"]:hover { /* Prefixo nav- */
+.nav-modal-body input[type="file"]:hover {
     border-color: var(--primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
-.nav-modal-body input[type="file"]::-webkit-file-upload-button { /* Prefixo nav- */
+.nav-modal-body input[type="file"]::-webkit-file-upload-button {
     background-color: var(--primary);
     color: white;
     padding: 0.5rem 1rem;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.nav-modal-body input[type="file"]::-webkit-file-upload-button:hover { /* Prefixo nav- */
+.nav-modal-body input[type="file"]::-webkit-file-upload-button:hover {
     background-color: var(--primary-dark);
+    transform: translateY(-1px);
 }
 
-/* Estilo para botões de ação no modal de foto (dentro do modal nav-) */
-.nav-modal-body .flex.space-x-2 { /* Prefixo nav- */
+.nav-modal-body .flex.space-x-2 {
     display: flex;
     justify-content: center;
     gap: 0.75rem;
     width: 100%;
 }
 
-.nav-modal-body .flex.space-x-2 .btn { /* Prefixo nav- */
+.nav-modal-body .flex.space-x-2 .btn {
     flex: 1;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+.nav-modal-body .flex.space-x-2 .btn-primary {
+    background-color: var(--primary);
+    color: white;
+}
+.nav-modal-body .flex.space-x-2 .btn-primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+.nav-modal-body .flex.space-x-2 .btn-danger-outline {
+    background-color: transparent;
+    color: var(--danger);
+    border-color: var(--danger);
+}
+.nav-modal-body .flex.space-x-2 .btn-danger-outline:hover {
+    background-color: var(--danger);
+    color: white;
+    transform: translateY(-1px);
 }
 
 </style>
@@ -799,66 +828,93 @@
     const removePhotoButton = document.getElementById('removePhotoButton');
     const closeModalButtons = document.querySelectorAll('[data-close-modal]');
 
-    let cropper; // Variável para a instância do Cropper.js
+    let cropper;
 
-    // Função para atualizar o texto do botão de upload/salvar
-    function updateUploadButtonText() {
+    function showCustomAlert(message, title = "Aviso") {
+        const modalHtml = `
+            <div id="customAlertDialog" class="nav-modal-overlay active">
+                <div class="nav-modal-content" style="max-width: 400px; padding: 1.5rem;">
+                    <div class="nav-modal-header" style="background-color: var(--card); border-bottom: none; padding: 0 0 1rem 0;">
+                        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text);">${title}</h3>
+                        <button type="button" class="nav-modal-close-btn" data-close-modal="customAlertDialog" style="position: absolute; top: 0.5rem; right: 0.5rem;">&times;</button>
+                    </div>
+                    <div class="nav-modal-body" style="padding: 0; text-align: center;">
+                        <p style="font-size: 1rem; color: var(--text); margin-bottom: 1.5rem;">${message}</p>
+                        <button id="customAlertOkBtn" class="btn btn-primary" style="width: auto; padding: 0.6rem 1.5rem;">OK</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const alertDialog = document.getElementById('customAlertDialog');
+        const okBtn = document.getElementById('customAlertOkBtn');
+
+        okBtn.addEventListener('click', () => {
+            alertDialog.classList.remove('active');
+            alertDialog.remove();
+            document.body.style.overflow = '';
+        });
+
+        alertDialog.addEventListener('click', (e) => {
+            if (e.target === alertDialog || e.target.closest('[data-close-modal="customAlertDialog"]')) {
+                alertDialog.classList.remove('active');
+                alertDialog.remove();
+                document.body.style.overflow = '';
+            }
+        });
+        document.body.style.overflow = 'hidden';
+    }
+
+
+    function updateUploadButtonTextAndState() {
         if (userPhoto && userPhoto.src && userPhoto.src !== DEFAULT_PHOTO_URL) {
             uploadPhotoButton.querySelector('span').textContent = 'Alterar Foto';
+            removePhotoButton.disabled = false;
         } else {
             uploadPhotoButton.querySelector('span').textContent = 'Salvar Foto';
+            removePhotoButton.disabled = true;
         }
+        uploadPhotoButton.disabled = true;
     }
 
-    // Inicializa a foto do utilizador e o texto do botão
     if (userPhoto) {
         userPhoto.src = USER_PHOTO_URL_INITIAL || DEFAULT_PHOTO_URL;
-        updateUploadButtonText(); // Define o texto inicial do botão
+        updateUploadButtonTextAndState();
     }
 
-    // Abre o modal de gestão de foto ao clicar na foto do utilizador
     userPhoto?.addEventListener('click', () => {
-        // Redefine a imagem para corte para a foto atual ou padrão
         imageToCrop.src = userPhoto.src;
-        // Destroi a instância anterior do cropper se existir
         if (cropper) {
             cropper.destroy();
             cropper = null;
         }
-        // Exibe a imagem para o cropper
         imageToCrop.style.display = 'block';
-        // Inicializa o cropper na imagem
         cropper = new Cropper(imageToCrop, {
-            aspectRatio: 1, // Proporção 1:1 para foto de perfil (quadrada)
-            viewMode: 1, // Restringe a área de corte ao tamanho do canvas
-            autoCropArea: 0.8, // Área de corte inicial (80% da imagem)
-            background: false, // Sem fundo quadriculado
+            aspectRatio: 1,
+            viewMode: 1,
+            autoCropArea: 0.8,
+            background: false,
             zoomable: true,
             movable: true,
             ready: function () {
-                // Opcional: ajustar a imagem para caber no contêiner se for muito grande
-                // this.cropper.zoomTo(1);
             }
         });
 
         managePhotoModal.classList.add('active');
         document.body.style.overflow = 'hidden';
-        updateUploadButtonText(); // Atualiza o texto do botão ao abrir o modal
+        updateUploadButtonTextAndState();
     });
 
-    // Quando um novo arquivo é selecionado no input
     photoUploadInput?.addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                imageToCrop.src = e.target.result; // Define a nova imagem para o cropper
+                imageToCrop.src = e.target.result;
                 if (cropper) {
-                    cropper.destroy(); // Destrói a instância anterior
+                    cropper.destroy();
                 }
-                // Exibe a imagem novamente para o cropper
                 imageToCrop.style.display = 'block';
-                // Inicializa o cropper com a nova imagem
                 cropper = new Cropper(imageToCrop, {
                     aspectRatio: 1,
                     viewMode: 1,
@@ -867,40 +923,41 @@
                     zoomable: true,
                     movable: true,
                     ready: function () {
-                        // this.cropper.zoomTo(1);
                     }
                 });
             };
             reader.readAsDataURL(file);
+            uploadPhotoButton.disabled = false;
+            uploadPhotoButton.querySelector('span').textContent = 'Salvar Foto';
+        } else {
+            uploadPhotoButton.disabled = true;
+            updateUploadButtonTextAndState();
         }
-        uploadPhotoButton.querySelector('span').textContent = 'Salvar Foto'; // Ao selecionar um novo arquivo, é sempre "Salvar Foto"
     });
 
-    // Lógica para Salvar/Atualizar Foto
     uploadPhotoButton?.addEventListener('click', async () => {
         if (!cropper) {
-            alert('Por favor, selecione uma imagem e ajuste o corte.');
+            showCustomAlert('Por favor, selecione uma imagem e ajuste o corte.');
             return;
         }
 
         uploadPhotoButton.disabled = true;
         uploadPhotoButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
 
-        // Obtém a imagem cortada como um blob
         cropper.getCroppedCanvas({
-            width: 200, // Largura final da imagem (ajuste conforme necessário)
-            height: 200, // Altura final da imagem (ajuste conforme necessário)
-            fillColor: '#fff' // Cor de preenchimento para áreas transparentes (se houver)
+            width: 200,
+            height: 200,
+            fillColor: '#fff'
         }).toBlob(async (blob) => {
             if (!blob) {
-                alert('Erro ao obter a imagem cortada.');
+                showCustomAlert('Erro ao obter a imagem cortada.');
                 uploadPhotoButton.disabled = false;
                 uploadPhotoButton.innerHTML = '<i class="fas fa-upload"></i> <span>Salvar Foto</span>';
                 return;
             }
 
             const formData = new FormData();
-            formData.append('profile_photo', blob, 'profile.png'); // Adiciona o blob como um arquivo
+            formData.append('profile_photo', blob, 'profile.png');
             formData.append('user_uid', USER_UID);
 
             try {
@@ -913,31 +970,30 @@
                     const data = await response.json();
                     if (data.success && data.photo_url) {
                         userPhoto.src = data.photo_url;
-                        alert('Foto de perfil atualizada com sucesso!');
+                        showCustomAlert('Foto de perfil atualizada com sucesso!', 'Sucesso');
                         managePhotoModal.classList.remove('active');
                         document.body.style.overflow = '';
                         if (cropper) {
-                            cropper.destroy(); // Destruir o cropper após o upload bem-sucedido
+                            cropper.destroy();
                             cropper = null;
                         }
-                        updateUploadButtonText(); // Atualiza o texto do botão após salvar
+                        updateUploadButtonTextAndState();
                     } else {
-                        alert('Erro ao salvar foto: ' + (data.message || 'Erro desconhecido.'));
+                        showCustomAlert('Erro ao salvar foto: ' + (data.message || 'Erro desconhecido.'), 'Erro');
                     }
                 } else {
-                    alert('Erro no servidor ao carregar foto.');
+                    showCustomAlert('Erro no servidor ao carregar foto.', 'Erro');
                 }
             } catch (error) {
                 console.error('Erro ao fazer upload da foto:', error);
-                alert('Erro na comunicação com o servidor.');
+                showCustomAlert('Erro na comunicação com o servidor.', 'Erro');
             } finally {
                 uploadPhotoButton.disabled = false;
-                uploadPhotoButton.innerHTML = '<i class="fas fa-upload"></i> <span>Salvar Foto</span>'; // Volta para texto padrão
+                uploadPhotoButton.innerHTML = '<i class="fas fa-upload"></i> <span>Salvar Foto</span>';
             }
-        }, 'image/png', 0.9); // Formato PNG, qualidade 0.9
+        }, 'image/png', 0.9);
     });
 
-    // Lógica para Remover Foto
     removePhotoButton?.addEventListener('click', async () => {
         removePhotoButton.disabled = true;
         removePhotoButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removendo...';
@@ -955,38 +1011,37 @@
                 const data = await response.json();
                 if (data.success) {
                     userPhoto.src = DEFAULT_PHOTO_URL;
-                    imageToCrop.src = DEFAULT_PHOTO_URL; // Atualiza a imagem no cropper também
+                    imageToCrop.src = DEFAULT_PHOTO_URL;
                     if (cropper) {
-                        cropper.destroy(); // Destrói o cropper
+                        cropper.destroy();
                         cropper = null;
                     }
-                    alert('Foto de perfil removida com sucesso!');
+                    showCustomAlert('Foto de perfil removida com sucesso!', 'Sucesso');
                     managePhotoModal.classList.remove('active');
                     document.body.style.overflow = '';
-                    updateUploadButtonText(); // Atualiza o texto do botão após remover
+                    updateUploadButtonTextAndState();
                 } else {
-                    alert('Erro ao remover foto: ' + (data.message || 'Erro desconhecido.'));
+                    showCustomAlert('Erro ao remover foto: ' + (data.message || 'Erro desconhecido.'), 'Erro');
                 }
             } else {
-                alert('Erro no servidor ao remover foto.');
+                showCustomAlert('Erro no servidor ao remover foto.', 'Erro');
             }
         } catch (error) {
             console.error('Erro ao remover foto:', error);
-            alert('Erro na comunicação com o servidor.');
+            showCustomAlert('Erro na comunicação com o servidor.', 'Erro');
         } finally {
             removePhotoButton.disabled = false;
-            removePhotoButton.innerHTML = '<i class="fas fa-trash-alt"></i> <span>Remover Foto</span>'; // Volta para texto padrão
+            removePhotoButton.innerHTML = '<i class="fas fa-trash-alt"></i> <span>Remover Foto</span>';
         }
     });
 
-    // Fecha o modal ao clicar nos botões de fechar
     closeModalButtons.forEach(button => {
         button.addEventListener('click', () => {
             const modalId = button.dataset.closeModal;
             if (modalId) {
                 document.getElementById(modalId).classList.remove('active');
                 document.body.style.overflow = '';
-                if (cropper) { // Destrói o cropper ao fechar o modal
+                if (cropper) {
                     cropper.destroy();
                     cropper = null;
                 }
@@ -994,19 +1049,17 @@
         });
     });
 
-    // Fecha o modal ao clicar fora dele
     managePhotoModal?.addEventListener('click', (e) => {
         if (e.target === managePhotoModal) {
             managePhotoModal.classList.remove('active');
             document.body.style.overflow = '';
-            if (cropper) { // Destrói o cropper ao fechar o modal
+            if (cropper) {
                 cropper.destroy();
                 cropper = null;
             }
         }
     });
 
-    // Submenu functionality
     document.querySelectorAll('.has-submenu').forEach(item => {
       const toggle = item.querySelector('.submenu-toggle');
 
@@ -1142,24 +1195,19 @@
 
       logoutButton.addEventListener('click', async (event) => {
         
-        event.preventDefault(); 
-        // Faz uma requisição POST para o endpoint de logout do Flask
+        event.preventDefault();
         try {
             const response = await fetch("{{ url_for('logout') }}", { method: 'POST' });
             if (response.ok) {
-                // Se o logout no servidor foi bem-sucedido, redireciona para a página de login
                 window.location.href = "{{ url_for('login_page') }}";
             } else {
-                // Se houve um erro no servidor, exibe uma mensagem
                 const errorData = await response.json();
-                alert('Erro ao fazer logout: ' + (errorData.message || 'Erro desconhecido.'));
+                showCustomAlert('Erro ao fazer logout: ' + (errorData.message || 'Erro desconhecido.'), 'Erro');
                 console.error('Erro no logout do servidor:', errorData);
             }
         } catch (error) {
-            // Erro de rede ou outra falha na requisição
             console.error('Erro na requisição de logout:', error);
-            alert('Erro de conexão ao tentar fazer logout. Tente novamente.');
-            // Em caso de falha na requisição, ainda pode tentar redirecionar como fallback
+            showCustomAlert('Erro de conexão ao tentar fazer logout. Tente novamente.', 'Erro');
             window.location.href = "{{ url_for('login_page') }}";
         }
       });
