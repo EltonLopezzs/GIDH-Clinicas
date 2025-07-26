@@ -830,7 +830,7 @@
 
     let cropper;
 
-    function showCustomAlert(message, title = "Aviso") {
+    function showCustomAlert(message, title = "Aviso", type = "info") {
         const modalHtml = `
             <div id="customAlertDialog" class="nav-modal-overlay active">
                 <div class="nav-modal-content" style="max-width: 400px; padding: 1.5rem;">
@@ -867,7 +867,9 @@
 
 
     function updateUploadButtonTextAndState() {
-        if (userPhoto && userPhoto.src && userPhoto.src !== DEFAULT_PHOTO_URL) {
+        const hasExistingPhoto = userPhoto && userPhoto.src && userPhoto.src !== DEFAULT_PHOTO_URL;
+
+        if (hasExistingPhoto) {
             uploadPhotoButton.querySelector('span').textContent = 'Alterar Foto';
             removePhotoButton.disabled = false;
         } else {
@@ -979,14 +981,17 @@
                         }
                         updateUploadButtonTextAndState();
                     } else {
-                        showCustomAlert('Erro ao salvar foto: ' + (data.message || 'Erro desconhecido.'), 'Erro');
+                        // Se a resposta do servidor indicar falha, exibe a mensagem de erro do servidor
+                        showCustomAlert(data.message || 'Erro desconhecido ao salvar foto.', 'Erro');
                     }
                 } else {
-                    showCustomAlert('Erro no servidor ao carregar foto.', 'Erro');
+                    // Se a requisição HTTP falhar (status != 200), exibe uma mensagem genérica
+                    showCustomAlert(`Ocorreu um erro ao carregar a foto. Por favor, tente novamente.`, 'Erro', 'danger');
                 }
             } catch (error) {
+                // Captura erros de rede ou outros erros inesperados
                 console.error('Erro ao fazer upload da foto:', error);
-                showCustomAlert('Erro na comunicação com o servidor.', 'Erro');
+                showCustomAlert('Não foi possível completar a ação. Tente novamente.', 'Erro', 'danger');
             } finally {
                 uploadPhotoButton.disabled = false;
                 uploadPhotoButton.innerHTML = '<i class="fas fa-upload"></i> <span>Salvar Foto</span>';
@@ -1021,14 +1026,17 @@
                     document.body.style.overflow = '';
                     updateUploadButtonTextAndState();
                 } else {
-                    showCustomAlert('Erro ao remover foto: ' + (data.message || 'Erro desconhecido.'), 'Erro');
+                    // Se a resposta do servidor indicar falha, exibe a mensagem de erro do servidor
+                    showCustomAlert(data.message || 'Erro desconhecido ao remover foto.', 'Erro');
                 }
             } else {
-                showCustomAlert('Erro no servidor ao remover foto.', 'Erro');
+                // Se a requisição HTTP falhar (status != 200), exibe uma mensagem genérica
+                showCustomAlert(`Não foi possível remover a foto. Tente novamente.`, 'Erro', 'danger');
             }
         } catch (error) {
+            // Captura erros de rede ou outros erros inesperados
             console.error('Erro ao remover foto:', error);
-            showCustomAlert('Erro na comunicação com o servidor.', 'Erro');
+            showCustomAlert('Não foi possível completar a ação. Tente novamente.', 'Erro', 'danger');
         } finally {
             removePhotoButton.disabled = false;
             removePhotoButton.innerHTML = '<i class="fas fa-trash-alt"></i> <span>Remover Foto</span>';
@@ -1207,7 +1215,7 @@
             }
         } catch (error) {
             console.error('Erro na requisição de logout:', error);
-            showCustomAlert('Erro de conexão ao tentar fazer logout. Tente novamente.', 'Erro');
+            showCustomAlert('Não foi possível completar a ação. Tente novamente.', 'Erro', 'danger');
             window.location.href = "{{ url_for('login_page') }}";
         }
       });
