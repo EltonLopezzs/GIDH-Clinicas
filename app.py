@@ -26,6 +26,7 @@ from blueprints.contas_a_pagar import register_contas_a_pagar_routes
 from blueprints.peis import peis_bp
 from blueprints.patrimonio import register_patrimonio_routes
 from blueprints.protocols import protocols_bp
+from blueprints.weekly_planning import weekly_planning_bp # NOVO: Importa o blueprint de planejamento semanal
 
 # NOVO: Importações para IA
 import google.generativeai as genai
@@ -867,6 +868,7 @@ register_contas_a_pagar_routes(app)
 app.register_blueprint(peis_bp) 
 register_patrimonio_routes(app) 
 app.register_blueprint(protocols_bp)
+app.register_blueprint(weekly_planning_bp) # NOVO: Registra o blueprint de planejamento semanal
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)

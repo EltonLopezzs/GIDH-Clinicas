@@ -228,3 +228,202 @@ def get_counts_for_navbar(db_instance, clinica_id):
 
     return counts
 
+# --- Funções para o Planejamento Semanal ---
+
+def get_active_goals_for_patient(clinica_id, patient_id):
+    """
+    Retorna as metas ativas de um paciente.
+    """
+    db = get_db()
+    goals_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('metas')
+    active_goals = []
+    try:
+        # Filtra metas ativas
+        docs = goals_ref.where(filter=FieldFilter('is_active', '==', True)).stream()
+        for doc in docs:
+            goal = doc.to_dict()
+            if goal:
+                goal['id'] = doc.id
+                # Buscar os alvos para cada meta
+                goal['alvos'] = get_goal_targets(clinica_id, patient_id, doc.id)
+                active_goals.append(goal)
+    except Exception as e:
+        print(f"Erro ao buscar metas ativas para o paciente {patient_id}: {e}")
+    return active_goals
+
+def get_goal_targets(clinica_id, patient_id, goal_id):
+    """
+    Retorna os alvos de uma meta específica.
+    """
+    db = get_db()
+    targets_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('metas').document(goal_id).collection('alvos')
+    targets = []
+    try:
+        docs = targets_ref.order_by('created_at').stream()
+        for doc in docs:
+            target = doc.to_dict()
+            if target:
+                target['id'] = doc.id
+                targets.append(target)
+    except Exception as e:
+        print(f"Erro ao buscar alvos para a meta {goal_id}: {e}")
+    return targets
+
+def add_goal(clinica_id, patient_id, description, professional_id):
+    """
+    Adiciona uma nova meta para um paciente.
+    """
+    db = get_db()
+    goals_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('metas')
+    try:
+        goal_data = {
+            'description': description,
+            'is_active': True,
+            'professional_id': professional_id,
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        _, doc_ref = goals_ref.add(goal_data)
+        return doc_ref.id
+    except Exception as e:
+        print(f"Erro ao adicionar meta para o paciente {patient_id}: {e}")
+        return None
+
+def add_goal_target(clinica_id, patient_id, goal_id, description):
+    """
+    Adiciona um novo alvo para uma meta específica.
+    """
+    db = get_db()
+    targets_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('metas').document(goal_id).collection('alvos')
+    try:
+        target_data = {
+            'description': description,
+            'completed': False,
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        _, doc_ref = targets_ref.add(target_data)
+        return doc_ref.id
+    except Exception as e:
+        print(f"Erro ao adicionar alvo para a meta {goal_id}: {e}")
+        return None
+
+def update_goal_target_status(clinica_id, patient_id, goal_id, target_id, completed):
+    """
+    Atualiza o status de conclusão de um alvo.
+    """
+    db = get_db()
+    target_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('metas').document(goal_id).collection('alvos').document(target_id)
+    try:
+        target_ref.update({'completed': completed})
+        return True
+    except Exception as e:
+        print(f"Erro ao atualizar status do alvo {target_id}: {e}")
+        return False
+
+def get_weekly_appointments_for_patient(clinica_id, patient_id, start_date_str, end_date_str):
+    """
+    Retorna os agendamentos de um paciente para uma semana específica.
+    start_date_str e end_date_str devem ser strings no formato 'YYYY-MM-DD'.
+    """
+    db = get_db()
+    appointments_ref = db.collection('clinicas').document(clinica_id).collection('agendamentos')
+    weekly_appointments = []
+
+    try:
+        start_date = SAO_PAULO_TZ.localize(datetime.datetime.strptime(start_date_str, '%Y-%m-%d'))
+        end_date = SAO_PAULO_TZ.localize(datetime.datetime.strptime(end_date_str, '%Y-%m-%d')) + datetime.timedelta(days=1, seconds=-1) # Inclui o final do dia
+
+        # Busca agendamentos para o paciente dentro do período
+        docs = appointments_ref.where(filter=FieldFilter('paciente_id', '==', patient_id))\
+                               .where(filter=FieldFilter('data_hora_inicio', '>=', start_date))\
+                               .where(filter=FieldFilter('data_hora_inicio', '<=', end_date))\
+                               .order_by('data_hora_inicio')\
+                               .stream()
+        
+        for doc in docs:
+            appointment = doc.to_dict()
+            if appointment:
+                appointment['id'] = doc.id
+                # Formata as datas para string para facilitar o uso no frontend
+                if isinstance(appointment.get('data_hora_inicio'), datetime.datetime):
+                    appointment['data_hora_inicio_str'] = format_firestore_timestamp(appointment['data_hora_inicio'])
+                if isinstance(appointment.get('data_hora_fim'), datetime.datetime):
+                    appointment['data_hora_fim_str'] = format_firestore_timestamp(appointment['data_hora_fim'])
+                
+                # Adiciona o nome do profissional ao agendamento, se disponível
+                if appointment.get('profissional_id'):
+                    prof_doc = db.collection('clinicas').document(clinica_id).collection('profissionais').document(appointment['profissional_id']).get()
+                    if prof_doc.exists:
+                        appointment['profissional_nome'] = prof_doc.to_dict().get('nome', 'Desconhecido')
+                    else:
+                        appointment['profissional_nome'] = 'Desconhecido'
+                else:
+                    appointment['profissional_nome'] = 'Não Atribuído'
+
+                weekly_appointments.append(appointment)
+    except Exception as e:
+        print(f"Erro ao buscar agendamentos semanais para o paciente {patient_id}: {e}")
+    return weekly_appointments
+
+def save_weekly_plan_entry(clinica_id, patient_id, appointment_id, goal_id, professional_id, plan_date_str):
+    """
+    Salva uma entrada do planejamento semanal (associa uma meta a um agendamento).
+    plan_date_str deve ser uma string no formato 'YYYY-MM-DD'.
+    """
+    db = get_db()
+    weekly_plan_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('planejamento_semanal')
+    try:
+        plan_date = SAO_PAULO_TZ.localize(datetime.datetime.strptime(plan_date_str, '%Y-%m-%d'))
+        
+        plan_data = {
+            'appointment_id': appointment_id,
+            'goal_id': goal_id,
+            'professional_id': professional_id,
+            'plan_date': plan_date, # Armazena como datetime para consultas de data
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        _, doc_ref = weekly_plan_ref.add(plan_data)
+        return doc_ref.id
+    except Exception as e:
+        print(f"Erro ao salvar entrada do planejamento semanal: {e}")
+        return None
+
+def delete_weekly_plan_entry(clinica_id, patient_id, entry_id):
+    """
+    Exclui uma entrada do planejamento semanal.
+    """
+    db = get_db()
+    entry_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('planejamento_semanal').document(entry_id)
+    try:
+        entry_ref.delete()
+        return True
+    except Exception as e:
+        print(f"Erro ao excluir entrada do planejamento semanal {entry_id}: {e}")
+        return False
+
+def get_weekly_plan_entries(clinica_id, patient_id, professional_id, start_date_str, end_date_str):
+    """
+    Retorna as entradas do planejamento semanal para um paciente e profissional em uma semana.
+    """
+    db = get_db()
+    weekly_plan_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('planejamento_semanal')
+    plan_entries = []
+
+    try:
+        start_date = SAO_PAULO_TZ.localize(datetime.datetime.strptime(start_date_str, '%Y-%m-%d'))
+        end_date = SAO_PAULO_TZ.localize(datetime.datetime.strptime(end_date_str, '%Y-%m-%d')) + datetime.timedelta(days=1, seconds=-1) # Inclui o final do dia
+
+        # Busca entradas para o paciente e profissional dentro do período
+        docs = weekly_plan_ref.where(filter=FieldFilter('professional_id', '==', professional_id))\
+                              .where(filter=FieldFilter('plan_date', '>=', start_date))\
+                              .where(filter=FieldFilter('plan_date', '<=', end_date))\
+                              .order_by('plan_date')\
+                              .stream()
+        
+        for doc in docs:
+            entry = doc.to_dict()
+            if entry:
+                entry['id'] = doc.id
+                plan_entries.append(entry)
+    except Exception as e:
+        print(f"Erro ao buscar entradas do planejamento semanal para o paciente {patient_id}: {e}")
+    return plan_entries
