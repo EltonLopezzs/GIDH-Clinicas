@@ -268,7 +268,7 @@ def associar_meta_agendamento():
     user_uid = session.get('user_uid')
 
     data = request.json
-    print(f"DEBUG: Dados recebidos para associar_meta_agendamento: {data}") 
+    print(f"DEBUG: Dados recebidos para associar_meta_agendamento: {data}") # DEBUG PRINT
 
     agendamento_id = data.get('agendamento_id')
     meta_id = data.get('meta_id')
@@ -276,7 +276,7 @@ def associar_meta_agendamento():
     pei_id = data.get('pei_id')
     action = data.get('action') # 'associar' ou 'desassociar'
 
-     for individual variables
+    # DEBUG PRINT for individual variables
     print(f"DEBUG: agendamento_id: {agendamento_id}, type: {type(agendamento_id)}")
     print(f"DEBUG: meta_id: {meta_id}, type: {type(meta_id)}")
     print(f"DEBUG: meta_nome: {meta_nome}, type: {type(meta_nome)}")
@@ -285,7 +285,7 @@ def associar_meta_agendamento():
 
 
     if not all([agendamento_id, meta_id, meta_nome, pei_id, action]):
-        print("DEBUG: Falha na validação 'not all()'. Um ou mais campos estão faltando ou são falsos.") 
+        print("DEBUG: Falha na validação 'not all()'. Um ou mais campos estão faltando ou são falsos.") # DEBUG PRINT
         return jsonify({"success": False, "message": "Dados incompletos."}), 400
 
     try:
@@ -293,7 +293,7 @@ def associar_meta_agendamento():
         agendamento_doc = agendamento_ref.get()
 
         if not agendamento_doc.exists:
-            print(f"DEBUG: Agendamento {agendamento_id} não encontrado.") 
+            print(f"DEBUG: Agendamento {agendamento_id} não encontrado.") # DEBUG PRINT
             return jsonify({"success": False, "message": "Agendamento não encontrado."}), 404
         
         agendamento_data = agendamento_doc.to_dict()
@@ -310,27 +310,27 @@ def associar_meta_agendamento():
             if not any(m['meta_id'] == meta_id for m in metas_associadas):
                 metas_associadas.append(meta_to_associate)
                 agendamento_ref.update({'metas_associadas': metas_associadas})
-                print(f"DEBUG: Meta {meta_id} associada com sucesso ao agendamento {agendamento_id}.") 
+                print(f"DEBUG: Meta {meta_id} associada com sucesso ao agendamento {agendamento_id}.") # DEBUG PRINT
                 return jsonify({"success": True, "message": "Meta associada com sucesso!"}), 200
             else:
-                print(f"DEBUG: Meta {meta_id} já associada ao agendamento {agendamento_id}.") 
+                print(f"DEBUG: Meta {meta_id} já associada ao agendamento {agendamento_id}.") # DEBUG PRINT
                 return jsonify({"success": False, "message": "Meta já associada a este agendamento."}), 409
         
         elif action == 'desassociar':
             new_metas_associadas = [m for m in metas_associadas if m['meta_id'] != meta_id]
             if len(new_metas_associadas) < len(metas_associadas):
                 agendamento_ref.update({'metas_associadas': new_metas_associadas})
-                print(f"DEBUG: Meta {meta_id} desassociada com sucesso do agendamento {agendamento_id}.") 
+                print(f"DEBUG: Meta {meta_id} desassociada com sucesso do agendamento {agendamento_id}.") # DEBUG PRINT
                 return jsonify({"success": True, "message": "Meta desassociada com sucesso!"}), 200
             else:
-                print(f"DEBUG: Meta {meta_id} não encontrada no agendamento {agendamento_id} para desassociar.") 
+                print(f"DEBUG: Meta {meta_id} não encontrada no agendamento {agendamento_id} para desassociar.") # DEBUG PRINT
                 return jsonify({"success": False, "message": "Meta não encontrada neste agendamento para desassociar."}), 404
         
         else:
-            print(f"DEBUG: Ação inválida: {action}.") 
+            print(f"DEBUG: Ação inválida: {action}.") # DEBUG PRINT
             return jsonify({"success": False, "message": "Ação inválida."}), 400
 
     except Exception as e:
-        print(f"ERROR: Erro ao associar/desassociar meta: {e}") 
+        print(f"ERROR: Erro ao associar/desassociar meta: {e}") # DEBUG PRINT
         return jsonify({"success": False, "message": f"Erro interno do servidor: {e}"}), 500
 
