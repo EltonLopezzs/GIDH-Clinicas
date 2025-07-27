@@ -12,7 +12,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from collections import Counter, defaultdict
 
 # Importar get_counts_for_navbar do utils
-from utils import set_db, get_db, login_required, admin_required, SAO_PAULO_TZ, parse_date_input, convert_doc_to_dict, get_counts_for_navbar
+from utils import get_counts_for_navbar, set_db, get_db, login_required, admin_required, SAO_PAULO_TZ, parse_date_input, convert_doc_to_dict
 from blueprints.users import register_users_routes
 from blueprints.professionals import register_professionals_routes
 from blueprints.patients import register_patients_routes
@@ -360,9 +360,9 @@ def index():
         for doc in peis_docs:
             total_peis += 1
             pei_data = doc.to_dict()
-            if pei_data.get('status') == 'finalizado':
+            if pei_data.get('status') == 'inativo':
                 peis_finalizados += 1
-            elif pei_data.get('status') == 'ativo':
+            elif pei_data.get('status') == 'Ativo':
                 peis_em_progresso += 1
     except Exception as e:
         print(f"Erro ao contar PEIs: {e}")
@@ -401,6 +401,8 @@ def index():
             total_targets_patient = 0
             completed_targets_patient = 0
             total_active_peis_patient = 0
+            total_metas_patient = 0
+            completed_metas_patient = 0
             
             aids_attempts_by_type = defaultdict(int)
             aids_counts_by_type = defaultdict(int)
@@ -408,7 +410,7 @@ def index():
             patient_peis_query = peis_ref.where(
                 filter=FieldFilter('paciente_id', '==', patient_id)
             ).where(
-                filter=FieldFilter('status', '==', 'ativo')
+                filter=FieldFilter('status', '==', 'Ativo')
             )
 
             if user_role != 'admin' and profissional_id_logado:
@@ -425,6 +427,13 @@ def index():
                 metas_docs = metas_ref.stream()
 
                 for meta_doc in metas_docs:
+                    total_metas_patient += 1
+                    meta_data = meta_doc.to_dict()
+                    meta_status = meta_data.get('status', '')
+                    
+                    if meta_status == 'Finalizado':
+                        completed_metas_patient += 1
+                    
                     alvos_ref = metas_ref.document(meta_doc.id).collection('alvos')
                     alvos_docs = alvos_ref.stream()
 
@@ -447,6 +456,10 @@ def index():
             if total_targets_patient > 0:
                 progress_percentage = (completed_targets_patient / total_targets_patient) * 100
 
+            metas_progress_percentage = 0
+            if total_metas_patient > 0:
+                metas_progress_percentage = (completed_metas_patient / total_metas_patient) * 100
+
             mental_map_data_for_patient = {}
             for sigla, total_attempts in aids_attempts_by_type.items():
                 count = aids_counts_by_type[sigla]
@@ -463,7 +476,10 @@ def index():
                 'total_peis_ativos': total_active_peis_patient,
                 'total_targets': total_targets_patient,
                 'completed_targets': completed_targets_patient,
-                'progress_percentage': round(progress_percentage, 1)
+                'progress_percentage': round(progress_percentage, 1),
+                'total_metas': total_metas_patient,
+                'completed_metas': completed_metas_patient,
+                'metas_progress_percentage': round(metas_progress_percentage, 1)
             })
             pacientes_pei_mental_map_data[patient_id] = mental_map_data_for_patient
 
@@ -588,8 +604,12 @@ def index():
         dados_atendimento_vs_receita=json.dumps(dados_atendimento_vs_receita),
         dados_receita_procedimento=json.dumps(dados_receita_procedimento),
         dados_desempenho_profissional=json.dumps(dados_desempenho_profissional),
+        # Dados Python para Jinja2
         pacientes_pei_progress=pacientes_pei_progress,
-        pacientes_pei_mental_map_data=json.dumps(pacientes_pei_mental_map_data)
+        pacientes_pei_mental_map_data=pacientes_pei_mental_map_data,
+        # Dados JSON para JavaScript
+        pacientes_pei_progress_json=json.dumps(pacientes_pei_progress),
+        pacientes_pei_mental_map_data_json=json.dumps(pacientes_pei_mental_map_data)
     )
 
 # NOVO: Rota para a página de busca de PEIs
