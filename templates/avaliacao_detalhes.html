@@ -9,6 +9,51 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
+        /* Variáveis de cor e tema - Copiadas e adaptadas de agendamentos.html */
+        :root {
+            --bg: #f1f5f9;                  /* Gray-100 */
+            --card: #ffffff;                /* White */
+            --text: #0f172a;                /* Gray-900 */
+            --muted: #64748b;               /* Gray-500 */
+            --accent: #9b53b8;              /* Purple-500 */
+            --primary-dark: #115e59;        
+            --primary: #5587c2;             /* Blue-500 */
+            --primary-light: #c8dcf3;       /* Blue-100 */
+            --secondary: #f59e0b;           /* Yellow-500 */
+            --danger: #dc2626;              /* Red-600 */
+            --success: #16a34a;             /* Green-600 */
+            --warning: #f59e0b;             /* Yellow-500 */
+            --info: #0ea5e9;                /* Sky-500 */
+            --border-color: #e2e8f0;        /* Gray-200 */
+
+            /* Cores para os status das avaliações (adaptadas de agendamentos.html) */
+            --status-finalizado: #16a344; /* Verde */
+            --status-rascunho: #f59e0b; /* Laranja */
+
+            --dark-bg: #0f172a;             /* Gray-900 */
+            --dark-card: #1e293b;           /* Gray-800 */
+            --dark-text: #f1f5f9;           /* Gray-100 */
+            --dark-muted: #94a3b8;          /* Gray-400 */
+            --dark-border-color: #334155;   /* Gray-600 */
+
+            color-scheme: light;
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
+            
+            /* Cores para os status em tema escuro (opcionalmente ajustadas) */
+            --status-finalizado: #22c55e;
+            --status-rascunho: #fbbf24;
+
+            color-scheme: dark;
+        }
+
+        /* Estilos base do seu ficheiro original */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -163,14 +208,14 @@
             justify-content: center;
             z-index: 2000;
             opacity: 0;
-            visibility: hidden; /* Changed from display: none; */
+            visibility: hidden; 
             transition: opacity 0.3s ease, visibility 0.3s ease;
             pointer-events: none;
         }
 
         .modal-overlay.active {
             opacity: 1;
-            visibility: visible; /* Changed from display: flex; */
+            visibility: visible; 
             pointer-events: auto;
         }
 
@@ -236,48 +281,226 @@
             flex-grow: 1;
         }
         /* Estilos para cards de protocolo */
-        .protocol-card {
+        .protocol-list {
+            display: grid;
+            grid-template-columns: 1fr; /* Um card por linha */
+            gap: 1.5rem;
+        }
+
+        /* Estilos do card de agendamento (agora usado para avaliação e protocolo) */
+        .appointment-card {
             background-color: var(--card);
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 12px;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
             border: 1px solid var(--border-color);
-        }
-        .protocol-card h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 0.75rem;
-        }
-        .protocol-card p {
-            font-size: 0.95rem;
-            color: var(--muted);
-            margin-bottom: 0.5rem;
-        }
-        .protocol-card .actions {
-            margin-top: 1rem;
             display: flex;
+            flex-direction: column;
             gap: 1rem;
-            flex-wrap: wrap;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: default; /* Altera o cursor para padrão, pois não é clicável como um agendamento */
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .appointment-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .appointment-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .appointment-card-header h4 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+        [data-theme="dark"] .appointment-card-header h4 {
+            color: var(--dark-text);
+        }
+
+        .appointment-card-header .status-badge {
+            padding: 0.4rem 0.9rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        /* Adaptação dos status para avaliações */
+        .appointment-card-header .status-badge.status-finalizado { background-color: var(--status-finalizado); }
+        .appointment-card-header .status-badge.status-rascunho { background-color: var(--status-rascunho); }
+
+        .appointment-card-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Ajustado min-width */
+            gap: 1rem;
+            font-size: 0.95rem;
+        }
+        .appointment-card-item {
+            display: flex; /* Use flexbox for horizontal alignment */
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text);
+        }
+        .appointment-card-item i {
+            color: var(--muted); 
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0; /* Impede que o ícone encolha */
+        }
+        .appointment-card-item .label {
+            font-weight: 600;
+            color: var(--muted);
+            white-space: nowrap; /* Prevent label from wrapping */
+            flex-shrink: 0;
+        }
+        .appointment-card-item .value {
+            font-weight: 500;
+            color: var(--text);
+            flex-grow: 1;
+            /* Allow value to wrap if needed */
+            word-wrap: break-word; /* For older browsers */
+            overflow-wrap: break-word; /* Modern equivalent */
+        }
+
+        /* Card footer para botões de ação */
+        .card-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color); /* Usar a variável do tema */
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        .card-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            border: none;
+        }
+        .btn-view { background-color: var(--primary); }
+        .btn-view:hover { background-color: var(--primary-dark); }
+        .btn-delete { background-color: var(--danger); }
+        .btn-delete:hover { background-color: color-mix(in srgb, var(--danger) 80%, black); }
+        
+        /* Estilos para o modal de alerta customizado (general-alert-modal-overlay) */
+        .general-alert-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15,23,42,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 4500; /* Maior que outras modals */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .general-alert-modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .general-alert-modal {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 400px; /* Tamanho consistente */
+            width: 90vw;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            padding: 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .general-alert-modal-overlay.show .general-alert-modal {
+            transform: scale(1);
+        }
+        .general-alert-modal-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+        .general-alert-modal-icon.info { background: var(--info); }
+        .general-alert-modal-icon.success { background: var(--success); }
+        .general-alert-modal-icon.warning { background: var(--warning); }
+        .general-alert-modal-icon.danger { background: var(--danger); }
+
+        .general-alert-modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+        .general-alert-modal-message {
+            font-size: 1rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .general-alert-modal-actions {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .general-alert-modal-actions .btn {
+            min-width: 100px;
         }
     </style>
 </head>
 <body>
     {% include 'Nav.html' %} {# Inclui a barra de navegação #}
 
+    <!-- Nova Modal para Alertas Gerais (copiada de agendamentos.html) -->
+    <div id="general-alert-modal-overlay" class="general-alert-modal-overlay">
+        <div class="general-alert-modal">
+            <div id="alert-modal-icon" class="general-alert-modal-icon"></div>
+            <h3 id="alert-modal-title" class="general-alert-modal-title"></h3>
+            <p id="alert-modal-message" class="general-alert-modal-message"></p>
+            <div class="general-alert-modal-actions">
+                <button id="alert-modal-close-btn" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
     <div class="main-content">
-        <header class="bg-white dark:bg-gray-800 shadow-sm py-4 px-6 flex items-center justify-between sticky top-0 z-10">
-            <button class="menu-btn-mobile md:hidden text-gray-600 dark:text-gray-300 text-2xl">
+        <header class="bg-white shadow-sm py-4 px-6 flex items-center justify-between sticky top-0 z-10">
+            <button class="menu-btn-mobile md:hidden text-gray-600 text-2xl">
                 <i class="fas fa-bars"></i>
             </button>
-            <button class="toggle-btn-desktop hidden md:block text-gray-600 dark:text-gray-300 text-2xl">
+            <button class="toggle-btn-desktop hidden md:block text-gray-600 text-2xl">
                 <i class="fas fa-bars-staggered"></i>
             </button>
-            <h1 class="text-xl font-semibold text-gray-900 dark:text-white ml-4">
-                Avaliação de {{ patient.nome }} - {{ evaluation.data_avaliacao_fmt }}
+            <h1 class="text-xl font-semibold text-gray-800 ml-4">
+                Detalhes da Avaliação
             </h1>
             <div class="flex-grow"></div> {# Espaçador #}
+            <button id="addProtocolBtnHeader" class="btn btn-primary mr-2">
+                <i class="fas fa-plus-circle mr-2"></i> Novo Protocolo
+            </button>
+            <a href="{{ url_for('evaluations.list_patients_for_evaluation') }}" class="btn btn-outline">
+                <i class="fas fa-arrow-left mr-2"></i> Voltar para Pacientes
+            </a>
         </header>
 
         <div class="flash-messages">
@@ -299,32 +522,71 @@
             {% endwith %}
         </div>
 
-        <div class="container mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Avaliação de {{ patient.nome }}</h1>
-            <p class="text-gray-700 dark:text-gray-300 mb-6">
-                Data: {{ evaluation.data_avaliacao_fmt }} | Status: 
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                    {% if evaluation.status == 'finalizado' %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
-                    {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100{% endif %}">
-                    {{ evaluation.status.capitalize() }}
-                </span>
-            </p>
-
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Protocolos Vinculados</h2>
-                <button id="addProtocolBtn" class="btn btn-primary">
-                    <i class="fas fa-plus-circle mr-2"></i> Vincular Novo Protocolo
-                </button>
+        <div class="container mx-auto p-6">
+            <!-- Card de Detalhes da Avaliação Principal -->
+            <div class="appointment-card mb-6">
+                <div class="appointment-card-header">
+                    <h4>Avaliação de {{ patient.nome }}</h4>
+                    <span class="status-badge status-{{ evaluation.status }}">
+                        {{ evaluation.status.capitalize() }}
+                    </span>
+                </div>
+                <div class="appointment-card-body">
+                    <div class="appointment-card-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span class="label">Data:</span>
+                        <span class="value">{{ evaluation.data_avaliacao_fmt }}</span>
+                    </div>
+                    <div class="appointment-card-item">
+                        <i class="fas fa-user-injured"></i>
+                        <span class="label">Paciente:</span>
+                        <span class="value">{{ patient.nome }}</span>
+                    </div>
+                    <div class="appointment-card-item">
+                        <i class="fas fa-id-card"></i>
+                        <span class="label">CPF do Paciente:</span>
+                        <span class="value">{{ patient.cpf }}</span>
+                    </div>
+                    {# Removido o campo "Nascimento do Paciente" #}
+                </div>
+                <div class="card-footer justify-end">
+                    {% if evaluation.status != 'finalizado' %}
+                    <button id="finalizeEvaluationBtn" class="btn btn-success">
+                        <i class="fas fa-check-circle mr-2"></i> Finalizar Avaliação
+                    </button>
+                    {% endif %}
+                    <a href="{{ url_for('evaluations.generate_evaluation_pdf', patient_id=patient.id, evaluation_id=evaluation.id) }}" class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
+                    </a>
+                </div>
             </div>
 
-            <div class="protocol-list space-y-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-black">Protocolos Vinculados</h2>
+                {# O botão "Vincular Novo Protocolo" original foi removido daqui #}
+            </div>
+
+            <div class="protocol-list">
                 {% if evaluation.protocolos_vinculados %}
                     {% for linked_proto in evaluation.protocolos_vinculados %}
-                    <div class="protocol-card">
-                        <h3>{{ linked_proto.protocol_name }}</h3>
-                        <p>Nível: {{ linked_proto.protocol_level }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Vinculado em: {{ linked_proto.data_vinculacao.strftime('%d/%m/%Y %H:%M') if linked_proto.data_vinculacao else 'N/A' }}</p>
-                        <div class="actions">
+                    <div class="appointment-card"> {# Reutilizando a classe appointment-card #}
+                        <div class="appointment-card-header">
+                            <h4>Protocolo: {{ linked_proto.protocol_name }}</h4>
+                            {# Não há status para protocolos vinculados, então removemos o badge de status aqui #}
+                        </div>
+                        <div class="appointment-card-body">
+                            <div class="appointment-card-item">
+                                <i class="fas fa-layer-group"></i>
+                                <span class="label">Nível:</span>
+                                <span class="value">{{ linked_proto.protocol_level }}</span>
+                            </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-calendar-check"></i>
+                                <span class="label">Vinculado em:</span>
+                                <span class="value">{{ linked_proto.data_vinculacao.strftime('%d/%m/%Y %H:%M') if linked_proto.data_vinculacao else 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
                             <a href="{{ url_for('evaluations.view_protocol_tasks', patient_id=patient.id, evaluation_id=evaluation.id, linked_protocol_instance_id=linked_proto.id) }}" class="btn btn-info">
                                 <i class="fas fa-folder-open mr-2"></i> Abrir Protocolo
                             </a>
@@ -337,20 +599,6 @@
                 {% else %}
                     <p class="text-gray-500 dark:text-gray-400">Nenhum protocolo vinculado a esta avaliação ainda.</p>
                 {% endif %}
-            </div>
-
-            <div class="mt-8 flex justify-end space-x-4">
-                {% if evaluation.status != 'finalizado' %}
-                <button id="finalizeEvaluationBtn" class="btn btn-success">
-                    <i class="fas fa-check-circle mr-2"></i> Finalizar Avaliação
-                </button>
-                {% endif %}
-                <a href="{{ url_for('evaluations.generate_evaluation_pdf', patient_id=patient.id, evaluation_id=evaluation.id) }}" class="btn btn-secondary" target="_blank">
-                    <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
-                </a>
-                <a href="{{ url_for('evaluations.list_patients_for_evaluation') }}" class="btn btn-outline">
-                    <i class="fas fa-arrow-left mr-2"></i> Voltar para Pacientes
-                </a>
             </div>
         </div>
 
@@ -387,7 +635,7 @@
         </div>
 
         {# Modal de Confirmação para Desvincular Protocolo #}
-        <div id="confirmRemoveProtocolModal" class="modal-overlay hidden">
+        <div id="confirmRemoveProtocolModal" class="modal-overlay"> {# Removido 'hidden' aqui #}
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Confirmar Desvinculação</h3>
@@ -412,7 +660,8 @@
 
             // Elementos do Modal de Vincular Protocolo
             const linkProtocolModal = document.getElementById('linkProtocolModal');
-            const addProtocolBtn = document.getElementById('addProtocolBtn');
+            const addProtocolBtn = document.getElementById('addProtocolBtn'); // Botão original de vincular protocolo
+            const addProtocolBtnHeader = document.getElementById('addProtocolBtnHeader'); // Novo botão na header
             const protocolSelect = document.getElementById('protocolSelect');
             const protocolLevelSelect = document.getElementById('protocolLevelSelect');
             const linkProtocolForm = document.getElementById('linkProtocolForm');
@@ -423,6 +672,14 @@
             const confirmRemoveBtn = document.getElementById('confirmRemoveBtn');
             const cancelRemoveBtn = document.getElementById('cancelRemoveBtn');
             let protocolToRemoveId = null;
+
+            // Elementos da nova modal de alerta geral
+            const generalAlertOverlay = document.getElementById('general-alert-modal-overlay');
+            const alertModalIcon = document.getElementById('alert-modal-icon');
+            const alertModalTitle = document.getElementById('alert-modal-title');
+            const alertModalMessage = document.getElementById('alert-modal-message');
+            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+
 
             // Botão Finalizar Avaliação
             const finalizeEvaluationBtn = document.getElementById('finalizeEvaluationBtn');
@@ -440,64 +697,49 @@
                 document.body.style.overflow = ''; // Restaura rolagem do corpo
             }
 
-            // Função para mostrar alertas customizados
-            function showCustomAlert(message, title = "Aviso", type = "info") {
-                const modalHtml = `
-                    <div id="customAlertDialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
-                        <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-700 transform transition-all duration-300 ease-out scale-95 opacity-0" style="max-width: 400px;">
-                            <div class="mt-3 text-center">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">${title}</h3>
-                                <div class="mt-2 px-7 py-3">
-                                    <p class="text-sm text-gray-500 dark:text-gray-300">${message}</p>
-                                </div>
-                                <div class="items-center px-4 py-3">
-                                    <button id="customAlertOkBtn" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">OK</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
-                const alertDialog = document.getElementById('customAlertDialog');
-                const modalContent = alertDialog.querySelector('.relative');
+            // Função para mostrar alertas customizados (agora usa a nova modal de alerta geral)
+            function showCustomAlert(title, message, category = 'info') {
+                alertModalTitle.textContent = title;
+                alertModalMessage.textContent = message;
+                
+                alertModalIcon.className = 'general-alert-modal-icon'; // Reset class
+                let iconClass = '';
+                switch (category) {
+                    case 'info': iconClass = 'fas fa-info-circle'; break;
+                    case 'success': iconClass = 'fas fa-check-circle'; break;
+                    case 'warning': iconClass = 'fas fa-exclamation-triangle'; break;
+                    case 'danger': iconClass = 'fas fa-times-circle'; break;
+                }
+                alertModalIcon.classList.add(category);
+                alertModalIcon.innerHTML = `<i class="${iconClass}"></i>`;
 
-                setTimeout(() => {
-                    modalContent.style.transform = 'scale(1)';
-                    modalContent.style.opacity = '1';
-                }, 10);
-
-                const okBtn = document.getElementById('customAlertOkBtn');
-
-                okBtn.addEventListener('click', () => {
-                    modalContent.style.transform = 'scale(0.95)';
-                    modalContent.style.opacity = '0';
-                    setTimeout(() => {
-                        alertDialog.remove();
-                        document.body.style.overflow = '';
-                    }, 300);
-                });
-
-                alertDialog.addEventListener('click', (e) => {
-                    if (e.target === alertDialog) {
-                        modalContent.style.transform = 'scale(0.95)';
-                        modalContent.style.opacity = '0';
-                        setTimeout(() => {
-                            alertDialog.remove();
-                            document.body.style.overflow = '';
-                        }, 300);
-                    }
-                });
-                document.body.style.overflow = 'hidden';
+                generalAlertOverlay.classList.add('show');
+                document.body.style.overflow = 'hidden'; // Bloquear scroll do body
             }
+
+            // Função para fechar a nova modal de alerta geral
+            function closeGeneralAlertModal() {
+                generalAlertOverlay.classList.remove('show');
+                document.body.style.overflow = 'auto'; // Restaurar scroll do body
+            }
+
+            // Event listener para o botão de fechar da nova modal de alerta geral
+            alertModalCloseBtn.addEventListener('click', closeGeneralAlertModal);
+            generalAlertOverlay.addEventListener('click', (e) => {
+                if (e.target === generalAlertOverlay) {
+                    closeGeneralAlertModal();
+                }
+            });
+
 
             function reloadPage() {
                 window.location.reload();
             }
 
-            // Event listener para abrir o modal de vincular protocolo
-            if (addProtocolBtn) { // Adicionado verificação para garantir que o elemento existe
-                addProtocolBtn.addEventListener('click', () => {
-                    console.log('Botão Vincular Novo Protocolo clicado.');
+            // Event listener para abrir o modal de vincular protocolo (botão na header)
+            if (addProtocolBtnHeader) { 
+                addProtocolBtnHeader.addEventListener('click', () => {
+                    console.log('Botão Vincular Novo Protocolo (Header) clicado.');
                     protocolSelect.value = '';
                     protocolLevelSelect.innerHTML = '<option value="">-- Selecione um Protocolo Primeiro --</option>';
                     protocolLevelSelect.disabled = true;
@@ -505,9 +747,8 @@
                     openModal(linkProtocolModal);
                 });
             } else {
-                console.error('Elemento #addProtocolBtn não encontrado.');
+                console.error('Elemento #addProtocolBtnHeader não encontrado.');
             }
-
 
             // Event listener para fechar modais
             document.querySelectorAll('.modal-close-btn').forEach(button => {
@@ -557,7 +798,7 @@
                         }
                     } catch (error) {
                         console.error('Erro ao carregar níveis do protocolo:', error);
-                        showCustomAlert('Erro ao carregar níveis do protocolo. Por favor, tente novamente.', 'Erro de Carregamento', 'danger');
+                        showCustomAlert('Erro de Carregamento', 'Erro ao carregar níveis do protocolo. Por favor, tente novamente.', 'danger');
                         protocolLevelSelect.innerHTML = '<option value="">Erro ao carregar níveis</option>';
                     }
                 } else {
@@ -595,15 +836,17 @@
                     const data = await response.json();
                     console.log('Resposta da API de vincular protocolo:', data);
                     if (data.success) {
-                        showCustomAlert(data.message, 'Sucesso', 'success');
+                        showCustomAlert('Sucesso', data.message, 'success');
                         closeModal(linkProtocolModal);
                         reloadPage();
                     } else {
-                        showCustomAlert(data.message, 'Erro', 'danger');
+                        // Se a resposta da API indicar falha, exibe o erro
+                        showCustomAlert('Erro', data.message, 'danger');
                     }
                 } catch (error) {
                     console.error('Erro ao vincular protocolo:', error);
-                    showCustomAlert('Erro de rede ao vincular protocolo.', 'Erro', 'danger');
+                    // Se houver um erro de rede ou outro erro na requisição
+                    showCustomAlert('Erro', 'Erro de rede ao vincular protocolo. Verifique sua conexão e tente novamente.', 'danger');
                 } finally {
                     submitLinkProtocolBtn.disabled = false;
                     submitLinkProtocolBtn.innerHTML = '<i class="fas fa-link mr-2"></i> Vincular Protocolo';
@@ -625,14 +868,14 @@
                         const data = await response.json();
                         console.log('Resposta da API de finalizar avaliação:', data);
                         if (data.success) {
-                            showCustomAlert(data.message, 'Sucesso', 'success');
+                            showCustomAlert('Sucesso', data.message, 'success');
                             reloadPage();
                         } else {
-                            showCustomAlert(data.message, 'Erro', 'danger');
+                            showCustomAlert('Erro', data.message, 'danger');
                         }
                     } catch (error) {
-                        console.error('Erro ao finalizar avaliação:', error);
-                        showCustomAlert('Erro de rede ao finalizar avaliação.', 'Erro', 'danger');
+                            console.error('Erro ao finalizar avaliação:', error);
+                            showCustomAlert('Erro', 'Erro de rede ao finalizar avaliação.', 'danger');
                     } finally {
                         finalizeEvaluationBtn.disabled = false;
                         finalizeEvaluationBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Finalizar Avaliação';
@@ -661,6 +904,8 @@
                 console.log('Botão Confirmar Desvinculação clicado.');
                 const pId = confirmRemoveBtn.dataset.patientId;
                 const eId = confirmRemoveBtn.dataset.evaluationId;
+                console.log('Tentando desvincular protocolo com IDs:', { patientId: pId, evaluationId: eId, protocolToRemoveId: protocolToRemoveId });
+
                 if (protocolToRemoveId && pId && eId) {
                     confirmRemoveBtn.disabled = true;
                     confirmRemoveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Desvinculando...';
@@ -670,19 +915,34 @@
                             method: 'DELETE',
                             headers: { 'Content-Type': 'application/json' }
                         });
-                        const data = await response.json();
-                        console.log('Resposta da API de desvincular protocolo:', data);
-                        if (data.success) {
-                            showCustomAlert(data.message, 'Sucesso', 'success');
+                        
+                        // Log a resposta bruta
+                        const responseText = await response.text();
+                        console.log('Resposta bruta da API de desvinculação:', responseText);
+
+                        let data;
+                        try {
+                            data = JSON.parse(responseText);
+                        } catch (jsonError) {
+                            console.error('Erro ao parsear JSON da resposta:', jsonError);
+                            showCustomAlert('Erro', 'Resposta inválida do servidor ao desvincular protocolo.', 'danger');
+                            return; // Sai da função após erro de parsing
+                        }
+
+                        console.log('Resposta da API de desvincular protocolo (parsed):', data);
+
+                        if (response.ok && data.success) { // Verifica tanto o status HTTP quanto o sucesso da API
+                            showCustomAlert('Sucesso', data.message, 'success');
+                            closeModal(confirmRemoveProtocolModal);
                             reloadPage();
                         } else {
-                            showCustomAlert(data.message, 'Erro', 'danger');
+                            // Se a resposta da API indicar falha ou status HTTP não-OK
+                            showCustomAlert('Erro', data.message || `Falha ao desvincular protocolo. Status HTTP: ${response.status}`, 'danger');
                         }
                     } catch (error) {
                         console.error('Erro ao desvincular protocolo:', error);
-                        showCustomAlert('Erro de rede ao desvincular protocolo.', 'Erro', 'danger');
+                        showCustomAlert('Erro', 'Erro de rede ao desvincular protocolo. Verifique sua conexão e tente novamente.', 'danger');
                     } finally {
-                        closeModal(confirmRemoveProtocolModal);
                         confirmRemoveBtn.disabled = false;
                         confirmRemoveBtn.innerHTML = 'Desvincular';
                         protocolToRemoveId = null;

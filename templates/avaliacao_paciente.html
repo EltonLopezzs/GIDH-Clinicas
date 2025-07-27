@@ -9,6 +9,50 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
+        /* Variáveis de cor e tema - Copiadas e adaptadas de agendamentos.html */
+        :root {
+            --bg: #f1f5f9;                  /* Gray-100 */
+            --card: #ffffff;                /* White */
+            --text: #0f172a;                /* Gray-900 */
+            --muted: #64748b;               /* Gray-500 */
+            --accent: #9b53b8;              /* Purple-500 */
+            --primary-dark: #115e59;        
+            --primary: #5587c2;             /* Blue-500 */
+            --primary-light: #c8dcf3;       /* Blue-100 */
+            --secondary: #f59e0b;           /* Yellow-500 */
+            --danger: #dc2626;              /* Red-600 */
+            --success: #16a34a;             /* Green-600 */
+            --warning: #f59e0b;             /* Yellow-500 */
+            --info: #0ea5e9;                /* Sky-500 */
+            --border-color: #e2e8f0;        /* Gray-200 */
+
+            /* Cores para os status das avaliações (adaptadas de agendamentos.html) */
+            --status-finalizado: #16a344; /* Verde */
+            --status-rascunho: #f59e0b; /* Laranja */
+
+            --dark-bg: #0f172a;             /* Gray-900 */
+            --dark-card: #1e293b;           /* Gray-800 */
+            --dark-text: #f1f5f9;           /* Gray-100 */
+            --dark-muted: #94a3b8;          /* Gray-400 */
+            --dark-border-color: #334155;   /* Gray-600 */
+
+            color-scheme: light;
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--dark-bg);
+            --text: var(--dark-text);
+            --card: var(--dark-card);
+            --muted: var(--dark-muted);
+            --border-color: var(--dark-border-color);
+            
+            /* Cores para os status em tema escuro (opcionalmente ajustadas) */
+            --status-finalizado: #22c55e;
+            --status-rascunho: #fbbf24;
+
+            color-scheme: dark;
+        }
+
         /* Estilos base do seu ficheiro original */
         body {
             font-family: 'Inter', sans-serif;
@@ -62,14 +106,14 @@
         .btn-danger { background-color: var(--danger); color: white; }
         .btn-danger:hover { background-color: color-mix(in srgb, var(--danger) 80%, black); transform: translateY(-1px); }
 
-        /* --- ESTILOS CORRIGIDOS --- */
+        /* --- ESTILOS ADAPTADOS DE AGENDAMENTOS.HTML PARA OS CARDS DE AVALIAÇÃO --- */
         .contextual-info-card {
-            background-color: var(--card-bg);
+            background-color: var(--card); /* Usar a variável do tema */
             border-radius: 0.75rem;
             padding: 1.5rem;
             margin-bottom: 2rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-color); /* Usar a variável do tema */
         }
         .contextual-info-card .info-details h2 {
             font-size: 1.75rem;
@@ -79,70 +123,107 @@
         }
         .contextual-info-card .info-details p {
             font-size: 0.9rem;
-            color: var(--text-muted);
+            color: var(--muted); /* Usar a variável do tema */
             margin: 0;
         }
         
+        /* Modificação para exibir um card por linha e ocupar largura total */
         .evaluations-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: 1fr; /* Um card por linha */
             gap: 1.5rem;
+            /* Removido max-width e margin: auto para que ocupe a largura total */
         }
-        .evaluation-card {
-            background-color: var(--card-bg);
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid var(--border);
-            overflow: hidden;
-        }
-        .evaluation-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-        }
-        .card-content {
+
+        /* Estilos do card de agendamento (agora usado para avaliação) */
+        .appointment-card {
+            background-color: var(--card);
+            border-radius: 12px;
             padding: 1.5rem;
-            flex-grow: 1;
+            border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-        }
-        .card-header {
-            display: flex;
-            align-items: center;
             gap: 1rem;
-            margin-bottom: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        .card-header .icon {
-            font-size: 1.5rem;
-            color: var(--primary);
-            background-color: var(--primary-light);
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
+        .appointment-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .appointment-card-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
         }
-        .card-header .date {
-            font-size: 1.25rem;
-            font-weight: 600;
+        .appointment-card-header h4 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+        [data-theme="dark"] .appointment-card-header h4 {
+            color: var(--dark-text);
+        }
+
+        .appointment-card-header .status-badge {
+            padding: 0.4rem 0.9rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        /* Adaptação dos status para avaliações */
+        .appointment-card-header .status-badge.status-finalizado { background-color: var(--status-finalizado); }
+        .appointment-card-header .status-badge.status-rascunho { background-color: var(--status-rascunho); }
+
+        .appointment-card-body {
+            display: grid;
+            /* Garante que os itens do corpo se ajustem bem */
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Ajustado min-width */
+            gap: 1rem;
+            font-size: 0.95rem;
+        }
+        .appointment-card-item {
+            display: flex; /* Use flexbox for horizontal alignment */
+            align-items: center;
+            gap: 0.75rem;
             color: var(--text);
         }
-        .card-body .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-weight: 500;
-            font-size: 0.8rem;
+        .appointment-card-item i {
+            color: var(--muted); 
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0; /* Impede que o ícone encolha */
         }
-        .status-badge.finalizado { background-color: #d1fae5; color: #065f46; }
-        .status-badge.rascunho { background-color: #fef3c7; color: #92400e; }
+        .appointment-card-item .label {
+            font-weight: 600;
+            color: var(--muted);
+            white-space: nowrap; /* Prevent label from wrapping */
+            flex-shrink: 0;
+        }
+        .appointment-card-item .value {
+            font-weight: 500;
+            color: var(--text);
+            flex-grow: 1;
+            /* Allow value to wrap if needed */
+            word-wrap: break-word; /* For older browsers */
+            overflow-wrap: break-word; /* Modern equivalent */
+        }
+
+        /* Card footer para botões de ação */
         .card-footer {
             margin-top: auto;
             padding-top: 1rem;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border-color); /* Usar a variável do tema */
             display: flex;
             justify-content: flex-end;
             gap: 0.75rem;
@@ -170,7 +251,7 @@
         }
         .modal-overlay.active { display: flex; }
         .modal-content {
-            background-color: #ffffff !important; /* Forçar fundo branco */
+            background-color: var(--card) !important; /* Forçar fundo do tema */
             padding: 1.5rem 2rem; 
             border-radius: 12px; 
             width: 90%; 
@@ -179,33 +260,41 @@
             position: relative;
         }
         .modal-header {
-            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem; margin-bottom: 1.5rem;
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;
         }
         .modal-header h3 {
-            margin: 0; font-size: 1.5rem; color: #1f2937 !important; /* Forçar texto escuro */
+            margin: 0; font-size: 1.5rem; color: var(--text) !important; /* Forçar texto do tema */
         }
         .modal-close-btn { 
             position: absolute;
             top: 1rem;
             right: 1.5rem;
-            color: #6b7280 !important; /* Forçar texto cinza */
+            color: var(--muted) !important; /* Forçar texto do tema */
             font-size: 28px; font-weight: bold; cursor: pointer; background: none; border: none; 
         }
         .form-group label { 
-            display: block; margin-bottom: 0.5rem; font-weight: 500; color: #4b5563 !important; /* Forçar texto cinza escuro */
+            display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--muted) !important; /* Forçar texto do tema */
         }
         .form-group input { 
-            width: 100%; padding: 0.75rem; border: 1px solid #d1d5db !important; /* Forçar borda cinza */
-            border-radius: 8px; font-size: 1rem; background-color: #f9fafb !important; /* Forçar fundo cinza claro */
-            color: #111827 !important; /* Forçar texto escuro */
+            width: 100%; padding: 0.75rem; border: 1px solid var(--border-color) !important; /* Forçar borda do tema */
+            border-radius: 8px; font-size: 1rem; background-color: var(--bg) !important; /* Forçar fundo do tema */
+            color: var(--text) !important; /* Forçar texto do tema */
         }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb !important; }
-        .no-evaluations { text-align: center; padding: 3rem; background-color: var(--card-bg); border-radius: 12px; border: 2px dashed var(--border); }
-        .no-evaluations p { font-size: 1.1rem; color: var(--text-muted); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color) !important; }
+        .no-evaluations { text-align: center; padding: 3rem; background-color: var(--card); border-radius: 12px; border: 2px dashed var(--border-color); }
+        .no-evaluations p { font-size: 1.1rem; color: var(--muted); }
 
         /* CORREÇÃO FINAL: Forçar cor do texto no modal de confirmação */
         #confirmDeleteModal .modal-body p {
-            color: #4b5563 !important;
+            color: var(--muted) !important;
+        }
+
+        /* Responsividade para o grid de avaliações */
+        @media (max-width: 768px) {
+            .evaluations-grid {
+                max-width: 100%; /* Ocupa a largura total em telas menores */
+                padding: 0 1rem; /* Adiciona padding lateral */
+            }
         }
 
     </style>
@@ -214,7 +303,6 @@
     {% include 'Nav.html' %} {# Inclui a barra de navegação #}
 
     <div class="main-content">
-        <!-- CORREÇÃO: Removido dark:bg-gray-900 e forçado texto escuro -->
         <header class="bg-white shadow-sm py-4 px-6 flex items-center justify-between sticky top-0 z-10">
             <button class="menu-btn-mobile md:hidden text-gray-600 text-2xl">
                 <i class="fas fa-bars"></i>
@@ -262,39 +350,24 @@
             <!-- Grid de Avaliações -->
             {% if evaluations %}
             <div class="evaluations-grid mt-6">
-                {% for eval in evaluations %}
-                <div class="evaluation-card">
-                    <div class="card-content">
-                        <div class="card-header">
-                            <div class="icon"><i class="fas fa-file-alt"></i></div>
-                            <div>
-                                <h3 class="date">Data: {{ eval.data_avaliacao.strftime('%d/%m/%Y') }}</h3>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <p>
-                                <span class="status-badge {% if eval.status == 'finalizado' %}finalizado{% else %}rascunho{% endif %}">
-                                    {{ eval.status.capitalize() }}
-                                </span>
-                            </p>
-                        </div>
-                        <div class="card-footer">
-                            <a href="{{ url_for('evaluations.view_evaluation', patient_id=patient.id, evaluation_id=eval.id) }}" class="card-btn btn-view">
-                                <i class="fas fa-eye"></i> Detalhes
-                            </a>
-                            <button onclick="confirmDeleteEvaluation('{{ patient.id }}', '{{ eval.id }}')" class="card-btn btn-delete">
-                                <i class="fas fa-trash-alt"></i> Excluir
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+                {# Os cards serão renderizados via JavaScript #}
             </div>
             {% else %}
             <div class="no-evaluations mt-6">
                 <p>Nenhuma avaliação encontrada para este paciente.</p>
             </div>
             {% endif %}
+
+            <!-- Controles de Paginação movidos para o final do conteúdo principal -->
+            <div class="pagination-controls flex justify-between items-center mt-6">
+                <button id="prevPageBtn" class="btn btn-secondary" disabled>
+                    <i class="fas fa-chevron-left mr-2"></i> Anterior
+                </button>
+                <span id="pageInfo" class="text-gray-600 dark:text-gray-400">Página 1 de X</span>
+                <button id="nextPageBtn" class="btn btn-secondary">
+                    Próximo <i class="fas fa-chevron-right ml-2"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Modal para Adicionar Nova Avaliação -->
@@ -410,6 +483,109 @@
                     message.addEventListener('transitionend', () => message.remove());
                 }, 5000);
             });
+
+            // --- Lógica de Paginação para Avaliações ---
+            const allEvaluations = {{ evaluations | tojson | safe }}; // Passa todas as avaliações para o JavaScript
+            const patientName = "{{ patient.nome }}"; // Passa o nome do paciente para o JavaScript
+
+            let currentPage = 1;
+            const itemsPerPage = 20; // Limite de 20 cards por página
+            let totalPages = 0;
+
+            const evaluationsGrid = document.querySelector('.evaluations-grid');
+            const prevPageBtn = document.getElementById('prevPageBtn');
+            const nextPageBtn = document.getElementById('nextPageBtn');
+            const pageInfoSpan = document.getElementById('pageInfo');
+
+            function renderEvaluations() {
+                evaluationsGrid.innerHTML = ''; // Limpa os cards existentes
+
+                totalPages = Math.ceil(allEvaluations.length / itemsPerPage);
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const evaluationsToDisplay = allEvaluations.slice(startIndex, endIndex);
+
+                // Se não houver avaliações para exibir na página atual, e houver avaliações no total, volta uma página
+                if (evaluationsToDisplay.length === 0 && allEvaluations.length > 0 && currentPage > 1) {
+                    currentPage = Math.max(1, currentPage - 1);
+                    renderEvaluations(); // Renderiza novamente com a página ajustada
+                    return;
+                }
+
+                if (evaluationsToDisplay.length === 0) {
+                    evaluationsGrid.innerHTML = `
+                        <div class="no-evaluations mt-6">
+                            <p>Nenhuma avaliação encontrada para este paciente.</p>
+                        </div>
+                    `;
+                    pageInfoSpan.textContent = 'Página 0 de 0';
+                    prevPageBtn.disabled = true;
+                    nextPageBtn.disabled = true;
+                    return;
+                }
+
+                evaluationsToDisplay.forEach(eval => {
+                    const card = document.createElement('div');
+                    card.className = 'appointment-card';
+                    card.innerHTML = `
+                        <div class="appointment-card-header">
+                            <h4>Avaliação - ${new Date(eval.data_avaliacao).toLocaleDateString('pt-BR')}</h4>
+                            <span class="status-badge status-${eval.status}">
+                                ${eval.status.charAt(0).toUpperCase() + eval.status.slice(1)}
+                            </span>
+                        </div>
+                        <div class="appointment-card-body">
+                            <div class="appointment-card-item">
+                                <i class="fas fa-user"></i>
+                                <span class="label">Paciente:</span>
+                                <span class="value">${patientName}</span>
+                            </div>
+                            <div class="appointment-card-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span class="label">Data:</span>
+                                <span class="value">${new Date(eval.data_avaliacao).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                            ${eval.protocolo_nome ? `
+                            <div class="appointment-card-item">
+                                <i class="fas fa-clipboard-list"></i>
+                                <span class="label">Protocolo:</span>
+                                <span class="value">${eval.protocolo_nome}</span>
+                            </div>` : ''}
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ url_for('evaluations.view_evaluation', patient_id=patient.id, evaluation_id='') }}${eval.id}" class="card-btn btn-view">
+                                <i class="fas fa-eye"></i> Detalhes
+                            </a>
+                            <button onclick="confirmDeleteEvaluation('{{ patient.id }}', '${eval.id}')" class="card-btn btn-delete">
+                                <i class="fas fa-trash-alt"></i> Excluir
+                            </button>
+                        </div>
+                    `;
+                    evaluationsGrid.appendChild(card);
+                });
+
+                pageInfoSpan.textContent = `Página ${currentPage} de ${totalPages}`;
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+            }
+
+            // Event listeners para os botões de paginação
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderEvaluations();
+                }
+            });
+
+            nextPageBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderEvaluations();
+                }
+            });
+
+            // Renderização inicial dos cards
+            renderEvaluations();
         });
     </script>
 </body>
