@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
+        /* Estilos base do seu ficheiro original */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -46,126 +47,188 @@
             transform: translateY(-20px);
             animation: fadeInDown 0.5s forwards;
         }
-        .flash-message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .flash-message.danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .flash-message.warning {
-            background-color: #fff3cd;
-            color: #664d03;
-            border: 1px solid #ffecb5;
-        }
-        .flash-message i {
-            margin-right: 0.75rem;
-            font-size: 1.25rem;
-        }
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .close-flash {
-            margin-left: auto;
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            color: inherit;
-            opacity: 0.7;
-        }
-        .close-flash:hover {
-            opacity: 1;
-        }
+        .flash-message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash-message.danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash-message.warning { background-color: #fff3cd; color: #664d03; border: 1px solid #ffecb5; }
+        .flash-message i { margin-right: 0.75rem; font-size: 1.25rem; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .close-flash { margin-left: auto; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: inherit; opacity: 0.7; }
+        .close-flash:hover { opacity: 1; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.25rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease-in-out; border: 1px solid transparent; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); transform: translateY(-1px); }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: color-mix(in srgb, var(--danger) 80%, black); transform: translateY(-1px); }
 
-        /* Classes para botões padrão */
-        .btn {
-            display: inline-flex;
+        /* --- ESTILOS CORRIGIDOS --- */
+        .contextual-info-card {
+            background-color: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+        .contextual-info-card .info-details h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0 0 0.25rem 0;
+        }
+        .contextual-info-card .info-details p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+        
+        .evaluations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        .evaluation-card {
+            background-color: var(--card-bg);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .evaluation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        .card-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .card-header .icon {
+            font-size: 1.5rem;
+            color: var(--primary);
+            background-color: var(--primary-light);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem;
+        }
+        .card-header .date {
+            font-size: 1.25rem;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            border: 1px solid transparent;
+            color: var(--text);
         }
-        .btn-primary {
-            background-color: var(--primary);
+        .card-body .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+        .status-badge.finalizado { background-color: #d1fae5; color: #065f46; }
+        .status-badge.rascunho { background-color: #fef3c7; color: #92400e; }
+        .card-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        .card-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
             color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            border: none;
         }
-        .btn-primary:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-1px);
+        .btn-view { background-color: var(--primary); }
+        .btn-view:hover { background-color: var(--primary-dark); }
+        .btn-delete { background-color: var(--danger); }
+        .btn-delete:hover { background-color: color-mix(in srgb, var(--danger) 80%, black); }
+        
+        .modal-overlay {
+            display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.6); align-items: center; justify-content: center;
         }
-        .btn-secondary {
-            background-color: var(--muted);
-            color: white;
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background-color: #ffffff !important; /* Forçar fundo branco */
+            padding: 1.5rem 2rem; 
+            border-radius: 12px; 
+            width: 90%; 
+            max-width: 450px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
         }
-        .btn-secondary:hover {
-            background-color: color-mix(in srgb, var(--muted) 80%, black);
-            transform: translateY(-1px);
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem; margin-bottom: 1.5rem;
         }
-        .btn-danger {
-            background-color: var(--danger);
-            color: white;
+        .modal-header h3 {
+            margin: 0; font-size: 1.5rem; color: #1f2937 !important; /* Forçar texto escuro */
         }
-        .btn-danger:hover {
-            background-color: color-mix(in srgb, var(--danger) 80%, black);
-            transform: translateY(-1px);
+        .modal-close-btn { 
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            color: #6b7280 !important; /* Forçar texto cinza */
+            font-size: 28px; font-weight: bold; cursor: pointer; background: none; border: none; 
         }
-        .btn-success {
-            background-color: var(--success);
-            color: white;
+        .form-group label { 
+            display: block; margin-bottom: 0.5rem; font-weight: 500; color: #4b5563 !important; /* Forçar texto cinza escuro */
         }
-        .btn-success:hover {
-            background-color: color-mix(in srgb, var(--success) 80%, black);
-            transform: translateY(-1px);
+        .form-group input { 
+            width: 100%; padding: 0.75rem; border: 1px solid #d1d5db !important; /* Forçar borda cinza */
+            border-radius: 8px; font-size: 1rem; background-color: #f9fafb !important; /* Forçar fundo cinza claro */
+            color: #111827 !important; /* Forçar texto escuro */
         }
-        .btn-info {
-            background-color: var(--info);
-            color: white;
+        .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb !important; }
+        .no-evaluations { text-align: center; padding: 3rem; background-color: var(--card-bg); border-radius: 12px; border: 2px dashed var(--border); }
+        .no-evaluations p { font-size: 1.1rem; color: var(--text-muted); }
+
+        /* CORREÇÃO FINAL: Forçar cor do texto no modal de confirmação */
+        #confirmDeleteModal .modal-body p {
+            color: #4b5563 !important;
         }
-        .btn-info:hover {
-            background-color: color-mix(in srgb, var(--info) 80%, black);
-            transform: translateY(-1px);
-        }
-        .btn-outline {
-            background-color: transparent;
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-        .btn-outline:hover {
-            background-color: var(--primary-light);
-            color: var(--primary-dark);
-        }
+
     </style>
 </head>
 <body>
     {% include 'Nav.html' %} {# Inclui a barra de navegação #}
 
     <div class="main-content">
-        <header class="bg-white dark:bg-gray-800 shadow-sm py-4 px-6 flex items-center justify-between sticky top-0 z-10">
-            <button class="menu-btn-mobile md:hidden text-gray-600 dark:text-gray-300 text-2xl">
+        <!-- CORREÇÃO: Removido dark:bg-gray-900 e forçado texto escuro -->
+        <header class="bg-white shadow-sm py-4 px-6 flex items-center justify-between sticky top-0 z-10">
+            <button class="menu-btn-mobile md:hidden text-gray-600 text-2xl">
                 <i class="fas fa-bars"></i>
             </button>
-            <button class="toggle-btn-desktop hidden md:block text-gray-600 dark:text-gray-300 text-2xl">
+            <button class="toggle-btn-desktop hidden md:block text-gray-600 text-2xl">
                 <i class="fas fa-bars-staggered"></i>
             </button>
-            <h1 class="text-xl font-semibold text-gray-900 dark:text-white ml-4">
-                Avaliações de {{ patient.nome }}
+            <h1 class="text-xl font-semibold text-gray-800 ml-4">
+                Avaliações de Pacientes
             </h1>
             <div class="flex-grow"></div> {# Espaçador #}
+            <button id="addEvaluationBtn" class="btn btn-primary">
+                <i class="fas fa-plus-circle mr-2"></i> Nova Avaliação
+            </button>
         </header>
 
         <div class="flash-messages">
@@ -187,219 +250,165 @@
             {% endwith %}
         </div>
 
-        <div class="container mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-6">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Avaliações de {{ patient.nome }}</h1>
-            <p class="text-gray-700 dark:text-gray-300 mb-6">CPF: {{ patient.cpf }} | Data de Nascimento: {{ patient.data_nascimento_fmt }}</p>
-
-            {# Seção para criar uma nova avaliação #}
-            <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner mb-6">
-                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Criar Nova Avaliação</h2>
-                <form action="{{ url_for('evaluations.create_new_evaluation', patient_id=patient.id) }}" method="POST" class="space-y-4">
-                    <div>
-                        <label for="evaluation_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data da Avaliação</label>
-                        <input type="date" id="evaluation_date" name="evaluation_date" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white" value="{{ now.strftime('%Y-%m-%d') }}" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-plus-circle mr-2"></i> Criar Nova Avaliação
-                    </button>
-                </form>
+        <div class="p-6">
+            <!-- Cartão de Informações Contextuais do Paciente -->
+            <div class="contextual-info-card">
+                <div class="info-details">
+                    <h2>{{ patient.nome }}</h2>
+                    <p>CPF: {{ patient.cpf }} | Data de Nascimento: {{ patient.data_nascimento_fmt }}</p>
+                </div>
             </div>
 
-            {# Lista de avaliações existentes #}
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Avaliações Anteriores</h2>
-                {% if evaluations %}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-100 dark:bg-gray-700">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Data</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {% for eval in evaluations %}
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ eval.data_avaliacao.strftime('%d/%m/%Y') }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        {% if eval.status == 'finalizado' %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
-                                        {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100{% endif %}">
-                                        {{ eval.status.capitalize() }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="{{ url_for('evaluations.view_evaluation', patient_id=patient.id, evaluation_id=eval.id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 mr-4">
-                                        <i class="fas fa-eye mr-1"></i> Visualizar Detalhes
-                                    </a>
-                                    <button onclick="confirmDeleteEvaluation('{{ patient.id }}', '{{ eval.id }}')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200">
-                                        <i class="fas fa-trash-alt mr-1"></i> Excluir
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <!-- Grid de Avaliações -->
+            {% if evaluations %}
+            <div class="evaluations-grid mt-6">
+                {% for eval in evaluations %}
+                <div class="evaluation-card">
+                    <div class="card-content">
+                        <div class="card-header">
+                            <div class="icon"><i class="fas fa-file-alt"></i></div>
+                            <div>
+                                <h3 class="date">Data: {{ eval.data_avaliacao.strftime('%d/%m/%Y') }}</h3>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p>
+                                <span class="status-badge {% if eval.status == 'finalizado' %}finalizado{% else %}rascunho{% endif %}">
+                                    {{ eval.status.capitalize() }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ url_for('evaluations.view_evaluation', patient_id=patient.id, evaluation_id=eval.id) }}" class="card-btn btn-view">
+                                <i class="fas fa-eye"></i> Detalhes
+                            </a>
+                            <button onclick="confirmDeleteEvaluation('{{ patient.id }}', '{{ eval.id }}')" class="card-btn btn-delete">
+                                <i class="fas fa-trash-alt"></i> Excluir
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                {% else %}
-                <p class="text-gray-500 dark:text-gray-400">Nenhuma avaliação encontrada para este paciente.</p>
-                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-evaluations mt-6">
+                <p>Nenhuma avaliação encontrada para este paciente.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Modal para Adicionar Nova Avaliação -->
+        <div id="addEvaluationModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Criar Nova Avaliação</h3>
+                    <button type="button" class="modal-close-btn" data-close-modal="addEvaluationModal">&times;</button>
+                </div>
+                <form action="{{ url_for('evaluations.create_new_evaluation', patient_id=patient.id) }}" method="POST">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="evaluation_date">Data da Avaliação</label>
+                            <input type="date" id="evaluation_date" name="evaluation_date" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-close-modal="addEvaluationModal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Criar Avaliação</button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        {# Modal de Confirmação para Excluir Avaliação #}
-        <div id="confirmDeleteModal" class="modal-overlay hidden">
+        <!-- Modal de Confirmação para Excluir (lógica mantida) -->
+        <div id="confirmDeleteModal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Confirmar Exclusão</h3>
                     <button type="button" class="modal-close-btn" data-close-modal="confirmDeleteModal">&times;</button>
                 </div>
                 <div class="modal-body text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-300 mb-4">Tem certeza de que deseja excluir esta avaliação? Esta ação não pode ser desfeita.</p>
+                    <p class="text-sm mb-4">Tem certeza de que deseja excluir esta avaliação? Esta ação não pode ser desfeita.</p>
                     <div class="flex justify-center space-x-4">
+                        <button id="cancelDeleteBtn" class="btn btn-secondary w-full" data-close-modal="confirmDeleteModal">Cancelar</button>
                         <button id="confirmDeleteBtn" class="btn btn-danger w-full">Excluir</button>
-                        <button id="cancelDeleteBtn" class="btn btn-secondary w-full">Cancelar</button>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const patientId = "{{ patient.id }}";
+            // --- Lógica para os Modais ---
+            const addModal = document.getElementById('addEvaluationModal');
+            const addBtn = document.getElementById('addEvaluationBtn');
 
-            // Modal de Confirmação para Excluir
+            function openModal(modalElement) {
+                if(modalElement) modalElement.classList.add('active');
+            }
+            function closeModal(modalElement) {
+                if(modalElement) modalElement.classList.remove('active');
+            }
+
+            if(addBtn) addBtn.addEventListener('click', () => openModal(addModal));
+            
+            document.querySelectorAll('[data-close-modal]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const modalId = btn.getAttribute('data-close-modal');
+                    closeModal(document.getElementById(modalId));
+                });
+            });
+
+            // --- Lógica para Exclusão (adaptada do seu código original) ---
             const confirmDeleteModal = document.getElementById('confirmDeleteModal');
             const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
             let evaluationToDeleteId = null;
 
-            // Funções para abrir/fechar modais
-            function openModal(modalElement) {
-                modalElement.classList.add('active');
-                document.body.style.overflow = 'hidden'; // Evita rolagem do corpo
-            }
-
-            function closeModal(modalElement) {
-                modalElement.classList.remove('active');
-                document.body.style.overflow = ''; // Restaura rolagem do corpo
-            }
-
-            // Função para mostrar alertas customizados
-            function showCustomAlert(message, title = "Aviso", type = "info") {
-                const modalHtml = `
-                    <div id="customAlertDialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
-                        <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-700 transform transition-all duration-300 ease-out scale-95 opacity-0" style="max-width: 400px;">
-                            <div class="mt-3 text-center">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">${title}</h3>
-                                <div class="mt-2 px-7 py-3">
-                                    <p class="text-sm text-gray-500 dark:text-gray-300">${message}</p>
-                                </div>
-                                <div class="items-center px-4 py-3">
-                                    <button id="customAlertOkBtn" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">OK</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
-                const alertDialog = document.getElementById('customAlertDialog');
-                const modalContent = alertDialog.querySelector('.relative');
-
-                setTimeout(() => {
-                    modalContent.style.transform = 'scale(1)';
-                    modalContent.style.opacity = '1';
-                }, 10);
-
-                const okBtn = document.getElementById('customAlertOkBtn');
-
-                okBtn.addEventListener('click', () => {
-                    modalContent.style.transform = 'scale(0.95)';
-                    modalContent.style.opacity = '0';
-                    setTimeout(() => {
-                        alertDialog.remove();
-                        document.body.style.overflow = '';
-                    }, 300);
-                });
-
-                alertDialog.addEventListener('click', (e) => {
-                    if (e.target === alertDialog) {
-                        modalContent.style.transform = 'scale(0.95)';
-                        modalContent.style.opacity = '0';
-                        setTimeout(() => {
-                            alertDialog.remove();
-                            document.body.style.overflow = '';
-                        }, 300);
-                    }
-                });
-                document.body.style.overflow = 'hidden';
-            }
-
-            function reloadPage() {
-                window.location.reload();
-            }
-
-            // Funções para o modal de exclusão
-            window.confirmDeleteEvaluation = function(pId, eId) {
-                evaluationToDeleteId = eId;
-                confirmDeleteBtn.dataset.patientId = pId; // Armazena patientId no botão de confirmação
+            window.confirmDeleteEvaluation = function(patientId, evaluationId) {
+                evaluationToDeleteId = evaluationId;
+                confirmDeleteBtn.dataset.patientId = patientId;
                 openModal(confirmDeleteModal);
             };
 
-            cancelDeleteBtn.addEventListener('click', () => {
-                closeModal(confirmDeleteModal);
-                evaluationToDeleteId = null;
-                confirmDeleteBtn.removeAttribute('data-patient-id');
-            });
-
-            confirmDeleteBtn.addEventListener('click', async () => {
-                const pId = confirmDeleteBtn.dataset.patientId;
-                if (evaluationToDeleteId && pId) {
-                    confirmDeleteBtn.disabled = true;
-                    confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Excluindo...';
-
-                    try {
-                        const response = await fetch(`/api/avaliacoes/excluir/${pId}/${evaluationToDeleteId}`, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                        const data = await response.json();
-                        if (data.success) {
-                            showCustomAlert(data.message, 'Sucesso', 'success');
-                            reloadPage();
-                        } else {
-                            showCustomAlert(data.message, 'Erro', 'danger');
+            if(confirmDeleteBtn) {
+                confirmDeleteBtn.addEventListener('click', async () => {
+                    const pId = confirmDeleteBtn.dataset.patientId;
+                    if (evaluationToDeleteId && pId) {
+                        confirmDeleteBtn.disabled = true;
+                        confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+                        try {
+                            const response = await fetch(`/api/avaliacoes/excluir/${pId}/${evaluationToDeleteId}`, {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                            const data = await response.json();
+                            if (data.success) {
+                                window.location.reload();
+                            } else {
+                                alert(data.message || 'Ocorreu um erro ao excluir.');
+                            }
+                        } catch (error) {
+                            console.error('Erro ao excluir avaliação:', error);
+                            alert('Erro de rede ao tentar excluir a avaliação.');
+                        } finally {
+                            closeModal(confirmDeleteModal);
+                            confirmDeleteBtn.disabled = false;
+                            confirmDeleteBtn.innerHTML = 'Excluir';
                         }
-                    } catch (error) {
-                        console.error('Erro ao excluir avaliação:', error);
-                        showCustomAlert('Erro de rede ao excluir avaliação.', 'Erro', 'danger');
-                    } finally {
-                        closeModal(confirmDeleteModal);
-                        confirmDeleteBtn.disabled = false;
-                        confirmDeleteBtn.innerHTML = 'Excluir';
-                        evaluationToDeleteId = null;
-                        confirmDeleteBtn.removeAttribute('data-patient-id');
                     }
-                }
-            });
-
-            // Script para fechar as mensagens flash (mantido do base.html)
-            document.querySelectorAll('.flash-message .close-flash').forEach(button => {
-                button.addEventListener('click', () => {
-                    button.closest('.flash-message').remove();
                 });
-            });
+            }
 
-            // Auto-hide flash messages after a few seconds (mantido do base.html)
+            // Lógica para fechar flash messages (mantida)
+            document.querySelectorAll('.flash-message .close-flash').forEach(button => {
+                button.addEventListener('click', () => button.closest('.flash-message').remove());
+            });
             document.querySelectorAll('.flash-message').forEach(message => {
                 setTimeout(() => {
                     message.style.opacity = '0';
                     message.style.transform = 'translateY(-20px)';
                     message.addEventListener('transitionend', () => message.remove());
-                }, 5000); // 5 seconds
+                }, 5000);
             });
         });
     </script>
