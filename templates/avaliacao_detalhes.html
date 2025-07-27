@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalhes da Avaliação</title>
+    <title>Avaliação de {{ patient.nome }} - {{ evaluation.data_avaliacao_fmt }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -157,19 +157,20 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.1);
-            display: none; /* Alterado para display: none por padrão */
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
             align-items: center;
             justify-content: center;
             z-index: 2000;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            visibility: hidden; /* Changed from display: none; */
+            transition: opacity 0.3s ease, visibility 0.3s ease;
             pointer-events: none;
         }
 
         .modal-overlay.active {
-            display: flex; /* Exibe o modal quando ativo */
             opacity: 1;
+            visibility: visible; /* Changed from display: flex; */
             pointer-events: auto;
         }
 
@@ -234,92 +235,31 @@
             overflow-y: auto;
             flex-grow: 1;
         }
-
-        /* Estilos para cards de tarefas */
-        .task-card {
-            background-color: var(--bg); /* Usa a cor de fundo geral para as tarefas */
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            padding: 1rem;
-            margin-bottom: 1rem; /* Adiciona mais espaço entre os cards */
-            border: 1px solid var(--border-color); /* Adiciona uma borda sutil */
-        }
-        .task-card.completed {
-            border-left: 5px solid var(--success); /* Torna a borda mais proeminente */
-        }
-        .task-card.pending {
-            border-left: 5px solid var(--warning); /* Torna a borda mais proeminente */
-        }
-        .task-card h4 {
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-        }
-        .task-card p {
-            font-size: 0.9rem;
-            color: var(--muted);
-            margin-bottom: 0.25rem;
-        }
-        .task-card .response-options label {
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            margin-right: 1rem;
-        }
-        .task-card .response-options input[type="radio"] {
-            margin-right: 0.5rem;
-        }
-        .task-card textarea {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.25rem;
-            margin-top: 0.5rem;
-            background-color: var(--card); /* Use a cor do card para o textarea */
-            color: var(--text);
-        }
-
-        /* Estilos para os cards de protocolo na visão geral da avaliação (similar a pacientes.html) */
+        /* Estilos para cards de protocolo */
         .protocol-card {
             background-color: var(--card);
-            border-radius: 0.5rem; /* Menos arredondado para parecer mais com linha de tabela */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Sombra mais sutil */
-            padding: 1rem 1.5rem; /* Padding ajustado */
-            margin-bottom: 0.5rem; /* Menos margem entre eles */
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
             border: 1px solid var(--border-color);
-            display: flex;
-            align-items: center; /* Alinha itens verticalmente */
-            justify-content: space-between;
-            transition: all 0.2s ease-in-out;
-            min-height: 4rem; /* Altura mínima para consistência */
         }
-
-        .protocol-card:hover {
-            transform: none; /* Remove o translateY no hover */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Sombra um pouco mais forte no hover */
-            background-color: var(--bg); /* Mudar cor de fundo no hover */
-        }
-
-        .protocol-card-info {
-            flex-grow: 1;
-        }
-
         .protocol-card h3 {
-            font-size: 1.125rem; /* Tamanho da fonte ajustado */
+            font-size: 1.5rem;
             font-weight: 600;
-            color: var(--text); /* Cor do texto principal */
-            margin-bottom: 0.25rem; /* Menos margem */
+            color: var(--primary);
+            margin-bottom: 0.75rem;
         }
-
         .protocol-card p {
-            font-size: 0.875rem; /* Tamanho da fonte ajustado */
-            color: var(--muted); /* Cor do texto secundário */
-            margin-bottom: 0; /* Remove margem inferior */
+            font-size: 0.95rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
         }
-
-        .protocol-card .btn {
-            margin-left: 1rem; /* Espaçamento entre info e botão */
-            flex-shrink: 0; /* Não deixa o botão encolher */
+        .protocol-card .actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
     </style>
 </head>
@@ -335,13 +275,9 @@
                 <i class="fas fa-bars-staggered"></i>
             </button>
             <h1 class="text-xl font-semibold text-gray-900 dark:text-white ml-4">
-                Detalhes da Avaliação
+                Avaliação de {{ patient.nome }} - {{ evaluation.data_avaliacao_fmt }}
             </h1>
             <div class="flex-grow"></div> {# Espaçador #}
-            {# Botão "Vincular Novo Protocolo" movido para o cabeçalho #}
-            <button id="openLinkProtocolModalBtn" class="btn btn-secondary ml-4">
-                <i class="fas fa-plus mr-2"></i> Vincular Novo Protocolo
-            </button>
         </header>
 
         <div class="flash-messages">
@@ -363,283 +299,286 @@
             {% endwith %}
         </div>
 
-        
-<div class="container mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-6">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Detalhes da Avaliação</h1>
-    <p class="text-gray-700 dark:text-gray-300 mb-6">Paciente: {{ patient.nome }} | CPF: {{ patient.cpf }} | Data de Nascimento: {{ patient.data_nascimento_fmt }}</p>
+        <div class="container mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-6">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Avaliação de {{ patient.nome }}</h1>
+            <p class="text-gray-700 dark:text-gray-300 mb-6">
+                Data: {{ evaluation.data_avaliacao_fmt }} | Status: 
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    {% if evaluation.status == 'finalizado' %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+                    {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100{% endif %}">
+                    {{ evaluation.status.capitalize() }}
+                </span>
+            </p>
 
-    <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner mb-6">
-        <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Informações da Avaliação</h2>
-        <p class="text-gray-700 dark:text-gray-300 mb-2">Data da Avaliação: {{ evaluation.data_avaliacao_fmt }}</p>
-        <p class="text-gray-700 dark:text-gray-300 mb-4">Status: <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-            {% if evaluation.status == 'finalizado' %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
-            {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100{% endif %}">
-            {{ evaluation.status.capitalize() }}
-        </span></p>
-    </div>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Protocolos Vinculados</h2>
+                <button id="addProtocolBtn" class="btn btn-primary">
+                    <i class="fas fa-plus-circle mr-2"></i> Vincular Novo Protocolo
+                </button>
+            </div>
 
-    {# Protocolos Vinculados como Cards #}
-    <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Protocolos Vinculados</h2>
-    <div id="linkedProtocolsContainer" class="space-y-3"> {# Removido grid para layout de lista #}
-        {% if evaluation.protocolos_vinculados %}
-            {% for linked_protocol in evaluation.protocolos_vinculados %}
-            <div class="protocol-card">
-                <div class="protocol-card-info">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ linked_protocol.protocol_name }}</h3>
-                    <p class="text-gray-700 dark:text-gray-300">Nível: {{ linked_protocol.protocol_level }}</p>
-                </div>
-                <a href="{{ url_for('evaluations.view_protocol_tasks', patient_id=patient.id, evaluation_id=evaluation.id, linked_protocol_id=linked_protocol.protocol_id) }}" class="btn btn-primary">
-                    <i class="fas fa-eye mr-2"></i> Visualizar Tarefas
+            <div class="protocol-list space-y-4">
+                {% if evaluation.protocolos_vinculados %}
+                    {% for linked_proto in evaluation.protocolos_vinculados %}
+                    <div class="protocol-card">
+                        <h3>{{ linked_proto.protocol_name }}</h3>
+                        <p>Nível: {{ linked_proto.protocol_level }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Vinculado em: {{ linked_proto.data_vinculacao.strftime('%d/%m/%Y %H:%M') if linked_proto.data_vinculacao else 'N/A' }}</p>
+                        <div class="actions">
+                            <a href="{{ url_for('evaluations.view_protocol_tasks', patient_id=patient.id, evaluation_id=evaluation.id, linked_protocol_instance_id=linked_proto.id) }}" class="btn btn-info">
+                                <i class="fas fa-folder-open mr-2"></i> Abrir Protocolo
+                            </a>
+                            <button onclick="confirmRemoveLinkedProtocol('{{ patient.id }}', '{{ evaluation.id }}', '{{ linked_proto.id }}')" class="btn btn-danger">
+                                <i class="fas fa-unlink mr-2"></i> Desvincular
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500 dark:text-gray-400">Nenhum protocolo vinculado a esta avaliação ainda.</p>
+                {% endif %}
+            </div>
+
+            <div class="mt-8 flex justify-end space-x-4">
+                {% if evaluation.status != 'finalizado' %}
+                <button id="finalizeEvaluationBtn" class="btn btn-success">
+                    <i class="fas fa-check-circle mr-2"></i> Finalizar Avaliação
+                </button>
+                {% endif %}
+                <a href="{{ url_for('evaluations.generate_evaluation_pdf', patient_id=patient.id, evaluation_id=evaluation.id) }}" class="btn btn-secondary" target="_blank">
+                    <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
+                </a>
+                <a href="{{ url_for('evaluations.list_patients_for_evaluation') }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left mr-2"></i> Voltar para Pacientes
                 </a>
             </div>
-            {% endfor %}
-        {% else %}
-        <p class="text-gray-500 dark:text-gray-400 col-span-full">Nenhum protocolo vinculado a esta avaliação ainda.</p>
-        {% endif %}
-    </div>
-
-    <div class="mt-6 flex justify-end space-x-4">
-        <button id="finalizeEvaluationBtn" class="btn btn-success">
-            <i class="fas fa-check-circle mr-2"></i> Finalizar Avaliação
-        </button>
-        <a href="{{ url_for('evaluations.generate_evaluation_pdf', patient_id=patient.id, evaluation_id=evaluation.id) }}" target="_blank" class="btn btn-info">
-            <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
-        </a>
-    </div>
-</div>
-
-{# Modal de Confirmação para Excluir Avaliação #}
-<div id="confirmDeleteModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Confirmar Exclusão</h3>
-            <button type="button" class="modal-close-btn" data-close-modal="confirmDeleteModal">&times;</button>
         </div>
-        <div class="modal-body text-center">
-            <p class="text-sm text-gray-500 dark:text-gray-300 mb-4">Tem certeza de que deseja excluir esta avaliação? Esta ação não pode ser desfeita.</p>
-            <div class="flex justify-center space-x-4">
-                <button id="confirmDeleteBtn" class="btn btn-danger w-full">Excluir</button>
-                <button id="cancelDeleteBtn" class="btn btn-secondary w-full">Cancelar</button>
+
+        {# Modal para Vincular Protocolo #}
+        <div id="linkProtocolModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Vincular Protocolo</h3>
+                    <button type="button" class="modal-close-btn" data-close-modal="linkProtocolModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="linkProtocolForm" class="space-y-4">
+                        <div>
+                            <label for="protocolSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Selecione o Protocolo</label>
+                            <select id="protocolSelect" name="protocol_id" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white" required>
+                                <option value="">-- Selecione --</option>
+                                {% for protocol in available_protocols %}
+                                    <option value="{{ protocol.id }}" data-protocol-name="{{ protocol.nome }}">{{ protocol.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="protocolLevelSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Selecione o Nível</label>
+                            <select id="protocolLevelSelect" name="protocol_level" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white" required disabled>
+                                <option value="">-- Selecione um Protocolo Primeiro --</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-full" id="submitLinkProtocolBtn">
+                            <i class="fas fa-link mr-2"></i> Vincular Protocolo
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-{# Modal para Vincular Protocolo #}
-<div id="linkProtocolModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Vincular Novo Protocolo</h3>
-            <button type="button" class="modal-close-btn" data-close-modal="linkProtocolModal">&times;</button>
-        </div>
-        <div class="modal-body space-y-4">
-            <div>
-                <label for="modal_protocol_select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Selecionar Protocolo</label>
-                <select id="modal_protocol_select" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white">
-                    <option value="">-- Selecione um Protocolo --</option>
-                    {% for protocol in available_protocols %}
-                        <option value="{{ protocol.id }}" data-protocol-name="{{ protocol.nome }}">{{ protocol.nome }}</option>
-                    {% endfor %}
-                </select>
+        {# Modal de Confirmação para Desvincular Protocolo #}
+        <div id="confirmRemoveProtocolModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Confirmar Desvinculação</h3>
+                    <button type="button" class="modal-close-btn" data-close-modal="confirmRemoveProtocolModal">&times;</button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-300 mb-4">Tem certeza de que deseja desvincular este protocolo? Todas as tarefas associadas a ele nesta avaliação serão removidas.</p>
+                    <div class="flex justify-center space-x-4">
+                        <button id="confirmRemoveBtn" class="btn btn-danger w-full">Desvincular</button>
+                        <button id="cancelRemoveBtn" class="btn btn-secondary w-full">Cancelar</button>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label for="modal_protocol_level" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nível do Protocolo</label>
-                <select id="modal_protocol_level" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white" disabled>
-                    <option value="">-- Selecione um protocolo primeiro --</option>
-                </select>
-            </div>
-            <button id="modalLinkProtocolBtn" class="btn btn-primary w-full" disabled>
-                <i class="fas fa-link mr-2"></i> Vincular Protocolo
-            </button>
         </div>
+
     </div>
-</div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const patientId = "{{ patient.id }}";
+            const evaluationId = "{{ evaluation.id }}";
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const patientId = "{{ patient.id }}";
-        const evaluationId = "{{ evaluation.id if evaluation else '' }}"; // Pega o ID da avaliação se existir
+            // Elementos do Modal de Vincular Protocolo
+            const linkProtocolModal = document.getElementById('linkProtocolModal');
+            const addProtocolBtn = document.getElementById('addProtocolBtn');
+            const protocolSelect = document.getElementById('protocolSelect');
+            const protocolLevelSelect = document.getElementById('protocolLevelSelect');
+            const linkProtocolForm = document.getElementById('linkProtocolForm');
+            const submitLinkProtocolBtn = document.getElementById('submitLinkProtocolBtn');
 
-        // Botões e elementos para o modal de vincular protocolo
-        const openLinkProtocolModalBtn = document.getElementById('openLinkProtocolModalBtn');
-        const linkProtocolModal = document.getElementById('linkProtocolModal');
-        const modalProtocolSelect = document.getElementById('modal_protocol_select');
-        const modalProtocolLevelInput = document.getElementById('modal_protocol_level'); // Agora é um select
-        const modalLinkProtocolBtn = document.getElementById('modalLinkProtocolBtn');
+            // Elementos do Modal de Confirmação de Desvinculação
+            const confirmRemoveProtocolModal = document.getElementById('confirmRemoveProtocolModal');
+            const confirmRemoveBtn = document.getElementById('confirmRemoveBtn');
+            const cancelRemoveBtn = document.getElementById('cancelRemoveBtn');
+            let protocolToRemoveId = null;
 
-        const finalizeEvaluationBtn = document.getElementById('finalizeEvaluationBtn');
+            // Botão Finalizar Avaliação
+            const finalizeEvaluationBtn = document.getElementById('finalizeEvaluationBtn');
 
-        // Modal de Confirmação para Excluir
-        const confirmDeleteModal = document.getElementById('confirmDeleteModal');
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-        let evaluationToDeleteId = null;
+            // Funções para abrir/fechar modais
+            function openModal(modalElement) {
+                console.log('openModal called for:', modalElement.id);
+                modalElement.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Evita rolagem do corpo
+            }
 
-        // Funções para abrir/fechar modais
-        function openModal(modalElement) {
-            modalElement.classList.add('active');
-            document.body.style.overflow = 'hidden'; // Evita rolagem do corpo
-            console.log(`Modal ${modalElement.id} aberto.`); // Debug
-        }
+            function closeModal(modalElement) {
+                console.log('closeModal called for:', modalElement.id);
+                modalElement.classList.remove('active');
+                document.body.style.overflow = ''; // Restaura rolagem do corpo
+            }
 
-        function closeModal(modalElement) {
-            modalElement.classList.remove('active');
-            document.body.style.overflow = ''; // Restaura rolagem do corpo
-            console.log(`Modal ${modalElement.id} fechado.`); // Debug
-        }
-
-        // Função para mostrar alertas customizados
-        function showCustomAlert(message, title = "Aviso", type = "info") {
-            const modalHtml = `
-                <div id="customAlertDialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
-                    <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-700 transform transition-all duration-300 ease-out scale-95 opacity-0" style="max-width: 400px;">
-                        <div class="mt-3 text-center">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">${title}</h3>
-                            <div class="mt-2 px-7 py-3">
-                                <p class="text-sm text-gray-500 dark:text-gray-300">${message}</p>
-                            </div>
-                            <div class="items-center px-4 py-3">
-                                <button id="customAlertOkBtn" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">OK</button>
+            // Função para mostrar alertas customizados
+            function showCustomAlert(message, title = "Aviso", type = "info") {
+                const modalHtml = `
+                    <div id="customAlertDialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+                        <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-700 transform transition-all duration-300 ease-out scale-95 opacity-0" style="max-width: 400px;">
+                            <div class="mt-3 text-center">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">${title}</h3>
+                                <div class="mt-2 px-7 py-3">
+                                    <p class="text-sm text-gray-500 dark:text-gray-300">${message}</p>
+                                </div>
+                                <div class="items-center px-4 py-3">
+                                    <button id="customAlertOkBtn" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">OK</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            const alertDialog = document.getElementById('customAlertDialog');
-            const modalContent = alertDialog.querySelector('.relative');
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const alertDialog = document.getElementById('customAlertDialog');
+                const modalContent = alertDialog.querySelector('.relative');
 
-            // Animate in
-            setTimeout(() => {
-                modalContent.style.transform = 'scale(1)';
-                modalContent.style.opacity = '1';
-            }, 10);
-
-            const okBtn = document.getElementById('customAlertOkBtn');
-
-            okBtn.addEventListener('click', () => {
-                modalContent.style.transform = 'scale(0.95)';
-                modalContent.style.opacity = '0';
                 setTimeout(() => {
-                    alertDialog.remove();
-                    document.body.style.overflow = '';
-                }, 300); // Match transition duration
-            });
+                    modalContent.style.transform = 'scale(1)';
+                    modalContent.style.opacity = '1';
+                }, 10);
 
-            alertDialog.addEventListener('click', (e) => {
-                if (e.target === alertDialog) {
+                const okBtn = document.getElementById('customAlertOkBtn');
+
+                okBtn.addEventListener('click', () => {
                     modalContent.style.transform = 'scale(0.95)';
                     modalContent.style.opacity = '0';
                     setTimeout(() => {
                         alertDialog.remove();
                         document.body.style.overflow = '';
-                    }, 300); // Match transition duration
+                    }, 300);
+                });
+
+                alertDialog.addEventListener('click', (e) => {
+                    if (e.target === alertDialog) {
+                        modalContent.style.transform = 'scale(0.95)';
+                        modalContent.style.opacity = '0';
+                        setTimeout(() => {
+                            alertDialog.remove();
+                            document.body.style.overflow = '';
+                        }, 300);
+                    }
+                });
+                document.body.style.overflow = 'hidden';
+            }
+
+            function reloadPage() {
+                window.location.reload();
+            }
+
+            // Event listener para abrir o modal de vincular protocolo
+            if (addProtocolBtn) { // Adicionado verificação para garantir que o elemento existe
+                addProtocolBtn.addEventListener('click', () => {
+                    console.log('Botão Vincular Novo Protocolo clicado.');
+                    protocolSelect.value = '';
+                    protocolLevelSelect.innerHTML = '<option value="">-- Selecione um Protocolo Primeiro --</option>';
+                    protocolLevelSelect.disabled = true;
+                    submitLinkProtocolBtn.disabled = true;
+                    openModal(linkProtocolModal);
+                });
+            } else {
+                console.error('Elemento #addProtocolBtn não encontrado.');
+            }
+
+
+            // Event listener para fechar modais
+            document.querySelectorAll('.modal-close-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    closeModal(button.closest('.modal-overlay'));
+                });
+            });
+
+            // Fechar modal ao clicar fora do conteúdo
+            linkProtocolModal.addEventListener('click', (e) => {
+                if (e.target === linkProtocolModal) {
+                    closeModal(linkProtocolModal);
                 }
             });
-            document.body.style.overflow = 'hidden';
-        }
-
-        // Função para recarregar a página após uma ação bem-sucedida
-        function reloadPage() {
-            window.location.reload();
-        }
-
-        // Event listeners para abrir/fechar modais
-        if (openLinkProtocolModalBtn) {
-            openLinkProtocolModalBtn.addEventListener('click', () => {
-                console.log('Botão "Vincular Novo Protocolo" clicado!'); // Debug log
-                openModal(linkProtocolModal);
-            });
-        } else {
-            console.error('Elemento #openLinkProtocolModalBtn não encontrado!'); // Debug error
-        }
-        
-
-        document.querySelectorAll('.modal-close-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                const modalId = button.dataset.closeModal;
-                if (modalId) {
-                    closeModal(document.getElementById(modalId));
+            confirmRemoveProtocolModal.addEventListener('click', (e) => {
+                if (e.target === confirmRemoveProtocolModal) {
+                    closeModal(confirmRemoveProtocolModal);
                 }
             });
-        });
 
-        // Fechar modal ao clicar fora
-        linkProtocolModal?.addEventListener('click', (e) => {
-            if (e.target === linkProtocolModal) {
-                closeModal(linkProtocolModal);
-            }
-        });
-        confirmDeleteModal?.addEventListener('click', (e) => {
-            if (e.target === confirmDeleteModal) {
-                closeModal(confirmDeleteModal);
-            }
-        });
+            // Lógica para carregar níveis do protocolo selecionado
+            protocolSelect.addEventListener('change', async () => {
+                const selectedProtocolId = protocolSelect.value;
+                console.log('Protocolo selecionado:', selectedProtocolId);
+                protocolLevelSelect.innerHTML = '<option value="">Carregando Níveis...</option>';
+                protocolLevelSelect.disabled = true;
+                submitLinkProtocolBtn.disabled = true;
 
-        // Lógica para carregar níveis do protocolo dinamicamente
-        modalProtocolSelect.addEventListener('change', async () => {
-            const selectedProtocolId = modalProtocolSelect.value;
-            modalProtocolLevelInput.innerHTML = '<option value="">Carregando níveis...</option>';
-            modalProtocolLevelInput.disabled = true;
-            modalLinkProtocolBtn.disabled = true;
+                if (selectedProtocolId) {
+                    try {
+                        const response = await fetch(`/api/protocols/${selectedProtocolId}/levels`);
+                        const data = await response.json();
+                        console.log('Resposta da API de níveis:', data);
 
-            if (selectedProtocolId) {
-                try {
-                    const response = await fetch(`/api/protocols/${selectedProtocolId}/levels`);
-                    const data = await response.json();
-
-                    if (data.success) {
-                        modalProtocolLevelInput.innerHTML = ''; // Limpa opções existentes
-                        if (data.levels && data.levels.length > 0) {
+                        protocolLevelSelect.innerHTML = '<option value="">-- Selecione o Nível --</option>';
+                        if (data.success && data.levels && data.levels.length > 0) {
+                            data.levels.sort((a, b) => a.nivel - b.nivel); // Garante a ordem numérica
                             data.levels.forEach(level => {
                                 const option = document.createElement('option');
                                 option.value = level.nivel;
                                 option.textContent = `Nível ${level.nivel} (${level.faixa_etaria || 'N/A'})`;
-                                modalProtocolLevelInput.appendChild(option);
+                                protocolLevelSelect.appendChild(option);
                             });
-                            modalProtocolLevelInput.disabled = false;
-                            modalLinkProtocolBtn.disabled = false;
+                            protocolLevelSelect.disabled = false;
                         } else {
-                            modalProtocolLevelInput.innerHTML = '<option value="">Nenhum nível encontrado para este protocolo</option>';
-                            modalProtocolLevelInput.disabled = true;
-                            modalLinkProtocolBtn.disabled = true;
+                            protocolLevelSelect.innerHTML = '<option value="">Nenhum nível encontrado</option>';
                         }
-                    } else {
-                        modalProtocolLevelInput.innerHTML = '<option value="">Erro ao carregar níveis</option>';
-                        showCustomAlert(data.message, 'Erro', 'danger');
+                    } catch (error) {
+                        console.error('Erro ao carregar níveis do protocolo:', error);
+                        showCustomAlert('Erro ao carregar níveis do protocolo. Por favor, tente novamente.', 'Erro de Carregamento', 'danger');
+                        protocolLevelSelect.innerHTML = '<option value="">Erro ao carregar níveis</option>';
                     }
-                } catch (error) {
-                    console.error('Erro ao buscar níveis do protocolo:', error);
-                    modalProtocolLevelInput.innerHTML = '<option value="">Erro de rede</option>';
-                    showCustomAlert('Erro de rede ao carregar níveis do protocolo.', 'Erro', 'danger');
+                } else {
+                    protocolLevelSelect.innerHTML = '<option value="">-- Selecione um Protocolo Primeiro --</option>';
                 }
-            } else {
-                modalProtocolLevelInput.innerHTML = '<option value="">-- Selecione um protocolo primeiro --</option>';
-                modalProtocolLevelInput.disabled = true;
-                modalLinkProtocolBtn.disabled = true;
-            }
-        });
+            });
 
+            protocolLevelSelect.addEventListener('change', () => {
+                submitLinkProtocolBtn.disabled = !protocolLevelSelect.value;
+            });
 
-        // Vincular Protocolo (dentro do modal)
-        if (modalLinkProtocolBtn) {
-            modalLinkProtocolBtn.addEventListener('click', async () => {
-                const selectedProtocolId = modalProtocolSelect.value;
-                const selectedProtocolName = modalProtocolSelect.options[modalProtocolSelect.selectedIndex].dataset.protocolName;
-                const protocolLevel = modalProtocolLevelInput.value; // Pega o valor do select de níveis
+            // Lógica para vincular protocolo
+            linkProtocolForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('Formulário de vincular protocolo submetido.');
+                submitLinkProtocolBtn.disabled = true;
+                submitLinkProtocolBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Vinculando...';
 
-                if (!selectedProtocolId || !protocolLevel) {
-                    showCustomAlert('Por favor, selecione um protocolo e um nível.', 'Erro', 'warning');
-                    return;
-                }
-                if (!evaluationId) {
-                    showCustomAlert('Nenhuma avaliação atual selecionada. Crie ou selecione uma avaliação primeiro.', 'Erro', 'warning');
-                    return;
-                }
-
-                modalLinkProtocolBtn.disabled = true;
-                modalLinkProtocolBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Vinculando...';
+                const selectedProtocolId = protocolSelect.value;
+                const selectedProtocolName = protocolSelect.options[protocolSelect.selectedIndex].dataset.protocolName;
+                const selectedProtocolLevel = protocolLevelSelect.value;
 
                 try {
                     const response = await fetch('/api/avaliacoes/vincular_protocolo', {
@@ -650,14 +589,15 @@
                             evaluation_id: evaluationId,
                             protocol_id: selectedProtocolId,
                             protocol_name: selectedProtocolName,
-                            protocol_level: parseInt(protocolLevel) // Garante que o nível é um número inteiro
+                            protocol_level: selectedProtocolLevel
                         })
                     });
                     const data = await response.json();
+                    console.log('Resposta da API de vincular protocolo:', data);
                     if (data.success) {
                         showCustomAlert(data.message, 'Sucesso', 'success');
-                        closeModal(linkProtocolModal); // Fecha o modal após sucesso
-                        reloadPage(); // Recarrega para mostrar os novos protocolos vinculados
+                        closeModal(linkProtocolModal);
+                        reloadPage();
                     } else {
                         showCustomAlert(data.message, 'Erro', 'danger');
                     }
@@ -665,103 +605,101 @@
                     console.error('Erro ao vincular protocolo:', error);
                     showCustomAlert('Erro de rede ao vincular protocolo.', 'Erro', 'danger');
                 } finally {
-                    modalLinkProtocolBtn.disabled = false;
-                    modalLinkProtocolBtn.innerHTML = '<i class="fas fa-link mr-2"></i> Vincular Protocolo';
+                    submitLinkProtocolBtn.disabled = false;
+                    submitLinkProtocolBtn.innerHTML = '<i class="fas fa-link mr-2"></i> Vincular Protocolo';
                 }
             });
-        }
 
-        // Finalizar Avaliação (ainda nesta página, afeta a avaliação como um todo)
-        if (finalizeEvaluationBtn) {
-            finalizeEvaluationBtn.addEventListener('click', async () => {
-                if (!evaluationId) {
-                    showCustomAlert('Nenhuma avaliação atual selecionada para finalizar.', 'Erro', 'warning');
-                    return;
-                }
+            // Lógica para finalizar avaliação
+            if (finalizeEvaluationBtn) {
+                finalizeEvaluationBtn.addEventListener('click', async () => {
+                    console.log('Botão Finalizar Avaliação clicado.');
+                    finalizeEvaluationBtn.disabled = true;
+                    finalizeEvaluationBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Finalizando...';
 
-                finalizeEvaluationBtn.disabled = true;
-                finalizeEvaluationBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Finalizando...';
-
-                try {
-                    const response = await fetch(`/api/avaliacoes/finalizar/${patientId}/${evaluationId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                        showCustomAlert(data.message, 'Sucesso', 'success');
-                        reloadPage();
-                    } else {
-                        showCustomAlert(data.message, 'Erro', 'danger');
+                    try {
+                        const response = await fetch(`/api/avaliacoes/finalizar/${patientId}/${evaluationId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+                        console.log('Resposta da API de finalizar avaliação:', data);
+                        if (data.success) {
+                            showCustomAlert(data.message, 'Sucesso', 'success');
+                            reloadPage();
+                        } else {
+                            showCustomAlert(data.message, 'Erro', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao finalizar avaliação:', error);
+                        showCustomAlert('Erro de rede ao finalizar avaliação.', 'Erro', 'danger');
+                    } finally {
+                        finalizeEvaluationBtn.disabled = false;
+                        finalizeEvaluationBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Finalizar Avaliação';
                     }
-                } catch (error) {
-                    console.error('Erro ao finalizar avaliação:', error);
-                    showCustomAlert('Erro de rede ao finalizar avaliação.', 'Erro', 'danger');
-                } finally {
-                    finalizeEvaluationBtn.disabled = false;
-                    finalizeEvaluationBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Finalizar Avaliação';
-                }
-            });
-        }
-
-        // Funções para o modal de exclusão
-        window.confirmDeleteEvaluation = function(pId, eId) {
-            evaluationToDeleteId = eId;
-            confirmDeleteBtn.dataset.patientId = pId; // Armazena patientId no botão de confirmação
-            openModal(confirmDeleteModal);
-        };
-
-        cancelDeleteBtn.addEventListener('click', () => {
-            closeModal(confirmDeleteModal);
-            evaluationToDeleteId = null;
-            confirmDeleteBtn.removeAttribute('data-patient-id');
-        });
-
-        confirmDeleteBtn.addEventListener('click', async () => {
-            const pId = confirmDeleteBtn.dataset.patientId;
-            if (evaluationToDeleteId && pId) {
-                confirmDeleteBtn.disabled = true;
-                confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Excluindo...';
-
-                try {
-                    const response = await fetch(`/api/avaliacoes/excluir/${pId}/${evaluationToDeleteId}`, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                        showCustomAlert(data.message, 'Sucesso', 'success');
-                        reloadPage();
-                    } else {
-                        showCustomAlert(data.message, 'Erro', 'danger');
-                    }
-                } catch (error) {
-                    console.error('Erro ao excluir avaliação:', error);
-                    showCustomAlert('Erro de rede ao excluir avaliação.', 'Erro', 'danger');
-                } finally {
-                    closeModal(confirmDeleteModal);
-                    confirmDeleteBtn.disabled = false;
-                    confirmDeleteBtn.innerHTML = 'Excluir';
-                    evaluationToDeleteId = null;
-                    confirmDeleteBtn.removeAttribute('data-patient-id');
-                }
+                });
             }
-        });
-    });
-</script>
 
-    </div>
+            // Funções para o modal de desvinculação de protocolo
+            window.confirmRemoveLinkedProtocol = function(pId, eId, protoId) {
+                console.log('confirmRemoveLinkedProtocol chamado para:', pId, eId, protoId);
+                protocolToRemoveId = protoId;
+                confirmRemoveBtn.dataset.patientId = pId;
+                confirmRemoveBtn.dataset.evaluationId = eId;
+                openModal(confirmRemoveProtocolModal);
+            };
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Script para fechar as mensagens flash
+            cancelRemoveBtn.addEventListener('click', () => {
+                console.log('Botão Cancelar Desvinculação clicado.');
+                closeModal(confirmRemoveProtocolModal);
+                protocolToRemoveId = null;
+                confirmRemoveBtn.removeAttribute('data-patient-id');
+                confirmRemoveBtn.removeAttribute('data-evaluation-id');
+            });
+
+            confirmRemoveBtn.addEventListener('click', async () => {
+                console.log('Botão Confirmar Desvinculação clicado.');
+                const pId = confirmRemoveBtn.dataset.patientId;
+                const eId = confirmRemoveBtn.dataset.evaluationId;
+                if (protocolToRemoveId && pId && eId) {
+                    confirmRemoveBtn.disabled = true;
+                    confirmRemoveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Desvinculando...';
+
+                    try {
+                        const response = await fetch(`/api/avaliacoes/desvincular_protocolo/${pId}/${eId}/${protocolToRemoveId}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+                        console.log('Resposta da API de desvincular protocolo:', data);
+                        if (data.success) {
+                            showCustomAlert(data.message, 'Sucesso', 'success');
+                            reloadPage();
+                        } else {
+                            showCustomAlert(data.message, 'Erro', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao desvincular protocolo:', error);
+                        showCustomAlert('Erro de rede ao desvincular protocolo.', 'Erro', 'danger');
+                    } finally {
+                        closeModal(confirmRemoveProtocolModal);
+                        confirmRemoveBtn.disabled = false;
+                        confirmRemoveBtn.innerHTML = 'Desvincular';
+                        protocolToRemoveId = null;
+                        confirmRemoveBtn.removeAttribute('data-patient-id');
+                        confirmRemoveBtn.removeAttribute('data-evaluation-id');
+                    }
+                }
+            });
+
+            // Script para fechar as mensagens flash (mantido do base.html)
             document.querySelectorAll('.flash-message .close-flash').forEach(button => {
                 button.addEventListener('click', () => {
                     button.closest('.flash-message').remove();
                 });
             });
 
-            // Auto-hide flash messages after a few seconds
+            // Auto-hide flash messages after a few seconds (mantido do base.html)
             document.querySelectorAll('.flash-message').forEach(message => {
                 setTimeout(() => {
                     message.style.opacity = '0';

@@ -454,20 +454,21 @@ def get_all_protocols_with_items(clinica_id):
         for protocol_doc in protocols_ref.stream():
             protocol_data = convert_doc_to_dict(protocol_doc)
             if protocol_data:
-                protocol_data['items'] = []
-                items_ref = protocols_ref.document(protocol_doc.id).collection('items')
-                for item_doc in items_ref.stream():
-                    item_data = convert_doc_to_dict(item_doc)
-                    if item_data:
-                        protocol_data['items'].append(item_data)
-                
-                # NOVO: Adicionar os níveis do protocolo
+                # Carrega os níveis do protocolo
                 protocol_data['niveis'] = []
                 levels_ref = protocols_ref.document(protocol_doc.id).collection('niveis')
                 for level_doc in levels_ref.order_by('nivel').stream():
                     level_data = convert_doc_to_dict(level_doc)
                     if level_data:
                         protocol_data['niveis'].append(level_data)
+                
+                # Carrega as habilidades do protocolo
+                protocol_data['habilidades'] = []
+                abilities_ref = protocols_ref.document(protocol_doc.id).collection('habilidades')
+                for ability_doc in abilities_ref.order_by('nome').stream():
+                    ability_data = convert_doc_to_dict(ability_doc)
+                    if ability_data:
+                        protocol_data['habilidades'].append(ability_data)
 
                 protocols_list.append(protocol_data)
     except Exception as e:
@@ -492,13 +493,21 @@ def get_protocol_by_id(clinica_id, protocol_id):
                 if level_data:
                     protocol_data['niveis'].append(level_data)
 
-            # Adicionar os itens do protocolo
-            protocol_data['items'] = []
-            items_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id).collection('items')
+            # Adicionar as habilidades do protocolo
+            protocol_data['habilidades'] = []
+            abilities_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id).collection('habilidades')
+            for ability_doc in abilities_ref.order_by('nome').stream():
+                ability_data = convert_doc_to_dict(ability_doc)
+                if ability_data:
+                    protocol_data['habilidades'].append(ability_data)
+
+            # Adicionar os itens do protocolo (tarefas_testes)
+            protocol_data['tarefas_testes'] = []
+            items_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id).collection('tarefas_testes')
             for item_doc in items_ref.stream():
                 item_data = convert_doc_to_dict(item_doc)
                 if item_data:
-                    protocol_data['items'].append(item_data)
+                    protocol_data['tarefas_testes'].append(item_data)
 
             return protocol_data
     except Exception as e:
@@ -507,12 +516,12 @@ def get_protocol_by_id(clinica_id, protocol_id):
 
 def get_protocol_items_by_protocol_id(clinica_id, protocol_id):
     """
-    Retorna todos os itens de um protocolo específico.
+    Retorna todos os itens (tarefas_testes) de um protocolo específico.
     """
     db = get_db()
     items_list = []
     try:
-        items_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id).collection('items')
+        items_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id).collection('tarefas_testes')
         for item_doc in items_ref.stream():
             item_data = convert_doc_to_dict(item_doc)
             if item_data:
@@ -561,10 +570,19 @@ def add_protocol_to_evaluation(clinica_id, patient_id, evaluation_id, protocol_i
     Vincula um protocolo a uma avaliação existente e copia seus itens como tarefas.
     """
     db = get_db()
-    evaluation_protocols_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).collection('protocolos_vinculados')
-    evaluation_tasks_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).collection('tarefas_avaliadas')
+    evaluation_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id)
+    evaluation_protocols_ref = evaluation_ref.collection('protocolos_vinculados')
+    evaluation_tasks_ref = evaluation_ref.collection('tarefas_avaliadas')
 
     try:
+        # Check if a protocol with the same ID and LEVEL is already linked.
+        existing_links_query = evaluation_protocols_ref.where(filter=FieldFilter('protocol_id', '==', protocol_id))\
+                                                        .where(filter=FieldFilter('protocol_level', '==', protocol_level)).limit(1).stream()
+        
+        if len(list(existing_links_query)) > 0:
+            print(f"Protocolo {protocol_id} com nível {protocol_level} já está vinculado à avaliação {evaluation_id}.")
+            return False # Indicate that it's already linked
+
         # Adiciona o protocolo vinculado
         protocol_link_data = {
             'protocol_id': protocol_id,
@@ -572,18 +590,20 @@ def add_protocol_to_evaluation(clinica_id, patient_id, evaluation_id, protocol_i
             'protocol_level': protocol_level,
             'data_vinculacao': firestore.SERVER_TIMESTAMP
         }
-        evaluation_protocols_ref.document(protocol_id).set(protocol_link_data) # Usa o ID do protocolo como ID do documento para evitar duplicatas
+        # Use add() instead of document(protocol_id).set() to allow multiple links of the same protocol at different levels
+        _, linked_protocol_doc_ref = evaluation_protocols_ref.add(protocol_link_data) # Firestore generates a new ID
 
-        # Copia os itens do protocolo como tarefas para a avaliação, filtrando pelo nível
+        # Copia os itens do protocolo como tarefas para a avaliação, filtering by level
         protocol_items = get_protocol_items_by_protocol_id(clinica_id, protocol_id)
         
-        # Filtrar tarefas pelo nível selecionado, garantindo que ambos são inteiros para comparação
+        # Filter tasks by the selected level, ensuring both are integers for comparison
         filtered_items = [item for item in protocol_items if int(item.get('nivel', 0)) == int(protocol_level)]
 
         for item in filtered_items:
             task_data = {
-                'protocol_id': protocol_id,
-                'protocol_item_id': item['id'],
+                'protocol_id': protocol_id, # Master protocol ID
+                'linked_protocol_instance_id': linked_protocol_doc_ref.id, # Link to the specific linked protocol instance
+                'protocol_item_id': item['id'], # Original protocol item ID
                 'nivel': item.get('nivel'),
                 'item_numero': item.get('item'),
                 'nome_tarefa': item.get('nome'),
@@ -598,7 +618,7 @@ def add_protocol_to_evaluation(clinica_id, patient_id, evaluation_id, protocol_i
                 'status': 'pendente', # 'pendente', 'respondida'
                 'created_at': firestore.SERVER_TIMESTAMP
             }
-            evaluation_tasks_ref.add(task_data) # Firestore gera um novo ID para cada tarefa avaliada
+            evaluation_tasks_ref.add(task_data) # Firestore generates a new ID for each evaluated task
         return True
     except Exception as e:
         print(f"Erro ao vincular protocolo {protocol_id} à avaliação {evaluation_id} do paciente {patient_id}: {e}")
@@ -626,7 +646,8 @@ def get_evaluation_details(clinica_id, patient_id, evaluation_id):
             # Buscar tarefas avaliadas
             evaluation_data['tarefas_avaliadas'] = []
             tasks_ref = eval_doc.reference.collection('tarefas_avaliadas')
-            for task_doc in tasks_ref.order_by('nivel').order_by('item_numero').stream(): # Ordena por nível e número do item
+            # Ordena por protocol_id, nivel, e item_numero para consistência
+            for task_doc in tasks_ref.order_by('protocol_id').order_by('nivel').order_by('item_numero').stream(): 
                 task_data = convert_doc_to_dict(task_doc)
                 if task_data and task_data.get('data_resposta'):
                     task_data['data_resposta_fmt'] = format_firestore_timestamp(task_data['data_resposta'])
@@ -692,3 +713,28 @@ def delete_evaluation(clinica_id, patient_id, evaluation_id):
         print(f"Erro ao excluir avaliação {evaluation_id} do paciente {patient_id}: {e}")
         return False
 
+def delete_linked_protocol_and_tasks(clinica_id, patient_id, evaluation_id, linked_protocol_instance_id_to_remove): # Changed parameter name
+    """
+    Desvincula um protocolo de uma avaliação e remove APENAS as tarefas
+    associadas a ESSE protocolo e nível específico da subcoleção 'tarefas_avaliadas'.
+    """
+    db = get_db()
+    evaluation_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id)
+    
+    try:
+        # 1. Excluir o documento do protocolo vinculado na subcoleção 'protocolos_vinculados'
+        linked_protocol_doc_ref = evaluation_ref.collection('protocolos_vinculados').document(linked_protocol_instance_id_to_remove) # Use instance ID
+        linked_protocol_doc_ref.delete()
+
+        # 2. Excluir as tarefas associadas a este protocolo na subcoleção 'tarefas_avaliadas'
+        tasks_to_delete_query = evaluation_ref.collection('tarefas_avaliadas').where(
+            filter=FieldFilter('linked_protocol_instance_id', '==', linked_protocol_instance_id_to_remove) # Filter by instance ID
+        )
+        
+        for task_doc in tasks_to_delete_query.stream():
+            task_doc.reference.delete()
+        
+        return True
+    except Exception as e:
+        print(f"Erro ao desvincular protocolo {linked_protocol_instance_id_to_remove} da avaliação {evaluation_id} do paciente {patient_id}: {e}")
+        return False

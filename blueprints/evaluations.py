@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request, jsonify
 # Importar login_required e admin_required do utils
-from utils import login_required, admin_required, get_db, convert_doc_to_dict, SAO_PAULO_TZ, parse_date_input, get_all_protocols_with_items, get_patient_evaluations, create_evaluation, add_protocol_to_evaluation, get_evaluation_details, save_evaluation_task_response, update_evaluation_status, delete_evaluation, get_protocol_by_id
+from utils import login_required, admin_required, get_db, convert_doc_to_dict, SAO_PAULO_TZ, parse_date_input, get_all_protocols_with_items, get_patient_evaluations, create_evaluation, add_protocol_to_evaluation, get_evaluation_details, save_evaluation_task_response, update_evaluation_status, delete_evaluation, get_protocol_by_id, delete_linked_protocol_and_tasks 
 import datetime
 import json
 from reportlab.lib.pagesizes import letter
@@ -9,6 +9,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.colors import black
 import io
+from google.cloud import firestore # Importar firestore aqui
 
 evaluations_bp = Blueprint('evaluations', __name__)
 
@@ -27,21 +28,26 @@ def list_patients_for_evaluation():
             paciente_data = convert_doc_to_dict(doc)
             if paciente_data:
                 # Adiciona as avaliações recentes do paciente para exibição
-                paciente_data['avaliacoes_recentes'] = get_patient_evaluations(clinica_id, paciente_data['id'])
+                # Para evitar carregar todas as tarefas aqui, apenas a data da última avaliação
+                recent_evaluations = get_patient_evaluations(clinica_id, paciente_data['id'])
+                if recent_evaluations:
+                    paciente_data['ultima_avaliacao'] = recent_evaluations[0].get('data_avaliacao')
+                else:
+                    paciente_data['ultima_avaliacao'] = None
                 pacientes_lista.append(paciente_data)
     except Exception as e:
         flash(f'Erro ao carregar pacientes para avaliação: {e}', 'danger')
         print(f"Erro em list_patients_for_evaluation: {e}")
     
-    # Passa a data e hora atuais para o template
     return render_template('avaliacoes.html', pacientes=pacientes_lista, now=datetime.datetime.now(SAO_PAULO_TZ))
 
 @evaluations_bp.route('/avaliacoes/paciente/<patient_id>', methods=['GET'])
 @login_required
 def patient_evaluation_page(patient_id):
     """
-    Exibe a página de avaliação de um paciente específico, listando avaliações existentes
-    e permitindo criar novas.
+    Exibe a página de avaliações de um paciente específico, listando avaliações existentes
+    e permitindo criar novas. Esta página agora será o ponto de entrada para gerenciar
+    múltiplas avaliações para um paciente.
     """
     db = get_db()
     clinica_id = session['clinica_id']
@@ -51,6 +57,13 @@ def patient_evaluation_page(patient_id):
         patient_doc = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).get()
         if patient_doc.exists:
             patient_data = convert_doc_to_dict(patient_doc)
+            # Formatar a data de nascimento para exibição
+            if patient_data.get('data_nascimento') and isinstance(patient_data['data_nascimento'], datetime.datetime):
+                patient_data['data_nascimento_fmt'] = patient_data['data_nascimento'].strftime('%d/%m/%Y')
+            elif patient_data.get('data_nascimento') and isinstance(patient_data['data_nascimento'], datetime.date):
+                patient_data['data_nascimento_fmt'] = patient_data['data_nascimento'].strftime('%d/%m/%Y')
+            else:
+                patient_data['data_nascimento_fmt'] = 'N/A'
         else:
             flash('Paciente não encontrado.', 'danger')
             return redirect(url_for('evaluations.list_patients_for_evaluation'))
@@ -62,15 +75,15 @@ def patient_evaluation_page(patient_id):
     # Obter todas as avaliações do paciente
     evaluations = get_patient_evaluations(clinica_id, patient_id)
     
-    # Obter todos os protocolos disponíveis para vincular
+    # Obter todos os protocolos disponíveis para vincular (agora para o modal de criação)
     available_protocols = get_all_protocols_with_items(clinica_id)
 
-    # Passa a data e hora atuais para o template
+    # Renderiza a página principal de avaliações do paciente (que lista as avaliações)
     return render_template(
-        'avaliacao_paciente.html',
+        'avaliacao_paciente.html', # Este é o template que lista as avaliações do paciente
         patient=patient_data,
         evaluations=evaluations,
-        available_protocols=available_protocols,
+        available_protocols=available_protocols, # Pode ser útil para o modal de criação
         now=datetime.datetime.now(SAO_PAULO_TZ)
     )
 
@@ -79,6 +92,7 @@ def patient_evaluation_page(patient_id):
 def create_new_evaluation(patient_id):
     """
     Cria uma nova avaliação para o paciente.
+    Esta rota agora apenas cria a avaliação principal, sem vincular protocolos imediatamente.
     """
     clinica_id = session['clinica_id']
     professional_id = session.get('user_uid') # Ou o ID do profissional associado ao user_uid
@@ -97,6 +111,7 @@ def create_new_evaluation(patient_id):
 
     if new_evaluation_id:
         flash('Nova avaliação criada com sucesso!', 'success')
+        # Redireciona para a página de detalhes da avaliação recém-criada
         return redirect(url_for('evaluations.view_evaluation', patient_id=patient_id, evaluation_id=new_evaluation_id))
     else:
         flash('Erro ao criar nova avaliação.', 'danger')
@@ -107,12 +122,13 @@ def create_new_evaluation(patient_id):
 def view_evaluation(patient_id, evaluation_id):
     """
     Visualiza os detalhes de uma avaliação específica, exibindo os protocolos vinculados como cards.
+    Esta rota agora renderiza 'avaliacao_detalhes.html'.
     """
     clinica_id = session['clinica_id']
     
     patient_data = None
     evaluation_details = None
-    available_protocols = []
+    available_protocols = [] # Para o modal de vincular novo protocolo
 
     try:
         patient_doc = get_db().collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).get()
@@ -133,7 +149,7 @@ def view_evaluation(patient_id, evaluation_id):
         else:
             evaluation_details['data_avaliacao_fmt'] = 'N/A'
 
-        # Modificado para obter os níveis junto com os protocolos
+        # Obter todos os protocolos disponíveis para vincular (para o modal)
         available_protocols = get_all_protocols_with_items(clinica_id)
 
     except Exception as e:
@@ -141,18 +157,18 @@ def view_evaluation(patient_id, evaluation_id):
         print(f"Erro em view_evaluation para paciente {patient_id}, avaliação {evaluation_id}: {e}")
         return redirect(url_for('evaluations.patient_evaluation_page', patient_id=patient_id))
 
-    # Passa a data e hora atuais para o template
+    # Renderiza o novo template de detalhes da avaliação
     return render_template(
-        'avaliacao_detalhes.html',
+        'avaliacao_detalhes.html', # NOVO TEMPLATE
         patient=patient_data,
         evaluation=evaluation_details,
         available_protocols=available_protocols,
         now=datetime.datetime.now(SAO_PAULO_TZ)
     )
 
-@evaluations_bp.route('/avaliacoes/<patient_id>/<evaluation_id>/protocol/<linked_protocol_id>', methods=['GET'])
+@evaluations_bp.route('/avaliacoes/<patient_id>/<evaluation_id>/protocol/<linked_protocol_instance_id>', methods=['GET']) 
 @login_required
-def view_protocol_tasks(patient_id, evaluation_id, linked_protocol_id):
+def view_protocol_tasks(patient_id, evaluation_id, linked_protocol_instance_id): 
     """
     Exibe as tarefas de um protocolo específico vinculado a uma avaliação.
     """
@@ -164,6 +180,7 @@ def view_protocol_tasks(patient_id, evaluation_id, linked_protocol_id):
     protocol_data = None
     tasks = []
     linked_protocol_level = None
+    protocol_abilities = []
 
     try:
         # 1. Obter dados do paciente
@@ -186,60 +203,61 @@ def view_protocol_tasks(patient_id, evaluation_id, linked_protocol_id):
         else:
             evaluation_details['data_avaliacao_fmt'] = 'N/A'
 
-        # 3. Obter dados do protocolo (apenas o nome, etc., do protocolo mestre)
-        protocol_data = get_protocol_by_id(clinica_id, linked_protocol_id)
-        if not protocol_data:
-            flash('Protocolo não encontrado.', 'danger')
-            return redirect(url_for('evaluations.view_evaluation', patient_id=patient_id, evaluation_id=evaluation_id))
-
-        # 4. Encontrar o nível do protocolo vinculado nesta avaliação
+        # Find the specific linked protocol instance to get its master protocol_id and level
+        current_linked_protocol = None
         for linked_proto in evaluation_details.get('protocolos_vinculados', []):
-            if linked_proto.get('protocol_id') == linked_protocol_id:
-                linked_protocol_level = linked_proto.get('protocol_level')
+            if linked_proto.get('id') == linked_protocol_instance_id: # Match by instance ID
+                current_linked_protocol = linked_proto
+                linked_protocol_level = current_linked_protocol.get('protocol_level')
+                master_protocol_id = current_linked_protocol.get('protocol_id')
                 break
         
-        if linked_protocol_level is None:
-            flash('Nível do protocolo vinculado não encontrado para esta avaliação.', 'danger')
+        if not current_linked_protocol or linked_protocol_level is None or master_protocol_id is None:
+            flash('Protocolo vinculado ou nível não encontrado para esta avaliação.', 'danger')
             return redirect(url_for('evaluations.view_evaluation', patient_id=patient_id, evaluation_id=evaluation_id))
 
+        # 3. Obter dados do protocolo (mestre) e suas habilidades using master_protocol_id
+        protocol_data = get_protocol_by_id(clinica_id, master_protocol_id) # Use master_protocol_id here
+        if not protocol_data:
+            flash('Protocolo mestre não encontrado.', 'danger')
+            return redirect(url_for('evaluations.view_evaluation', patient_id=patient_id, evaluation_id=evaluation_id))
+        
+        # Carregar habilidades do protocolo mestre para o filtro
+        protocol_abilities_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(master_protocol_id).collection('habilidades') # Use master_protocol_id here
+        for ability_doc in protocol_abilities_ref.order_by('nome').stream():
+            ability_data = convert_doc_to_dict(ability_doc)
+            if ability_data:
+                protocol_abilities.append(ability_data)
+
         # 5. Obter as tarefas específicas para este protocolo e nível dentro da avaliação
-        # As tarefas já estão carregadas em evaluation_details['tarefas_avaliadas']
-        # Precisamos filtrar por protocol_id e nivel
+        # Agora, a filtragem das tarefas é feita diretamente na subcoleção 'tarefas_avaliadas'
+        # usando o 'linked_protocol_instance_id'
+        tasks_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).collection('tarefas_avaliadas')
         
-        # Adicionando logs de depuração para entender o que está sendo filtrado
-        print(f"DEBUG (view_protocol_tasks): linked_protocol_id: {linked_protocol_id} (type: {type(linked_protocol_id)})")
-        print(f"DEBUG (view_protocol_tasks): linked_protocol_level: {linked_protocol_level} (type: {type(linked_protocol_level)})")
-        print(f"DEBUG (view_protocol_tasks): Total tasks in evaluation_details: {len(evaluation_details.get('tarefas_avaliadas', []))}")
+        # Query tasks by linked_protocol_instance_id
+        tasks_query = tasks_ref.where(
+            filter=firestore.FieldFilter('linked_protocol_instance_id', '==', linked_protocol_instance_id)
+        ).order_by('nivel').order_by('item_numero')
 
-        tasks = []
-        for task in evaluation_details.get('tarefas_avaliadas', []):
-            task_protocol_id = task.get('protocol_id')
-            task_nivel = task.get('nivel')
+        for task_doc in tasks_query.stream():
+            task_data = convert_doc_to_dict(task_doc)
+            if task_data and task_data.get('data_resposta'):
+                task_data['data_resposta_fmt'] = task_data['data_resposta'].strftime('%d/%m/%Y %H:%M')
+            tasks.append(task_data)
             
-            print(f"DEBUG (view_protocol_tasks): Task ID: {task.get('id')}, Protocol ID: {task_protocol_id} (type: {type(task_protocol_id)}), Nivel: {task_nivel} (type: {type(task_nivel)})")
-
-            # Garante que a comparação de nível seja entre inteiros
-            try:
-                if task_protocol_id == linked_protocol_id and int(task_nivel) == int(linked_protocol_level):
-                    tasks.append(task)
-            except (ValueError, TypeError) as e:
-                print(f"DEBUG (view_protocol_tasks): Erro de conversão de tipo para nível na tarefa {task.get('id')}: {e}")
-                continue # Pula esta tarefa se o nível não puder ser convertido para int
-        
-        print(f"DEBUG (view_protocol_tasks): Tasks filtered for display: {len(tasks)}")
-
     except Exception as e:
         flash(f'Erro ao carregar tarefas do protocolo: {e}', 'danger')
-        print(f"Erro em view_protocol_tasks para paciente {patient_id}, avaliação {evaluation_id}, protocolo {linked_protocol_id}: {e}")
+        print(f"Erro em view_protocol_tasks para paciente {patient_id}, avaliação {evaluation_id}, instância de protocolo {linked_protocol_instance_id}: {e}")
         return redirect(url_for('evaluations.view_evaluation', patient_id=patient_id, evaluation_id=evaluation_id))
 
     return render_template(
         'avaliacao_protocolo_tarefas.html',
         patient=patient_data,
         evaluation=evaluation_details,
-        protocol=protocol_data, # O protocolo mestre
-        linked_protocol_level=linked_protocol_level, # O nível específico vinculado
-        tasks=tasks, # As tarefas filtradas
+        protocol=protocol_data,
+        linked_protocol_level=linked_protocol_level,
+        tasks=tasks,
+        protocol_abilities=protocol_abilities,
         now=datetime.datetime.now(SAO_PAULO_TZ)
     )
 
@@ -315,7 +333,8 @@ def api_save_task_response():
     additional_info = data.get('additional_info', '')
     clinica_id = session['clinica_id']
 
-    if not all([patient_id, evaluation_id, task_id, response_value]):
+    # Alterado para permitir response_value vazio, mas ainda requer os outros campos
+    if not all([patient_id, evaluation_id, task_id]):
         return jsonify({'success': False, 'message': 'Dados incompletos para salvar resposta da tarefa.'}), 400
 
     success = save_evaluation_task_response(clinica_id, patient_id, evaluation_id, task_id, response_value, additional_info)
@@ -354,6 +373,21 @@ def api_delete_evaluation(patient_id, evaluation_id):
     else:
         return jsonify({'success': False, 'message': 'Erro ao excluir avaliação.'}), 500
 
+@evaluations_bp.route('/api/avaliacoes/desvincular_protocolo/<patient_id>/<evaluation_id>/<linked_protocol_instance_id>', methods=['DELETE']) 
+@login_required
+def api_remove_linked_protocol(patient_id, evaluation_id, linked_protocol_instance_id): 
+    """
+    API para desvincular um protocolo de uma avaliação e remover suas tarefas associadas.
+    """
+    clinica_id = session['clinica_id']
+    success = delete_linked_protocol_and_tasks(clinica_id, patient_id, evaluation_id, linked_protocol_instance_id) 
+
+    if success:
+        return jsonify({'success': True, 'message': 'Protocolo desvinculado e tarefas removidas com sucesso!'})
+    else:
+        return jsonify({'success': False, 'message': 'Erro ao desvincular protocolo.'}), 500
+
+
 @evaluations_bp.route('/avaliacoes/gerar_pdf/<patient_id>/<evaluation_id>', methods=['GET'])
 @login_required
 def generate_evaluation_pdf(patient_id, evaluation_id):
@@ -375,7 +409,7 @@ def generate_evaluation_pdf(patient_id, evaluation_id):
     styles = getSampleStyleSheet()
 
     # Estilos personalizados
-    styles.add(ParagraphStyle(name='TitleStyle', fontSize=24, leading=28, alignment=TA_CENTER, spaceAfter=20, fontName='Helvetica-Bold'))
+    styles.add(ParagraphStyle(name='TitleStyle', fontSize=24, leading=28, alignment=TA_CENTER, fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='Heading1', fontSize=18, leading=22, spaceAfter=14, fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='Heading2', fontSize=14, leading=18, spaceAfter=10, fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='Normal', fontSize=10, leading=12, spaceAfter=6))
@@ -393,7 +427,11 @@ def generate_evaluation_pdf(patient_id, evaluation_id):
     # Informações do Paciente
     story.append(Paragraph("Informações do Paciente:", styles['Heading1']))
     story.append(Paragraph(f"Nome: {patient_name}", styles['Normal']))
-    story.append(Paragraph(f"Data de Nascimento: {patient_data.to_dict().get('data_nascimento_fmt', 'N/A') if patient_data.exists else 'N/A'}", styles['Normal']))
+    patient_dob = patient_data.to_dict().get('data_nascimento')
+    if patient_dob and isinstance(patient_dob, datetime.datetime):
+        story.append(Paragraph(f"Data de Nascimento: {patient_dob.strftime('%d/%m/%Y')}", styles['Normal']))
+    else:
+        story.append(Paragraph("Data de Nascimento: N/A", styles['Normal']))
     story.append(Paragraph(f"Status da Avaliação: {evaluation_details.get('status', 'N/A').capitalize()}", styles['Normal']))
     story.append(Spacer(1, 0.4 * inch))
 
@@ -448,4 +486,3 @@ def generate_evaluation_pdf(patient_id, evaluation_id):
         'Content-Type': 'application/pdf',
         'Content-Disposition': f'attachment; filename=avaliacao_{patient_name.replace(" ", "_")}_{evaluation_id}.pdf'
     }
-

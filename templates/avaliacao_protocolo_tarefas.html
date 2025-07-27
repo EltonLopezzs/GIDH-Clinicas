@@ -277,6 +277,31 @@
             background-color: var(--bg); /* Fundo mais claro para o textarea */
             color: var(--text);
         }
+
+        /* Progress Bar */
+        .progress-bar-container {
+            width: 100%;
+            background-color: var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            height: 1.5rem;
+            background-color: var(--success);
+            width: 0%;
+            border-radius: 0.5rem;
+            transition: width 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
@@ -294,6 +319,9 @@
                 Tarefas do Protocolo: {{ protocol.nome }} (Nível: {{ linked_protocol_level }})
             </h1>
             <div class="flex-grow"></div> {# Espaçador #}
+            <button id="exportPdfBtn" class="btn btn-secondary ml-4">
+                <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
+            </button>
         </header>
 
         <div class="flash-messages">
@@ -317,13 +345,32 @@
 
         <div class="container mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-6">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Tarefas do Protocolo: {{ protocol.nome }}</h1>
-            <p class="text-gray-700 dark:text-gray-300 mb-6">Paciente: {{ patient.nome }} | Avaliação: {{ evaluation.data_avaliacao_fmt }}</p>
-            <p class="text-gray-700 dark:text-gray-300 mb-6">Nível do Protocolo: {{ linked_protocol_level }}</p>
+            <p class="text-gray-700 dark:text-gray-300 mb-2">Paciente: {{ patient.nome }} | Avaliação: {{ evaluation.data_avaliacao_fmt }}</p>
+            <p class="text-gray-700 dark:text-gray-300 mb-6">Nível do Protocolo: <span class="font-semibold">{{ linked_protocol_level }}</span></p>
 
-            <div class="space-y-6">
+            {# Filtros e Progresso #}
+            <div class="flex flex-col md:flex-row items-center justify-between mb-6 space-y-4 md:space-y-0 md:space-x-4">
+                <div class="w-full md:w-1/2">
+                    <label for="abilityFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Selecione a Habilidade</label>
+                    <select id="abilityFilter" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white">
+                        <option value="all">Todas</option>
+                        {% for ability in protocol_abilities %}
+                            <option value="{{ ability.nome }}">{{ ability.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="w-full md:w-1/2">
+                    <p class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Progresso da Avaliação</p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tasksContainer" class="space-y-6">
                 {% if tasks %}
                     {% for task in tasks %}
-                    <div class="task-card {{ 'completed' if task.status == 'respondida' else 'pending' }}">
+                    <div class="task-card" data-habilidade="{{ task.habilidade_marco | default('') }}">
                         <p class="font-semibold text-gray-900 dark:text-white mb-2">Item {{ task.item_numero }}: {{ task.nome_tarefa }}</p>
                         {% if task.habilidade_marco %}<p class="text-sm text-gray-600 dark:text-gray-400">Habilidade/Marco: {{ task.habilidade_marco }}</p>{% endif %}
                         {% if task.exemplo %}<p class="text-sm text-gray-600 dark:text-gray-400">Exemplo: {{ task.exemplo }}</p>{% endif %}
@@ -345,8 +392,8 @@
                                 <span class="ml-2 text-gray-700 dark:text-gray-300">Sempre</span>
                             </label>
                         </div>
-                        <textarea data-task-id="{{ task.id }}" class="additional-info-textarea mt-3 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white" rows="2" placeholder="Informações adicionais...">{{ task.additional_info }}</textarea>
-                            </div>
+                        <textarea data-task-id="{{ task.id }}" class="additional-info-textarea mt-3 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white" rows="2" placeholder="Informações adicionais...">{{ task.additional_info | default('') }}</textarea>
+                    </div>
                     {% endfor %}
                 {% else %}
                     <p class="text-gray-500 dark:text-gray-400">Nenhuma tarefa encontrada para este protocolo e nível nesta avaliação.</p>
@@ -368,9 +415,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             const patientId = "{{ patient.id }}";
             const evaluationId = "{{ evaluation.id }}";
-            const linkedProtocolId = "{{ protocol.id }}";
+            const linkedProtocolId = "{{ protocol.id }}"; // This is the master protocol ID
 
             const saveTasksBtn = document.getElementById('saveTasksBtn');
+            const exportPdfBtn = document.getElementById('exportPdfBtn');
+            const abilityFilter = document.getElementById('abilityFilter');
+            const tasksContainer = document.getElementById('tasksContainer');
+            const progressBar = document.getElementById('progressBar');
+            const taskCards = Array.from(document.querySelectorAll('.task-card')); // All task cards
 
             function showCustomAlert(message, title = "Aviso", type = "info") {
                 const modalHtml = `
@@ -425,13 +477,46 @@
                 window.location.reload();
             }
 
+            // Function to update progress bar
+            function updateProgressBar() {
+                const totalTasks = taskCards.length;
+                if (totalTasks === 0) {
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '0%';
+                    return;
+                }
+
+                let completedTasks = 0;
+                taskCards.forEach(card => {
+                    const selectedResponse = card.querySelector(`input[name="response_${card.querySelector('.additional-info-textarea').dataset.taskId}"]:checked`);
+                    if (selectedResponse && selectedResponse.value !== '') {
+                        completedTasks++;
+                    }
+                });
+
+                const percentage = (completedTasks / totalTasks) * 100;
+                progressBar.style.width = `${percentage.toFixed(0)}%`;
+                progressBar.textContent = `${percentage.toFixed(0)}%`;
+            }
+
+            // Initial progress bar update
+            updateProgressBar();
+
+            // Event listener for radio button changes to update progress
+            tasksContainer.addEventListener('change', (event) => {
+                if (event.target.type === 'radio') {
+                    updateProgressBar();
+                }
+            });
+
+
             if (saveTasksBtn) {
                 saveTasksBtn.addEventListener('click', async () => {
                     saveTasksBtn.disabled = true;
                     saveTasksBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Salvando...';
 
                     const tasksToSave = [];
-                    document.querySelectorAll('.task-card').forEach(taskDiv => {
+                    taskCards.forEach(taskDiv => {
                         const taskId = taskDiv.querySelector('.additional-info-textarea').dataset.taskId;
                         const selectedResponse = taskDiv.querySelector(`input[name="response_${taskId}"]:checked`);
                         const additionalInfo = taskDiv.querySelector('.additional-info-textarea').value;
@@ -466,7 +551,7 @@
 
                         if (allSuccess) {
                             showCustomAlert('Tarefas salvas com sucesso!', 'Sucesso', 'success');
-                            reloadPage();
+                            // No reloadPage() here, as it's handled by the success alert's OK button
                         } else {
                             showCustomAlert('Ocorreram erros ao salvar algumas tarefas. Verifique o console para detalhes.', 'Erro', 'danger');
                         }
@@ -478,6 +563,26 @@
                         saveTasksBtn.disabled = false;
                         saveTasksBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Salvar Tarefas';
                     }
+                });
+            }
+
+            // Filter tasks by ability
+            abilityFilter.addEventListener('change', () => {
+                const selectedAbility = abilityFilter.value;
+                taskCards.forEach(card => {
+                    const taskAbility = card.dataset.habilidade;
+                    if (selectedAbility === 'all' || taskAbility === selectedAbility) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+
+            // Export PDF button
+            if (exportPdfBtn) {
+                exportPdfBtn.addEventListener('click', () => {
+                    window.open(`/avaliacoes/gerar_pdf/${patientId}/${evaluationId}`, '_blank');
                 });
             }
         });
