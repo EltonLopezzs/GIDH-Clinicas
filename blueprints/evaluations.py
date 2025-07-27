@@ -27,13 +27,9 @@ def list_patients_for_evaluation():
         for doc in pacientes_docs:
             paciente_data = convert_doc_to_dict(doc)
             if paciente_data:
-                # Adiciona as avaliações recentes do paciente para exibição
-                # Para evitar carregar todas as tarefas aqui, apenas a data da última avaliação
+                # Adiciona TODAS as avaliações recentes do paciente para que o frontend possa ordenar
                 recent_evaluations = get_patient_evaluations(clinica_id, paciente_data['id'])
-                if recent_evaluations:
-                    paciente_data['ultima_avaliacao'] = recent_evaluations[0].get('data_avaliacao')
-                else:
-                    paciente_data['ultima_avaliacao'] = None
+                paciente_data['avaliacoes_recentes'] = recent_evaluations if recent_evaluations else []
                 pacientes_lista.append(paciente_data)
     except Exception as e:
         flash(f'Erro ao carregar pacientes para avaliação: {e}', 'danger')
