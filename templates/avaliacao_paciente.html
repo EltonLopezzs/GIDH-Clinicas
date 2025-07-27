@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliações de {{ patient.nome }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding-left: 16.25rem; /* Largura padrão da sidebar */
+            transition: padding-left 0.3s ease;
+        }
+        .main-content.collapsed {
+            padding-left: 5.5rem; /* Largura da sidebar colapsada */
+        }
+        .flash-messages {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1050;
+            width: 90%;
+            max-width: 400px;
+        }
+        .flash-message {
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(-20px);
+            animation: fadeInDown 0.5s forwards;
+        }
+        .flash-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-message.danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash-message.warning {
+            background-color: #fff3cd;
+            color: #664d03;
+            border: 1px solid #ffecb5;
+        }
+        .flash-message i {
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .close-flash {
+            margin-left: auto;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: inherit;
+            opacity: 0.7;
+        }
+        .close-flash:hover {
+            opacity: 1;
+        }
+
+        /* Classes para botões padrão */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: var(--muted);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: color-mix(in srgb, var(--muted) 80%, black);
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: color-mix(in srgb, var(--danger) 80%, black);
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: color-mix(in srgb, var(--success) 80%, black);
+            transform: translateY(-1px);
+        }
+        .btn-info {
+            background-color: var(--info);
+            color: white;
+        }
+        .btn-info:hover {
+            background-color: color-mix(in srgb, var(--info) 80%, black);
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background-color: transparent;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .btn-outline:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+    {% include 'Nav.html' %} {# Inclui a barra de navegação #}
+
+    <div class="main-content">
+        <header class="bg-white dark:bg-gray-800 shadow-sm py-4 px-6 flex items-center justify-between sticky top-0 z-10">
+            <button class="menu-btn-mobile md:hidden text-gray-600 dark:text-gray-300 text-2xl">
+                <i class="fas fa-bars"></i>
+            </button>
+            <button class="toggle-btn-desktop hidden md:block text-gray-600 dark:text-gray-300 text-2xl">
+                <i class="fas fa-bars-staggered"></i>
+            </button>
+            <h1 class="text-xl font-semibold text-gray-900 dark:text-white ml-4">
+                Avaliações de {{ patient.nome }}
+            </h1>
+            <div class="flex-grow"></div> {# Espaçador #}
+        </header>
+
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            <i class="
+                                {% if category == 'success' %}fas fa-check-circle
+                                {% elif category == 'danger' %}fas fa-exclamation-circle
+                                {% elif category == 'warning' %}fas fa-exclamation-triangle
+                                {% else %}fas fa-info-circle{% endif %}
+                            "></i>
+                            <span>{{ message | safe }}</span>
+                            <button class="close-flash">&times;</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="container mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-6">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Avaliações de {{ patient.nome }}</h1>
+            <p class="text-gray-700 dark:text-gray-300 mb-6">CPF: {{ patient.cpf }} | Data de Nascimento: {{ patient.data_nascimento_fmt }}</p>
+
+            {# Seção para criar uma nova avaliação #}
+            <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner mb-6">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Criar Nova Avaliação</h2>
+                <form action="{{ url_for('evaluations.create_new_evaluation', patient_id=patient.id) }}" method="POST" class="space-y-4">
+                    <div>
+                        <label for="evaluation_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data da Avaliação</label>
+                        <input type="date" id="evaluation_date" name="evaluation_date" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus-circle mr-2"></i> Criar Nova Avaliação
+                    </button>
+                </form>
+            </div>
+
+            {# Lista de avaliações existentes #}
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Avaliações Anteriores</h2>
+                {% if evaluations %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Data</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {% for eval in evaluations %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ eval.data_avaliacao.strftime('%d/%m/%Y') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if eval.status == 'finalizado' %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+                                        {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100{% endif %}">
+                                        {{ eval.status.capitalize() }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <a href="{{ url_for('evaluations.view_evaluation', patient_id=patient.id, evaluation_id=eval.id) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 mr-4">
+                                        <i class="fas fa-eye mr-1"></i> Visualizar Detalhes
+                                    </a>
+                                    <button onclick="confirmDeleteEvaluation('{{ patient.id }}', '{{ eval.id }}')" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200">
+                                        <i class="fas fa-trash-alt mr-1"></i> Excluir
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-gray-500 dark:text-gray-400">Nenhuma avaliação encontrada para este paciente.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Modal de Confirmação para Excluir Avaliação #}
+        <div id="confirmDeleteModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Confirmar Exclusão</h3>
+                    <button type="button" class="modal-close-btn" data-close-modal="confirmDeleteModal">&times;</button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-300 mb-4">Tem certeza de que deseja excluir esta avaliação? Esta ação não pode ser desfeita.</p>
+                    <div class="flex justify-center space-x-4">
+                        <button id="confirmDeleteBtn" class="btn btn-danger w-full">Excluir</button>
+                        <button id="cancelDeleteBtn" class="btn btn-secondary w-full">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const patientId = "{{ patient.id }}";
+
+            // Modal de Confirmação para Excluir
+            const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+            let evaluationToDeleteId = null;
+
+            // Funções para abrir/fechar modais
+            function openModal(modalElement) {
+                modalElement.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Evita rolagem do corpo
+            }
+
+            function closeModal(modalElement) {
+                modalElement.classList.remove('active');
+                document.body.style.overflow = ''; // Restaura rolagem do corpo
+            }
+
+            // Função para mostrar alertas customizados
+            function showCustomAlert(message, title = "Aviso", type = "info") {
+                const modalHtml = `
+                    <div id="customAlertDialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+                        <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-700 transform transition-all duration-300 ease-out scale-95 opacity-0" style="max-width: 400px;">
+                            <div class="mt-3 text-center">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">${title}</h3>
+                                <div class="mt-2 px-7 py-3">
+                                    <p class="text-sm text-gray-500 dark:text-gray-300">${message}</p>
+                                </div>
+                                <div class="items-center px-4 py-3">
+                                    <button id="customAlertOkBtn" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const alertDialog = document.getElementById('customAlertDialog');
+                const modalContent = alertDialog.querySelector('.relative');
+
+                setTimeout(() => {
+                    modalContent.style.transform = 'scale(1)';
+                    modalContent.style.opacity = '1';
+                }, 10);
+
+                const okBtn = document.getElementById('customAlertOkBtn');
+
+                okBtn.addEventListener('click', () => {
+                    modalContent.style.transform = 'scale(0.95)';
+                    modalContent.style.opacity = '0';
+                    setTimeout(() => {
+                        alertDialog.remove();
+                        document.body.style.overflow = '';
+                    }, 300);
+                });
+
+                alertDialog.addEventListener('click', (e) => {
+                    if (e.target === alertDialog) {
+                        modalContent.style.transform = 'scale(0.95)';
+                        modalContent.style.opacity = '0';
+                        setTimeout(() => {
+                            alertDialog.remove();
+                            document.body.style.overflow = '';
+                        }, 300);
+                    }
+                });
+                document.body.style.overflow = 'hidden';
+            }
+
+            function reloadPage() {
+                window.location.reload();
+            }
+
+            // Funções para o modal de exclusão
+            window.confirmDeleteEvaluation = function(pId, eId) {
+                evaluationToDeleteId = eId;
+                confirmDeleteBtn.dataset.patientId = pId; // Armazena patientId no botão de confirmação
+                openModal(confirmDeleteModal);
+            };
+
+            cancelDeleteBtn.addEventListener('click', () => {
+                closeModal(confirmDeleteModal);
+                evaluationToDeleteId = null;
+                confirmDeleteBtn.removeAttribute('data-patient-id');
+            });
+
+            confirmDeleteBtn.addEventListener('click', async () => {
+                const pId = confirmDeleteBtn.dataset.patientId;
+                if (evaluationToDeleteId && pId) {
+                    confirmDeleteBtn.disabled = true;
+                    confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Excluindo...';
+
+                    try {
+                        const response = await fetch(`/api/avaliacoes/excluir/${pId}/${evaluationToDeleteId}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            showCustomAlert(data.message, 'Sucesso', 'success');
+                            reloadPage();
+                        } else {
+                            showCustomAlert(data.message, 'Erro', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Erro ao excluir avaliação:', error);
+                        showCustomAlert('Erro de rede ao excluir avaliação.', 'Erro', 'danger');
+                    } finally {
+                        closeModal(confirmDeleteModal);
+                        confirmDeleteBtn.disabled = false;
+                        confirmDeleteBtn.innerHTML = 'Excluir';
+                        evaluationToDeleteId = null;
+                        confirmDeleteBtn.removeAttribute('data-patient-id');
+                    }
+                }
+            });
+
+            // Script para fechar as mensagens flash (mantido do base.html)
+            document.querySelectorAll('.flash-message .close-flash').forEach(button => {
+                button.addEventListener('click', () => {
+                    button.closest('.flash-message').remove();
+                });
+            });
+
+            // Auto-hide flash messages after a few seconds (mantido do base.html)
+            document.querySelectorAll('.flash-message').forEach(message => {
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-20px)';
+                    message.addEventListener('transitionend', () => message.remove());
+                }, 5000); // 5 seconds
+            });
+        });
+    </script>
+</body>
+</html>

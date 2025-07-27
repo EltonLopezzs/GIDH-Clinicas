@@ -28,6 +28,7 @@ from blueprints.patrimonio import register_patrimonio_routes
 from blueprints.protocols import protocols_bp
 from blueprints.weekly_planning import weekly_planning_bp 
 from blueprints.user_api import user_api_bp
+from blueprints.evaluations import evaluations_bp # NOVO: Importar o blueprint de avaliações
 
 # NOVO: Importações para IA
 import google.generativeai as genai
@@ -127,9 +128,9 @@ def inject_navbar_counts():
 
 @app.route('/login', methods=['GET'])
 def login_page():
-    if 'logged_in' in session:
-        return redirect(url_for('index'))
-    return render_template('login.html')
+    if 'logged_in' not in session:
+        return render_template('login.html')
+    return redirect(url_for('index')) # Redireciona para o dashboard se já estiver logado
 
 @app.route('/session-login', methods=['POST'])
 def session_login():
@@ -657,7 +658,7 @@ def import_protocol_from_ai():
                 - `descricao`: Descrição breve da etapa, se disponível.
 
             3.  **Níveis (faixas etárias ou níveis de complexidade):**
-                - `nivel`: O número do nível, se aplicável (ex: 1, 2, 3).
+                - `nivel`: O número do nível, se aplicável (inteiro, ex: 1, 2, 3).
                 - `faixa_etaria`: A faixa etária associada a este nível (ex: "0 a 1 ano", "3 a 4 anos").
 
             4.  **Habilidades (listas de habilidades, marcos de desenvolvimento ou competências):**
@@ -696,6 +697,81 @@ def import_protocol_from_ai():
             TEXTO DO PROTOCOLO:
             {text_content}
             """
+            # Definir o schema de resposta esperado
+            response_schema = {
+                "type": "OBJECT",
+                "properties": {
+                    "geral": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "nome": {"type": "STRING"},
+                            "descricao": {"type": "STRING"},
+                            "tipo_protocolo": {"type": "STRING"},
+                            "ativo": {"type": "BOOLEAN"}
+                        }
+                    },
+                    "etapas": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "nome": {"type": "STRING"},
+                                "descricao": {"type": "STRING"}
+                            }
+                        }
+                    },
+                    "niveis": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "nivel": {"type": "INTEGER"},
+                                "faixa_etaria": {"type": "STRING"}
+                            }
+                        }
+                    },
+                    "habilidades": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "nome": {"type": "STRING"}
+                            }
+                        }
+                    },
+                    "pontuacao": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "tipo": {"type": "STRING"},
+                                "descricao": {"type": "STRING"},
+                                "valor": {"type": "NUMBER"}
+                            }
+                        }
+                    },
+                    "tarefas_testes": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "nivel": {"type": "INTEGER"},
+                                "item": {"type": "STRING"},
+                                "nome": {"type": "STRING"},
+                                "habilidade_marco": {"type": "STRING"},
+                                "resultado_observacao": {"type": "STRING"},
+                                "pergunta": {"type": "STRING"},
+                                "exemplo": {"type": "STRING"},
+                                "criterio": {"type": "STRING"},
+                                "objetivo": {"type": "STRING"}
+                            },
+                            "required": ["nivel", "item", "nome"]
+                        }
+                    },
+                    "observacoes_gerais": {"type": "STRING"}
+                }
+            }
+
 
             model = genai.GenerativeModel('gemini-2.0-flash')
             response = model.generate_content(
@@ -764,6 +840,7 @@ register_patrimonio_routes(app)
 app.register_blueprint(protocols_bp)
 app.register_blueprint(weekly_planning_bp) 
 app.register_blueprint(user_api_bp)
+app.register_blueprint(evaluations_bp)  
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)

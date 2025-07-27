@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Avaliação</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding-left: 16.25rem; /* Largura padrão da sidebar */
+            transition: padding-left 0.3s ease;
+        }
+        .main-content.collapsed {
+            padding-left: 5.5rem; /* Largura da sidebar colapsada */
+        }
+        .flash-messages {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1050;
+            width: 90%;
+            max-width: 400px;
+        }
+        .flash-message {
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(-20px);
+            animation: fadeInDown 0.5s forwards;
+        }
+        .flash-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-message.danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash-message.warning {
+            background-color: #fff3cd;
+            color: #664d03;
+            border: 1px solid #ffecb5;
+        }
+        .flash-message i {
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .close-flash {
+            margin-left: auto;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: inherit;
+            opacity: 0.7;
+        }
+        .close-flash:hover {
+            opacity: 1;
+        }
+
+        /* Classes para botões padrão */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: var(--muted);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: color-mix(in srgb, var(--muted) 80%, black);
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: color-mix(in srgb, var(--danger) 80%, black);
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: color-mix(in srgb, var(--success) 80%, black);
+            transform: translateY(-1px);
+        }
+        .btn-info {
+            background-color: var(--info);
+            color: white;
+        }
+        .btn-info:hover {
+            background-color: color-mix(in srgb, var(--info) 80%, black);
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background-color: transparent;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .btn-outline:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+        }
+
+        /* Estilos para o modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.1);
+            display: none; /* Alterado para display: none por padrão */
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .modal-overlay.active {
+            display: flex; /* Exibe o modal quando ativo */
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: var(--card);
+            color: var(--text);
+            border-radius: 12px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.25), 0 5px 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 500px;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 2001;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            background-color: var(--bg);
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            color: var(--text);
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--muted);
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .modal-close-btn:hover {
+            color: var(--danger);
+            background-color: rgba(220, 38, 38, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* Estilos para cards de tarefas */
+        .task-card {
+            background-color: var(--bg); /* Usa a cor de fundo geral para as tarefas */
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            padding: 1rem;
+            margin-bottom: 1rem; /* Adiciona mais espaço entre os cards */
+            border: 1px solid var(--border-color); /* Adiciona uma borda sutil */
+        }
+        .task-card.completed {
+            border-left: 5px solid var(--success); /* Torna a borda mais proeminente */
+        }
+        .task-card.pending {
+            border-left: 5px solid var(--warning); /* Torna a borda mais proeminente */
+        }
+        .task-card h4 {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .task-card p {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 0.25rem;
+        }
+        .task-card .response-options label {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            margin-right: 1rem;
+        }
+        .task-card .response-options input[type="radio"] {
+            margin-right: 0.5rem;
+        }
+        .task-card textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            margin-top: 0.5rem;
+            background-color: var(--card); /* Use a cor do card para o textarea */
+            color: var(--text);
+        }
+
+        /* Estilos para os cards de protocolo na visão geral da avaliação (similar a pacientes.html) */
+        .protocol-card {
+            background-color: var(--card);
+            border-radius: 0.5rem; /* Menos arredondado para parecer mais com linha de tabela */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Sombra mais sutil */
+            padding: 1rem 1.5rem; /* Padding ajustado */
+            margin-bottom: 0.5rem; /* Menos margem entre eles */
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center; /* Alinha itens verticalmente */
+            justify-content: space-between;
+            transition: all 0.2s ease-in-out;
+            min-height: 4rem; /* Altura mínima para consistência */
+        }
+
+        .protocol-card:hover {
+            transform: none; /* Remove o translateY no hover */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Sombra um pouco mais forte no hover */
+            background-color: var(--bg); /* Mudar cor de fundo no hover */
+        }
+
+        .protocol-card-info {
+            flex-grow: 1;
+        }
+
+        .protocol-card h3 {
+            font-size: 1.125rem; /* Tamanho da fonte ajustado */
+            font-weight: 600;
+            color: var(--text); /* Cor do texto principal */
+            margin-bottom: 0.25rem; /* Menos margem */
+        }
+
+        .protocol-card p {
+            font-size: 0.875rem; /* Tamanho da fonte ajustado */
+            color: var(--muted); /* Cor do texto secundário */
+            margin-bottom: 0; /* Remove margem inferior */
+        }
+
+        .protocol-card .btn {
+            margin-left: 1rem; /* Espaçamento entre info e botão */
+            flex-shrink: 0; /* Não deixa o botão encolher */
+        }
+    </style>
+</head>
+<body>
+    {% include 'Nav.html' %} {# Inclui a barra de navegação #}
+
+    <div class="main-content">
+        <header class="bg-white dark:bg-gray-800 shadow-sm py-4 px-6 flex items-center justify-between sticky top-0 z-10">
+            <button class="menu-btn-mobile md:hidden text-gray-600 dark:text-gray-300 text-2xl">
+                <i class="fas fa-bars"></i>
+            </button>
+            <button class="toggle-btn-desktop hidden md:block text-gray-600 dark:text-gray-300 text-2xl">
+                <i class="fas fa-bars-staggered"></i>
+            </button>
+            <h1 class="text-xl font-semibold text-gray-900 dark:text-white ml-4">
+                Detalhes da Avaliação
+            </h1>
+            <div class="flex-grow"></div> {# Espaçador #}
+            {# Botão "Vincular Novo Protocolo" movido para o cabeçalho #}
+            <button id="openLinkProtocolModalBtn" class="btn btn-secondary ml-4">
+                <i class="fas fa-plus mr-2"></i> Vincular Novo Protocolo
+            </button>
+        </header>
+
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            <i class="
+                                {% if category == 'success' %}fas fa-check-circle
+                                {% elif category == 'danger' %}fas fa-exclamation-circle
+                                {% elif category == 'warning' %}fas fa-exclamation-triangle
+                                {% else %}fas fa-info-circle{% endif %}
+                            "></i>
+                            <span>{{ message | safe }}</span>
+                            <button class="close-flash">&times;</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        
+<div class="container mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Detalhes da Avaliação</h1>
+    <p class="text-gray-700 dark:text-gray-300 mb-6">Paciente: {{ patient.nome }} | CPF: {{ patient.cpf }} | Data de Nascimento: {{ patient.data_nascimento_fmt }}</p>
+
+    <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner mb-6">
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Informações da Avaliação</h2>
+        <p class="text-gray-700 dark:text-gray-300 mb-2">Data da Avaliação: {{ evaluation.data_avaliacao_fmt }}</p>
+        <p class="text-gray-700 dark:text-gray-300 mb-4">Status: <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+            {% if evaluation.status == 'finalizado' %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+            {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100{% endif %}">
+            {{ evaluation.status.capitalize() }}
+        </span></p>
+    </div>
+
+    {# Protocolos Vinculados como Cards #}
+    <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Protocolos Vinculados</h2>
+    <div id="linkedProtocolsContainer" class="space-y-3"> {# Removido grid para layout de lista #}
+        {% if evaluation.protocolos_vinculados %}
+            {% for linked_protocol in evaluation.protocolos_vinculados %}
+            <div class="protocol-card">
+                <div class="protocol-card-info">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ linked_protocol.protocol_name }}</h3>
+                    <p class="text-gray-700 dark:text-gray-300">Nível: {{ linked_protocol.protocol_level }}</p>
+                </div>
+                <a href="{{ url_for('evaluations.view_protocol_tasks', patient_id=patient.id, evaluation_id=evaluation.id, linked_protocol_id=linked_protocol.protocol_id) }}" class="btn btn-primary">
+                    <i class="fas fa-eye mr-2"></i> Visualizar Tarefas
+                </a>
+            </div>
+            {% endfor %}
+        {% else %}
+        <p class="text-gray-500 dark:text-gray-400 col-span-full">Nenhum protocolo vinculado a esta avaliação ainda.</p>
+        {% endif %}
+    </div>
+
+    <div class="mt-6 flex justify-end space-x-4">
+        <button id="finalizeEvaluationBtn" class="btn btn-success">
+            <i class="fas fa-check-circle mr-2"></i> Finalizar Avaliação
+        </button>
+        <a href="{{ url_for('evaluations.generate_evaluation_pdf', patient_id=patient.id, evaluation_id=evaluation.id) }}" target="_blank" class="btn btn-info">
+            <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
+        </a>
+    </div>
+</div>
+
+{# Modal de Confirmação para Excluir Avaliação #}
+<div id="confirmDeleteModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirmar Exclusão</h3>
+            <button type="button" class="modal-close-btn" data-close-modal="confirmDeleteModal">&times;</button>
+        </div>
+        <div class="modal-body text-center">
+            <p class="text-sm text-gray-500 dark:text-gray-300 mb-4">Tem certeza de que deseja excluir esta avaliação? Esta ação não pode ser desfeita.</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirmDeleteBtn" class="btn btn-danger w-full">Excluir</button>
+                <button id="cancelDeleteBtn" class="btn btn-secondary w-full">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Modal para Vincular Protocolo #}
+<div id="linkProtocolModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Vincular Novo Protocolo</h3>
+            <button type="button" class="modal-close-btn" data-close-modal="linkProtocolModal">&times;</button>
+        </div>
+        <div class="modal-body space-y-4">
+            <div>
+                <label for="modal_protocol_select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Selecionar Protocolo</label>
+                <select id="modal_protocol_select" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white">
+                    <option value="">-- Selecione um Protocolo --</option>
+                    {% for protocol in available_protocols %}
+                        <option value="{{ protocol.id }}" data-protocol-name="{{ protocol.nome }}">{{ protocol.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="modal_protocol_level" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nível do Protocolo</label>
+                <select id="modal_protocol_level" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white" disabled>
+                    <option value="">-- Selecione um protocolo primeiro --</option>
+                </select>
+            </div>
+            <button id="modalLinkProtocolBtn" class="btn btn-primary w-full" disabled>
+                <i class="fas fa-link mr-2"></i> Vincular Protocolo
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const patientId = "{{ patient.id }}";
+        const evaluationId = "{{ evaluation.id if evaluation else '' }}"; // Pega o ID da avaliação se existir
+
+        // Botões e elementos para o modal de vincular protocolo
+        const openLinkProtocolModalBtn = document.getElementById('openLinkProtocolModalBtn');
+        const linkProtocolModal = document.getElementById('linkProtocolModal');
+        const modalProtocolSelect = document.getElementById('modal_protocol_select');
+        const modalProtocolLevelInput = document.getElementById('modal_protocol_level'); // Agora é um select
+        const modalLinkProtocolBtn = document.getElementById('modalLinkProtocolBtn');
+
+        const finalizeEvaluationBtn = document.getElementById('finalizeEvaluationBtn');
+
+        // Modal de Confirmação para Excluir
+        const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        let evaluationToDeleteId = null;
+
+        // Funções para abrir/fechar modais
+        function openModal(modalElement) {
+            modalElement.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Evita rolagem do corpo
+            console.log(`Modal ${modalElement.id} aberto.`); // Debug
+        }
+
+        function closeModal(modalElement) {
+            modalElement.classList.remove('active');
+            document.body.style.overflow = ''; // Restaura rolagem do corpo
+            console.log(`Modal ${modalElement.id} fechado.`); // Debug
+        }
+
+        // Função para mostrar alertas customizados
+        function showCustomAlert(message, title = "Aviso", type = "info") {
+            const modalHtml = `
+                <div id="customAlertDialog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+                    <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-700 transform transition-all duration-300 ease-out scale-95 opacity-0" style="max-width: 400px;">
+                        <div class="mt-3 text-center">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">${title}</h3>
+                            <div class="mt-2 px-7 py-3">
+                                <p class="text-sm text-gray-500 dark:text-gray-300">${message}</p>
+                            </div>
+                            <div class="items-center px-4 py-3">
+                                <button id="customAlertOkBtn" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const alertDialog = document.getElementById('customAlertDialog');
+            const modalContent = alertDialog.querySelector('.relative');
+
+            // Animate in
+            setTimeout(() => {
+                modalContent.style.transform = 'scale(1)';
+                modalContent.style.opacity = '1';
+            }, 10);
+
+            const okBtn = document.getElementById('customAlertOkBtn');
+
+            okBtn.addEventListener('click', () => {
+                modalContent.style.transform = 'scale(0.95)';
+                modalContent.style.opacity = '0';
+                setTimeout(() => {
+                    alertDialog.remove();
+                    document.body.style.overflow = '';
+                }, 300); // Match transition duration
+            });
+
+            alertDialog.addEventListener('click', (e) => {
+                if (e.target === alertDialog) {
+                    modalContent.style.transform = 'scale(0.95)';
+                    modalContent.style.opacity = '0';
+                    setTimeout(() => {
+                        alertDialog.remove();
+                        document.body.style.overflow = '';
+                    }, 300); // Match transition duration
+                }
+            });
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Função para recarregar a página após uma ação bem-sucedida
+        function reloadPage() {
+            window.location.reload();
+        }
+
+        // Event listeners para abrir/fechar modais
+        if (openLinkProtocolModalBtn) {
+            openLinkProtocolModalBtn.addEventListener('click', () => {
+                console.log('Botão "Vincular Novo Protocolo" clicado!'); // Debug log
+                openModal(linkProtocolModal);
+            });
+        } else {
+            console.error('Elemento #openLinkProtocolModalBtn não encontrado!'); // Debug error
+        }
+        
+
+        document.querySelectorAll('.modal-close-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const modalId = button.dataset.closeModal;
+                if (modalId) {
+                    closeModal(document.getElementById(modalId));
+                }
+            });
+        });
+
+        // Fechar modal ao clicar fora
+        linkProtocolModal?.addEventListener('click', (e) => {
+            if (e.target === linkProtocolModal) {
+                closeModal(linkProtocolModal);
+            }
+        });
+        confirmDeleteModal?.addEventListener('click', (e) => {
+            if (e.target === confirmDeleteModal) {
+                closeModal(confirmDeleteModal);
+            }
+        });
+
+        // Lógica para carregar níveis do protocolo dinamicamente
+        modalProtocolSelect.addEventListener('change', async () => {
+            const selectedProtocolId = modalProtocolSelect.value;
+            modalProtocolLevelInput.innerHTML = '<option value="">Carregando níveis...</option>';
+            modalProtocolLevelInput.disabled = true;
+            modalLinkProtocolBtn.disabled = true;
+
+            if (selectedProtocolId) {
+                try {
+                    const response = await fetch(`/api/protocols/${selectedProtocolId}/levels`);
+                    const data = await response.json();
+
+                    if (data.success) {
+                        modalProtocolLevelInput.innerHTML = ''; // Limpa opções existentes
+                        if (data.levels && data.levels.length > 0) {
+                            data.levels.forEach(level => {
+                                const option = document.createElement('option');
+                                option.value = level.nivel;
+                                option.textContent = `Nível ${level.nivel} (${level.faixa_etaria || 'N/A'})`;
+                                modalProtocolLevelInput.appendChild(option);
+                            });
+                            modalProtocolLevelInput.disabled = false;
+                            modalLinkProtocolBtn.disabled = false;
+                        } else {
+                            modalProtocolLevelInput.innerHTML = '<option value="">Nenhum nível encontrado para este protocolo</option>';
+                            modalProtocolLevelInput.disabled = true;
+                            modalLinkProtocolBtn.disabled = true;
+                        }
+                    } else {
+                        modalProtocolLevelInput.innerHTML = '<option value="">Erro ao carregar níveis</option>';
+                        showCustomAlert(data.message, 'Erro', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Erro ao buscar níveis do protocolo:', error);
+                    modalProtocolLevelInput.innerHTML = '<option value="">Erro de rede</option>';
+                    showCustomAlert('Erro de rede ao carregar níveis do protocolo.', 'Erro', 'danger');
+                }
+            } else {
+                modalProtocolLevelInput.innerHTML = '<option value="">-- Selecione um protocolo primeiro --</option>';
+                modalProtocolLevelInput.disabled = true;
+                modalLinkProtocolBtn.disabled = true;
+            }
+        });
+
+
+        // Vincular Protocolo (dentro do modal)
+        if (modalLinkProtocolBtn) {
+            modalLinkProtocolBtn.addEventListener('click', async () => {
+                const selectedProtocolId = modalProtocolSelect.value;
+                const selectedProtocolName = modalProtocolSelect.options[modalProtocolSelect.selectedIndex].dataset.protocolName;
+                const protocolLevel = modalProtocolLevelInput.value; // Pega o valor do select de níveis
+
+                if (!selectedProtocolId || !protocolLevel) {
+                    showCustomAlert('Por favor, selecione um protocolo e um nível.', 'Erro', 'warning');
+                    return;
+                }
+                if (!evaluationId) {
+                    showCustomAlert('Nenhuma avaliação atual selecionada. Crie ou selecione uma avaliação primeiro.', 'Erro', 'warning');
+                    return;
+                }
+
+                modalLinkProtocolBtn.disabled = true;
+                modalLinkProtocolBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Vinculando...';
+
+                try {
+                    const response = await fetch('/api/avaliacoes/vincular_protocolo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            patient_id: patientId,
+                            evaluation_id: evaluationId,
+                            protocol_id: selectedProtocolId,
+                            protocol_name: selectedProtocolName,
+                            protocol_level: parseInt(protocolLevel) // Garante que o nível é um número inteiro
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showCustomAlert(data.message, 'Sucesso', 'success');
+                        closeModal(linkProtocolModal); // Fecha o modal após sucesso
+                        reloadPage(); // Recarrega para mostrar os novos protocolos vinculados
+                    } else {
+                        showCustomAlert(data.message, 'Erro', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Erro ao vincular protocolo:', error);
+                    showCustomAlert('Erro de rede ao vincular protocolo.', 'Erro', 'danger');
+                } finally {
+                    modalLinkProtocolBtn.disabled = false;
+                    modalLinkProtocolBtn.innerHTML = '<i class="fas fa-link mr-2"></i> Vincular Protocolo';
+                }
+            });
+        }
+
+        // Finalizar Avaliação (ainda nesta página, afeta a avaliação como um todo)
+        if (finalizeEvaluationBtn) {
+            finalizeEvaluationBtn.addEventListener('click', async () => {
+                if (!evaluationId) {
+                    showCustomAlert('Nenhuma avaliação atual selecionada para finalizar.', 'Erro', 'warning');
+                    return;
+                }
+
+                finalizeEvaluationBtn.disabled = true;
+                finalizeEvaluationBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Finalizando...';
+
+                try {
+                    const response = await fetch(`/api/avaliacoes/finalizar/${patientId}/${evaluationId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showCustomAlert(data.message, 'Sucesso', 'success');
+                        reloadPage();
+                    } else {
+                        showCustomAlert(data.message, 'Erro', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Erro ao finalizar avaliação:', error);
+                    showCustomAlert('Erro de rede ao finalizar avaliação.', 'Erro', 'danger');
+                } finally {
+                    finalizeEvaluationBtn.disabled = false;
+                    finalizeEvaluationBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Finalizar Avaliação';
+                }
+            });
+        }
+
+        // Funções para o modal de exclusão
+        window.confirmDeleteEvaluation = function(pId, eId) {
+            evaluationToDeleteId = eId;
+            confirmDeleteBtn.dataset.patientId = pId; // Armazena patientId no botão de confirmação
+            openModal(confirmDeleteModal);
+        };
+
+        cancelDeleteBtn.addEventListener('click', () => {
+            closeModal(confirmDeleteModal);
+            evaluationToDeleteId = null;
+            confirmDeleteBtn.removeAttribute('data-patient-id');
+        });
+
+        confirmDeleteBtn.addEventListener('click', async () => {
+            const pId = confirmDeleteBtn.dataset.patientId;
+            if (evaluationToDeleteId && pId) {
+                confirmDeleteBtn.disabled = true;
+                confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Excluindo...';
+
+                try {
+                    const response = await fetch(`/api/avaliacoes/excluir/${pId}/${evaluationToDeleteId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showCustomAlert(data.message, 'Sucesso', 'success');
+                        reloadPage();
+                    } else {
+                        showCustomAlert(data.message, 'Erro', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Erro ao excluir avaliação:', error);
+                    showCustomAlert('Erro de rede ao excluir avaliação.', 'Erro', 'danger');
+                } finally {
+                    closeModal(confirmDeleteModal);
+                    confirmDeleteBtn.disabled = false;
+                    confirmDeleteBtn.innerHTML = 'Excluir';
+                    evaluationToDeleteId = null;
+                    confirmDeleteBtn.removeAttribute('data-patient-id');
+                }
+            }
+        });
+    });
+</script>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Script para fechar as mensagens flash
+            document.querySelectorAll('.flash-message .close-flash').forEach(button => {
+                button.addEventListener('click', () => {
+                    button.closest('.flash-message').remove();
+                });
+            });
+
+            // Auto-hide flash messages after a few seconds
+            document.querySelectorAll('.flash-message').forEach(message => {
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-20px)';
+                    message.addEventListener('transitionend', () => message.remove());
+                }, 5000); // 5 seconds
+            });
+        });
+    </script>
+</body>
+</html>

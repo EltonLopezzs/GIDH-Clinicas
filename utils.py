@@ -132,7 +132,8 @@ def get_counts_for_navbar(db_instance, clinica_id):
         'estoque': 0,
         'patrimonio': 0,
         'horarios': 0,
-        'utilizadores': 0 # Para usuários associados a esta clínica
+        'utilizadores': 0, # Para usuários associados a esta clínica
+        'avaliacoes': 0 # NOVO: Contagem para avaliações
     }
 
     if not db_instance or not clinica_id:
@@ -225,6 +226,18 @@ def get_counts_for_navbar(db_instance, clinica_id):
         ).count().get()[0][0].value
     except Exception as e:
         print(f"Erro ao contar utilizadores: {e}")
+
+    try:
+        # NOVO: Avaliações (contagem total de avaliações para a clínica)
+        total_avaliacoes = 0
+        patients_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')
+        patients_docs = patients_ref.stream()
+        for patient_doc in patients_docs:
+            evaluations_ref = patient_doc.reference.collection('avaliacoes')
+            total_avaliacoes += evaluations_ref.count().get()[0][0].value
+        counts['avaliacoes'] = total_avaliacoes
+    except Exception as e:
+        print(f"Erro ao contar avaliações: {e}")
 
     return counts
 
@@ -427,3 +440,255 @@ def get_weekly_plan_entries(clinica_id, patient_id, professional_id, start_date_
     except Exception as e:
         print(f"Erro ao buscar entradas do planejamento semanal para o paciente {patient_id}: {e}")
     return plan_entries
+
+# --- NOVAS FUNÇÕES PARA AVALIAÇÕES ---
+
+def get_all_protocols_with_items(clinica_id):
+    """
+    Retorna todos os protocolos e seus itens (incluindo níveis) para uma clínica.
+    """
+    db = get_db()
+    protocols_list = []
+    try:
+        protocols_ref = db.collection('clinicas').document(clinica_id).collection('protocols')
+        for protocol_doc in protocols_ref.stream():
+            protocol_data = convert_doc_to_dict(protocol_doc)
+            if protocol_data:
+                protocol_data['items'] = []
+                items_ref = protocols_ref.document(protocol_doc.id).collection('items')
+                for item_doc in items_ref.stream():
+                    item_data = convert_doc_to_dict(item_doc)
+                    if item_data:
+                        protocol_data['items'].append(item_data)
+                
+                # NOVO: Adicionar os níveis do protocolo
+                protocol_data['niveis'] = []
+                levels_ref = protocols_ref.document(protocol_doc.id).collection('niveis')
+                for level_doc in levels_ref.order_by('nivel').stream():
+                    level_data = convert_doc_to_dict(level_doc)
+                    if level_data:
+                        protocol_data['niveis'].append(level_data)
+
+                protocols_list.append(protocol_data)
+    except Exception as e:
+        print(f"Erro ao buscar protocolos com itens e níveis para a clínica {clinica_id}: {e}")
+    return protocols_list
+
+def get_protocol_by_id(clinica_id, protocol_id):
+    """
+    Retorna um protocolo específico por ID, incluindo seus níveis e itens.
+    """
+    db = get_db()
+    try:
+        protocol_doc = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id).get()
+        if protocol_doc.exists:
+            protocol_data = convert_doc_to_dict(protocol_doc)
+            
+            # Adicionar os níveis do protocolo
+            protocol_data['niveis'] = []
+            levels_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id).collection('niveis')
+            for level_doc in levels_ref.order_by('nivel').stream():
+                level_data = convert_doc_to_dict(level_doc)
+                if level_data:
+                    protocol_data['niveis'].append(level_data)
+
+            # Adicionar os itens do protocolo
+            protocol_data['items'] = []
+            items_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id).collection('items')
+            for item_doc in items_ref.stream():
+                item_data = convert_doc_to_dict(item_doc)
+                if item_data:
+                    protocol_data['items'].append(item_data)
+
+            return protocol_data
+    except Exception as e:
+        print(f"Erro ao buscar protocolo {protocol_id} com níveis e itens: {e}")
+    return None
+
+def get_protocol_items_by_protocol_id(clinica_id, protocol_id):
+    """
+    Retorna todos os itens de um protocolo específico.
+    """
+    db = get_db()
+    items_list = []
+    try:
+        items_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id).collection('items')
+        for item_doc in items_ref.stream():
+            item_data = convert_doc_to_dict(item_doc)
+            if item_data:
+                items_list.append(item_data)
+    except Exception as e:
+        print(f"Erro ao buscar itens do protocolo {protocol_id}: {e}")
+    return items_list
+
+def get_patient_evaluations(clinica_id, patient_id):
+    """
+    Retorna todas as avaliações de um paciente.
+    """
+    db = get_db()
+    evaluations_list = []
+    try:
+        evaluations_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes')
+        for eval_doc in evaluations_ref.order_by('data_avaliacao', direction=firestore.Query.DESCENDING).stream():
+            eval_data = convert_doc_to_dict(eval_doc)
+            if eval_data:
+                evaluations_list.append(eval_data)
+    except Exception as e:
+        print(f"Erro ao buscar avaliações para o paciente {patient_id}: {e}")
+    return evaluations_list
+
+def create_evaluation(clinica_id, patient_id, professional_id, evaluation_date):
+    """
+    Cria uma nova avaliação para um paciente.
+    """
+    db = get_db()
+    evaluations_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes')
+    try:
+        eval_data = {
+            'data_avaliacao': evaluation_date,
+            'profissional_id': professional_id,
+            'status': 'rascunho', # Pode ser 'rascunho', 'finalizado'
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        _, doc_ref = evaluations_ref.add(eval_data)
+        return doc_ref.id
+    except Exception as e:
+        print(f"Erro ao criar avaliação para o paciente {patient_id}: {e}")
+        return None
+
+def add_protocol_to_evaluation(clinica_id, patient_id, evaluation_id, protocol_id, protocol_name, protocol_level):
+    """
+    Vincula um protocolo a uma avaliação existente e copia seus itens como tarefas.
+    """
+    db = get_db()
+    evaluation_protocols_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).collection('protocolos_vinculados')
+    evaluation_tasks_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).collection('tarefas_avaliadas')
+
+    try:
+        # Adiciona o protocolo vinculado
+        protocol_link_data = {
+            'protocol_id': protocol_id,
+            'protocol_name': protocol_name,
+            'protocol_level': protocol_level,
+            'data_vinculacao': firestore.SERVER_TIMESTAMP
+        }
+        evaluation_protocols_ref.document(protocol_id).set(protocol_link_data) # Usa o ID do protocolo como ID do documento para evitar duplicatas
+
+        # Copia os itens do protocolo como tarefas para a avaliação, filtrando pelo nível
+        protocol_items = get_protocol_items_by_protocol_id(clinica_id, protocol_id)
+        
+        # Filtrar tarefas pelo nível selecionado, garantindo que ambos são inteiros para comparação
+        filtered_items = [item for item in protocol_items if int(item.get('nivel', 0)) == int(protocol_level)]
+
+        for item in filtered_items:
+            task_data = {
+                'protocol_id': protocol_id,
+                'protocol_item_id': item['id'],
+                'nivel': item.get('nivel'),
+                'item_numero': item.get('item'),
+                'nome_tarefa': item.get('nome'),
+                'habilidade_marco': item.get('habilidade_marco'),
+                'exemplo': item.get('exemplo', ''),
+                'criterio': item.get('criterio', ''),
+                'pergunta': item.get('pergunta', ''),
+                'objetivo': item.get('objetivo', ''),
+                'response_value': '', # 'Nunca', 'As vezes', 'Sempre'
+                'additional_info': '',
+                'data_resposta': None,
+                'status': 'pendente', # 'pendente', 'respondida'
+                'created_at': firestore.SERVER_TIMESTAMP
+            }
+            evaluation_tasks_ref.add(task_data) # Firestore gera um novo ID para cada tarefa avaliada
+        return True
+    except Exception as e:
+        print(f"Erro ao vincular protocolo {protocol_id} à avaliação {evaluation_id} do paciente {patient_id}: {e}")
+        return False
+
+def get_evaluation_details(clinica_id, patient_id, evaluation_id):
+    """
+    Retorna os detalhes de uma avaliação específica, incluindo protocolos vinculados e tarefas.
+    """
+    db = get_db()
+    evaluation_data = None
+    try:
+        eval_doc = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).get()
+        if eval_doc.exists:
+            evaluation_data = convert_doc_to_dict(eval_doc)
+            
+            # Buscar protocolos vinculados
+            evaluation_data['protocolos_vinculados'] = []
+            linked_protocols_ref = eval_doc.reference.collection('protocolos_vinculados')
+            for linked_proto_doc in linked_protocols_ref.stream():
+                linked_proto_data = convert_doc_to_dict(linked_proto_doc)
+                if linked_proto_data:
+                    evaluation_data['protocolos_vinculados'].append(linked_proto_data)
+            
+            # Buscar tarefas avaliadas
+            evaluation_data['tarefas_avaliadas'] = []
+            tasks_ref = eval_doc.reference.collection('tarefas_avaliadas')
+            for task_doc in tasks_ref.order_by('nivel').order_by('item_numero').stream(): # Ordena por nível e número do item
+                task_data = convert_doc_to_dict(task_doc)
+                if task_data and task_data.get('data_resposta'):
+                    task_data['data_resposta_fmt'] = format_firestore_timestamp(task_data['data_resposta'])
+                evaluation_data['tarefas_avaliadas'].append(task_data)
+                
+    except Exception as e:
+        print(f"Erro ao buscar detalhes da avaliação {evaluation_id} do paciente {patient_id}: {e}")
+    return evaluation_data
+
+def save_evaluation_task_response(clinica_id, patient_id, evaluation_id, task_id, response_value, additional_info):
+    """
+    Salva a resposta de uma tarefa específica dentro de uma avaliação.
+    """
+    db = get_db()
+    task_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).collection('tarefas_avaliadas').document(task_id)
+    try:
+        task_ref.update({
+            'response_value': response_value,
+            'additional_info': additional_info,
+            'data_resposta': firestore.SERVER_TIMESTAMP,
+            'status': 'respondida'
+        })
+        return True
+    except Exception as e:
+        print(f"Erro ao salvar resposta da tarefa {task_id} na avaliação {evaluation_id}: {e}")
+        return False
+
+def update_evaluation_status(clinica_id, patient_id, evaluation_id, status):
+    """
+    Atualiza o status de uma avaliação (ex: 'finalizado').
+    """
+    db = get_db()
+    evaluation_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id)
+    try:
+        evaluation_ref.update({'status': status})
+        return True
+    except Exception as e:
+        print(f"Erro ao atualizar status da avaliação {evaluation_id}: {e}")
+        return False
+
+def delete_evaluation(clinica_id, patient_id, evaluation_id):
+    """
+    Exclui uma avaliação e suas subcoleções (protocolos vinculados e tarefas avaliadas).
+    """
+    db = get_db()
+    evaluation_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id)
+    
+    try:
+        # Excluir subcoleção 'protocolos_vinculados'
+        linked_protocols_ref = evaluation_ref.collection('protocolos_vinculados')
+        for doc in linked_protocols_ref.stream():
+            doc.reference.delete()
+
+        # Excluir subcoleção 'tarefas_avaliadas'
+        tasks_ref = evaluation_ref.collection('tarefas_avaliadas')
+        for doc in tasks_ref.stream():
+            doc.reference.delete()
+
+        # Excluir o documento da avaliação principal
+        evaluation_ref.delete()
+        return True
+    except Exception as e:
+        print(f"Erro ao excluir avaliação {evaluation_id} do paciente {patient_id}: {e}")
+        return False
+
