@@ -20,8 +20,8 @@
             </div>
           </a>
         </li>
-        
-        <li class="has-submenu {% if request.endpoint in ['listar_pacientes', 'buscar_prontuario', 'busca_peis'] %}open{% endif %}">
+
+        <li class="has-submenu {% if request.endpoint in ['listar_pacientes', 'buscar_prontuario', 'busca_peis', 'evaluations.list_patients_for_evaluation'] %}open{% endif %}">
 
           <a href="#" class="submenu-toggle" title="Gerir Pacientes">
             <div class="submenu-toggle-content">
@@ -54,18 +54,13 @@
               </a>
             </li>
 
-        </li>
-
-        {# NOVO: Link para a página de Avaliações #}
-        <li class="{% if request.endpoint == 'evaluations.list_patients_for_evaluation' %}active{% endif %}">
-          <a href="{{ url_for('evaluations.list_patients_for_evaluation') }}" title="Avaliações">
-            <div class="submenu-toggle-content">             
-              <span>Avaliações</span>
-            </div>
-            {% if navbar_counts.avaliacoes is defined %}<span class="count-badge">{{ navbar_counts.avaliacoes }}</span>{% endif %}
-          </a>
-        </li>
-
+            {# NOVO: Link para a página de Avaliações - MOVED INSIDE GERIR PACIENTES SUBMENU #}
+            <li class="{% if request.endpoint == 'evaluations.list_patients_for_evaluation' %}active{% endif %}">
+              <a href="{{ url_for('evaluations.list_patients_for_evaluation') }}" title="Avaliações">
+                <span>Avaliações</span>
+                {% if navbar_counts.avaliacoes is defined %}<span class="count-badge">{{ navbar_counts.avaliacoes }}</span>{% endif %}
+              </a>
+            </li>
 
           </ul>
 
@@ -79,7 +74,7 @@
             </div>
             {% if navbar_counts.agendamentos is defined %}<span class="count-badge">{{ navbar_counts.agendamentos }}</span>{% endif %}
           </a>
-
+        </li>
 
         {% if session.user_role == 'admin' %}
         <li class="has-submenu {% if request.endpoint in ['listar_servicos_procedimentos', 'listar_convenios', 'protocols.list_protocols', 'listar_modelos_anamnese', 'listar_profissionais'] %}open{% endif %}">
@@ -855,46 +850,40 @@
 
     let cropper;
 
-    // Modified showCustomAlert to only display alerts for success or specific warnings
+    // Modified showCustomAlert to display all types of alerts in the modal
     function showCustomAlert(message, title = "Aviso", type = "info") {
-        // Only show alert for 'success' type or if explicitly needed for 'info'/'warning'
-        if (type === 'success' || type === 'info' || type === 'warning') {
-            const modalHtml = `
-                <div id="customAlertDialog" class="nav-modal-overlay active">
-                    <div class="nav-modal-content" style="max-width: 400px; padding: 1.5rem;">
-                        <div class="nav-modal-header" style="background-color: var(--card); border-bottom: none; padding: 0 0 1rem 0;">
-                            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text);">${title}</h3>
-                            <button type="button" class="nav-modal-close-btn" data-close-modal="customAlertDialog" style="position: absolute; top: 0.5rem; right: 0.5rem;">&times;</button>
-                        </div>
-                        <div class="nav-modal-body" style="padding: 0; text-align: center;">
-                            <p style="font-size: 1rem; color: var(--text); margin-bottom: 1.5rem;">${message}</p>
-                            <button id="customAlertOkBtn" class="btn btn-primary" style="width: auto; padding: 0.6rem 1.5rem;">OK</button>
-                        </div>
+        const modalHtml = `
+            <div id="customAlertDialog" class="nav-modal-overlay active">
+                <div class="nav-modal-content" style="max-width: 400px; padding: 1.5rem;">
+                    <div class="nav-modal-header" style="background-color: var(--card); border-bottom: none; padding: 0 0 1rem 0;">
+                        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text);">${title}</h3>
+                        <button type="button" class="nav-modal-close-btn" data-close-modal="customAlertDialog" style="position: absolute; top: 0.5rem; right: 0.5rem;">&times;</button>
+                    </div>
+                    <div class="nav-modal-body" style="padding: 0; text-align: center;">
+                        <p style="font-size: 1rem; color: var(--text); margin-bottom: 1.5rem;">${message}</p>
+                        <button id="customAlertOkBtn" class="btn btn-primary" style="width: auto; padding: 0.6rem 1.5rem;">OK</button>
                     </div>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            const alertDialog = document.getElementById('customAlertDialog');
-            const okBtn = document.getElementById('customAlertOkBtn');
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const alertDialog = document.getElementById('customAlertDialog');
+        const okBtn = document.getElementById('customAlertOkBtn');
 
-            okBtn.addEventListener('click', () => {
+        okBtn.addEventListener('click', () => {
+            alertDialog.classList.remove('active');
+            alertDialog.remove();
+            document.body.style.overflow = '';
+        });
+
+        alertDialog.addEventListener('click', (e) => {
+            if (e.target === alertDialog || e.target.closest('[data-close-modal="customAlertDialog"]')) {
                 alertDialog.classList.remove('active');
                 alertDialog.remove();
                 document.body.style.overflow = '';
-            });
-
-            alertDialog.addEventListener('click', (e) => {
-                if (e.target === alertDialog || e.target.closest('[data-close-modal="customAlertDialog"]')) {
-                    alertDialog.classList.remove('active');
-                    alertDialog.remove();
-                    document.body.style.overflow = '';
-                }
-            });
-            document.body.style.overflow = 'hidden';
-        } else {
-            // For 'danger' or other types, just log to console as per user request
-            console.error(`Alert suppressed [${title}]: ${message}`);
-        }
+            }
+        });
+        document.body.style.overflow = 'hidden';
     }
 
 
@@ -1015,15 +1004,18 @@
                         updateUploadButtonTextAndState();
                     } else {
                         // Server responded OK, but indicated a logical failure
+                        showCustomAlert('Falha ao processar a foto no servidor: ' + (data.message || 'Erro desconhecido.'), 'Erro no Servidor', 'danger');
                         console.error('Falha ao processar a foto no servidor:', data.message || 'Erro desconhecido.'); // Log error instead of alert
                     }
                 } else {
                     // HTTP error (e.g., 404, 500)
                     const errorText = await response.text(); // Get raw error text
+                    showCustomAlert('Erro HTTP durante o upload da foto: ' + response.status + ' - ' + errorText, 'Erro HTTP', 'danger');
                     console.error('HTTP Error during photo upload:', response.status, errorText); // Log error instead of alert
                 }
             } catch (error) {
                 // Network error or other unexpected JS error
+                showCustomAlert('Erro ao fazer upload da foto: ' + error.message, 'Erro de Rede', 'danger');
                 console.error('Erro ao fazer upload da foto:', error); // Log error instead of alert
             } finally {
                 uploadPhotoButton.disabled = false;
@@ -1061,15 +1053,18 @@
                     updateUploadButtonTextAndState();
                 } else {
                     // Server responded OK, but indicated a logical failure
+                    showCustomAlert('Falha ao remover a foto no servidor: ' + (data.message || 'Erro desconhecido.'), 'Erro no Servidor', 'danger');
                     console.error('Falha ao remover a foto no servidor:', data.message || 'Erro desconhecido.'); // Log error instead of alert
                 }
             } else {
                 // HTTP error (e.g., 404, 500)
                 const errorText = await response.text(); // Get raw error text
+                showCustomAlert('Erro HTTP durante a remoção da foto: ' + response.status + ' - ' + errorText, 'Erro HTTP', 'danger');
                 console.error('HTTP Error during photo removal:', response.status, errorText); // Log error instead of alert
             }
         } catch (error) {
             // Network error or other unexpected JS error
+            showCustomAlert('Erro ao remover foto: ' + error.message, 'Erro de Rede', 'danger');
             console.error('Erro ao remover foto:', error); // Log error instead of alert
         } finally {
             removePhotoButton.disabled = false;
@@ -1117,7 +1112,7 @@
     function setupSidebar() {
 
       if (!sidebar || !mainContent) return;
-      
+
       const updateDesktopToggleIcon = () => {
 
         if (!toggleBtnDesktop) return;
@@ -1161,9 +1156,9 @@
         updateDesktopToggleIcon();
 
       };
-      
+
       toggleBtnDesktop?.addEventListener('click', () => {
-        
+
         sidebar.classList.toggle('collapsed');
         mainContent.classList.toggle('collapsed');
         localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
@@ -1184,9 +1179,9 @@
       });
 
       document.addEventListener('click', (e) => {
-        
+
         if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtnMobile.contains(e.target)) {
-          
+
           sidebar.classList.remove('open');
           const icon = menuBtnMobile.querySelector('i');
           icon.classList.remove('fa-times');
@@ -1198,15 +1193,15 @@
       applyInitialState();
       window.addEventListener('resize', applyInitialState);
     }
-    
+
     function setupTheme() {
-      
+
       if (!themeToggle) return;
-        
+
         const updateThemeIcon = (theme) => {
-            
+
             const icon = themeToggle.querySelector('i');
-            
+
             if (icon) {
               if (theme === 'dark') {
                   icon.classList.replace('fa-sun', 'fa-moon');
@@ -1217,22 +1212,22 @@
         };
 
         const applyInitialTheme = () => {
-            
+
             const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             htmlEl.setAttribute('data-theme', storedTheme);
             updateThemeIcon(storedTheme);
-            
+
         };
-        
+
         themeToggle.addEventListener('click', () => {
-          
+
           const newTheme = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
           htmlEl.setAttribute('data-theme', newTheme);
           localStorage.setItem('theme', newTheme);
           updateThemeIcon(newTheme);
-          
+
         });
-        
+
         applyInitialTheme();
     }
 
@@ -1240,7 +1235,7 @@
       if (!logoutButton) return;
 
       logoutButton.addEventListener('click', async (event) => {
-        
+
         event.preventDefault();
         try {
             const response = await fetch("{{ url_for('logout') }}", { method: 'POST' });
