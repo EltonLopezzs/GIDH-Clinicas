@@ -206,27 +206,27 @@ def view_protocol_tasks(patient_id, evaluation_id, linked_protocol_id):
         # As tarefas já estão carregadas em evaluation_details['tarefas_avaliadas']
         # Precisamos filtrar por protocol_id e nivel
         
-        # Adicionando logs de depuração
-        print(f"DEBUG: linked_protocol_id: {linked_protocol_id} (type: {type(linked_protocol_id)})")
-        print(f"DEBUG: linked_protocol_level: {linked_protocol_level} (type: {type(linked_protocol_level)})")
-        print(f"DEBUG: Total tasks in evaluation_details: {len(evaluation_details.get('tarefas_avaliadas', []))}")
+        # Adicionando logs de depuração para entender o que está sendo filtrado
+        print(f"DEBUG (view_protocol_tasks): linked_protocol_id: {linked_protocol_id} (type: {type(linked_protocol_id)})")
+        print(f"DEBUG (view_protocol_tasks): linked_protocol_level: {linked_protocol_level} (type: {type(linked_protocol_level)})")
+        print(f"DEBUG (view_protocol_tasks): Total tasks in evaluation_details: {len(evaluation_details.get('tarefas_avaliadas', []))}")
 
         tasks = []
         for task in evaluation_details.get('tarefas_avaliadas', []):
             task_protocol_id = task.get('protocol_id')
             task_nivel = task.get('nivel')
             
-            print(f"DEBUG: Task ID: {task.get('id')}, Protocol ID: {task_protocol_id} (type: {type(task_protocol_id)}), Nivel: {task_nivel} (type: {type(task_nivel)})")
+            print(f"DEBUG (view_protocol_tasks): Task ID: {task.get('id')}, Protocol ID: {task_protocol_id} (type: {type(task_protocol_id)}), Nivel: {task_nivel} (type: {type(task_nivel)})")
 
             # Garante que a comparação de nível seja entre inteiros
             try:
                 if task_protocol_id == linked_protocol_id and int(task_nivel) == int(linked_protocol_level):
                     tasks.append(task)
             except (ValueError, TypeError) as e:
-                print(f"DEBUG: Erro de conversão de tipo para nível na tarefa {task.get('id')}: {e}")
+                print(f"DEBUG (view_protocol_tasks): Erro de conversão de tipo para nível na tarefa {task.get('id')}: {e}")
                 continue # Pula esta tarefa se o nível não puder ser convertido para int
         
-        print(f"DEBUG: Tasks filtered for display: {len(tasks)}")
+        print(f"DEBUG (view_protocol_tasks): Tasks filtered for display: {len(tasks)}")
 
     except Exception as e:
         flash(f'Erro ao carregar tarefas do protocolo: {e}', 'danger')
