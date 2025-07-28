@@ -11,30 +11,30 @@
     <style>
         /* Variáveis de cor e tema - Copiadas e adaptadas de agendamentos.html */
         :root {
-            --bg: #f1f5f9;                  /* Gray-100 */
-            --card: #ffffff;                /* White */
-            --text: #0f172a;                /* Gray-900 */
-            --muted: #64748b;               /* Gray-500 */
-            --accent: #9b53b8;              /* Purple-500 */
-            --primary-dark: #115e59;        
-            --primary: #5587c2;             /* Blue-500 */
-            --primary-light: #c8dcf3;       /* Blue-100 */
-            --secondary: #f59e0b;           /* Yellow-500 */
-            --danger: #dc2626;              /* Red-600 */
-            --success: #16a34a;             /* Green-600 */
-            --warning: #f59e0b;             /* Yellow-500 */
-            --info: #0ea5e9;                /* Sky-500 */
-            --border-color: #e2e8f0;        /* Gray-200 */
+            --bg: #f1f5f9;          /* Gray-100 */
+            --card: #ffffff;        /* White */
+            --text: #0f172a;        /* Gray-900 */
+            --muted: #64748b;       /* Gray-500 */
+            --accent: #9b53b8;      /* Purple-500 */
+            --primary-dark: #115e59; 
+            --primary: #5587c2;     /* Blue-500 */
+            --primary-light: #c8dcf3; /* Blue-100 */
+            --secondary: #f59e0b;   /* Yellow-500 */
+            --danger: #dc2626;      /* Red-600 */
+            --success: #16a34a;     /* Green-600 */
+            --warning: #f59e0b;     /* Yellow-500 */
+            --info: #0ea5e9;        /* Sky-500 */
+            --border-color: #e2e8f0; /* Gray-200 */
 
             /* Cores para os status das avaliações (adaptadas de agendamentos.html) */
             --status-finalizado: #16a344; /* Verde */
             --status-rascunho: #f59e0b; /* Laranja */
 
-            --dark-bg: #0f172a;             /* Gray-900 */
-            --dark-card: #1e293b;           /* Gray-800 */
-            --dark-text: #f1f5f9;           /* Gray-100 */
-            --dark-muted: #94a3b8;          /* Gray-400 */
-            --dark-border-color: #334155;   /* Gray-600 */
+            --dark-bg: #0f172a;     /* Gray-900 */
+            --dark-card: #1e293b;   /* Gray-800 */
+            --dark-text: #f1f5f9;   /* Gray-100 */
+            --dark-muted: #94a3b8;  /* Gray-400 */
+            --dark-border-color: #334155; /* Gray-600 */
 
             color-scheme: light;
         }
@@ -783,51 +783,51 @@
 
             <div id="tasksContainer" class="space-y-6">
                 {% if tasks %}
-                    {% set current_habilidade = "" %}
+                    {# Create a dictionary to group tasks by skill #}
+                    {% set grouped_tasks = {} %}
                     {% for task in tasks %}
-                        {# Verifica se a habilidade mudou para criar uma nova seção de habilidade #}
-                        {% if task.habilidade_marco != current_habilidade %}
-                            {# Se não for a primeira habilidade, fecha a div da habilidade anterior #}
-                            {% if current_habilidade != "" %}
-                                </div> <!-- Fecha a div.skill-section-card anterior -->
-                            {% endif %}
-                            {% set current_habilidade = task.habilidade_marco %}
-                            <div class="skill-section-card" data-habilidade-section="{{ task.habilidade_marco | default('') }}">
-                                <h3>{{ task.habilidade_marco | default('Habilidade Não Categorizada') }}</h3>
+                        {% set skill_name = task.habilidade_marco | default('Habilidade Não Categorizada') %}
+                        {% if skill_name not in grouped_tasks %}
+                            {% set _ = grouped_tasks.update({skill_name: []}) %}
                         {% endif %}
-                        {# Cada item de tarefa agora é um 'task-item-card' dentro da sua respectiva seção de habilidade #}
-                        <div class="task-item-card" data-habilidade-item="{{ task.habilidade_marco | default('') }}">
-                            <div class="task-header">
-                                <h4>Item {{ task.item_numero }}: {{ task.nome_tarefa }}</h4>
-                            </div>
-                            <div class="task-details">
-                                {% if task.exemplo %}<p>Exemplo: {{ task.exemplo }}</p>{% endif %}
-                                {% if task.criterio %}<p>Critério: {{ task.criterio }}</p>{% endif %}
-                                {% if task.pergunta %}<p>Pergunta: {{ task.pergunta }}</p>{% endif %}
-                                {% if task.objetivo %}<p>Objetivo: {{ task.objetivo }}</p>{% endif %}
-                            </div>
-                            
-                            <div class="response-options">
-                                <label>
-                                    <input type="radio" name="response_{{ task.id }}" value="Nunca" {% if task.response_value == 'Nunca' %}checked{% endif %}>
-                                    <span>Nunca</span>
-                                </label>
-                                <label>
-                                    <input type="radio" name="response_{{ task.id }}" value="As vezes" {% if task.response_value == 'As vezes' %}checked{% endif %}>
-                                    <span>Às vezes</span>
-                                </label>
-                                <label>
-                                    <input type="radio" name="response_{{ task.id }}" value="Sempre" {% if task.response_value == 'Sempre' %}checked{% endif %}>
-                                    <span>Sempre</span>
-                                </label>
-                            </div>
-                            <textarea data-task-id="{{ task.id }}" class="additional-info-textarea" rows="2" placeholder="Informações adicionais...">{{ task.additional_info | default('') }}</textarea>
+                        {% set _ = grouped_tasks[skill_name].append(task) %}
+                    {% endfor %}
+
+                    {# Now iterate through the grouped tasks to render sections #}
+                    {% for skill_name, skill_tasks in grouped_tasks.items() %}
+                        <div class="skill-section-card" data-habilidade-section="{{ skill_name }}">
+                            <h3>{{ skill_name }}</h3>
+                            {% for task in skill_tasks %}
+                                <div class="task-item-card" data-habilidade-item="{{ task.habilidade_marco | default('') }}">
+                                    <div class="task-header">
+                                        <h4>Item {{ task.item_numero }}: {{ task.nome_tarefa }}</h4>
+                                    </div>
+                                    <div class="task-details">
+                                        {% if task.exemplo %}<p>Exemplo: {{ task.exemplo }}</p>{% endif %}
+                                        {% if task.criterio %}<p>Critério: {{ task.criterio }}</p>{% endif %}
+                                        {% if task.pergunta %}<p>Pergunta: {{ task.pergunta }}</p>{% endif %}
+                                        {% if task.objetivo %}<p>Objetivo: {{ task.objetivo }}</p>{% endif %}
+                                    </div>
+                                    
+                                    <div class="response-options">
+                                        <label>
+                                            <input type="radio" name="response_{{ task.id }}" value="Nunca" {% if task.response_value == 'Nunca' %}checked{% endif %}>
+                                            <span>Nunca</span>
+                                        </label>
+                                        <label>
+                                            <input type="radio" name="response_{{ task.id }}" value="As vezes" {% if task.response_value == 'As vezes' %}checked{% endif %}>
+                                            <span>Às vezes</span>
+                                        </label>
+                                        <label>
+                                            <input type="radio" name="response_{{ task.id }}" value="Sempre" {% if task.response_value == 'Sempre' %}checked{% endif %}>
+                                            <span>Sempre</span>
+                                        </label>
+                                    </div>
+                                    <textarea data-task-id="{{ task.id }}" class="additional-info-textarea" rows="2" placeholder="Informações adicionais...">{{ task.additional_info | default('') }}</textarea>
+                                </div>
+                            {% endfor %}
                         </div>
                     {% endfor %}
-                    {# Fecha a última div.skill-section-card se houver tarefas #}
-                    {% if tasks %}
-                        </div> 
-                    {% endif %}
                 {% else %}
                     <p class="text-gray-500 dark:text-gray-400">Nenhuma tarefa encontrada para este protocolo e nível nesta avaliação.</p>
                 {% endif %}
