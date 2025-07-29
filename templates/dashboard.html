@@ -173,7 +173,16 @@
      background: rgba(255, 255, 255, 0.1);
      border-radius: 12px;
      backdrop-filter: blur(10px);
+     transition: all 0.3s ease;
    }
+
+    .welcome-stat-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+      scale: 1.03;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      cursor: default;
+    }
 
    .welcome-stat-number {
      font-size: 1.5rem;
@@ -382,7 +391,7 @@
      display: grid;
      grid-template-columns: 2fr 1fr;
      gap: 1.5rem;
-     margin-bottom: 2rem;
+     /* margin-bottom: 2rem; */
    }
 
    .chart-card {
@@ -430,10 +439,25 @@
      border-color: var(--primary);
    }
 
+    .period-btn.disabled {
+      background: transparent;
+      color: white;
+      cursor: not-allowed;
+      border: 1px dashed var(--muted);
+      color: var(--muted);
+      opacity: 0.6;
+    }
+
    .chart-container {
      position: relative;
      flex-grow: 1;
      min-height: 300px;
+   }
+
+   @media (max-width: 1568px) {
+     .charts-section {
+       grid-template-columns: 1fr;
+     }
    }
 
    /* ============================================
@@ -1481,11 +1505,11 @@
               </div>
               <div class="welcome-stat-item">
                 <span class="welcome-stat-number">{{ proximos_agendamentos|length }}</span>
-                <span class="welcome-stat-label">Hoje</span>
+                <span class="welcome-stat-label">Quantidade de Agendamentos</span>
               </div>
               <div class="welcome-stat-item">
                 <span class="welcome-stat-number">{{ kpi.total_atendimentos_concluidos }}</span>
-                <span class="welcome-stat-label">Concluídos</span>
+                <span class="welcome-stat-label">Atendimentos Concluídos</span>
               </div>
             </div>
           </div>
@@ -1496,7 +1520,7 @@
           <div class="main-dashboard-content">
             
             <!-- Cards de Resumo Modernos -->
-            <section class="summary-cards animate-fade-in-up animate-delay-1">
+            <!-- <section class="summary-cards animate-fade-in-up animate-delay-1">
               <div class="modern-card">
                 <div class="card-header">
                   <div class="card-icon patients">
@@ -1560,7 +1584,7 @@
                   </div>
                 </div>
               </div>
-            </section>
+            </section> -->
 
             <!-- Seção de Gráficos -->
             <section class="charts-section animate-fade-in-up animate-delay-2">
@@ -1569,8 +1593,8 @@
                   <h3 class="chart-title">Atendimentos vs Receita (Últimos 15 dias)</h3>
                   <div class="chart-period-selector">
                     <button class="period-btn active">15d</button>
-                    <button class="period-btn">30d</button>
-                    <button class="period-btn">90d</button>
+                    <button class="period-btn disabled">30d</button>
+                    <button class="period-btn disabled">90d</button>
                   </div>
                 </div>
                 <div class="chart-container">
@@ -2904,11 +2928,11 @@ PEIs Ativos: ${info.activePeis}
             const receitaProcCtx = document.getElementById('receitaPorProcedimentoChart')?.getContext('2d');
             if (receitaProcCtx && dadosReceitaProc.labels?.length) {
                 const gradientColors = [
-                    'rgba(255, 255, 255, 0.9)',
-                    'rgba(255, 255, 255, 0.7)',
-                    'rgba(255, 255, 255, 0.5)',
-                    'rgba(255, 255, 255, 0.3)',
-                    'rgba(255, 255, 255, 0.1)'
+                    '#e6f2ffee',  // Azul muito claro
+                    '#99ccffee',  // Azul claro
+                    '#4d9affee',  // Azul médio
+                    '#1a66ccee',  // Azul escuro
+                    '#003399ee'   // Azul muito escuro
                 ];
 
                 charts.receitaPorProcedimento = new Chart(receitaProcCtx, {
@@ -2918,10 +2942,10 @@ PEIs Ativos: ${info.activePeis}
                         datasets: [{
                             data: dadosReceitaProc.data || dadosReceitaProc.valores,
                             backgroundColor: gradientColors,
-                            borderColor: 'rgba(255, 255, 255, 0.8)',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
                             borderWidth: 2,
                             hoverBorderWidth: 3,
-                            hoverBackgroundColor: 'rgba(255, 255, 255, 1)'
+                            hoverBackgroundColor: '#cccccc',
                         }]
                     },
                     options: {
