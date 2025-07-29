@@ -431,7 +431,7 @@ def delete_protocol(protocol_id):
         # Verifica se o protocolo existe antes de tentar deletar
         if not protocol_ref.get().exists:
             print(f"DEBUG: Protocolo com ID {protocol_id} não encontrado.")
-            # Não use flash para requisições AJAX que esperam JSON.
+         
             return jsonify(success=False, message='Protocolo não encontrado.'), 404
 
         print(f"DEBUG: Deletando subcoleções para o protocolo ID: {protocol_id}")
@@ -445,9 +445,9 @@ def delete_protocol(protocol_id):
 
         protocol_ref.delete()
         print(f"DEBUG: Protocolo principal deletado: {protocol_id}")
-        # Não use flash para requisições AJAX que esperam JSON.
+     
         return jsonify(success=True, message='Protocolo excluído com sucesso!')
     except Exception as e:
         print(f"DEBUG: Erro ao excluir protocolo do Firestore: {e}")
-        # Não use flash para requisições AJAX que esperam JSON.
+     
         return jsonify(success=False, message=f'Erro ao excluir protocolo: {str(e)}.'), 500
