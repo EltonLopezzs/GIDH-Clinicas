@@ -111,7 +111,7 @@ def edit_protocol(protocol_id):
     clinica_id = session.get('clinica_id')
     if not clinica_id:
         flash('Erro: ID da clínica não encontrado na sessão.', 'danger')
-        return redirect(url_for('protocols.list_protocols'))
+        return redirect(url_for('protocols.list_protocols')) # Corrigido: Indentação para dentro do if
 
     protocol_ref = db.collection('clinicas').document(clinica_id).collection('protocols').document(protocol_id)
     
@@ -350,21 +350,22 @@ def save_protocol():
         # Coleta e salva as pontuações dinamicamente como subcoleção
         pontuacao_ids = request.form.getlist('pontuacao_id[]')
         pontuacao_ordem = request.form.getlist('pontuacao_ordem[]')
-        pontuacao_tipo = request.form.getlist('pontuacao_tipo[]')
+        # pontuacao_tipo = request.form.getlist('pontuacao_tipo[]') # REMOVIDO
         pontuacao_descricao = request.form.getlist('pontuacao_descricao[]')
         pontuacao_valor = request.form.getlist('pontuacao_valor[]')
         for i in range(len(pontuacao_ordem)):
-            if pontuacao_ordem[i].strip() and pontuacao_tipo[i].strip() and pontuacao_valor[i].strip():
+            # Ajustado a condição para não verificar pontuacao_tipo
+            if pontuacao_ordem[i].strip() and pontuacao_valor[i].strip():
                 try:
                     protocol_ref.collection('pontuacao').add({
                         'id': pontuacao_ids[i].strip(), # Salvar o ID gerado
                         'ordem': int(pontuacao_ordem[i].strip()),
-                        'tipo': pontuacao_tipo[i].strip(),
+                        # 'tipo': pontuacao_tipo[i].strip(), # REMOVIDO
                         'descricao': pontuacao_descricao[i].strip() if i < len(pontuacao_descricao) else '',
                         'valor': float(pontuacao_valor[i].strip())
                     })
                 except ValueError:
-                    flash('Erro: Ordem, Tipo ou Valor da pontuação inválido. Certifique-se de que Ordem é inteiro e Valor é numérico.', 'danger')
+                    flash('Erro: Ordem ou Valor da pontuação inválido. Certifique-se de que Ordem é inteiro e Valor é numérico.', 'danger')
                     continue
 
         # Coleta e salva as tarefas/testes dinamicamente como subcoleção
