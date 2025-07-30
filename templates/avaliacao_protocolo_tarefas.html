@@ -576,25 +576,50 @@
             margin: 0.25rem 0;
         }
 
+        /* NEW STYLES FOR SCORE BUTTONS */
         .task-item-card .response-options {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.75rem; /* Reduced gap for a tighter look */
             margin-top: 0.75rem;
         }
 
-        .task-item-card .response-options label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
+        .task-item-card .response-option-button {
+            background-color: var(--card); /* Light background for unselected */
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.6rem 1rem; /* Slightly smaller padding */
             font-size: 0.9rem;
+            font-weight: 500;
             color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-grow: 1; /* Allow buttons to grow and fill space */
+            text-align: center;
+            min-width: 80px; /* Ensure a minimum width */
         }
 
-        .task-item-card .response-options input[type="radio"] {
-            margin-right: 0.5rem;
-            accent-color: var(--primary);
+        .task-item-card .response-option-button:hover {
+            background-color: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+
+        .task-item-card .response-option-button.selected {
+            background-color: var(--primary); /* Primary color for selected */
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .task-item-card .response-option-button.selected:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+        /* END NEW STYLES */
 
         .task-item-card .additional-info-textarea {
             width: 100%;
@@ -677,61 +702,10 @@
             min-width: 100px;
         }
 
-        /* Estilos para a seção de Pontuação do Protocolo */
+        /* Estilos para a seção de Pontuação do Protocolo (REMOVIDA, mas mantendo a classe para evitar erros de CSS) */
         .scoring-section-card {
-            background-color: var(--card);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border: 1px solid var(--border-color);
+            /* display: none; */ /* Esta seção será removida do HTML, mas se mantida, pode ser escondida */
         }
-        .scoring-section-card h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.5rem;
-        }
-        .scoring-item-button {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.8rem 1.2rem;
-            margin-bottom: 0.5rem;
-            border-radius: 8px;
-            background-color: var(--bg);
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            color: var(--text);
-        }
-        .scoring-item-button:hover {
-            background-color: var(--primary-light);
-            border-color: var(--primary);
-            color: var(--primary-dark);
-            transform: translateY(-1px);
-        }
-        .scoring-item-button.applied {
-            background-color: var(--success);
-            color: white;
-            border-color: var(--success);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .scoring-item-button.applied:hover {
-            background-color: color-mix(in srgb, var(--success) 80%, black);
-            border-color: color-mix(in srgb, var(--success) 80%, black);
-        }
-        .scoring-item-button .value {
-            font-weight: 600;
-            color: inherit; /* Herda a cor do botão */
-        }
-        .scoring-item-button.applied .value {
-            color: white;
-        }
-
     </style>
 </head>
 <body>
@@ -846,6 +820,15 @@
                         {% endfor %}
                     </div>
                 </div>
+                
+                <!-- Total Score Display -->
+                <div class="w-full mt-4">
+                    <p class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pontuação Total da Avaliação</p>
+                    <div class="p-3 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg text-blue-800 dark:text-blue-200 font-bold text-lg text-center">
+                        <span id="totalScore">0</span> pontos
+                    </div>
+                </div>
+                <!-- END Total Score -->
             </div>
 
             <div id="tasksContainer" class="space-y-6">
@@ -876,19 +859,16 @@
                                         {% if task.objetivo %}<p>Objetivo: {{ task.objetivo }}</p>{% endif %}
                                     </div>
                                     
-                                    <div class="response-options">
-                                        <label>
-                                            <input type="radio" name="response_{{ task.id }}" value="Nunca" {% if task.response_value == 'Nunca' %}checked{% endif %}>
-                                            <span>Nunca</span>
-                                        </label>
-                                        <label>
-                                            <input type="radio" name="response_{{ task.id }}" value="As vezes" {% if task.response_value == 'As vezes' %}checked{% endif %}>
-                                            <span>Às vezes</span>
-                                        </label>
-                                        <label>
-                                            <input type="radio" name="response_{{ task.id }}" value="Sempre" {% if task.response_value == 'Sempre' %}checked{% endif %}>
-                                            <span>Sempre</span>
-                                        </label>
+                                    <div class="response-options" data-task-id="{{ task.id }}">
+                                        {# Dynamic buttons based on protocol_scoring #}
+                                        {% for score_item in protocol_scoring %}
+                                            <button type="button" 
+                                                    class="response-option-button {% if task.response_value == score_item.descricao %}selected{% endif %}" 
+                                                    data-response-value="{{ score_item.descricao }}" 
+                                                    data-score="{{ score_item.valor }}">
+                                                {{ score_item.descricao }} ({{ score_item.valor }})
+                                            </button>
+                                        {% endfor %}
                                     </div>
                                     <textarea data-task-id="{{ task.id }}" class="additional-info-textarea" rows="2" placeholder="Informações adicionais...">{{ task.additional_info | default('') }}</textarea>
                                 </div>
@@ -900,26 +880,8 @@
                 {% endif %}
             </div>
 
-            {# Seção de Pontuação do Protocolo #}
-            {% if protocol_scoring %}
-            <div class="scoring-section-card">
-                <h3>Critérios de Pontuação do Protocolo</h3>
-                <div class="space-y-2">
-                    {% for score_item in protocol_scoring %}
-                        {% set applied_score = applied_scoring_responses | selectattr('scoring_item_id', '==', score_item.id) | first %}
-                        {% set is_applied = applied_score and applied_score.aplicado %}
-                        <button type="button" class="scoring-item-button {% if is_applied %}applied{% endif %}"
-                                data-scoring-id="{{ score_item.id }}"
-                                data-applied-scoring-doc-id="{{ applied_score.id if applied_score else '' }}"
-                                data-is-applied="{{ 'true' if is_applied else 'false' }}">
-                            <span class="description">{{ score_item.descricao }}</span>
-                            <span class="value">{{ score_item.valor }}</span>
-                        </button>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
+            {# REMOVED: Seção de Pontuação do Protocolo - agora os itens são os botões de resposta #}
+            
             <div class="mt-6 flex justify-end space-x-4">
                 <button id="saveTasksBtn" class="btn btn-primary">
                     <i class="fas fa-save mr-2"></i> Salvar Tarefas
@@ -942,6 +904,7 @@
             const levelCheckboxes = document.querySelectorAll('input[name="level_filter"]');
             const tasksContainer = document.getElementById('tasksContainer');
             const progressBar = document.getElementById('progressBar');
+            const totalScoreDisplay = document.getElementById('totalScore');
             
             // Seleciona todos os cards de tarefa, incluindo os dentro das seções de habilidade
             const allTaskItems = Array.from(document.querySelectorAll('.task-item-card')); 
@@ -1005,35 +968,55 @@
                 window.location.reload();
             }
 
-            // Function to update progress bar
-            function updateProgressBar() {
+            // Function to update progress bar and total score
+            function updateEvaluationMetrics() {
                 const totalTasks = allTaskItems.length;
+                let completedTasks = 0;
+                let currentTotalScore = 0;
+
                 if (totalTasks === 0) {
                     progressBar.style.width = '0%';
                     progressBar.textContent = '0%';
+                    totalScoreDisplay.textContent = '0';
                     return;
                 }
 
-                let completedTasks = 0;
                 allTaskItems.forEach(card => {
-                    const selectedResponse = card.querySelector(`input[type="radio"]:checked`);
-                    if (selectedResponse && selectedResponse.value !== '') {
+                    // Check for selected response button
+                    const selectedResponseButton = card.querySelector('.response-option-button.selected');
+                    if (selectedResponseButton) {
                         completedTasks++;
+                        // Add score if a button is selected
+                        currentTotalScore += parseInt(selectedResponseButton.dataset.score || 0);
                     }
                 });
 
                 const percentage = (completedTasks / totalTasks) * 100;
                 progressBar.style.width = `${percentage.toFixed(0)}%`;
                 progressBar.textContent = `${percentage.toFixed(0)}%`;
+                totalScoreDisplay.textContent = currentTotalScore;
             }
 
-            // Initial progress bar update
-            updateProgressBar();
+            // Initial update of progress bar and total score
+            updateEvaluationMetrics();
 
-            // Event listener for radio button changes to update progress
-            tasksContainer.addEventListener('change', (event) => {
-                if (event.target.type === 'radio') {
-                    updateProgressBar();
+            // Event listener for response option button clicks
+            tasksContainer.addEventListener('click', (event) => {
+                if (event.target.classList.contains('response-option-button')) {
+                    const clickedButton = event.target;
+                    const responseOptionsDiv = clickedButton.closest('.response-options');
+                    const taskId = responseOptionsDiv.dataset.taskId;
+
+                    // Deselect all other buttons in this group
+                    responseOptionsDiv.querySelectorAll('.response-option-button').forEach(button => {
+                        button.classList.remove('selected');
+                    });
+
+                    // Select the clicked button
+                    clickedButton.classList.add('selected');
+
+                    // Update metrics
+                    updateEvaluationMetrics();
                 }
             });
 
@@ -1087,7 +1070,7 @@
                         });
                     } else if (event.target.value !== 'all' && event.target.checked) {
                         // If any other level is checked, uncheck "Todos os Níveis"
-                        document.querySelector('input[name="level_filter"][value="all"]').checked = false;
+                        document.querySelector('input[name="level_filter"][value="all"]').checked = true; // Changed to true to keep "Todos os Níveis" checked if no other is selected
                     }
 
                     // If no checkboxes are checked, check "Todos os Níveis"
@@ -1111,12 +1094,14 @@
                     const tasksToSave = [];
                     allTaskItems.forEach(taskDiv => {
                         const taskId = taskDiv.querySelector('.additional-info-textarea').dataset.taskId;
-                        const selectedResponse = taskDiv.querySelector(`input[type="radio"]:checked`);
+                        // Get the selected button's response value
+                        const selectedButton = taskDiv.querySelector('.response-option-button.selected');
+                        const responseValue = selectedButton ? selectedButton.dataset.responseValue : '';
                         const additionalInfo = taskDiv.querySelector('.additional-info-textarea').value;
 
                         tasksToSave.push({
                             task_id: taskId,
-                            response_value: selectedResponse ? selectedResponse.value : '',
+                            response_value: responseValue,
                             additional_info: additionalInfo
                         });
                     });
@@ -1158,57 +1143,9 @@
                 });
             }
 
-            // Lógica para os botões de pontuação
-            const scoringButtons = document.querySelectorAll('.scoring-item-button');
-            scoringButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const scoringId = button.dataset.scoringId;
-                    let appliedScoringDocId = button.dataset.appliedScoringDocId;
-                    let isApplied = button.dataset.isApplied === 'true'; // Converte para booleano
-
-                    // Inverte o estado atual
-                    const newAppliedValue = !isApplied;
-
-                    button.disabled = true; // Desabilita o botão enquanto a requisição está em andamento
-
-                    try {
-                        const response = await fetch('/api/avaliacoes/salvar_pontuacao_criterio', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                patient_id: patientId,
-                                evaluation_id: evaluationId,
-                                scoring_applied_id: appliedScoringDocId, // Passa o ID do documento de pontuação aplicada
-                                applied_value: newAppliedValue
-                            })
-                        });
-                        const data = await response.json();
-
-                        if (data.success) {
-                            // Atualiza o estado visual do botão
-                            if (newAppliedValue) {
-                                button.classList.add('applied');
-                                button.dataset.isApplied = 'true';
-                                showCustomAlert('Sucesso', 'Critério de pontuação aplicado!', 'success');
-                            } else {
-                                button.classList.remove('applied');
-                                button.dataset.isApplied = 'false';
-                                showCustomAlert('Sucesso', 'Critério de pontuação desaplicado!', 'success');
-                            }
-                            // Se a pontuação aplicada foi criada (primeira vez que é clicada), o backend deve retornar o ID
-                            // No seu caso, o `scoring_applied_id` já é o ID do documento, então não precisamos atualizar `appliedScoringDocId`
-                            // a menos que o backend gere um novo ID para cada clique, o que não é o caso aqui.
-                        } else {
-                            showCustomAlert('Erro', data.message || 'Erro ao salvar critério de pontuação.', 'danger');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao salvar critério de pontuação:', error);
-                        showCustomAlert('Erro', 'Erro de rede ao salvar critério de pontuação.', 'danger');
-                    } finally {
-                        button.disabled = false; // Reabilita o botão
-                    }
-                });
-            });
+            // REMOVED: Lógica para os botões de pontuação (pois a seção foi removida)
+            // const scoringButtons = document.querySelectorAll('.scoring-item-button');
+            // scoringButtons.forEach(button => { /* ... */ });
 
 
             // Script para fechar as mensagens flash (mantido do base.html)
