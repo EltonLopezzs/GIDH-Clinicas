@@ -575,11 +575,7 @@
                             {# Não há status para protocolos vinculados, então removemos o badge de status aqui #}
                         </div>
                         <div class="appointment-card-body">
-                            <div class="appointment-card-item">
-                                <i class="fas fa-layer-group"></i>
-                                <span class="label">Nível:</span>
-                                <span class="value">{{ linked_proto.protocol_level }}</span>
-                            </div>
+                            {# Removida a exibição do nível aqui, pois o protocolo inteiro é vinculado #}
                             <div class="appointment-card-item">
                                 <i class="fas fa-calendar-check"></i>
                                 <span class="label">Vinculado em:</span>
@@ -620,13 +616,8 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div>
-                            <label for="protocolLevelSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Selecione o Nível</label>
-                            <select id="protocolLevelSelect" name="protocol_level" class="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 dark:text-white" required disabled>
-                                <option value="">-- Selecione um Protocolo Primeiro --</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-full" id="submitLinkProtocolBtn">
+                        {# REMOVIDO COMPLETAMENTE: Campo de seleção de nível #}
+                        <button type="submit" class="btn btn-primary w-full" id="submitLinkProtocolBtn" disabled> {# Desabilitado por padrão #}
                             <i class="fas fa-link mr-2"></i> Vincular Protocolo
                         </button>
                     </form>
@@ -660,10 +651,9 @@
 
             // Elementos do Modal de Vincular Protocolo
             const linkProtocolModal = document.getElementById('linkProtocolModal');
-            const addProtocolBtn = document.getElementById('addProtocolBtn'); // Botão original de vincular protocolo
             const addProtocolBtnHeader = document.getElementById('addProtocolBtnHeader'); // Novo botão na header
             const protocolSelect = document.getElementById('protocolSelect');
-            const protocolLevelSelect = document.getElementById('protocolLevelSelect');
+            // REMOVIDO: const protocolLevelSelect = document.getElementById('protocolLevelSelect');
             const linkProtocolForm = document.getElementById('linkProtocolForm');
             const submitLinkProtocolBtn = document.getElementById('submitLinkProtocolBtn');
 
@@ -740,10 +730,8 @@
             if (addProtocolBtnHeader) { 
                 addProtocolBtnHeader.addEventListener('click', () => {
                     console.log('Botão Vincular Novo Protocolo (Header) clicado.');
-                    protocolSelect.value = '';
-                    protocolLevelSelect.innerHTML = '<option value="">-- Selecione um Protocolo Primeiro --</option>';
-                    protocolLevelSelect.disabled = true;
-                    submitLinkProtocolBtn.disabled = true;
+                    protocolSelect.value = ''; // Limpa a seleção do protocolo
+                    submitLinkProtocolBtn.disabled = true; // Desabilita o botão de vincular
                     openModal(linkProtocolModal);
                 });
             } else {
@@ -769,45 +757,9 @@
                 }
             });
 
-            // Lógica para carregar níveis do protocolo selecionado
-            protocolSelect.addEventListener('change', async () => {
-                const selectedProtocolId = protocolSelect.value;
-                console.log('Protocolo selecionado:', selectedProtocolId);
-                protocolLevelSelect.innerHTML = '<option value="">Carregando Níveis...</option>';
-                protocolLevelSelect.disabled = true;
-                submitLinkProtocolBtn.disabled = true;
-
-                if (selectedProtocolId) {
-                    try {
-                        const response = await fetch(`/api/protocols/${selectedProtocolId}/levels`);
-                        const data = await response.json();
-                        console.log('Resposta da API de níveis:', data);
-
-                        protocolLevelSelect.innerHTML = '<option value="">-- Selecione o Nível --</option>';
-                        if (data.success && data.levels && data.levels.length > 0) {
-                            data.levels.sort((a, b) => a.nivel - b.nivel); // Garante a ordem numérica
-                            data.levels.forEach(level => {
-                                const option = document.createElement('option');
-                                option.value = level.nivel;
-                                option.textContent = `Nível ${level.nivel} (${level.faixa_etaria || 'N/A'})`;
-                                protocolLevelSelect.appendChild(option);
-                            });
-                            protocolLevelSelect.disabled = false;
-                        } else {
-                            protocolLevelSelect.innerHTML = '<option value="">Nenhum nível encontrado</option>';
-                        }
-                    } catch (error) {
-                        console.error('Erro ao carregar níveis do protocolo:', error);
-                        showCustomAlert('Erro de Carregamento', 'Erro ao carregar níveis do protocolo. Por favor, tente novamente.', 'danger');
-                        protocolLevelSelect.innerHTML = '<option value="">Erro ao carregar níveis</option>';
-                    }
-                } else {
-                    protocolLevelSelect.innerHTML = '<option value="">-- Selecione um Protocolo Primeiro --</option>';
-                }
-            });
-
-            protocolLevelSelect.addEventListener('change', () => {
-                submitLinkProtocolBtn.disabled = !protocolLevelSelect.value;
+            // Lógica para habilitar o botão de vincular quando um protocolo é selecionado
+            protocolSelect.addEventListener('change', () => {
+                submitLinkProtocolBtn.disabled = !protocolSelect.value;
             });
 
             // Lógica para vincular protocolo
@@ -819,7 +771,7 @@
 
                 const selectedProtocolId = protocolSelect.value;
                 const selectedProtocolName = protocolSelect.options[protocolSelect.selectedIndex].dataset.protocolName;
-                const selectedProtocolLevel = protocolLevelSelect.value;
+                // REMOVIDO: const selectedProtocolLevel = protocolLevelSelect.value; // Removido do JS
 
                 try {
                     const response = await fetch('/api/avaliacoes/vincular_protocolo', {
@@ -829,8 +781,8 @@
                             patient_id: patientId,
                             evaluation_id: evaluationId,
                             protocol_id: selectedProtocolId,
-                            protocol_name: selectedProtocolName,
-                            protocol_level: selectedProtocolLevel
+                            protocol_name: selectedProtocolName
+                            // REMOVIDO: protocol_level: selectedProtocolLevel // Removido do payload
                         })
                     });
                     const data = await response.json();

@@ -479,15 +479,15 @@
             outline: none;
         }
 
-        /* Estilo para os radio buttons de nível */
-        .level-radio-group {
+        /* Estilo para os checkboxes de nível */
+        .level-checkbox-group {
             display: flex;
             flex-wrap: wrap;
             gap: 1rem;
             margin-top: 0.5rem;
         }
 
-        .level-radio-group label {
+        .level-checkbox-group label {
             display: flex;
             align-items: center;
             cursor: pointer;
@@ -499,18 +499,18 @@
             transition: all 0.2s ease;
         }
 
-        .level-radio-group label:hover {
+        .level-checkbox-group label:hover {
             background-color: var(--primary-light);
             color: var(--primary-dark);
             border-color: var(--primary);
         }
 
-        .level-radio-group input[type="radio"] {
+        .level-checkbox-group input[type="checkbox"] {
             margin-right: 0.5rem;
             accent-color: var(--primary); /* Cor do checkbox */
         }
 
-        .level-radio-group input[type="radio"]:checked + span {
+        .level-checkbox-group input[type="checkbox"]:checked + span {
             font-weight: 600;
             color: var(--primary-dark);
         }
@@ -677,6 +677,61 @@
             min-width: 100px;
         }
 
+        /* Estilos para a seção de Pontuação do Protocolo */
+        .scoring-section-card {
+            background-color: var(--card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border-color);
+        }
+        .scoring-section-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        .scoring-item-button {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .scoring-item-button:hover {
+            background-color: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        .scoring-item-button.applied {
+            background-color: var(--success);
+            color: white;
+            border-color: var(--success);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .scoring-item-button.applied:hover {
+            background-color: color-mix(in srgb, var(--success) 80%, black);
+            border-color: color-mix(in srgb, var(--success) 80%, black);
+        }
+        .scoring-item-button .value {
+            font-weight: 600;
+            color: inherit; /* Herda a cor do botão */
+        }
+        .scoring-item-button.applied .value {
+            color: white;
+        }
+
     </style>
 </head>
 <body>
@@ -752,22 +807,18 @@
                         <span class="label">Data da Avaliação:</span>
                         <span class="value">{{ evaluation.data_avaliacao_fmt }}</span>
                     </div>
-                    <div class="appointment-card-item">
-                        <i class="fas fa-layer-group"></i>
-                        <span class="label">Nível do Protocolo:</span>
-                        <span class="value">{{ linked_protocol_level }}</span>
-                    </div>
+                    {# Removido o campo "Nível do Protocolo" fixo, pois agora é dinâmico por tarefa #}
                 </div>
             </div>
 
             {# Filtros e Progresso #}
             <div class="filter-group">
-                <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+                <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4 mb-4">
                     <div class="w-full md:w-1/2">
                         <label for="abilityFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Selecione a Habilidade</label>
                         <select id="abilityFilter" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white">
                             <option value="all">Todas</option>
-                            {% for ability in protocol_abilities %}
+                            {% for ability in protocol.habilidades %} {# Usar protocol.habilidades #}
                                 <option value="{{ ability.nome }}">{{ ability.nome }}</option>
                             {% endfor %}
                         </select>
@@ -777,6 +828,22 @@
                         <div class="progress-bar-container">
                             <div class="progress-bar" id="progressBar" style="width: 0%;">0%</div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="w-full">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filtrar por Nível</label>
+                    <div id="levelCheckboxes" class="level-checkbox-group">
+                        <label>
+                            <input type="checkbox" name="level_filter" value="all" checked>
+                            <span>Todos os Níveis</span>
+                        </label>
+                        {% for level in protocol_levels %}
+                            <label>
+                                <input type="checkbox" name="level_filter" value="{{ level.nivel }}">
+                                <span>Nível {{ level.nivel }} ({{ level.faixa_etaria | default('N/A') }})</span>
+                            </label>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -798,9 +865,9 @@
                         <div class="skill-section-card" data-habilidade-section="{{ skill_name }}">
                             <h3>{{ skill_name }}</h3>
                             {% for task in skill_tasks %}
-                                <div class="task-item-card" data-habilidade-item="{{ task.habilidade_marco | default('') }}">
+                                <div class="task-item-card" data-habilidade-item="{{ task.habilidade_marco | default('') }}" data-nivel-item="{{ task.nivel }}">
                                     <div class="task-header">
-                                        <h4>Item {{ task.item_numero }}: {{ task.nome_tarefa }}</h4>
+                                        <h4>Item {{ task.item_numero }}: {{ task.nome_tarefa }} (Nível: {{ task.nivel }})</h4>
                                     </div>
                                     <div class="task-details">
                                         {% if task.exemplo %}<p>Exemplo: {{ task.exemplo }}</p>{% endif %}
@@ -833,6 +900,26 @@
                 {% endif %}
             </div>
 
+            {# Seção de Pontuação do Protocolo #}
+            {% if protocol_scoring %}
+            <div class="scoring-section-card">
+                <h3>Critérios de Pontuação do Protocolo</h3>
+                <div class="space-y-2">
+                    {% for score_item in protocol_scoring %}
+                        {% set applied_score = applied_scoring_responses | selectattr('scoring_item_id', '==', score_item.id) | first %}
+                        {% set is_applied = applied_score and applied_score.aplicado %}
+                        <button type="button" class="scoring-item-button {% if is_applied %}applied{% endif %}"
+                                data-scoring-id="{{ score_item.id }}"
+                                data-applied-scoring-doc-id="{{ applied_score.id if applied_score else '' }}"
+                                data-is-applied="{{ 'true' if is_applied else 'false' }}">
+                            <span class="description">{{ score_item.descricao }}</span>
+                            <span class="value">{{ score_item.valor }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <div class="mt-6 flex justify-end space-x-4">
                 <button id="saveTasksBtn" class="btn btn-primary">
                     <i class="fas fa-save mr-2"></i> Salvar Tarefas
@@ -848,17 +935,19 @@
         document.addEventListener('DOMContentLoaded', function() {
             const patientId = "{{ patient.id }}";
             const evaluationId = "{{ evaluation.id }}";
-            const linkedProtocolId = "{{ protocol.id }}"; // This is the master protocol ID
+            const linkedProtocolInstanceId = "{{ evaluation.protocolos_vinculados[0].id if evaluation.protocolos_vinculados else '' }}"; // Get the instance ID
 
             const saveTasksBtn = document.getElementById('saveTasksBtn');
-            const exportPdfBtn = document.getElementById('exportPdfBtn');
             const abilityFilter = document.getElementById('abilityFilter');
+            const levelCheckboxes = document.querySelectorAll('input[name="level_filter"]');
             const tasksContainer = document.getElementById('tasksContainer');
             const progressBar = document.getElementById('progressBar');
+            
             // Seleciona todos os cards de tarefa, incluindo os dentro das seções de habilidade
             const allTaskItems = Array.from(document.querySelectorAll('.task-item-card')); 
+            const skillSections = document.querySelectorAll('.skill-section-card');
 
-            // Elementos da nova modal de alerta general
+            // Elementos da nova modal de alerta geral
             const generalAlertOverlay = document.getElementById('general-alert-modal-overlay');
             const alertModalIcon = document.getElementById('alert-modal-icon');
             const alertModalTitle = document.getElementById('alert-modal-title');
@@ -948,6 +1037,71 @@
                 }
             });
 
+            // Function to filter tasks based on selected ability and levels
+            function filterTasks() {
+                const selectedAbility = abilityFilter.value;
+                const selectedLevels = Array.from(levelCheckboxes)
+                                            .filter(cb => cb.checked && cb.value !== 'all')
+                                            .map(cb => parseInt(cb.value));
+                const showAllLevels = document.querySelector('input[name="level_filter"][value="all"]').checked;
+
+                skillSections.forEach(section => {
+                    const sectionAbility = section.dataset.habilidadeSection;
+                    let sectionHasVisibleTasks = false;
+
+                    const taskItemsInSection = section.querySelectorAll('.task-item-card');
+                    taskItemsInSection.forEach(item => {
+                        const itemAbility = item.dataset.habilidadeItem;
+                        const itemLevel = parseInt(item.dataset.nivelItem);
+
+                        const isAbilityMatch = (selectedAbility === 'all' || itemAbility === selectedAbility);
+                        const isLevelMatch = (showAllLevels || selectedLevels.includes(itemLevel));
+
+                        if (isAbilityMatch && isLevelMatch) {
+                            item.style.display = 'flex';
+                            sectionHasVisibleTasks = true;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+
+                    // Show/hide the entire skill section based on its visible tasks
+                    if (sectionHasVisibleTasks) {
+                        section.style.display = 'flex';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+            }
+
+            // Event listeners for filters
+            abilityFilter.addEventListener('change', filterTasks);
+            levelCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', (event) => {
+                    // If "Todos os Níveis" is checked, uncheck others
+                    if (event.target.value === 'all' && event.target.checked) {
+                        levelCheckboxes.forEach(cb => {
+                            if (cb.value !== 'all') {
+                                cb.checked = false;
+                            }
+                        });
+                    } else if (event.target.value !== 'all' && event.target.checked) {
+                        // If any other level is checked, uncheck "Todos os Níveis"
+                        document.querySelector('input[name="level_filter"][value="all"]').checked = false;
+                    }
+
+                    // If no checkboxes are checked, check "Todos os Níveis"
+                    const anyChecked = Array.from(levelCheckboxes).some(cb => cb.checked);
+                    if (!anyChecked) {
+                        document.querySelector('input[name="level_filter"][value="all"]').checked = true;
+                    }
+                    filterTasks();
+                });
+            });
+
+            // Initial filter application
+            filterTasks();
+
 
             if (saveTasksBtn) {
                 saveTasksBtn.addEventListener('click', async () => {
@@ -1004,42 +1158,74 @@
                 });
             }
 
-            // Filter tasks by ability
-            abilityFilter.addEventListener('change', () => {
-                const selectedAbility = abilityFilter.value;
-                const skillSections = document.querySelectorAll('.skill-section-card');
+            // Lógica para os botões de pontuação
+            const scoringButtons = document.querySelectorAll('.scoring-item-button');
+            scoringButtons.forEach(button => {
+                button.addEventListener('click', async () => {
+                    const scoringId = button.dataset.scoringId;
+                    let appliedScoringDocId = button.dataset.appliedScoringDocId;
+                    let isApplied = button.dataset.isApplied === 'true'; // Converte para booleano
 
-                skillSections.forEach(section => {
-                    const sectionAbility = section.dataset.habilidadeSection;
-                    const taskItems = section.querySelectorAll('.task-item-card');
-                    let sectionHasVisibleTasks = false;
+                    // Inverte o estado atual
+                    const newAppliedValue = !isApplied;
 
-                    taskItems.forEach(item => {
-                        const itemAbility = item.dataset.habilidadeItem;
-                        if (selectedAbility === 'all' || itemAbility === selectedAbility) {
-                            item.style.display = 'flex'; // Use flex for task items
-                            sectionHasVisibleTasks = true;
+                    button.disabled = true; // Desabilita o botão enquanto a requisição está em andamento
+
+                    try {
+                        const response = await fetch('/api/avaliacoes/salvar_pontuacao_criterio', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                patient_id: patientId,
+                                evaluation_id: evaluationId,
+                                scoring_applied_id: appliedScoringDocId, // Passa o ID do documento de pontuação aplicada
+                                applied_value: newAppliedValue
+                            })
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            // Atualiza o estado visual do botão
+                            if (newAppliedValue) {
+                                button.classList.add('applied');
+                                button.dataset.isApplied = 'true';
+                                showCustomAlert('Sucesso', 'Critério de pontuação aplicado!', 'success');
+                            } else {
+                                button.classList.remove('applied');
+                                button.dataset.isApplied = 'false';
+                                showCustomAlert('Sucesso', 'Critério de pontuação desaplicado!', 'success');
+                            }
+                            // Se a pontuação aplicada foi criada (primeira vez que é clicada), o backend deve retornar o ID
+                            // No seu caso, o `scoring_applied_id` já é o ID do documento, então não precisamos atualizar `appliedScoringDocId`
+                            // a menos que o backend gere um novo ID para cada clique, o que não é o caso aqui.
                         } else {
-                            item.style.display = 'none';
+                            showCustomAlert('Erro', data.message || 'Erro ao salvar critério de pontuação.', 'danger');
                         }
-                    });
-
-                    // Show/hide the entire skill section based on its visible tasks
-                    if (selectedAbility === 'all' || sectionHasVisibleTasks) {
-                        section.style.display = 'flex'; /* Alterado para 'flex' para manter o layout de coluna */
-                    } else {
-                        section.style.display = 'none';
+                    } catch (error) {
+                        console.error('Erro ao salvar critério de pontuação:', error);
+                        showCustomAlert('Erro', 'Erro de rede ao salvar critério de pontuação.', 'danger');
+                    } finally {
+                        button.disabled = false; // Reabilita o botão
                     }
                 });
             });
 
 
-            // Export PDF button
-            if (exportPdfBtn) {
-                exportPdfBtn.addEventListener('click', () => {
-                    // A URL já está no href do botão, então apenas abre em nova aba
+            // Script para fechar as mensagens flash (mantido do base.html)
+            document.querySelectorAll('.flash-message .close-flash').forEach(button => {
+                button.addEventListener('click', () => {
+                    button.closest('.flash-message').remove();
                 });
-            }
+            });
+
+            // Auto-hide flash messages after a few seconds (mantido do base.html)
+            document.querySelectorAll('.flash-message').forEach(message => {
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-20px)';
+                    message.addEventListener('transitionend', () => message.remove());
+                }, 5000); // 5 seconds
+            });
         });
     </script>
 </body>
