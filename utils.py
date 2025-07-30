@@ -578,38 +578,42 @@ def create_evaluation(clinica_id, patient_id, professional_id, evaluation_date):
 
 def add_protocol_to_evaluation(clinica_id, patient_id, evaluation_id, protocol_id, protocol_name):
     """
-    Vincula um protocolo (inteiro, sem nível específico) a uma avaliação existente e copia todas as suas tarefas.
+    Vincula um protocolo (inteiro, sem nível específico) a uma avaliação existente e copia todas as suas tarefas e pontuações.
     Um ID de instância único é gerado para o protocolo vinculado.
     """
     db = get_db()
     evaluation_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id)
-    evaluation_protocols_ref = evaluation_ref.collection('protocolos_vinculados')
-    evaluation_tasks_ref = evaluation_ref.collection('tarefas_avaliadas')
-    evaluation_scoring_ref = evaluation_ref.collection('pontuacoes_avaliadas') # Nova subcoleção para pontuações aplicadas
-
+    
     try:
-        # Gerar um ID de instância único para este protocolo vinculado
+        # 1. Gerar um ID de instância único para este protocolo vinculado à avaliação
         linked_protocol_instance_id = str(uuid.uuid4())
 
-        # Adiciona o protocolo vinculado sem o campo 'protocol_level'
+        # 2. Obter o protocolo mestre COMPLETO (incluindo tarefas_testes e pontuacao)
+        master_protocol_data = get_protocol_by_id(clinica_id, protocol_id)
+        if not master_protocol_data:
+            print(f"Erro: Protocolo mestre {protocol_id} não encontrado para vinculação.")
+            return False
+
+        # 3. Salvar os dados básicos do protocolo vinculado na subcoleção 'protocolos_vinculados'
+        # Isso inclui o ID do protocolo mestre e o nome para referência
         protocol_link_data = {
             'protocol_id': protocol_id,
             'protocol_name': protocol_name,
             'data_vinculacao': firestore.SERVER_TIMESTAMP,
-            'id': linked_protocol_instance_id # Armazena o ID da instância gerado
+            'id': linked_protocol_instance_id, # Armazena o ID da instância gerado
+            'niveis_snapshot': master_protocol_data.get('niveis', []) # Snapshot dos níveis
         }
-        # Define o documento com o ID de instância gerado
-        evaluation_protocols_ref.document(linked_protocol_instance_id).set(protocol_link_data)
+        linked_protocol_doc_ref = evaluation_ref.collection('protocolos_vinculados').document(linked_protocol_instance_id)
+        linked_protocol_doc_ref.set(protocol_link_data)
 
-        # Copia TODOS os itens do protocolo como tarefas para a avaliação
-        protocol_items = get_protocol_items_by_protocol_id(clinica_id, protocol_id)
-        
-        for item in protocol_items:
-            task_data = {
-                'protocol_id': protocol_id, # ID do protocolo mestre
-                'linked_protocol_instance_id': linked_protocol_instance_id, # Link para a instância específica do protocolo vinculado
-                'protocol_item_id': item['id'], # ID do item original do protocolo
-                'nivel': item.get('nivel'), # O nível da tarefa original é mantido
+        # 4. Copiar TODAS as tarefas/testes do protocolo mestre para a subcoleção 'tarefas_snapshot'
+        # sob o documento do protocolo vinculado na avaliação.
+        tasks_snapshot_ref = linked_protocol_doc_ref.collection('tarefas_snapshot')
+        for item in master_protocol_data.get('tarefas_testes', []):
+            task_snapshot_data = {
+                'protocol_item_id': item.get('id'), # ID do item original do protocolo
+                'nivel': item.get('nivel'),
+                'ordem': item.get('ordem'),
                 'item_numero': item.get('item'),
                 'nome_tarefa': item.get('nome'),
                 'habilidade_marco': item.get('habilidade_marco'),
@@ -617,28 +621,81 @@ def add_protocol_to_evaluation(clinica_id, patient_id, evaluation_id, protocol_i
                 'criterio': item.get('criterio', ''),
                 'pergunta': item.get('pergunta', ''),
                 'objetivo': item.get('objetivo', ''),
-                'response_value': '', # 'Nunca', 'As vezes', 'Sempre'
-                'additional_info': '',
-                'data_resposta': None,
-                'status': 'pendente', # 'pendente', 'respondida'
-                'created_at': firestore.SERVER_TIMESTAMP
+                'created_at': firestore.SERVER_TIMESTAMP # Timestamp de quando o snapshot foi criado
             }
-            evaluation_tasks_ref.add(task_data) # Firestore gera um novo ID para cada tarefa avaliada
-        
-        # Copia os critérios de pontuação do protocolo para a avaliação
-        protocol_scoring_items = get_protocol_by_id(clinica_id, protocol_id).get('pontuacao', [])
-        for score_item in protocol_scoring_items:
-            scoring_data = {
-                'protocol_id': protocol_id,
-                'linked_protocol_instance_id': linked_protocol_instance_id,
+            tasks_snapshot_ref.add(task_snapshot_data) # Firestore gera um novo ID para cada tarefa no snapshot
+
+        # 5. Copiar os critérios de pontuação do protocolo mestre para a subcoleção 'pontuacao_snapshot'
+        # sob o documento do protocolo vinculado na avaliação.
+        scoring_snapshot_ref = linked_protocol_doc_ref.collection('pontuacao_snapshot')
+        for score_item in master_protocol_data.get('pontuacao', []):
+            scoring_snapshot_data = {
                 'scoring_item_id': score_item.get('id'), # ID do item de pontuação original
+                'ordem': score_item.get('ordem'),
                 'descricao': score_item.get('descricao'),
                 'valor': score_item.get('valor'),
+                'created_at': firestore.SERVER_TIMESTAMP # Timestamp de quando o snapshot foi criado
+            }
+            scoring_snapshot_ref.add(scoring_snapshot_data)
+            
+        # 6. Inicializar as tarefas avaliadas na subcoleção 'tarefas_avaliadas' da avaliação
+        # com base nas tarefas do snapshot. Isso é crucial para que o frontend possa carregar
+        # as respostas salvas e o estado inicial.
+        evaluation_tasks_ref = evaluation_ref.collection('tarefas_avaliadas')
+        
+        # Buscar as tarefas que acabaram de ser copiadas para o snapshot
+        # Nota: Idealmente, usaríamos os IDs gerados no passo 4. Por simplicidade,
+        # vamos re-consultar o snapshot ou passar os IDs gerados no passo 4.
+        # Para evitar complexidade extra de IDs aninhados, vamos copiar os dados
+        # novamente para 'tarefas_avaliadas', mas agora com o linked_protocol_instance_id.
+        # O 'protocol_item_id' do snapshot será usado para vincular.
+        
+        # Pega as tarefas que foram adicionadas ao snapshot (re-consulta)
+        snapshot_tasks = []
+        for doc in tasks_snapshot_ref.stream():
+            snapshot_tasks.append(convert_doc_to_dict(doc))
+
+        for task_snap in snapshot_tasks:
+            task_data_for_eval = {
+                'linked_protocol_instance_id': linked_protocol_instance_id, # Link para a instância específica do protocolo vinculado
+                'protocol_item_id': task_snap.get('protocol_item_id'), # ID do item original do protocolo
+                'task_snapshot_id': task_snap.get('id'), # ID do documento da tarefa no snapshot
+                'nivel': task_snap.get('nivel'), 
+                'item_numero': task_snap.get('item_numero'),
+                'nome_tarefa': task_snap.get('nome_tarefa'),
+                'habilidade_marco': task_snap.get('habilidade_marco'),
+                'exemplo': task_snap.get('exemplo', ''),
+                'criterio': task_snap.get('criterio', ''),
+                'pergunta': task_snap.get('pergunta', ''),
+                'objetivo': task_snap.get('objetivo', ''),
+                'response_value': '', # Valor inicial vazio
+                'additional_info': '', # Info adicional vazia
+                'data_resposta': None,
+                'status': 'pendente', # 'pendente', 'respondida'
+                'created_at': firestore.SERVER_TIMESTAMP # Timestamp de quando a tarefa avaliada foi inicializada
+            }
+            evaluation_tasks_ref.add(task_data_for_eval) # Firestore gera um novo ID para cada tarefa avaliada
+
+        # 7. Inicializar as pontuações avaliadas na subcoleção 'pontuacoes_avaliadas' da avaliação
+        evaluation_scoring_ref = evaluation_ref.collection('pontuacoes_avaliadas')
+        
+        # Pega as pontuações que foram adicionadas ao snapshot (re-consulta)
+        snapshot_scoring_items = []
+        for doc in scoring_snapshot_ref.stream():
+            snapshot_scoring_items.append(convert_doc_to_dict(doc))
+
+        for score_snap in snapshot_scoring_items:
+            scoring_data_for_eval = {
+                'linked_protocol_instance_id': linked_protocol_instance_id,
+                'scoring_item_id': score_snap.get('scoring_item_id'), # ID do item de pontuação original
+                'scoring_snapshot_id': score_snap.get('id'), # ID do documento da pontuação no snapshot
+                'descricao': score_snap.get('descricao'),
+                'valor': score_snap.get('valor'),
                 'data_aplicacao': None,
                 'aplicado': False, # Indica se o profissional "respondeu" a este critério
                 'created_at': firestore.SERVER_TIMESTAMP
             }
-            evaluation_scoring_ref.add(scoring_data)
+            evaluation_scoring_ref.add(scoring_data_for_eval)
 
         return True
     except Exception as e:
@@ -667,7 +724,7 @@ def get_evaluation_details(clinica_id, patient_id, evaluation_id):
             # Buscar tarefas avaliadas
             evaluation_data['tarefas_avaliadas'] = []
             tasks_ref = eval_doc.reference.collection('tarefas_avaliadas')
-            # Ordena por protocol_id, nivel, e item_numero para consistência
+            # Ordena por linked_protocol_instance_id, nivel, e item_numero para consistência
             for task_doc in tasks_ref.order_by('linked_protocol_instance_id').order_by('nivel').order_by('item_numero').stream(): 
                 task_data = convert_doc_to_dict(task_doc)
                 if task_data and task_data.get('data_resposta'):
@@ -744,10 +801,13 @@ def delete_evaluation(clinica_id, patient_id, evaluation_id):
     evaluation_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id)
     
     try:
-        # Excluir subcoleção 'protocolos_vinculados'
+        # Excluir subcoleção 'protocolos_vinculados' e suas subcoleções de snapshot
         linked_protocols_ref = evaluation_ref.collection('protocolos_vinculados')
-        for doc in linked_protocols_ref.stream():
-            doc.reference.delete()
+        for linked_proto_doc in linked_protocols_ref.stream():
+            # Excluir subcoleções de snapshot dentro do protocolo vinculado
+            linked_proto_doc.reference.collection('tarefas_snapshot').map(lambda doc: doc.reference.delete())
+            linked_proto_doc.reference.collection('pontuacao_snapshot').map(lambda doc: doc.reference.delete())
+            linked_proto_doc.reference.delete() # Excluir o documento do protocolo vinculado
 
         # Excluir subcoleção 'tarefas_avaliadas'
         tasks_ref = evaluation_ref.collection('tarefas_avaliadas')
@@ -770,6 +830,7 @@ def delete_linked_protocol_and_tasks(clinica_id, patient_id, evaluation_id, link
     """
     Desvincula um protocolo de uma avaliação e remove APENAS as tarefas
     e pontuações associadas a ESSE protocolo vinculado (usando o linked_protocol_instance_id).
+    Também remove os snapshots de tarefas e pontuações.
     """
     db = get_db()
     evaluation_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id)
@@ -777,16 +838,23 @@ def delete_linked_protocol_and_tasks(clinica_id, patient_id, evaluation_id, link
     try:
         # 1. Excluir o documento do protocolo vinculado na subcoleção 'protocolos_vinculados'
         linked_protocol_doc_ref = evaluation_ref.collection('protocolos_vinculados').document(linked_protocol_instance_id_to_remove)
-        linked_protocol_doc_ref.delete()
+        
+        # Excluir subcoleções de snapshot dentro do protocolo vinculado antes de deletar o documento principal
+        for doc in linked_protocol_doc_ref.collection('tarefas_snapshot').stream():
+            doc.reference.delete()
+        for doc in linked_protocol_doc_ref.collection('pontuacao_snapshot').stream():
+            doc.reference.delete()
+        
+        linked_protocol_doc_ref.delete() # Excluir o documento do protocolo vinculado
 
-        # 2. Excluir as tarefas associadas a este protocolo na subcoleção 'tarefas_avaliadas'
+        # 2. Excluir as tarefas avaliadas associadas a este protocolo na subcoleção 'tarefas_avaliadas'
         tasks_to_delete_query = evaluation_ref.collection('tarefas_avaliadas').where(
             filter=FieldFilter('linked_protocol_instance_id', '==', linked_protocol_instance_id_to_remove)
         )
         for task_doc in tasks_to_delete_query.stream():
             task_doc.reference.delete()
         
-        # 3. Excluir as pontuações associadas a este protocolo na subcoleção 'pontuacoes_avaliadas'
+        # 3. Excluir as pontuações avaliadas associadas a este protocolo na subcoleção 'pontuacoes_avaliadas'
         scoring_to_delete_query = evaluation_ref.collection('pontuacoes_avaliadas').where(
             filter=FieldFilter('linked_protocol_instance_id', '==', linked_protocol_instance_id_to_remove)
         )

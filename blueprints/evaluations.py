@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request, jsonify
 # Importar login_required e admin_required do utils
-from utils import login_required, admin_required, get_db, convert_doc_to_dict, SAO_PAULO_TZ, parse_date_input, get_all_protocols_with_items, get_patient_evaluations, create_evaluation, add_protocol_to_evaluation, get_evaluation_details, save_evaluation_task_response, update_evaluation_status, delete_evaluation, get_protocol_by_id, delete_linked_protocol_and_tasks 
+from utils import login_required, admin_required, get_db, convert_doc_to_dict, SAO_PAULO_TZ, parse_date_input, get_all_protocols_with_items, get_patient_evaluations, create_evaluation, add_protocol_to_evaluation, get_evaluation_details, save_evaluation_task_response, update_evaluation_status, delete_evaluation, get_protocol_by_id, delete_linked_protocol_and_tasks, save_evaluation_scoring_response
 import datetime
 import json
 from reportlab.lib.pagesizes import letter
@@ -168,18 +168,18 @@ def view_evaluation(patient_id, evaluation_id):
 def view_protocol_tasks(patient_id, evaluation_id, linked_protocol_instance_id): 
     """
     Exibe as tarefas de um protocolo específico vinculado a uma avaliação.
-    Agora, busca todas as tarefas do protocolo vinculado e passa os níveis e pontuações
-    do protocolo mestre para o frontend para filtragem dinâmica.
+    Agora, busca as tarefas e pontuações do SNAPSHOT armazenado na avaliação,
+    e os níveis do snapshot também.
     """
     db = get_db()
     clinica_id = session['clinica_id']
 
     patient_data = None
     evaluation_details = None
-    protocol_data = None # Dados do protocolo mestre
+    protocol_data = None # Representa o snapshot do protocolo vinculado
     tasks = []
-    protocol_levels = [] # Lista de níveis do protocolo mestre
-    protocol_scoring = [] # Lista de pontuações do protocolo mestre
+    protocol_levels = [] # Lista de níveis do snapshot do protocolo
+    protocol_scoring = [] # Lista de pontuações do snapshot do protocolo
 
     try:
         # 1. Obter dados do paciente
@@ -203,45 +203,83 @@ def view_protocol_tasks(patient_id, evaluation_id, linked_protocol_instance_id):
             evaluation_details['data_avaliacao_fmt'] = 'N/A'
 
         # Encontrar a instância do protocolo vinculado para obter o master_protocol_id
-        current_linked_protocol = None
+        current_linked_protocol_instance = None
         for linked_proto in evaluation_details.get('protocolos_vinculados', []):
             if linked_proto.get('id') == linked_protocol_instance_id: # Match by instance ID
-                current_linked_protocol = linked_proto
-                master_protocol_id = current_linked_protocol.get('protocol_id')
+                current_linked_protocol_instance = linked_proto
                 break
         
-        if not current_linked_protocol or master_protocol_id is None:
+        if not current_linked_protocol_instance:
             flash('Protocolo vinculado não encontrado para esta avaliação.', 'danger')
             return redirect(url_for('evaluations.view_evaluation', patient_id=patient_id, evaluation_id=evaluation_id))
 
-        # 3. Obter dados COMPLETOS do protocolo mestre (incluindo níveis e pontuação)
-        protocol_data = get_protocol_by_id(clinica_id, master_protocol_id) # Usa master_protocol_id
+        # 3. Obter os dados do SNAPSHOT do protocolo vinculado
+        # Isso inclui os níveis e as habilidades que foram copiados no momento da vinculação.
+        # As tarefas e pontuações serão buscadas de subcoleções do snapshot.
+        linked_protocol_doc_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).collection('protocolos_vinculados').document(linked_protocol_instance_id)
         
-        # --- Tratamento de erro aprimorado aqui ---
+        protocol_data = convert_doc_to_dict(linked_protocol_doc_ref.get())
         if not protocol_data:
-            flash('Erro: Protocolo mestre não encontrado. Ele pode ter sido excluído.', 'danger')
-            print(f"Erro: Protocolo mestre (ID: {master_protocol_id}) não encontrado para a instância vinculada {linked_protocol_instance_id}.")
+            flash('Erro: Snapshot do protocolo vinculado não encontrado.', 'danger')
             return redirect(url_for('evaluations.view_evaluation', patient_id=patient_id, evaluation_id=evaluation_id))
-        # --- Fim do tratamento de erro aprimorado ---
-        
-        # Extrair níveis e pontuações do protocolo mestre
-        protocol_levels = sorted(protocol_data.get('niveis', []), key=lambda x: x.get('nivel', 0))
-        protocol_scoring = sorted(protocol_data.get('pontuacao', []), key=lambda x: x.get('ordem', 0))
 
-        # 4. Obter TODAS as tarefas específicas para este protocolo vinculado (sem filtrar por nível aqui)
-        tasks_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).collection('tarefas_avaliadas')
+        # Extrair níveis do snapshot (armazenados diretamente no documento da instância vinculada)
+        protocol_levels = sorted(protocol_data.get('niveis_snapshot', []), key=lambda x: x.get('nivel', 0))
+
+        # Obter as tarefas do SNAPSHOT (subcoleção 'tarefas_snapshot')
+        tasks_snapshot_ref = linked_protocol_doc_ref.collection('tarefas_snapshot')
+        snapshot_tasks = []
+        for task_snap_doc in tasks_snapshot_ref.order_by('nivel').order_by('ordem').stream():
+            snapshot_tasks.append(convert_doc_to_dict(task_snap_doc))
+
+        # Obter os critérios de pontuação do SNAPSHOT (subcoleção 'pontuacao_snapshot')
+        scoring_snapshot_ref = linked_protocol_doc_ref.collection('pontuacao_snapshot')
+        protocol_scoring = []
+        for score_snap_doc in scoring_snapshot_ref.order_by('ordem').stream():
+            protocol_scoring.append(convert_doc_to_dict(score_snap_doc))
+
+        # 4. Obter as tarefas avaliadas para esta instância do protocolo
+        # e mesclar com os dados do snapshot para ter todas as informações da tarefa.
+        # A 'tarefas_avaliadas' contém a resposta e info adicional, mas não todos os detalhes da tarefa.
+        # Os detalhes da tarefa vêm do snapshot.
+        tasks_evaluated_ref = db.collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).collection('avaliacoes').document(evaluation_id).collection('tarefas_avaliadas')
         
-        # Query tasks by linked_protocol_instance_id, ordered by nivel and item_numero
-        tasks_query = tasks_ref.where(
+        # Query tasks by linked_protocol_instance_id
+        tasks_query = tasks_evaluated_ref.where(
             filter=firestore.FieldFilter('linked_protocol_instance_id', '==', linked_protocol_instance_id)
-        ).order_by('nivel').order_by('item_numero')
+        ).stream()
 
-        for task_doc in tasks_query.stream():
-            task_data = convert_doc_to_dict(task_doc)
-            if task_data and task_data.get('data_resposta'):
-                task_data['data_resposta_fmt'] = task_data['data_resposta'].strftime('%d/%m/%Y %H:%M')
-            tasks.append(task_data)
+        # Mapear tarefas avaliadas por protocol_item_id para fácil lookup
+        evaluated_tasks_map = {t.get('protocol_item_id'): t for t in evaluation_details.get('tarefas_avaliadas', []) if t.get('linked_protocol_instance_id') == linked_protocol_instance_id}
+        
+        # Construir a lista final de tarefas para o template, mesclando snapshot com respostas
+        tasks = []
+        for task_snap in snapshot_tasks:
+            task_id_from_master = task_snap.get('protocol_item_id')
+            evaluated_task = evaluated_tasks_map.get(task_id_from_master)
             
+            merged_task = {
+                'id': evaluated_task['id'] if evaluated_task else None, # ID do documento em 'tarefas_avaliadas'
+                'protocol_item_id': task_snap.get('protocol_item_id'), # ID do item original do protocolo
+                'nivel': task_snap.get('nivel'),
+                'item_numero': task_snap.get('item_numero'),
+                'nome_tarefa': task_snap.get('nome_tarefa'),
+                'habilidade_marco': task_snap.get('habilidade_marco'),
+                'exemplo': task_snap.get('exemplo', ''),
+                'criterio': task_snap.get('criterio', ''),
+                'pergunta': task_snap.get('pergunta', ''),
+                'objetivo': task_snap.get('objetivo', ''),
+                'response_value': evaluated_task.get('response_value', '') if evaluated_task else '',
+                'additional_info': evaluated_task.get('additional_info', '') if evaluated_task else '',
+                'data_resposta': evaluated_task.get('data_resposta') if evaluated_task else None,
+                'status': evaluated_task.get('status', 'pendente') if evaluated_task else 'pendente'
+            }
+            tasks.append(merged_task)
+
+        # Ordenar as tarefas mescladas para garantir a ordem correta no frontend
+        tasks = sorted(tasks, key=lambda x: (x.get('nivel', 0), x.get('item_numero', '')))
+
+
     except Exception as e:
         flash(f'Erro ao carregar tarefas do protocolo: {e}', 'danger')
         print(f"Erro em view_protocol_tasks para paciente {patient_id}, avaliação {evaluation_id}, instância de protocolo {linked_protocol_instance_id}: {e}")
@@ -251,10 +289,11 @@ def view_protocol_tasks(patient_id, evaluation_id, linked_protocol_instance_id):
         'avaliacao_protocolo_tarefas.html',
         patient=patient_data,
         evaluation=evaluation_details,
-        protocol=protocol_data,
+        protocol=protocol_data, # Agora é o snapshot do protocolo vinculado
         tasks=tasks,
-        protocol_levels=protocol_levels, # Passa todos os níveis do protocolo mestre
-        protocol_scoring=protocol_scoring, # Passa a pontuação do protocolo mestre
+        protocol_levels=protocol_levels, # Níveis do snapshot
+        protocol_scoring=protocol_scoring, # Pontuação do snapshot
+        # applied_scoring_responses não é mais necessário aqui, pois a lógica de botões foi alterada
         now=datetime.datetime.now(SAO_PAULO_TZ)
     )
 
@@ -329,7 +368,7 @@ def api_save_task_response():
     data = request.get_json()
     patient_id = data.get('patient_id')
     evaluation_id = data.get('evaluation_id')
-    task_id = data.get('task_id')
+    task_id = data.get('task_id') # Este é o ID do documento em 'tarefas_avaliadas'
     response_value = data.get('response_value')
     additional_info = data.get('additional_info', '')
     clinica_id = session['clinica_id']
@@ -388,6 +427,29 @@ def api_remove_linked_protocol(patient_id, evaluation_id, linked_protocol_instan
     else:
         return jsonify({'success': False, 'message': 'Erro ao desvincular protocolo.'}), 500
 
+@evaluations_bp.route('/api/avaliacoes/salvar_pontuacao_criterio', methods=['POST'])
+@login_required
+def api_save_scoring_response():
+    """
+    API para salvar a resposta de um critério de pontuação específico dentro de uma avaliação.
+    """
+    data = request.get_json()
+    patient_id = data.get('patient_id')
+    evaluation_id = data.get('evaluation_id')
+    scoring_applied_id = data.get('scoring_applied_id') # Este é o ID do documento em 'pontuacoes_avaliadas'
+    applied_value = data.get('applied_value')
+    clinica_id = session['clinica_id']
+
+    if not all([patient_id, evaluation_id, scoring_applied_id is not None, applied_value is not None]):
+        return jsonify({'success': False, 'message': 'Dados incompletos para salvar resposta do critério de pontuação.'}), 400
+
+    success = save_evaluation_scoring_response(clinica_id, patient_id, evaluation_id, scoring_applied_id, applied_value)
+
+    if success:
+        return jsonify({'success': True, 'message': 'Critério de pontuação salvo com sucesso!'})
+    else:
+        return jsonify({'success': False, 'message': 'Erro ao salvar critério de pontuação.'}), 500
+
 
 @evaluations_bp.route('/avaliacoes/gerar_pdf/<patient_id>/<evaluation_id>', methods=['GET'])
 @login_required
@@ -400,7 +462,7 @@ def generate_evaluation_pdf(patient_id, evaluation_id):
     
     if not evaluation_details:
         flash('Avaliação não encontrada para gerar PDF.', 'danger')
-        return redirect(url_for('evaluations.view_evaluation', patient_id=patient.id, evaluation_id=evaluation.id))
+        return redirect(url_for('evaluations.view_evaluation', patient_id=patient_id, evaluation_id=evaluation_id)) # Corrigido para patient_id e evaluation_id
 
     patient_data = get_db().collection('clinicas').document(clinica_id).collection('pacientes').document(patient_id).get()
     patient_name = patient_data.to_dict().get('nome', 'Paciente Desconhecido') if patient_data.exists else 'Paciente Desconhecido'
@@ -453,18 +515,17 @@ def generate_evaluation_pdf(patient_id, evaluation_id):
         grouped_tasks = {}
         for task in evaluation_details['tarefas_avaliadas']:
             linked_proto_instance_id = task.get('linked_protocol_instance_id')
-            protocol_name = task.get('protocol_name')
+            protocol_name = None # Será buscado do linked_protocol_instance
             nivel = task.get('nivel', 'N/A')
 
-            # Se o nome do protocolo não estiver na tarefa, busca-o da avaliação
-            if not protocol_name:
-                for linked_proto in evaluation_details.get('protocolos_vinculados', []):
-                    if linked_proto.get('id') == linked_proto_instance_id:
-                        protocol_name = linked_proto.get('protocol_name', 'Protocolo Desconhecido')
-                        break
-                if not protocol_name: # Fallback se não encontrar na avaliação
-                    protocol_doc = get_protocol_by_id(clinica_id, task.get('protocol_id'))
-                    protocol_name = protocol_doc.get('nome', 'Protocolo Desconhecido') if protocol_doc else 'Protocolo Desconhecido'
+            # Buscar o nome do protocolo a partir do linked_protocol_instance_id
+            for linked_proto in evaluation_details.get('protocolos_vinculados', []):
+                if linked_proto.get('id') == linked_proto_instance_id:
+                    protocol_name = linked_proto.get('protocol_name', 'Protocolo Desconhecido')
+                    break
+            
+            if not protocol_name: # Fallback se não encontrar
+                protocol_name = 'Protocolo Desconhecido'
             
             # Use uma tupla para agrupar por instância de protocolo e nome do protocolo
             group_key = (linked_proto_instance_id, protocol_name) 
@@ -496,6 +557,47 @@ def generate_evaluation_pdf(patient_id, evaluation_id):
                     story.append(Spacer(1, 0.1 * inch))
     else:
         story.append(Paragraph("Nenhuma tarefa avaliada nesta avaliação.", styles['Italic']))
+
+    # Pontuação Aplicada
+    story.append(PageBreak()) # Nova página para a seção de pontuação
+    story.append(Paragraph("Pontuação Aplicada:", styles['Heading1']))
+    if evaluation_details.get('pontuacoes_avaliadas'):
+        # Agrupar pontuações por linked_protocol_instance_id e nome do protocolo
+        grouped_scoring = {}
+        for score_entry in evaluation_details['pontuacoes_avaliadas']:
+            linked_proto_instance_id = score_entry.get('linked_protocol_instance_id')
+            protocol_name = None
+
+            for linked_proto in evaluation_details.get('protocolos_vinculados', []):
+                if linked_proto.get('id') == linked_proto_instance_id:
+                    protocol_name = linked_proto.get('protocol_name', 'Protocolo Desconhecido')
+                    break
+            
+            if not protocol_name:
+                protocol_name = 'Protocolo Desconhecido'
+            
+            group_key = (linked_proto_instance_id, protocol_name)
+
+            if group_key not in grouped_scoring:
+                grouped_scoring[group_key] = []
+            grouped_scoring[group_key].append(score_entry)
+        
+        sorted_scoring_keys = sorted(grouped_scoring.keys(), key=lambda x: x[1])
+
+        for group_key in sorted_scoring_keys:
+            linked_proto_instance_id, protocol_name = group_key
+            scoring_entries = grouped_scoring[group_key]
+
+            story.append(Spacer(1, 0.2 * inch))
+            story.append(Paragraph(f"Protocolo: {protocol_name}", styles['Heading2']))
+            
+            for entry in scoring_entries:
+                status = "Aplicado" if entry.get('aplicado') else "Não Aplicado"
+                data_aplicacao = entry.get('data_aplicacao_fmt', 'N/A')
+                story.append(Paragraph(f"• {entry.get('descricao', 'N/A')} (Valor: {entry.get('valor', 'N/A')}) - Status: {status} (Data: {data_aplicacao})", styles['Normal']))
+    else:
+        story.append(Paragraph("Nenhum critério de pontuação aplicado nesta avaliação.", styles['Italic']))
+
 
     doc.build(story)
     buffer.seek(0)
