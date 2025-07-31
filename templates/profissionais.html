@@ -429,8 +429,25 @@
         }
 
         /* --- Modals (Reutilizados) --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; opacity: 0; transition: opacity 0.25s ease; }
-        .modal-overlay.active { opacity: 1; display: flex; }
+        .modal-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.6); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 2000; 
+            opacity: 0; 
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease; 
+        }
+        .modal-overlay.active { 
+            opacity: 1; 
+            visibility: visible; 
+        }
         .modal-content { 
             background-color: var(--card); 
             color: var(--text); 
@@ -438,19 +455,120 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
             width: 95%;
             max-width: 500px;
-            transform: translateY(-20px); 
+            transform: scale(0.95); 
             transition: transform 0.25s ease; 
             max-height: calc(100vh - 40px); 
-            display: flex; 
-            flex-direction: column; 
+            overflow-y: auto;
             text-align: center;
             padding: 2rem;
+            position: relative; /* Para o posicionamento do botão de fechar */
         }
-        .modal-overlay.active .modal-content { transform: translateY(0); }
-        .modal-icon { font-size: 3rem; margin-bottom: 1rem; color: var(--warning); }
-        .modal-title { font-size: 1.4rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
-        .modal-text { font-size: 1rem; color: var(--muted); margin-bottom: 1.5rem; }
-        .modal-actions { display: flex; justify-content: center; gap: 0.75rem; }
+        .modal-overlay.active .modal-content { 
+            transform: scale(1); 
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+        .modal-header .modal-title {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .modal-header .modal-close-btn {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s ease;
+        }
+        .modal-header .modal-close-btn:hover {
+            color: var(--text);
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="tel"],
+        .form-group input[type="email"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .status-toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .status-toggle-container:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+        .status-toggle-container input[type="checkbox"] {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid var(--muted);
+            border-radius: 9999px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .status-toggle-container input[type="checkbox"]:checked {
+            background-color: var(--success);
+            border-color: var(--success);
+        }
+        .status-toggle-container input[type="checkbox"]:checked::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: white;
+            font-size: 0.75rem;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .status-toggle-container span {
+            font-weight: 500;
+            color: var(--text);
+        }
 
         /* --- Responsive --- */
         span.btn-text-desktop { display: none; }
@@ -489,9 +607,10 @@
                     <button class="toggle-btn toggle-btn-desktop"><i class="fa-solid fa-bars-staggered"></i></button>
                     <h1 class="page-title">Gerenciar Profissionais</h1>
                 </div>
-                <a href="{{ url_for('adicionar_profissional') }}" class="btn btn-primary">
+                {# Botão para abrir o modal, substituindo o link anterior #}
+                <button id="openNovoProfissionalModalBtn" class="btn btn-primary">
                     <i class="fas fa-plus"></i> <span class="btn-text-desktop">Adicionar Profissional</span>
-                </a>
+                </button>
             </header>
 
             <main>
@@ -562,6 +681,61 @@
                 <button id="customConfirmCancel" class="btn btn-secondary">Cancelar</button>
                 <button id="customConfirmOk" class="btn btn-danger">Confirmar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Novo Modal para Cadastro de Profissional -->
+    <div class="modal-overlay" id="novoProfissionalModal">
+        <div class="modal-content text-left">
+            <div class="modal-header">
+                <h3 class="modal-title">Adicionar Novo Profissional</h3>
+                <button id="closeNovoProfissionalModalBtn" class="modal-close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form action="{{ url_for('adicionar_profissional') }}" method="post">
+                <!-- Campo Nome do Profissional -->
+                <div class="form-group">
+                    <label for="nome">Nome do Profissional</label>
+                    <input type="text" name="nome" id="nome" autocomplete="name" placeholder="Ex: João da Silva">
+                </div>
+
+                <!-- Campo Telefone -->
+                <div class="form-group">
+                    <label for="telefone">Telefone (com DDD, opcional)</label>
+                    <input type="tel" name="telefone" id="telefone" autocomplete="tel" placeholder="(XX) XXXXX-XXXX">
+                </div>
+
+                <!-- Campo E-mail -->
+                <div class="form-group">
+                    <label for="email">E-mail (opcional)</label>
+                    <input type="email" name="email" id="email" autocomplete="email" placeholder="email@example.com">
+                </div>
+
+                <!-- Campo CRM/Registro Profissional -->
+                <div class="form-group">
+                    <label for="crm">CRM/Registro Profissional (opcional)</label>
+                    <input type="text" name="crm" id="crm" placeholder="Ex: CRM/SP 123456 ou 123456">
+                </div>
+
+                <!-- Campo Status do Profissional -->
+                <div class="form-group">
+                    <label>Status do Profissional</label>
+                    <label class="status-toggle-container">
+                        <input id="status-ativo" name="ativo" type="checkbox" checked>
+                        <span>Profissional Ativo</span>
+                    </label>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelNovoProfissionalBtn">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Salvar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -708,10 +882,46 @@
                     });
                 });
             }
+            
+            // --- Lógica para o novo Modal de Cadastro de Profissional ---
+            function setupNovoProfissionalModal() {
+                const openModalBtn = document.getElementById('openNovoProfissionalModalBtn');
+                const closeModalBtn = document.getElementById('closeNovoProfissionalModalBtn');
+                const cancelNovoProfissionalBtn = document.getElementById('cancelNovoProfissionalBtn');
+                const novoProfissionalModal = document.getElementById('novoProfissionalModal');
 
-            // --- Inicialização ---
+                if (openModalBtn) {
+                    openModalBtn.addEventListener('click', () => {
+                        novoProfissionalModal.classList.add('active');
+                    });
+                }
+
+                function closeNovoProfissionalModal() {
+                    novoProfissionalModal.classList.remove('active');
+                }
+
+                if (closeModalBtn) {
+                    closeModalBtn.addEventListener('click', closeNovoProfissionalModal);
+                }
+
+                if (cancelNovoProfissionalBtn) {
+                    cancelNovoProfissionalBtn.addEventListener('click', closeNovoProfissionalModal);
+                }
+
+                if (novoProfissionalModal) {
+                    // Fecha o modal ao clicar fora dele
+                    novoProfissionalModal.addEventListener('click', (e) => {
+                        if (e.target === novoProfissionalModal) {
+                            closeNovoProfissionalModal();
+                        }
+                    });
+                }
+            }
+
+            // --- Inicialização de todas as funcionalidades ---
             setupConfirmationModal();
-            setupDropdowns(); // Adiciona a inicialização dos dropdowns
+            setupDropdowns();
+            setupNovoProfissionalModal();
         });
     </script>
 </body>
