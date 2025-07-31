@@ -660,7 +660,7 @@ def import_protocol_from_ai():
             if not text_content.strip():
                 return jsonify({'success': False, 'message': 'Não foi possível extrair texto do PDF. O PDF pode estar vazio ou ser uma imagem.'}), 400
 
-            prompt = f"""
+            prompt = rf"""
             Você é um assistente especializado em extrair informações de documentos de protocolo clínico, como o "Guia Portage" ou "Protocolo TEA".
             Seu objetivo é ler o texto fornecido e preencher um formulário de protocolo com as seguintes seções e campos.
             Preencha todos os campos que puder encontrar no documento, mesmo que estejam em diferentes formatos (listas, texto corrido, tabelas).

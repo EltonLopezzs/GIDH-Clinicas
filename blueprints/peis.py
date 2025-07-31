@@ -731,7 +731,7 @@ def ver_peis_paciente(paciente_doc_id):
         {'sigla': 'AFP', 'description': 'Ajuda Física Parcial'},
         {'sigla': 'AG', 'description': 'Ajuda Gestual'},
         {'sigla': 'AE', 'description': 'Ajuda Ecóica'},
-        {'sigla': 'I', 'description': 'IndePendente'},
+        {'sigla': 'I', 'description': 'Independente'},
     ]
 
     # Obter PEIs do paciente
