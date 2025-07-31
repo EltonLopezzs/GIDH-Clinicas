@@ -641,9 +641,10 @@
                                                 </button>
                                             {% endif %}
                                         </form>
-                                        <a href="{{ url_for('editar_profissional', profissional_doc_id=profissional.id) }}">
+                                        {# Botão para abrir o modal de edição, com os dados do profissional #}
+                                        <button type="button" class="edit-professional-btn" data-id="{{ profissional.id }}" data-nome="{{ profissional.nome }}" data-telefone="{{ profissional.telefone or '' }}" data-email="{{ profissional.email or '' }}" data-crm="{{ profissional.crm_ou_registro or '' }}" data-ativo="{{ profissional.ativo }}">
                                             <i class="fas fa-edit"></i> Editar
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -684,16 +685,17 @@
         </div>
     </div>
 
-    <!-- Novo Modal para Cadastro de Profissional -->
+    <!-- Novo Modal para Cadastro/Edição de Profissional -->
     <div class="modal-overlay" id="novoProfissionalModal">
         <div class="modal-content text-left">
             <div class="modal-header">
-                <h3 class="modal-title">Adicionar Novo Profissional</h3>
+                <h3 class="modal-title" id="modal-profissional-title">Adicionar Novo Profissional</h3>
                 <button id="closeNovoProfissionalModalBtn" class="modal-close-btn">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form action="{{ url_for('adicionar_profissional') }}" method="post">
+            <form id="profissionalForm" method="post">
+                <input type="hidden" name="profissional_doc_id" id="profissional_doc_id">
                 <!-- Campo Nome do Profissional -->
                 <div class="form-group">
                     <label for="nome">Nome do Profissional</label>
@@ -722,7 +724,7 @@
                     <button type="button" class="btn btn-secondary" id="cancelNovoProfissionalBtn">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="modal-submit-btn">
                         Salvar
                     </button>
                 </div>
@@ -880,12 +882,49 @@
                 const closeModalBtn = document.getElementById('closeNovoProfissionalModalBtn');
                 const cancelNovoProfissionalBtn = document.getElementById('cancelNovoProfissionalBtn');
                 const novoProfissionalModal = document.getElementById('novoProfissionalModal');
+                const profissionalForm = document.getElementById('profissionalForm');
+                const modalTitle = document.getElementById('modal-profissional-title');
+                const profissionalIdInput = document.getElementById('profissional_doc_id');
+                const nomeInput = document.getElementById('nome');
+                const telefoneInput = document.getElementById('telefone');
+                const emailInput = document.getElementById('email');
+                const crmInput = document.getElementById('crm');
+                const submitBtn = document.getElementById('modal-submit-btn');
 
+                // Botão para abrir o modal para ADICIONAR um novo profissional
                 if (openModalBtn) {
                     openModalBtn.addEventListener('click', () => {
+                        // Reseta o formulário
+                        profissionalForm.reset();
+                        // Altera o título e a ação do formulário para "Adicionar"
+                        modalTitle.textContent = 'Adicionar Novo Profissional';
+                        profissionalForm.action = "{{ url_for('adicionar_profissional') }}";
+                        profissionalIdInput.value = '';
+                        submitBtn.textContent = 'Salvar';
+                        // Abre o modal
                         novoProfissionalModal.classList.add('active');
                     });
                 }
+                
+                // Botões para abrir o modal para EDITAR um profissional
+                document.querySelectorAll('.edit-professional-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        // Preenche o formulário com os dados do profissional
+                        profissionalIdInput.value = this.dataset.id;
+                        nomeInput.value = this.dataset.nome;
+                        telefoneInput.value = this.dataset.telefone;
+                        emailInput.value = this.dataset.email;
+                        crmInput.value = this.dataset.crm;
+
+                        // Altera o título e a ação do formulário para "Editar"
+                        modalTitle.textContent = 'Editar Profissional';
+                        profissionalForm.action = "{{ url_for('editar_profissional', profissional_doc_id='PROFISSIONAL_ID') }}".replace('PROFISSIONAL_ID', this.dataset.id);
+                        submitBtn.textContent = 'Salvar Alterações';
+                        
+                        // Abre o modal
+                        novoProfissionalModal.classList.add('active');
+                    });
+                });
 
                 function closeNovoProfissionalModal() {
                     novoProfissionalModal.classList.remove('active');
@@ -898,15 +937,6 @@
                 if (cancelNovoProfissionalBtn) {
                     cancelNovoProfissionalBtn.addEventListener('click', closeNovoProfissionalModal);
                 }
-
-                // REMOVIDO: A lógica de fechar o modal ao clicar no overlay
-                // if (novoProfissionalModal) {
-                //     novoProfissionalModal.addEventListener('click', (e) => {
-                //         if (e.target === novoProfissionalModal) {
-                //             closeNovoProfissionalModal();
-                //         }
-                //     });
-                // }
             }
 
             // --- Inicialização de todas as funcionalidades ---
