@@ -203,6 +203,61 @@
         .status-badge.active { background-color: var(--success); }
         .status-badge.inactive { background-color: var(--danger); }
 
+        /* ============================================
+          --- CAMPO DE PESQUISA E FILTRO ---
+          ============================================
+        */
+        .search-filter-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .search-filter-container .search-input {
+            flex-grow: 1;
+            max-width: 400px;
+            position: relative;
+        }
+        .search-filter-container .search-input input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card);
+            color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .search-filter-container .search-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+        .search-filter-container .search-input i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+        }
+        .search-filter-container .filter-select {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card);
+            color: var(--text);
+        }
+        @media (max-width: 768px) {
+            .search-filter-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-filter-container .search-input {
+                max-width: none;
+            }
+        }
+
+
         .profissional-card-body {
             display: flex;
             flex-wrap: wrap;
@@ -398,36 +453,6 @@
         .toast.warning .toast-progress { background-color: var(--warning); }
         .toast.info .toast-progress { background-color: var(--info); }
 
-        @keyframes toast-slide-in {
-            from {
-                opacity: 0;
-                transform: translateX(110%);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes toast-fade-out {
-            from {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-        }
-        .toast.fade-out {
-            animation: toast-fade-out 0.4s ease-in forwards;
-        }
-
-        @keyframes toast-progress-bar {
-            from { width: 100%; }
-            to { width: 0%; }
-        }
-
         /* --- Modals (Reutilizados) --- */
         .modal-overlay { 
             position: fixed; 
@@ -454,14 +479,14 @@
             border-radius: 16px; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
             width: 95%;
-            max-width: 80vw; /* Aumentado a largura máxima do modal para 80% da viewport */
+            max-width: 80vw;
             transform: scale(0.95); 
             transition: transform 0.25s ease; 
-            max-height: 90vh; /* Aumentado a altura máxima do modal para 90% da viewport */
+            max-height: 90vh; 
             overflow-y: auto;
             text-align: center;
             padding: 2rem;
-            position: relative; /* Para o posicionamento do botão de fechar */
+            position: relative;
         }
         .modal-overlay.active .modal-content { 
             transform: scale(1); 
@@ -569,6 +594,28 @@
             font-weight: 500;
             color: var(--text);
         }
+        
+        /* Estilos para a modal de notificação */
+        .notification-modal-content {
+            padding: 1.5rem; /* Diminuído o padding */
+            text-align: center;
+            max-width: 400px; /* Adicionado um max-width para deixá-lo menor */
+        }
+
+        .notification-modal-content .notification-icon {
+            font-size: 2rem; /* Diminuído o tamanho do ícone */
+            margin-bottom: 0.75rem; /* Diminuído o espaçamento */
+        }
+        .notification-modal-content .notification-icon.success { color: var(--success); }
+        .notification-modal-content .notification-icon.danger { color: var(--danger); }
+        .notification-modal-content .notification-icon.warning { color: var(--warning); }
+        .notification-modal-content .notification-icon.info { color: var(--info); }
+        
+        .notification-modal-content .notification-message {
+            font-size: 1rem; /* Diminuído o tamanho da fonte */
+            font-weight: 500;
+            margin-bottom: 1rem; /* Diminuído o espaçamento */
+        }
 
         /* --- Responsive --- */
         span.btn-text-desktop { display: none; }
@@ -579,7 +626,7 @@
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.collapsed { transform: translateX(-100%); width: 280px; } /* Ajustado para 280px */
+            .sidebar.collapsed { transform: translateX(-100%); width: 280px; }
             .sidebar.collapsed nav ul li a, .sidebar.collapsed .sidebar-footer button, .sidebar.collapsed .sidebar-footer a { justify-content: flex-start; }
             .sidebar.collapsed nav ul li a span, .sidebar.collapsed .sidebar-footer span { display: inline; }
             .sidebar.collapsed .sidebar-header .logo span { display: inline; }
@@ -614,6 +661,17 @@
             </header>
 
             <main>
+                <div class="search-filter-container">
+                    <div class="search-input">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Buscar por nome, e-mail ou registro...">
+                    </div>
+                    <select class="filter-select">
+                        <option value="todos">Todos os Profissionais</option>
+                        <option value="ativos">Apenas Ativos</option>
+                        <option value="inativos">Apenas Inativos</option>
+                    </select>
+                </div>
                 <div class="card-list-container">
                     {% for profissional in profissionais %}
                     <div class="profissional-card">
@@ -696,6 +754,7 @@
             </div>
             <form id="profissionalForm" method="post">
                 <input type="hidden" name="profissional_doc_id" id="profissional_doc_id">
+                <input type="hidden" name="ativo" id="profissional_ativo">
                 <!-- Campo Nome do Profissional -->
                 <div class="form-group">
                     <label for="nome">Nome do Profissional</label>
@@ -731,6 +790,17 @@
             </form>
         </div>
     </div>
+    
+    <!-- Modal de Notificação -->
+    <div class="modal-overlay" id="notificationModal">
+        <div class="modal-content notification-modal-content">
+            <div id="notificationIcon" class="notification-icon"></div>
+            <p id="notificationMessage" class="notification-message"></p>
+            <div class="modal-actions">
+                <button id="notificationCloseBtn" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         // Placeholder para Firebase, caso não esteja configurado no ambiente Canvas
@@ -744,60 +814,42 @@
         let auth = getAuth(initializeApp(firebaseConfig));
 
         document.addEventListener('DOMContentLoaded', () => {
-            const toastContainer = document.getElementById('toast-container');
             
-            // --- Lógica para Notificações Toast ---
-            function showToast(message, category = 'info') {
-                if (!toastContainer) return;
-
-                const toast = document.createElement('div');
-                toast.className = `toast ${category}`;
+            // --- Lógica para Notificações Toast (removida) e Modal ---
+            const notificationModal = document.getElementById('notificationModal');
+            const notificationMessageEl = document.getElementById('notificationMessage');
+            const notificationIconEl = document.getElementById('notificationIcon');
+            const notificationCloseBtn = document.getElementById('notificationCloseBtn');
+            
+            function showNotificationModal(message, category = 'info') {
+                notificationMessageEl.textContent = message;
                 
                 let iconClass = 'fa-solid fa-circle-info';
-                let title = 'Informação';
+                let iconColorClass = 'info';
                 if (category === 'success') {
                     iconClass = 'fa-solid fa-check-circle';
-                    title = 'Sucesso';
-                }
-                if (category === 'danger') {
+                    iconColorClass = 'success';
+                } else if (category === 'danger') {
                     iconClass = 'fa-solid fa-times-circle';
-                    title = 'Erro';
-                }
-                if (category === 'warning') {
+                    iconColorClass = 'danger';
+                } else if (category === 'warning') {
                     iconClass = 'fa-solid fa-exclamation-triangle';
-                    title = 'Atenção';
+                    iconColorClass = 'warning';
                 }
 
-                toast.innerHTML = `
-                    <div class="toast-icon">
-                        <i class="${iconClass}"></i>
-                    </div>
-                    <div class="toast-content">
-                        <strong class="toast-title">${title}</strong>
-                        <span class="toast-message">${message}</span>
-                    </div>
-                    <button class="toast-close">&times;</button>
-                    <div class="toast-progress"></div>
-                `;
-                
-                toastContainer.appendChild(toast);
-
-                const closeButton = toast.querySelector('.toast-close');
-                closeButton.addEventListener('click', () => {
-                    toast.classList.add('fade-out');
-                    toast.addEventListener('animationend', () => toast.remove());
-                });
-
-                setTimeout(() => {
-                    toast.classList.add('fade-out');
-                    toast.addEventListener('animationend', () => toast.remove());
-                }, 5000);
+                notificationIconEl.className = `notification-icon ${iconColorClass}`;
+                notificationIconEl.innerHTML = `<i class="${iconClass}"></i>`;
+                notificationModal.classList.add('active');
             }
 
+            notificationCloseBtn.addEventListener('click', () => {
+                notificationModal.classList.remove('active');
+            });
+            
             // --- Processa mensagens flash do backend e as exibe como toasts ---
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% for category, message in messages %}
-                    showToast({{ message|tojson|safe }}, "{{ category }}");
+                    showNotificationModal({{ message|tojson|safe }}, "{{ category }}");
                 {% endfor %}
             {% endwith %}
 
@@ -885,6 +937,7 @@
                 const profissionalForm = document.getElementById('profissionalForm');
                 const modalTitle = document.getElementById('modal-profissional-title');
                 const profissionalIdInput = document.getElementById('profissional_doc_id');
+                const profissionalAtivoInput = document.getElementById('profissional_ativo');
                 const nomeInput = document.getElementById('nome');
                 const telefoneInput = document.getElementById('telefone');
                 const emailInput = document.getElementById('email');
@@ -900,6 +953,7 @@
                         modalTitle.textContent = 'Adicionar Novo Profissional';
                         profissionalForm.action = "{{ url_for('adicionar_profissional') }}";
                         profissionalIdInput.value = '';
+                        profissionalAtivoInput.value = 'true'; // Novo profissional é sempre ativo por padrão
                         submitBtn.textContent = 'Salvar';
                         // Abre o modal
                         novoProfissionalModal.classList.add('active');
@@ -915,6 +969,7 @@
                         telefoneInput.value = this.dataset.telefone;
                         emailInput.value = this.dataset.email;
                         crmInput.value = this.dataset.crm;
+                        profissionalAtivoInput.value = this.dataset.ativo; // Adicionado para manter o status
 
                         // Altera o título e a ação do formulário para "Editar"
                         modalTitle.textContent = 'Editar Profissional';
