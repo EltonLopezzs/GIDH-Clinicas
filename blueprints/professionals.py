@@ -40,6 +40,7 @@ def register_professionals_routes(app):
         if request.method == 'POST':
             nome = request.form['nome']
             telefone = request.form.get('telefone')
+<<<<<<< HEAD
             email_profissional = request.form.get('email')
             crm_ou_registro = request.form.get('crm')
             cargo_id = request.form.get('cargo_id') # NOVO: Captura o cargo_id
@@ -49,6 +50,17 @@ def register_professionals_routes(app):
                     flash('O telefone deve conter apenas números.', 'warning')
                     return redirect(url_for('listar_profissionais'))
                 
+=======
+            email_profissional = request.form.get('email')  # Alterado para 'email' conforme o formulário
+            crm_ou_registro = request.form.get('crm')  # Alterado para 'crm' conforme o formulário
+            ativo = True  # Novo profissional é sempre ativo por padrão
+            try:
+                if telefone and not telefone.isdigit():
+                    flash('O telefone deve conter apenas números.', 'warning')
+                    # Retorna para a página de listagem, pois o modal de cadastro já está na mesma tela
+                    return redirect(url_for('listar_profissionais'))
+
+>>>>>>> 059b746821b0a98e6c8d30055e29c4d5ead009ba
                 db_instance.collection('clinicas').document(clinica_id).collection('profissionais').add({
                     'nome': nome,
                     'telefone': telefone if telefone else None,
@@ -63,8 +75,15 @@ def register_professionals_routes(app):
             except Exception as e:
                 flash(f'Erro ao adicionar profissional: {e}', 'danger')
                 print(f"Erro add_professional: {e}")
+<<<<<<< HEAD
         return redirect(url_for('listar_profissionais'))
 
+=======
+        # Retorna para a página de listagem em caso de erro no método GET (embora o método GET não seja usado)
+        return redirect(url_for('listar_profissionais'))
+
+
+>>>>>>> 059b746821b0a98e6c8d30055e29c4d5ead009ba
     @app.route('/profissionais/editar/<string:profissional_doc_id>', methods=['POST'], endpoint='editar_profissional')
     @login_required
     @admin_required
@@ -76,21 +95,38 @@ def register_professionals_routes(app):
         if request.method == 'POST':
             nome = request.form['nome']
             telefone = request.form.get('telefone')
+<<<<<<< HEAD
             email_profissional = request.form.get('email')
             crm_ou_registro = request.form.get('crm')
             cargo_id = request.form.get('cargo_id') # NOVO: Captura o cargo_id
+=======
+            email_profissional = request.form.get('email') # Alterado para 'email' conforme o formulário
+            crm_ou_registro = request.form.get('crm') # Alterado para 'crm' conforme o formulário
+            # CORREÇÃO: Agora verifica se o valor recebido é a string 'True' ou 'true' (sempre verdadeiro para não mudar o status)
+            # A nova lógica de frontend não envia o status por padrão, mantendo-o na base de dados.
+            # Portanto, esta linha se torna desnecessária na sua lógica atual.
+            # A rota de edição só deve atualizar os campos editáveis. O status é alterado por outra rota.
+>>>>>>> 059b746821b0a98e6c8d30055e29c4d5ead009ba
             
             try:
                 if telefone and not telefone.isdigit():
                     flash('O telefone deve conter apenas números.', 'warning')
+<<<<<<< HEAD
                     return redirect(url_for('listar_profissionais'))
+=======
+                    return redirect(url_for('listar_profissionais')) # Retorna à lista para manter a consistência
+>>>>>>> 059b746821b0a98e6c8d30055e29c4d5ead009ba
                 else:
                     profissional_ref.update({
                         'nome': nome,
                         'telefone': telefone if telefone else None,
                         'email': email_profissional if email_profissional else None,
                         'crm_ou_registro': crm_ou_registro if crm_ou_registro else None,
+<<<<<<< HEAD
                         'cargo_id': cargo_id, # NOVO: Atualiza o cargo_id
+=======
+                        # REMOVIDO: a atualização do campo 'ativo' aqui, pois ele é gerenciado pela rota separada.
+>>>>>>> 059b746821b0a98e6c8d30055e29c4d5ead009ba
                         'atualizado_em': firestore.SERVER_TIMESTAMP
                     })
                     flash('Profissional atualizado com sucesso!', 'success')
@@ -100,6 +136,10 @@ def register_professionals_routes(app):
                 print(f"Erro edit_professional (POST): {e}")
 
         return redirect(url_for('listar_profissionais'))
+<<<<<<< HEAD
+=======
+
+>>>>>>> 059b746821b0a98e6c8d30055e29c4d5ead009ba
 
     @app.route('/profissionais/ativar_desativar/<string:profissional_doc_id>', methods=['POST'], endpoint='ativar_desativar_profissional')
     @login_required
