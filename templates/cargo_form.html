@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if cargo %}Editar Cargo{% else %}Novo Cargo{% endif %} - GIDH Clínicas</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 font-sans leading-normal tracking-normal h-full flex">
+
+    {% include 'Nav.html' %}
+
+    <div class="main-content flex-1 p-6 transition-all duration-300 ease-in-out ml-64">
+        <div class="p-6 bg-gray-50 dark:bg-gray-800 min-h-screen flex items-start justify-center">
+            <div class="bg-white dark:bg-gray-900 shadow-lg rounded-lg p-8 w-full max-w-2xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                        {% if cargo %}Editar Cargo: {{ cargo.nome }}{% else %}Novo Cargo{% endif %}
+                    </h1>
+                    <a href="{{ url_for('cargos.listar_cargos') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left mr-2"></i>Voltar
+                    </a>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} mb-4">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form action="{% if cargo %}{{ url_for('cargos.editar_cargo', cargo_id=cargo.id) }}{% else %}{{ url_for('cargos.novo_cargo') }}{% endif %}" method="post">
+                    <div class="mb-4">
+                        <label for="nome" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome do Cargo</label>
+                        <input type="text" id="nome" name="nome" value="{{ cargo.nome if cargo else '' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Permissões de Acesso (Telas)</label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Selecione as páginas que os profissionais com este cargo podem visualizar.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-md h-96 overflow-y-auto border border-gray-300 dark:border-gray-700">
+                            {% for endpoint in endpoints %}
+                                <div class="flex items-center">
+                                    <input id="perm-{{ loop.index }}" name="permissions" type="checkbox" value="{{ endpoint }}" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                        {% if cargo and endpoint in cargo.permissions_set %}checked{% endif %}>
+                                    <label for="perm-{{ loop.index }}" class="ml-2 block text-sm text-gray-900 dark:text-gray-200">
+                                        {{ descriptions.get(endpoint, endpoint) }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save mr-2"></i>Salvar Cargo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

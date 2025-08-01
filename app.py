@@ -1,8 +1,6 @@
 import os
 from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify, render_template_string
-from datetime import timedelta # Importar timedelta para sessões permanentes
-
-# --- Importações adicionais do seu app.py ---
+from datetime import timedelta
 import datetime
 import json
 import firebase_admin
@@ -12,7 +10,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from collections import Counter, defaultdict
 
 # Importar get_counts_for_navbar do utils
-from utils import get_counts_for_navbar, set_db, get_db, login_required, admin_required, SAO_PAULO_TZ, parse_date_input, convert_doc_to_dict
+from utils import get_counts_for_navbar, set_db, get_db, login_required, admin_required, permission_required, get_all_endpoints, SAO_PAULO_TZ, parse_date_input, convert_doc_to_dict
 from blueprints.users import register_users_routes
 from blueprints.professionals import register_professionals_routes
 from blueprints.patients import register_patients_routes
@@ -26,55 +24,34 @@ from blueprints.contas_a_pagar import register_contas_a_pagar_routes
 from blueprints.peis import peis_bp
 from blueprints.patrimonio import register_patrimonio_routes
 from blueprints.protocols import protocols_bp
-from blueprints.weekly_planning import weekly_planning_bp 
+from blueprints.weekly_planning import weekly_planning_bp
 from blueprints.user_api import user_api_bp
-from blueprints.evaluations import evaluations_bp # NOVO: Importar o blueprint de avaliações
+from blueprints.evaluations import evaluations_bp
+from blueprints.cargos import cargos_bp  # NOVO: Importar o blueprint de cargos
 
-# NOVO: Importações para IA
 import google.generativeai as genai
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv
-import re # Para sanitização de JSON
+import re
 
-# Carrega variáveis de ambiente do arquivo .env (para desenvolvimento local)
 load_dotenv()
 
 app = Flask(__name__)
 
-# --- Configurações de Segurança e Sessão (CRUCIAL para ambientes de produção) ---
-
-# SECRET_KEY: Essencial para assinar cookies de sessão.
-# Use a variável de ambiente FLASK_SECRET_KEY. Se não for encontrada, use uma padrão.
-# Esta chave DEVE ser CONSISTENTE entre os reinícios do Gunicorn.
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', '169f2ebd4e2dd3590ab847171e711086e2778a04570624da')
 
-# Configurações de Proxy Reverso:
-# Isso diz ao Flask para confiar nos cabeçalhos X-Forwarded-For e X-Forwarded-Proto do Nginx.
-# Sem isso, Flask pode gerar URLs incorretas ou ter problemas de segurança com sessões.
-# Ajuste o número de proxies conforme sua infraestrutura (1 para Nginx -> Gunicorn -> Flask)
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
-# Configurações de Cookie de Sessão:
-# SESSION_COOKIE_SECURE: Define se o cookie de sessão só deve ser enviado via HTTPS.
-app.config['SESSION_COOKIE_SECURE'] = False # Mude para True quando configurar HTTPS!
-
-# SESSION_COOKIE_HTTPONLY: Impede que JavaScript acesse o cookie, aumentando a segurança.
+app.config['SESSION_COOKIE_SECURE'] = False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-
-# SESSION_COOKIE_SAMESITE: Proteção contra CSRF. 'Lax' é um bom padrão.
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
-# PERMANENT_SESSION_LIFETIME: Tempo de vida da sessão (ex: 31 dias).
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=31)
-
 
 CORS(app)
 
 _db_client_instance = None
 
-# Inicialização do Firebase Admin SDK
-# Garante que o Firebase seja inicializado apenas uma vez e com o storageBucket
 if not firebase_admin._apps:
     try:
         firebase_config_str = os.environ.get('__firebase_config')
@@ -82,7 +59,7 @@ if not firebase_admin._apps:
             firebase_config_dict = json.loads(firebase_config_str)
             cred = credentials.Certificate(firebase_config_dict)
             firebase_admin.initialize_app(cred, {
-                'storageBucket': firebase_config_dict.get('storageBucket', os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.firebasestorage.app'))  
+                'storageBucket': firebase_config_dict.get('storageBucket', os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.firebasestorage.app'))
             })
             print("🔥 Firebase Admin SDK inicializado usando __firebase_config!")
         else:
@@ -90,7 +67,7 @@ if not firebase_admin._apps:
             if os.path.exists(cred_path):
                 cred = credentials.Certificate(cred_path)
                 firebase_admin.initialize_app(cred, {
-                    'storageBucket': os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.firebasestorage.app')  
+                    'storageBucket': os.environ.get('FIREBASE_STORAGE_BUCKET', 'gidh-e8968.firebasestorage.app')
                 })
                 print("🔥 Firebase Admin SDK inicializado a partir de serviceAccountKey.json (desenvolvimento)!")
             else:
@@ -100,7 +77,6 @@ if not firebase_admin._apps:
 else:
     print("🔥 Firebase Admin SDK já foi inicializado.")
 
- 
 try:
     _db_client_instance = firestore.client()
 except Exception as e:
@@ -109,13 +85,10 @@ except Exception as e:
 if _db_client_instance:
     set_db(_db_client_instance)
 
-# --- NOVO: Configura a API do Gemini ---
-# A chave da API será carregada do ambiente (ou do .env se estiver em desenvolvimento local)
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 if not os.getenv("GEMINI_API_KEY"):
     print("⚠️ VARIÁVEL DE AMBIENTE 'GEMINI_API_KEY' NÃO ENCONTRADA. A funcionalidade de IA pode não funcionar.")
 
-# Context processor para injetar contagens na barra de navegação em todas as templates
 @app.context_processor
 def inject_navbar_counts():
     db_instance = get_db()
@@ -123,14 +96,13 @@ def inject_navbar_counts():
         clinica_id = session['clinica_id']
         counts = get_counts_for_navbar(db_instance, clinica_id)
         return {'navbar_counts': counts}
-    return {'navbar_counts': {}} # Retorna dicionário vazio se não estiver logado ou DB não estiver pronto
-
+    return {'navbar_counts': {}}
 
 @app.route('/login', methods=['GET'])
 def login_page():
     if 'logged_in' not in session:
         return render_template('login.html')
-    return redirect(url_for('index')) # Redireciona para o dashboard se já estiver logado
+    return redirect(url_for('index'))
 
 @app.route('/session-login', methods=['POST'])
 def session_login():
@@ -152,17 +124,28 @@ def session_login():
 
         if mapeamento_doc.exists:
             mapeamento_data = mapeamento_doc.to_dict()
-            if not mapeamento_data or 'clinica_id' not in mapeamento_data or 'role' not in mapeamento_data:
+            if not mapeamento_data or 'clinica_id' not in mapeamento_data:
                 return jsonify({"success": False, "message": "Configuração de usuário incompleta. Entre em contato com o administrador."}), 500
+            
+            # NOVO: Busca as permissões do cargo, se houver
+            user_role = mapeamento_data.get('role', 'desativado')
+            user_permissions = []
+            if user_role != 'admin' and user_role != 'desativado':
+                cargo_doc = db_instance.collection('clinicas').document(mapeamento_data['clinica_id']).collection('cargos').document(user_role).get()
+                if cargo_doc.exists:
+                    user_permissions = cargo_doc.to_dict().get('permissions', [])
+                else:
+                    print(f"⚠️ Cargo '{user_role}' não encontrado para o usuário {email}. Concedendo permissões mínimas.")
+                    user_permissions = ['index', 'login_page', 'logout', 'session_login']
 
             session['logged_in'] = True
             session['user_uid'] = uid_from_token
             session['user_email'] = email
             session['clinica_id'] = mapeamento_data['clinica_id']
             session['clinica_nome_display'] = mapeamento_data.get('nome_clinica_display', 'Clínica On')
-            session['user_role'] = mapeamento_data['role']
+            session['user_role'] = user_role
+            session['user_permissions'] = user_permissions # NOVO: Armazena as permissões na sessão
             session['user_name'] = mapeamento_data.get('nome_completo', email)
-            # NOVO: Carrega a URL da foto do Firestore para a sessão
             session['user_photo_url'] = mapeamento_data.get('photo_url', '') 
             session.permanent = True
 
@@ -299,7 +282,6 @@ def setup_mapeamento_admin():
         </body></html>
     """)
 
-
 @app.route('/logout', methods=['POST'])
 def logout():
     session.clear()
@@ -307,6 +289,7 @@ def logout():
 
 @app.route('/', endpoint='index')
 @login_required
+@permission_required('index') # NOVO: Decorador de permissão
 def index():
     db_instance = get_db()
     try:
@@ -333,7 +316,6 @@ def index():
             flash(f"Erro ao buscar informações do profissional: {e}", "danger")
             return render_template('dashboard.html', kpi={}, proximos_agendamentos=[])
 
-    # Referências das coleções
     agendamentos_ref = db_instance.collection('clinicas').document(clinica_id).collection('agendamentos')
     pacientes_ref = db_instance.collection('clinicas').document(clinica_id).collection('pacientes')
     peis_ref = db_instance.collection('clinicas').document(clinica_id).collection('peis')
@@ -379,7 +361,6 @@ def index():
         print(f"Erro ao contar agendamentos: {e}")
         flash("Erro ao carregar contagem de agendamentos.", "danger")
 
-
     kpi_cards = {
         'total_pacientes': total_pacientes,
         'total_peis': total_peis,
@@ -419,7 +400,6 @@ def index():
                 )
             elif user_role != 'admin' and not profissional_id_logado:
                 patient_peis_query = peis_ref.where(filter=FieldFilter('paciente_id', '==', 'INVALID_ID_TO_RETURN_NONE'))
-
 
             for pei_doc in patient_peis_query.stream():
                 total_active_peis_patient += 1
@@ -486,7 +466,6 @@ def index():
     except Exception as e:
         print(f"Erro ao calcular progresso de PEIs por paciente: {e}")
         flash("Erro ao carregar progresso de PEIs por paciente.", "danger")
-
 
     agendamentos_para_analise = []
     try:
@@ -604,17 +583,15 @@ def index():
         dados_atendimento_vs_receita=json.dumps(dados_atendimento_vs_receita),
         dados_receita_procedimento=json.dumps(dados_receita_procedimento),
         dados_desempenho_profissional=json.dumps(dados_desempenho_profissional),
-        # Dados Python para Jinja2
         pacientes_pei_progress=pacientes_pei_progress,
         pacientes_pei_mental_map_data=pacientes_pei_mental_map_data,
-        # Dados JSON para JavaScript
         pacientes_pei_progress_json=json.dumps(pacientes_pei_progress),
         pacientes_pei_mental_map_data_json=json.dumps(pacientes_pei_mental_map_data)
     )
 
-# NOVO: Rota para a página de busca de PEIs
 @app.route('/busca_peis', endpoint='busca_peis')
 @login_required
+@permission_required('busca_peis') # NOVO: Decorador de permissão
 def busca_peis():
     db_instance = get_db()
     clinica_id = session['clinica_id']
@@ -639,9 +616,9 @@ def busca_peis():
 
     return render_template('busca_peis.html', pacientes=pacientes_lista, current_year=datetime.datetime.now(SAO_PAULO_TZ).year)
 
-# --- NOVO: Rota para importação de protocolo com IA ---
 @app.route('/protocols/import_from_ai', methods=['POST'])
 @login_required
+@admin_required # Mantém a restrição de administrador para importação de protocolo via IA
 def import_protocol_from_ai():
     if 'pdf_file' not in request.files:
         return jsonify({'success': False, 'message': 'Nenhum arquivo PDF enviado.'}), 400
@@ -660,7 +637,7 @@ def import_protocol_from_ai():
             if not text_content.strip():
                 return jsonify({'success': False, 'message': 'Não foi possível extrair texto do PDF. O PDF pode estar vazio ou ser uma imagem.'}), 400
 
-            prompt = f"""
+            prompt = rf"""
             Você é um assistente especializado em extrair informações de documentos de protocolo clínico, como o "Guia Portage" ou "Protocolo TEA".
             Seu objetivo é ler o texto fornecido e preencher um formulário de protocolo com as seguintes seções e campos.
             Preencha todos os campos que puder encontrar no documento, mesmo que estejam em diferentes formatos (listas, texto corrido, tabelas).
@@ -717,7 +694,6 @@ def import_protocol_from_ai():
             TEXTO DO PROTOCOLO:
             {text_content}
             """
-            # Definir o schema de resposta esperado
             response_schema = {
                 "type": "OBJECT",
                 "properties": {
@@ -855,12 +831,13 @@ register_appointments_routes(app)
 register_medical_records_routes(app)
 register_estoque_routes(app)
 register_contas_a_pagar_routes(app)
-app.register_blueprint(peis_bp) 
-register_patrimonio_routes(app) 
+app.register_blueprint(peis_bp)
+register_patrimonio_routes(app)
 app.register_blueprint(protocols_bp)
-app.register_blueprint(weekly_planning_bp) 
+app.register_blueprint(weekly_planning_bp)
 app.register_blueprint(user_api_bp)
-app.register_blueprint(evaluations_bp)  
+app.register_blueprint(evaluations_bp)
+app.register_blueprint(cargos_bp) # NOVO: Registro do blueprint de cargos
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5001)), debug=True)

@@ -156,7 +156,7 @@
 
         </li>
 
-        <li class="has-submenu {% if request.endpoint in ['listar_horarios', 'listar_usuarios'] %}open{% endif %}">
+        <li class="has-submenu {% if request.endpoint in ['listar_horarios', 'listar_usuarios', 'cargos.listar_cargos'] %}open{% endif %}">
           <a href="#" class="submenu-toggle" title="Gerir Sistema">
             <div class="submenu-toggle-content">
               <i class="fa-solid fa-gear"></i>
@@ -175,6 +175,12 @@
               <a href="{{ url_for('listar_usuarios') }}" title="Utilizadores">
                 <span>Utilizadores</span>
                 {% if navbar_counts.utilizadores is defined %}<span class="count-badge">{{ navbar_counts.utilizadores }}</span>{% endif %}
+              </a>
+            </li>
+            <li class="{% if request.endpoint == 'cargos.listar_cargos' %}active{% endif %}">
+              <a href="{{ url_for('cargos.listar_cargos') }}" title="Cargos">
+                <span>Cargos</span>
+                {% if navbar_counts.cargos is defined %}<span class="count-badge">{{ navbar_counts.cargos }}</span>{% endif %}
               </a>
             </li>
           </ul>
@@ -973,7 +979,7 @@
             fillColor: '#fff'
         }).toBlob(async (blob) => {
             if (!blob) {
-                console.error('Erro ao obter a imagem cortada.'); // Log error instead of alert
+                console.error('Erro ao obter a imagem cortada.');
                 uploadPhotoButton.disabled = false;
                 uploadPhotoButton.innerHTML = '<i class="fas fa-upload"></i> <span>Salvar Foto</span>';
                 return;
@@ -991,7 +997,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('API Response for upload:', data); // Log the response for debugging
+                    console.log('API Response for upload:', data);
                     if (data.success && data.photo_url) {
                         userPhoto.src = data.photo_url;
                         showCustomAlert('Foto de perfil atualizada com sucesso!', 'Sucesso', 'success');
@@ -1003,20 +1009,17 @@
                         }
                         updateUploadButtonTextAndState();
                     } else {
-                        // Server responded OK, but indicated a logical failure
                         showCustomAlert('Falha ao processar a foto no servidor: ' + (data.message || 'Erro desconhecido.'), 'Erro no Servidor', 'danger');
-                        console.error('Falha ao processar a foto no servidor:', data.message || 'Erro desconhecido.'); // Log error instead of alert
+                        console.error('Falha ao processar a foto no servidor:', data.message || 'Erro desconhecido.');
                     }
                 } else {
-                    // HTTP error (e.g., 404, 500)
-                    const errorText = await response.text(); // Get raw error text
+                    const errorText = await response.text();
                     showCustomAlert('Erro HTTP durante o upload da foto: ' + response.status + ' - ' + errorText, 'Erro HTTP', 'danger');
-                    console.error('HTTP Error during photo upload:', response.status, errorText); // Log error instead of alert
+                    console.error('HTTP Error during photo upload:', response.status, errorText);
                 }
             } catch (error) {
-                // Network error or other unexpected JS error
                 showCustomAlert('Erro ao fazer upload da foto: ' + error.message, 'Erro de Rede', 'danger');
-                console.error('Erro ao fazer upload da foto:', error); // Log error instead of alert
+                console.error('Erro ao fazer upload da foto:', error);
             } finally {
                 uploadPhotoButton.disabled = false;
                 uploadPhotoButton.innerHTML = '<i class="fas fa-upload"></i> <span>Salvar Foto</span>';
@@ -1039,7 +1042,7 @@
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('API Response for remove:', data); // Log the response for debugging
+                console.log('API Response for remove:', data);
                 if (data.success) {
                     userPhoto.src = DEFAULT_PHOTO_URL;
                     imageToCrop.src = DEFAULT_PHOTO_URL;
@@ -1052,20 +1055,17 @@
                     document.body.style.overflow = '';
                     updateUploadButtonTextAndState();
                 } else {
-                    // Server responded OK, but indicated a logical failure
                     showCustomAlert('Falha ao remover a foto no servidor: ' + (data.message || 'Erro desconhecido.'), 'Erro no Servidor', 'danger');
-                    console.error('Falha ao remover a foto no servidor:', data.message || 'Erro desconhecido.'); // Log error instead of alert
+                    console.error('Falha ao remover a foto no servidor:', data.message || 'Erro desconhecido.');
                 }
             } else {
-                // HTTP error (e.g., 404, 500)
-                const errorText = await response.text(); // Get raw error text
+                const errorText = await response.text();
                 showCustomAlert('Erro HTTP durante a remoção da foto: ' + response.status + ' - ' + errorText, 'Erro HTTP', 'danger');
-                console.error('HTTP Error during photo removal:', response.status, errorText); // Log error instead of alert
+                console.error('HTTP Error during photo removal:', response.status, errorText);
             }
         } catch (error) {
-            // Network error or other unexpected JS error
             showCustomAlert('Erro ao remover foto: ' + error.message, 'Erro de Rede', 'danger');
-            console.error('Erro ao remover foto:', error); // Log error instead of alert
+            console.error('Erro ao remover foto:', error);
         } finally {
             removePhotoButton.disabled = false;
             removePhotoButton.innerHTML = '<i class="fas fa-trash-alt"></i> <span>Remover Foto</span>';
@@ -1249,7 +1249,7 @@
         } catch (error) {
             console.error('Erro na requisição de logout:', error);
             showCustomAlert('Não foi possível completar a ação. Verifique sua conexão e tente novamente.', 'Erro de Rede', 'danger');
-            window.location.href = "{{ url_for('login_page') }}"; // Redirect to login page even on network error
+            window.location.href = "{{ url_for('login_page') }}";
         }
       });
     }
